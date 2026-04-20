@@ -2,12 +2,12 @@
 import styles from './MapPreview.module.css';
 
 const stops = [
-  { name: 'Pastéis de Belém', sub: 'Breakfast — Local pastry shop', time: '09:00', x: '15%', y: '55%', color: '#FF6B6B', emoji: '☕' },
-  { name: 'Jerónimos Monastery', sub: 'UNESCO Heritage Site', time: '10:30', x: '22%', y: '45%', color: '#1E6FD9', emoji: '🏛️' },
-  { name: 'Time Out Market', sub: 'Lunch — Gourmet food hall', time: '13:00', x: '38%', y: '35%', color: '#10B981', emoji: '🍽️' },
-  { name: 'Alfama District', sub: 'Cultural — Oldest neighborhood', time: '15:00', x: '58%', y: '42%', color: '#F59E0B', emoji: '🚶' },
-  { name: 'Miradouro da Graça', sub: 'Viewpoint — Sunset panorama', time: '17:00', x: '72%', y: '30%', color: '#8B5CF6', emoji: '🌅' },
-  { name: 'Taberna da Rua das Flores', sub: 'Dinner — Traditional Portuguese', time: '20:00', x: '82%', y: '50%', color: '#D4A853', emoji: '🍷' },
+  { name: 'Pastéis de Belém', sub: 'Breakfast — Local pastry shop', time: '09:00', x: '15%', y: '55%', color: '#111111', emoji: '☕' },
+  { name: 'Jerónimos Monastery', sub: 'UNESCO Heritage Site', time: '10:30', x: '22%', y: '45%', color: '#111111', emoji: '🏛️' },
+  { name: 'Time Out Market', sub: 'Lunch — Gourmet food hall', time: '13:00', x: '38%', y: '35%', color: '#111111', emoji: '🍽️' },
+  { name: 'Alfama District', sub: 'Cultural — Oldest neighborhood', time: '15:00', x: '58%', y: '42%', color: '#111111', emoji: '🚶' },
+  { name: 'Miradouro da Graça', sub: 'Viewpoint — Sunset panorama', time: '17:00', x: '72%', y: '30%', color: '#111111', emoji: '🌅' },
+  { name: 'Taberna da Rua das Flores', sub: 'Dinner — Traditional Portuguese', time: '20:00', x: '82%', y: '50%', color: '#333333', emoji: '🍷' },
 ];
 
 export default function MapPreview() {

@@ -204,7 +204,7 @@
 
 .creatorBannerContent {
   position: relative;
-  background: linear-gradient(90deg, rgba(10,22,40,0.95) 0%, rgba(10,22,40,0.8) 50%, rgba(10,22,40,0.4) 100%);
+  background: linear-gradient(90deg, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.8) 50%, rgba(17,17,17,0.4) 100%);
   padding: var(--space-12) var(--space-10);
   display: flex;
   align-items: center;
@@ -245,7 +245,7 @@
   .creatorBannerContent {
     flex-direction: column;
     text-align: center;
-    background: linear-gradient(180deg, rgba(10,22,40,0.9) 0%, rgba(10,22,40,0.8) 100%);
+    background: linear-gradient(180deg, rgba(17,17,17,0.9) 0%, rgba(17,17,17,0.8) 100%);
   }
   .tabs {
     flex-wrap: wrap;
