@@ -1,0 +1,178 @@
+.pricing {
+  padding: var(--space-24) 0;
+  background: var(--white);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.card {
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+  border: 1.5px solid var(--gray-200);
+  background: var(--white);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.cardPremium {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, #FFFDF5 0%, #FFF9E3 100%);
+}
+
+.cardPremium:hover {
+  box-shadow: var(--shadow-gold);
+}
+
+.popularBadge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--gold);
+  color: var(--navy);
+  font-family: var(--font-heading);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+}
+
+.cardPlan {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-500);
+  margin-bottom: var(--space-3);
+}
+
+.cardPrice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.priceAmount {
+  font-family: var(--font-heading);
+  font-size: var(--text-5xl);
+  font-weight: 800;
+  color: var(--navy);
+  line-height: 1;
+}
+
+.pricePeriod {
+  font-size: var(--text-base);
+  color: var(--gray-500);
+}
+
+.cardDesc {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+  margin-bottom: var(--space-6);
+}
+
+.featureList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--gray-700);
+}
+
+.featureCheck {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--success);
+  font-size: 12px;
+}
+
+.featureCross {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: rgba(239, 68, 68, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--error);
+  font-size: 12px;
+}
+
+.featureDisabled {
+  color: var(--gray-400);
+}
+
+.cardBtn {
+  width: 100%;
+  padding: var(--space-3) var(--space-6);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--text-base);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-align: center;
+}
+
+.btnFree {
+  background: var(--white);
+  color: var(--navy);
+  border: 1.5px solid var(--gray-200);
+}
+
+.btnFree:hover {
+  border-color: var(--ocean);
+  color: var(--ocean);
+  box-shadow: var(--shadow-md);
+}
+
+.btnPremium {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  color: var(--navy);
+  border: none;
+  box-shadow: 0 4px 15px rgba(212, 168, 83, 0.3);
+}
+
+.btnPremium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 168, 83, 0.4);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

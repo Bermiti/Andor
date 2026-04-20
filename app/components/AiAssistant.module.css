@@ -1,0 +1,223 @@
+.assistant {
+  padding: var(--space-24) 0;
+  background: var(--white);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+
+.chatContainer {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.chatWindow {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.chatHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.chatAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--ocean), var(--ocean-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-lg);
+  color: var(--white);
+}
+
+.chatHeaderInfo {
+  flex: 1;
+}
+
+.chatName {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.chatStatus {
+  font-size: var(--text-xs);
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chatStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.chatMessages {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 360px;
+}
+
+.message {
+  display: flex;
+  gap: var(--space-3);
+  max-width: 85%;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.messageUser {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.messageAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.messageAvatarAi {
+  background: linear-gradient(135deg, var(--ocean), var(--ocean-light));
+  color: var(--white);
+}
+
+.messageAvatarUser {
+  background: var(--gray-200);
+}
+
+.messageBubble {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.messageBubbleAi {
+  background: var(--white);
+  color: var(--navy);
+  border: 1px solid var(--gray-100);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.messageBubbleUser {
+  background: linear-gradient(135deg, var(--ocean), var(--ocean-light));
+  color: var(--white);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.typing {
+  display: flex;
+  gap: 4px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-100);
+  border-bottom-left-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.typingDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gray-400);
+  animation: pulse 1.4s infinite;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typingDot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.chatFooter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  background: var(--white);
+  border-top: 1px solid var(--gray-100);
+}
+
+.chatInput {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  color: var(--navy);
+  transition: all var(--transition-fast);
+}
+
+.chatInput:focus {
+  border-color: var(--ocean);
+  box-shadow: 0 0 0 2px rgba(30, 111, 217, 0.1);
+}
+
+.chatInput::placeholder {
+  color: var(--gray-400);
+}
+
+.chatSend {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--ocean), var(--ocean-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.chatSend:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.3);
+}
+
+.updateCard {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--success);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .message { max-width: 95%; }
+}
