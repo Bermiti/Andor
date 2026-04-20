@@ -27,8 +27,17 @@ export default function QuickPlan() {
   const [showResult, setShowResult] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPlaceholderIndex((prev) => (prev + 1) % suggestions.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   const handlePlan = (text) => {
-    const q = text || query;
+    const q = text || query || suggestions[currentPlaceholderIndex];
     if (!q) return;
     setQuery(q);
     setLoading(true);
@@ -52,7 +61,7 @@ export default function QuickPlan() {
           <input
             type="text"
             className={styles.input}
-            placeholder="Plan a 2-day romantic trip in Lisbon under €200..."
+            placeholder={suggestions[currentPlaceholderIndex]}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handlePlan()}
