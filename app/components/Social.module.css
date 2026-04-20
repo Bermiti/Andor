@@ -143,6 +143,23 @@
   overflow: hidden;
 }
 
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--space-12) 0;
+  color: var(--gray-500);
+  font-size: var(--text-base);
+  background: var(--white);
+  border-radius: var(--radius-2xl);
+  border: 1px dashed var(--gray-200);
+}
+
+.cardPriceFree {
+  background: var(--white);
+  color: var(--navy);
+  border: 1px solid var(--gray-200);
+}
+
 .cardMeta {
   display: flex;
   align-items: center;
