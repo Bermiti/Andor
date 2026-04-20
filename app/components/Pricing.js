@@ -59,7 +59,7 @@ export default function Pricing() {
               </div>
             ))}
           </div>
-          <button className={`${styles.cardBtn} ${styles.btnFree}`}>Get Started Free</button>
+          <button className={`${styles.cardBtn} ${styles.btnFree}`} onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>Get Started Free</button>
         </div>
 
         {/* Premium */}
@@ -79,7 +79,7 @@ export default function Pricing() {
               </div>
             ))}
           </div>
-          <button className={`${styles.cardBtn} ${styles.btnPremium}`}>Start 7-Day Free Trial</button>
+          <button className={`${styles.cardBtn} ${styles.btnPremium}`} onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>Start 7-Day Free Trial</button>
         </div>
       </div>
     </section>

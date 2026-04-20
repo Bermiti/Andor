@@ -2,6 +2,11 @@
 import styles from './Hero.module.css';
 
 export default function Hero() {
+  const handleScroll = (e, targetId) => {
+    e.preventDefault();
+    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <section className={styles.hero} id="hero">
       <div className={styles.heroBg}>
@@ -28,13 +33,13 @@ export default function Hero() {
           </p>
 
           <div className={`${styles.heroCtas} animate-fade-in-up animate-delay-3`}>
-            <a href="#planner" className="btn btn-primary btn-lg">
+            <a href="#planner" onClick={(e) => handleScroll(e, 'planner')} className="btn btn-primary btn-lg">
               Start Planning
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M5 10H15M15 10L10 5M15 10L10 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </a>
-            <a href="#features" className="btn btn-secondary btn-lg" style={{background: 'rgba(255,255,255,0.08)', color: '#CBD5E1', border: '1px solid rgba(255,255,255,0.12)'}}>
+            <a href="#features" onClick={(e) => handleScroll(e, 'features')} className="btn btn-secondary btn-lg" style={{background: 'rgba(255,255,255,0.08)', color: '#CBD5E1', border: '1px solid rgba(255,255,255,0.12)'}}>
               See How It Works
             </a>
           </div>

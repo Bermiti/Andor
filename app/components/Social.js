@@ -144,7 +144,7 @@ export default function Social() {
                 Share your unique travel expertise. Create premium itineraries and earn €2–€10 per sale. Join 1,000+ creators already on Andor.
               </p>
             </div>
-            <button className="btn btn-gold btn-lg">Start Creating</button>
+            <button className="btn btn-gold btn-lg" onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>Start Creating</button>
           </div>
         </div>
       </div>

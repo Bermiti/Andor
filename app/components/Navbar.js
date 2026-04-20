@@ -13,7 +13,16 @@ export default function Navbar() {
       setScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const handleOpenAuth = () => {
+      setIsLoginOpen(true);
+    };
+    window.addEventListener('open-auth-modal', handleOpenAuth);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('open-auth-modal', handleOpenAuth);
+    };
   }, []);
 
   // Prevent scroll when mobile menu is open
