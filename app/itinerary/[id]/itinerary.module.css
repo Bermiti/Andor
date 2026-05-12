@@ -925,7 +925,7 @@
 
 /* Print Styles */
 @media print {
-  nav, .dayTabs, .mapSection, .liveControls, .liveStatus, .adaptInputArea, 
+  :global(nav), .dayTabs, .mapSection, .liveControls, .liveStatus, .adaptInputArea, 
   .summaryActions, .aiBadge, .backBtn {
     display: none !important;
   }
