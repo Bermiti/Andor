@@ -1,6 +1,8 @@
 import { Inter, DM_Sans } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from './context/AuthContext';
+import CommandCenter from './components/CommandCenter';
+import FloatingAi from './components/FloatingAi';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-heading' });
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-body' });
@@ -25,6 +27,8 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AuthProvider>
+          <CommandCenter />
+          <FloatingAi />
           {children}
         </AuthProvider>
       </body>

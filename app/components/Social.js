@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import styles from './Social.module.css';
 
 const tabs = ['🔥 Trending', '⭐ Top Rated', '🆕 New', '💰 Budget', '🌍 Europe', '🌏 Asia', '🗽 Americas'];
 
 const itineraries = [
   {
+    slug: 'hidden-gems-lisbon',
     title: 'Hidden Gems of Lisbon',
     desc: '3-day cultural deep dive into Lisbon\'s lesser-known neighborhoods, local markets, and secret viewpoints.',
     badge: '🔥 Trending',
@@ -14,6 +16,7 @@ const itineraries = [
     categories: ['🔥 Trending', '🌍 Europe']
   },
   {
+    slug: 'barcelona-budget',
     title: 'Barcelona on a Budget',
     desc: 'Experience the best of Barcelona for under €50/day — free attractions, cheap eats, and local secrets.',
     badge: '⭐ Top Rated',
@@ -22,6 +25,7 @@ const itineraries = [
     categories: ['⭐ Top Rated', '💰 Budget', '🌍 Europe']
   },
   {
+    slug: 'romantic-paris',
     title: 'Romantic Paris Weekend',
     desc: 'The ultimate couple\'s guide — candlelit dinners, Seine river walks, and the most intimate spots in Paris.',
     badge: '💕 Popular',
@@ -30,6 +34,7 @@ const itineraries = [
     categories: ['🔥 Trending', '🌍 Europe']
   },
   {
+    slug: 'swiss-alps-train',
     title: 'Swiss Alps Train Journey',
     desc: 'Glacier Express route and the most scenic mountain views in Switzerland.',
     badge: '🚂 Scenic',
@@ -38,6 +43,7 @@ const itineraries = [
     categories: ['⭐ Top Rated', '🌍 Europe', '🆕 New']
   },
   {
+    slug: 'azores-adventure',
     title: 'Azores Adventure Week',
     desc: 'Volcanic lakes, whale watching, hot springs, and hiking trails across São Miguel island.',
     badge: '🌿 Nature',
@@ -46,6 +52,7 @@ const itineraries = [
     categories: ['🆕 New', '🌍 Europe']
   },
   {
+    slug: 'tokyo-food',
     title: 'Tokyo Food Tour',
     desc: 'From Tsukiji fish market to hidden ramen bars — a food lover\'s dream itinerary across Tokyo.',
     badge: '🍜 Food',
@@ -54,6 +61,7 @@ const itineraries = [
     categories: ['🔥 Trending', '⭐ Top Rated', '🌏 Asia']
   },
   {
+    slug: 'bali-nomad',
     title: 'Bali Digital Nomad',
     desc: 'Work and surf in Canggu with the best cafes and co-working spaces.',
     badge: '💻 Remote',
@@ -62,6 +70,7 @@ const itineraries = [
     categories: ['🆕 New', '💰 Budget', '🌏 Asia', '🔥 Trending']
   },
   {
+    slug: 'nyc-3-days',
     title: 'NYC in 3 Days',
     desc: 'Hit every iconic spot — Central Park, Brooklyn Bridge, Broadway, and the best pizza in Manhattan.',
     badge: '🗽 Classic',
@@ -103,7 +112,7 @@ export default function Social() {
         <div className={`${styles.grid} animate-fade-in-up`} key={activeTab}>
           {filteredItineraries.length > 0 ? (
             filteredItineraries.map((item, i) => (
-              <div key={i} className={styles.card}>
+              <Link key={i} href={`/itinerary/${item.slug}`} className={styles.card}>
                 <div className={styles.cardImage}>
                   <div 
                     className={styles.cardBg} 
@@ -128,7 +137,7 @@ export default function Social() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))
           ) : (
             <div className={styles.emptyState}>

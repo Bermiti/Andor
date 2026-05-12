@@ -25,15 +25,31 @@ export async function POST(req) {
             messages: [
               {
                 role: 'system',
-                content: `You are a travel planning AI. Generate a detailed travel itinerary as JSON. The JSON must have this exact structure: {"destination": "City, Country", "days": [{"title": "Day 1 — Theme", "stops": [{"time": "09:00", "name": "Place Name", "type": "Category — Brief description"}]}], "totalCost": "€XXX"}. Use REAL places, restaurants and attractions. Be specific with names.`
+                content: `You are a premium travel agency AI. Generate a perfect travel itinerary as JSON.
+                The JSON must have this exact structure:
+                {
+                  "destination": "City, Country",
+                  "tripOverview": "Catchy summary",
+                  "flights": {"suggestion": "Arrival/Departure tips", "averagePrice": "€XXX"},
+                  "accommodation": {"hotelName": "Name", "type": "Luxury/Boutique/Budget", "reason": "Why stay here?"},
+                  "days": [{
+                    "title": "Day 1 — Theme",
+                    "transportTip": "Best way to move today",
+                    "stops": [{"time": "09:00", "name": "Place Name", "type": "Category — Description", "isRestaurant": true/false}]
+                  }],
+                  "mustEat": ["Dish/Restaurant 1", "Dish/Restaurant 2"],
+                  "contingency": {"emergencyInfo": "Local emergency info", "unexpectedTips": "Safety/Fallback tips"},
+                  "totalCost": "€XXX"
+                }
+                Use REAL places and current trends.`
               },
               {
                 role: 'user',
-                content: `Create a ${days || 2}-day itinerary for ${destination}. Budget: ${budget || 'moderate'}€. Travelers: ${travelers || 2}. Interests: ${interests?.join(', ') || 'general'}. Include 5-7 stops per day with real place names. Return ONLY valid JSON, no markdown.`
+                content: `Create a ${days || 2}-day "Travel Agency" grade itinerary for ${destination}. Budget: ${budget || 'moderate'}€. Travelers: ${travelers || 2}. Interests: ${interests?.join(', ') || 'general'}. Return ONLY valid JSON.`
               }
             ],
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: 2500,
             response_format: { type: 'json_object' },
           }),
         });
@@ -58,17 +74,36 @@ export async function POST(req) {
           model: google('gemini-1.5-pro'),
           schema: z.object({
             destination: z.string(),
+            tripOverview: z.string(),
+            flights: z.object({
+              suggestion: z.string(),
+              averagePrice: z.string(),
+            }),
+            accommodation: z.object({
+              hotelName: z.string(),
+              type: z.string(),
+              reason: z.string(),
+            }),
             days: z.array(z.object({
               title: z.string(),
+              transportTip: z.string(),
               stops: z.array(z.object({
                 time: z.string(),
                 name: z.string(),
                 type: z.string(),
+                isRestaurant: z.boolean().optional(),
               })),
             })),
+            mustEat: z.array(z.string()),
+            contingency: z.object({
+              emergencyInfo: z.string(),
+              unexpectedTips: z.string(),
+            }),
             totalCost: z.string(),
           }),
-          prompt: `Create a ${days || 2}-day travel itinerary for ${destination}. Budget: ${budget || 'moderate'}€. Travelers: ${travelers || 2}. Interests: ${interests?.join(', ') || 'general'}. Include 5-7 stops per day with REAL place names and restaurants.`,
+          prompt: `You are a premium travel agency AI. Create a perfect ${days || 2}-day travel itinerary for ${destination}.
+          Budget: ${budget || 'moderate'}€. Travelers: ${travelers || 2}. Interests: ${interests?.join(', ') || 'general'}.
+          Include flights, specific hotel, must-eat restaurants, transport tips for each day, and a safety contingency section.`,
         });
         return Response.json(object);
       } catch (e) {

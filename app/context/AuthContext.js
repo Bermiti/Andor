@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
   const register = (name, email, password) => {
     const users = JSON.parse(localStorage.getItem('andor_users') || '[]');
     if (users.find(u => u.email === email)) {
-      return { error: 'Este email já está registado.' };
+      return { error: 'This email is already registered.' };
     }
     const newUser = {
       id: Date.now().toString(),
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
     const users = JSON.parse(localStorage.getItem('andor_users') || '[]');
     const found = users.find(u => u.email === email && u.password === password);
     if (!found) {
-      return { error: 'Email ou palavra-passe incorretos.' };
+      return { error: 'Invalid email or password.' };
     }
     const { password: _, ...userData } = found;
     localStorage.setItem('andor_user', JSON.stringify(userData));

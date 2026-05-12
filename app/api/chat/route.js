@@ -21,7 +21,7 @@ export async function POST(req) {
             messages: [
               {
                 role: 'system',
-                content: `Tu és o assistente de viagem Andor. Respondes em português de Portugal com entusiasmo. És super conhecedor de viagens, cultura, história e gastronomia. Sê conciso mas informativo. Usa emojis moderadamente. Nunca inventes factos históricos falsos.`
+                content: `You are the Andor travel assistant. You respond in English with enthusiasm. You are super knowledgeable about travel, culture, history, and food. Be concise but informative. Use emojis moderately. Never make up false historical facts.`
               },
               ...messages,
             ],
@@ -80,7 +80,7 @@ export async function POST(req) {
 
         const result = streamText({
           model: google('gemini-1.5-pro'),
-          system: `Tu és o assistente de viagem Andor. Respondes em português de Portugal com entusiasmo. Sê conciso mas informativo. Usa emojis moderadamente.`,
+          system: `You are the Andor travel assistant. You respond in English with enthusiasm. Be concise but informative. Use emojis moderately.`,
           messages,
         });
         return result.toDataStreamResponse();
@@ -119,7 +119,7 @@ export async function POST(req) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(encoder.encode(`0:${JSON.stringify("Desculpa, algo correu mal. Tenta novamente!")}\n`));
+        controller.enqueue(encoder.encode(`0:${JSON.stringify("Sorry, something went wrong. Please try again!")}\n`));
         controller.close();
       },
     });

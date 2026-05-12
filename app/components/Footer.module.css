@@ -154,18 +154,23 @@
   height: 36px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--gray-500);
-  transition: all var(--transition-fast);
+  transition: all var(--transition-base);
   cursor: pointer;
   font-size: var(--text-sm);
+  text-decoration: none;
 }
 
 .socialLink:hover {
   background: var(--ocean);
+  border-color: var(--ocean);
   color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.3);
 }
 
 @media (max-width: 768px) {

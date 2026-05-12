@@ -6,7 +6,7 @@ import styles from './AiAssistant.module.css';
 export default function AiAssistant() {
   const { user } = useAuth();
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Olá! 👋 Sou o teu assistente de viagem Andor. Pergunta-me sobre qualquer destino, monumento, ou pede-me para modificar os teus planos!" }
+    { role: 'assistant', content: "Hello! 👋 I'm your Andor travel assistant. Ask me about any destination, landmark, or tell me to modify your plans!" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +40,7 @@ export default function AiAssistant() {
         }),
       });
 
-      if (!response.ok) throw new Error('Erro no chat');
+      if (!response.ok) throw new Error('Chat error');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -75,7 +75,7 @@ export default function AiAssistant() {
       console.error(error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: '⚠️ Desculpa, ocorreu um erro. Verifica se a chave de API do Gemini está no .env.local.' 
+        content: '⚠️ Sorry, an error occurred. Please check if the Gemini API key is set in .env.local.' 
       }]);
     } finally {
       setIsLoading(false);
@@ -143,7 +143,7 @@ export default function AiAssistant() {
             <input
               type="text"
               className={styles.chatInput}
-              placeholder="Pergunta algo... (ex: Conta-me sobre a Torre de Belém)"
+              placeholder="Ask something... (e.g. Tell me about Belém Tower)"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

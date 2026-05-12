@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { saveGeneratedItinerary } from '../lib/itinerary-store';
 import styles from './ItineraryGenerator.module.css';
 
 const interests = ['History', 'Nature', 'Architecture', 'Shopping', 'Food', 'Nightlife', 'Art', 'Photography', 'Beach', 'Adventure'];
@@ -36,6 +38,7 @@ const sampleItinerary = {
 
 export default function ItineraryGenerator() {
   const { user, saveTrip } = useAuth();
+  const router = useRouter();
   const [destination, setDestination] = useState('');
   const [budget, setBudget] = useState('');
   const [days, setDays] = useState('2');
@@ -46,7 +49,7 @@ export default function ItineraryGenerator() {
   const [result, setResult] = useState(null);
 
   const handleGenerate = async () => {
-    if (!destination) return alert('Por favor, indica um destino!');
+    if (!destination) return alert('Please enter a destination!');
     setLoading(true);
     setResult(null);
 
@@ -59,12 +62,13 @@ export default function ItineraryGenerator() {
         })
       });
       
-      if (!response.ok) throw new Error('Erro na API');
+      if (!response.ok) throw new Error('API error');
       const data = await response.json();
-      setResult(data);
+      const id = saveGeneratedItinerary(data);
+      setResult({ ...data, id });
     } catch (error) {
       console.error(error);
-      alert('Ocorreu um erro ao gerar o itinerário. A chave de API do Gemini está no .env.local?');
+      alert('An error occurred generating the itinerary. Is the Gemini API key set in .env.local?');
     } finally {
       setLoading(false);
     }
@@ -201,7 +205,31 @@ export default function ItineraryGenerator() {
             <div className={styles.resultCard}>
               <div className={styles.resultHeader}>
                 <h3 className={styles.resultTitle}>📍 {result.destination}</h3>
-                <span className={styles.resultBadge}>✓ AI Optimized</span>
+                <span className={styles.resultBadge}>✓ AI Agency Grade</span>
+              </div>
+
+              <div className={styles.agencyPreview}>
+                <p className={styles.overviewText}>{result.tripOverview}</p>
+                <div className={styles.agencyHighlights}>
+                  {result.flights && (
+                    <div className={styles.highlightItem}>
+                      <span className={styles.highlightIcon}>✈️</span>
+                      <div>
+                        <div className={styles.highlightLabel}>Suggested Flight</div>
+                        <div className={styles.highlightValue}>{result.flights.suggestion}</div>
+                      </div>
+                    </div>
+                  )}
+                  {result.accommodation && (
+                    <div className={styles.highlightItem}>
+                      <span className={styles.highlightIcon}>🏨</span>
+                      <div>
+                        <div className={styles.highlightLabel}>Recommended Stay</div>
+                        <div className={styles.highlightValue}>{result.accommodation.hotelName}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {result.days.map((day, di) => (
@@ -232,13 +260,20 @@ export default function ItineraryGenerator() {
                     window.dispatchEvent(new Event('open-auth-modal'));
                   } else {
                     saveTrip(result);
-                    alert('Viagem guardada! Vai ao Dashboard para a veres.');
+                    alert('Trip saved! Go to the Dashboard to see it.');
                   }
                 }}>
                   {user ? 'Save Itinerary ✓' : 'Save Itinerary'}
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{background: 'var(--navy)', color: 'white'}}
+                  onClick={() => router.push(`/itinerary/${result.id}`)}
+                >
+                  View Full Itinerary →
                 </button>
               </div>
             </div>

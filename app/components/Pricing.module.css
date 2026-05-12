@@ -5,7 +5,69 @@
 
 .header {
   text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+/* Toggle */
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
   margin-bottom: var(--space-12);
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--gray-400);
+}
+
+.toggleActive {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.toggleSwitch {
+  width: 48px;
+  height: 26px;
+  background: var(--gray-200);
+  border-radius: var(--radius-full);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--transition-base);
+  border: none;
+  padding: 0;
+}
+
+.toggleSwitch:hover {
+  background: var(--gray-300);
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: var(--white);
+  border-radius: 50%;
+  transition: transform var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggleKnobRight {
+  transform: translateX(22px);
+}
+
+.saveBadge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--ocean), var(--ocean-light));
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: var(--space-2);
+  vertical-align: middle;
 }
 
 .grid {
@@ -37,15 +99,37 @@
   background: linear-gradient(135deg, #FFFDF5 0%, #FFF9E3 100%);
 }
 
+.cardPremium::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-2xl);
+  padding: 2px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+  background-size: 200% auto;
+  animation: gradientShift 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .cardPremium:hover {
-  box-shadow: var(--shadow-gold);
+  box-shadow: 0 0 40px rgba(212, 168, 83, 0.2), var(--shadow-xl);
 }
 
 .popularBadge {
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
-  background: var(--navy);
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
   color: var(--white);
   font-family: var(--font-heading);
   font-size: var(--text-xs);
@@ -77,11 +161,19 @@
   font-weight: 800;
   color: var(--navy);
   line-height: 1;
+  transition: all var(--transition-base);
 }
 
 .pricePeriod {
   font-size: var(--text-base);
   color: var(--gray-500);
+}
+
+.yearlyNote {
+  font-size: var(--text-xs);
+  color: var(--ocean);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
 }
 
 .cardDesc {
@@ -169,6 +261,70 @@
 .btnPremium:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(212, 168, 83, 0.4);
+}
+
+/* Testimonial */
+.testimonial {
+  max-width: 600px;
+  margin: var(--space-16) auto 0;
+  padding: 0 var(--space-6);
+  text-align: center;
+}
+
+.testimonialQuote {
+  font-size: var(--text-lg);
+  color: var(--gray-600);
+  font-style: italic;
+  line-height: 1.7;
+  margin-bottom: var(--space-6);
+  position: relative;
+}
+
+.testimonialQuote::before {
+  content: '"';
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 60px;
+  font-family: var(--font-heading);
+  color: var(--ocean);
+  opacity: 0.15;
+  line-height: 1;
+}
+
+.testimonialAuthor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.testimonialAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ocean), var(--ocean-light));
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.testimonialName {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--navy);
+  text-align: left;
+}
+
+.testimonialRole {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+  text-align: left;
 }
 
 @media (max-width: 768px) {

@@ -79,7 +79,7 @@ export default function ExpenseSplitter() {
   };
 
   const deleteGroup = (groupId) => {
-    if (!confirm('Apagar este grupo?')) return;
+    if (!confirm('Delete this group?')) return;
     saveGroups(groups.filter(g => g.id !== groupId));
     if (activeGroupId === groupId) setActiveGroupId(null);
   };
@@ -142,9 +142,9 @@ export default function ExpenseSplitter() {
       {/* Groups List */}
       <div className={styles.groupsPanel}>
         <div className={styles.groupsHeader}>
-          <h3>Os teus grupos</h3>
+          <h3>Your groups</h3>
           <button className={styles.newGroupBtn} onClick={() => setShowNewGroup(!showNewGroup)}>
-            {showNewGroup ? '✕' : '+ Novo'}
+            {showNewGroup ? '✕' : '+ New'}
           </button>
         </div>
 
@@ -152,19 +152,19 @@ export default function ExpenseSplitter() {
           <div className={styles.newGroupForm}>
             <input
               type="text"
-              placeholder="Nome do grupo (ex: Viagem Lisboa)"
+              placeholder="Group name (e.g. Lisbon Trip)"
               className={styles.formInput}
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
             />
             <input
               type="text"
-              placeholder="Membros (separados por vírgula)"
+              placeholder="Members (separated by comma)"
               className={styles.formInput}
               value={newGroupMembers}
               onChange={(e) => setNewGroupMembers(e.target.value)}
             />
-            <button className={styles.createBtn} onClick={createGroup}>Criar Grupo</button>
+            <button className={styles.createBtn} onClick={createGroup}>Create Group</button>
           </div>
         )}
 
@@ -172,7 +172,7 @@ export default function ExpenseSplitter() {
           {groups.length === 0 && !showNewGroup && (
             <div className={styles.emptyGroups}>
               <span>💰</span>
-              <p>Cria um grupo para começar a dividir despesas</p>
+              <p>Create a group to start splitting expenses</p>
             </div>
           )}
           {groups.map(group => {
@@ -186,7 +186,7 @@ export default function ExpenseSplitter() {
                 <div className={styles.groupCardInfo}>
                   <div className={styles.groupCardName}>{group.name}</div>
                   <div className={styles.groupCardMeta}>
-                    {group.members.length} pessoas • €{calc.totalExpenses.toFixed(2)}
+                    {group.members.length} people • €{calc.totalExpenses.toFixed(2)}
                   </div>
                 </div>
                 <button className={styles.groupDeleteBtn} onClick={(e) => { e.stopPropagation(); deleteGroup(group.id); }}>
@@ -203,8 +203,8 @@ export default function ExpenseSplitter() {
         {!activeGroup ? (
           <div className={styles.emptyDetail}>
             <div className={styles.emptyDetailIcon}>👈</div>
-            <h3>Seleciona ou cria um grupo</h3>
-            <p>Para veres as despesas e quem deve a quem.</p>
+            <h3>Select or create a group</h3>
+            <p>To see expenses and who owes who.</p>
           </div>
         ) : (
           <>
@@ -218,7 +218,7 @@ export default function ExpenseSplitter() {
                 </div>
               </div>
               <button className={styles.addExpenseBtn} onClick={() => setShowAddExpense(!showAddExpense)}>
-                {showAddExpense ? '✕ Cancelar' : '+ Despesa'}
+                {showAddExpense ? '✕ Cancel' : '+ Expense'}
               </button>
             </div>
 
@@ -226,7 +226,7 @@ export default function ExpenseSplitter() {
               <div className={styles.addExpenseForm}>
                 <input
                   type="text"
-                  placeholder="Descrição (ex: Jantar no restaurante)"
+                  placeholder="Description (e.g. Dinner at restaurant)"
                   className={styles.formInput}
                   value={expenseDesc}
                   onChange={(e) => setExpenseDesc(e.target.value)}
@@ -235,7 +235,7 @@ export default function ExpenseSplitter() {
                   <input
                     type="number"
                     step="0.01"
-                    placeholder="Valor (€)"
+                    placeholder="Value (€)"
                     className={styles.formInput}
                     value={expenseAmount}
                     onChange={(e) => setExpenseAmount(e.target.value)}
@@ -245,7 +245,7 @@ export default function ExpenseSplitter() {
                     value={expensePaidBy}
                     onChange={(e) => setExpensePaidBy(e.target.value)}
                   >
-                    <option value="">Quem pagou?</option>
+                    <option value="">Who paid?</option>
                     {activeGroup.members.map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
@@ -257,15 +257,15 @@ export default function ExpenseSplitter() {
                     value={expenseCategory}
                     onChange={(e) => setExpenseCategory(e.target.value)}
                   >
-                    <option value="food">🍽️ Alimentação</option>
-                    <option value="transport">🚗 Transporte</option>
-                    <option value="hotel">🏨 Alojamento</option>
-                    <option value="flight">✈️ Voos</option>
-                    <option value="activity">🎯 Atividades</option>
-                    <option value="shopping">🛍️ Compras</option>
-                    <option value="other">📦 Outro</option>
+                    <option value="food">🍽️ Food</option>
+                    <option value="transport">🚗 Transport</option>
+                    <option value="hotel">🏨 Accommodation</option>
+                    <option value="flight">✈️ Flights</option>
+                    <option value="activity">🎯 Activities</option>
+                    <option value="shopping">🛍️ Shopping</option>
+                    <option value="other">📦 Other</option>
                   </select>
-                  <button className={styles.createBtn} onClick={addExpense}>Adicionar</button>
+                  <button className={styles.createBtn} onClick={addExpense}>Add</button>
                 </div>
               </div>
             )}
@@ -277,11 +277,11 @@ export default function ExpenseSplitter() {
                 <>
                   <div className={styles.summaryCards}>
                     <div className={styles.summaryCard}>
-                      <div className={styles.summaryLabel}>Total Gasto</div>
+                      <div className={styles.summaryLabel}>Total Spent</div>
                       <div className={styles.summaryValue}>€{calc.totalExpenses.toFixed(2)}</div>
                     </div>
                     <div className={styles.summaryCard}>
-                      <div className={styles.summaryLabel}>Por Pessoa</div>
+                      <div className={styles.summaryLabel}>Per Person</div>
                       <div className={styles.summaryValue}>€{calc.perPerson.toFixed(2)}</div>
                     </div>
                   </div>
@@ -289,7 +289,7 @@ export default function ExpenseSplitter() {
                   {/* Settlements */}
                   {calc.settlements.length > 0 && (
                     <div className={styles.settlementsSection}>
-                      <h4 className={styles.sectionSubtitle}>💸 Quem deve a quem</h4>
+                      <h4 className={styles.sectionSubtitle}>💸 Who owes who</h4>
                       <div className={styles.settlements}>
                         {calc.settlements.map((s, i) => (
                           <div key={i} className={styles.settlement}>
@@ -308,9 +308,9 @@ export default function ExpenseSplitter() {
 
             {/* Expenses List */}
             <div className={styles.expensesList}>
-              <h4 className={styles.sectionSubtitle}>📋 Despesas</h4>
+              <h4 className={styles.sectionSubtitle}>📋 Expenses</h4>
               {activeGroup.expenses.length === 0 ? (
-                <p className={styles.noExpenses}>Nenhuma despesa adicionada ainda.</p>
+                <p className={styles.noExpenses}>No expenses added yet.</p>
               ) : (
                 activeGroup.expenses.map(expense => (
                   <div key={expense.id} className={styles.expenseRow}>
@@ -320,7 +320,7 @@ export default function ExpenseSplitter() {
                     <div className={styles.expenseInfo}>
                       <div className={styles.expenseDesc}>{expense.description}</div>
                       <div className={styles.expenseMeta}>
-                        Pago por <strong>{expense.paidBy}</strong> • {new Date(expense.date).toLocaleDateString('pt-PT')}
+                        Paid by <strong>{expense.paidBy}</strong> • {new Date(expense.date).toLocaleDateString('en-US')}
                       </div>
                     </div>
                     <div className={styles.expenseAmount}>€{expense.amount.toFixed(2)}</div>

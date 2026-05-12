@@ -19,12 +19,12 @@ export default function LoginModal({ isOpen, onClose }) {
 
     if (isRegister) {
       if (!name || !email || !password) {
-        setError('Preenche todos os campos.');
+        setError('Please fill in all fields.');
         setLoading(false);
         return;
       }
       if (password.length < 6) {
-        setError('A palavra-passe deve ter pelo menos 6 caracteres.');
+        setError('Password must be at least 6 characters.');
         setLoading(false);
         return;
       }
@@ -36,7 +36,7 @@ export default function LoginModal({ isOpen, onClose }) {
       }
     } else {
       if (!email || !password) {
-        setError('Preenche o email e a palavra-passe.');
+        setError('Please enter your email and password.');
         setLoading(false);
         return;
       }
@@ -69,21 +69,21 @@ export default function LoginModal({ isOpen, onClose }) {
         
         <div className={styles.modalLogo}>🧭</div>
         <h2 className={styles.title}>
-          {isRegister ? 'Cria a tua conta' : 'Bem-vindo de volta'}
+          {isRegister ? 'Create your account' : 'Welcome back'}
         </h2>
         <p className={styles.subtitle}>
           {isRegister 
-            ? 'Junta-te a milhares de viajantes inteligentes.' 
-            : 'Inicia sessão para continuar as tuas aventuras.'}
+            ? 'Join thousands of smart travelers.' 
+            : 'Log in to continue your adventures.'}
         </p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           {isRegister && (
             <div className={styles.inputGroup}>
-              <label className={styles.inputLabel}>Nome</label>
+              <label className={styles.inputLabel}>Name</label>
               <input
                 type="text"
-                placeholder="O teu nome"
+                placeholder="Your name"
                 className={styles.input}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -95,7 +95,7 @@ export default function LoginModal({ isOpen, onClose }) {
             <label className={styles.inputLabel}>Email</label>
             <input
               type="email"
-              placeholder="email@exemplo.com"
+              placeholder="email@example.com"
               className={styles.input}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -103,7 +103,7 @@ export default function LoginModal({ isOpen, onClose }) {
           </div>
 
           <div className={styles.inputGroup}>
-            <label className={styles.inputLabel}>Palavra-passe</label>
+            <label className={styles.inputLabel}>Password</label>
             <input
               type="password"
               placeholder="••••••••"
@@ -116,18 +116,18 @@ export default function LoginModal({ isOpen, onClose }) {
           {error && <div className={styles.error}>{error}</div>}
 
           <button type="submit" className={styles.loginBtn} disabled={loading}>
-            {loading ? 'A processar...' : isRegister ? 'Criar Conta' : 'Entrar'}
+            {loading ? 'Processing...' : isRegister ? 'Create Account' : 'Log In'}
           </button>
         </form>
 
         <div className={styles.divider}>
-          <span>ou</span>
+          <span>or</span>
         </div>
 
         <button className={styles.toggleBtn} onClick={toggleMode}>
           {isRegister 
-            ? 'Já tens conta? Inicia sessão' 
-            : 'Não tens conta? Regista-te gratuitamente'}
+            ? 'Already have an account? Log in' 
+            : 'Don\'t have an account? Sign up for free'}
         </button>
       </div>
     </div>

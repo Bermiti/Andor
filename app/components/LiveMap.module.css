@@ -1,0 +1,102 @@
+.mapContainer {
+  width: 100%;
+  height: 240px;
+  background: var(--gray-50);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--gray-200);
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #f8fafc;
+}
+
+.mapGrid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--gray-200) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5;
+}
+
+.routeSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.routeLine {
+  fill: none;
+  stroke: var(--ocean);
+  stroke-width: 2;
+  stroke-dasharray: 4 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.4;
+}
+
+.marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.markerDot {
+  width: 22px;
+  height: 22px;
+  background: var(--navy);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  border: 2px solid white;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.marker:hover .markerDot {
+  transform: scale(1.2);
+  background: var(--ocean);
+  box-shadow: 0 0 15px rgba(30, 111, 217, 0.4);
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: var(--navy);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-size: 11px;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.marker:hover .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-5px);
+}
+
+.tooltipName {
+  font-weight: 600;
+}
+
+.tooltipTime {
+  font-size: 9px;
+  opacity: 0.7;
+}

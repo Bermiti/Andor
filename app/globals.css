@@ -7,19 +7,19 @@
 
 /* ---- CSS Custom Properties ---- */
 :root {
-  /* Brand Colors (Minimalist) */
-  --navy: #111111;
-  --navy-light: #222222;
-  --navy-mid: #333333;
-  --ocean: #000000;
-  --ocean-light: #333333;
-  --ocean-dark: #000000;
-  --sky: #F9FAFB;
-  --sky-light: #FFFFFF;
+  /* Brand Colors */
+  --navy: #0A1628;
+  --navy-light: #132038;
+  --navy-mid: #1A2B45;
+  --ocean: #1E6FD9;
+  --ocean-light: #3A8EF6;
+  --ocean-dark: #1558B0;
+  --sky: #EBF5FF;
+  --sky-light: #F0F7FF;
   --white: #FFFFFF;
-  --gold: #111111;
-  --gold-light: #333333;
-  --gold-dark: #000000;
+  --gold: #D4A853;
+  --gold-light: #E8C675;
+  --gold-dark: #B8903D;
 
   /* Neutral Palette */
   --gray-50: #FAFAFA;
@@ -127,15 +127,15 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-weight: 600; /* More minimalist than 700 */
+  line-height: 1.15;
+  letter-spacing: -0.03em;
 }
 
-h1 { font-size: var(--text-6xl); }
-h2 { font-size: var(--text-4xl); }
-h3 { font-size: var(--text-2xl); }
-h4 { font-size: var(--text-xl); }
+h1 { font-size: var(--text-6xl); font-weight: 700; }
+h2 { font-size: var(--text-4xl); font-weight: 600; }
+h3 { font-size: var(--text-2xl); font-weight: 600; }
+h4 { font-size: var(--text-xl); font-weight: 600; }
 
 p {
   color: var(--gray-600);
@@ -246,12 +246,15 @@ ul, ol {
 .btn-primary {
   background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-light) 100%);
   color: var(--white);
-  box-shadow: 0 4px 15px rgba(30, 111, 217, 0.3);
+  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.2);
+  background-size: 200% auto;
+  transition: all var(--transition-base);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30, 111, 217, 0.4);
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 25px rgba(30, 111, 217, 0.35);
+  background-position: right center;
 }
 
 .btn-secondary {
@@ -271,11 +274,13 @@ ul, ol {
   background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
   color: var(--navy);
   box-shadow: 0 4px 15px rgba(212, 168, 83, 0.3);
+  background-size: 200% auto;
 }
 
 .btn-gold:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(212, 168, 83, 0.4);
+  box-shadow: 0 8px 30px rgba(212, 168, 83, 0.5);
+  background-position: right center;
 }
 
 .btn-lg {
@@ -291,10 +296,10 @@ ul, ol {
 
 /* ---- Glassmorphism ---- */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .glass-dark {
@@ -457,17 +462,21 @@ ul, ol {
 
 /* ---- Gradient text ---- */
 .gradient-text {
-  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-light) 50%, var(--gold) 100%);
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-light) 35%, var(--gold) 70%, var(--gold-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  background-size: 200% auto;
+  animation: gradientShift 6s ease infinite;
 }
 
 .gradient-text-gold {
-  background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-light) 100%);
+  background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 40%, var(--gold-light) 70%, #F5DDA0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  background-size: 200% auto;
+  animation: gradientShift 6s ease infinite;
 }
 
 /* ---- Responsive ---- */

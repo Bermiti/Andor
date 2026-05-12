@@ -273,6 +273,22 @@
   font-weight: 700;
   font-size: 15px;
   color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.verifiedBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: #1D9BF0;
+  color: white;
+  border-radius: 50%;
+  font-size: 8px;
+  font-weight: 900;
 }
 
 .buddyDest {

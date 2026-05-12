@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import styles from './Pricing.module.css';
 
 const freeFeatures = [
@@ -28,6 +29,8 @@ const premiumFeatures = [
 ];
 
 export default function Pricing() {
+  const [isYearly, setIsYearly] = useState(false);
+
   return (
     <section className={styles.pricing} id="pricing">
       <div className={styles.header}>
@@ -36,6 +39,17 @@ export default function Pricing() {
         <p className="section-subtitle mx-auto">
           Get started with powerful AI planning at no cost. Upgrade to unlock the full Andor experience.
         </p>
+      </div>
+
+      <div className={styles.toggle}>
+        <span className={!isYearly ? styles.toggleActive : ''}>Monthly</span>
+        <button className={styles.toggleSwitch} onClick={() => setIsYearly(!isYearly)} aria-label="Toggle billing period">
+          <span className={`${styles.toggleKnob} ${isYearly ? styles.toggleKnobRight : ''}`}></span>
+        </button>
+        <span className={isYearly ? styles.toggleActive : ''}>
+          Yearly
+          <span className={styles.saveBadge}>Save 30%</span>
+        </span>
       </div>
 
       <div className={styles.grid}>
@@ -67,9 +81,10 @@ export default function Pricing() {
           <span className={styles.popularBadge}>⭐ Most Popular</span>
           <div className={styles.cardPlan}>Premium</div>
           <div className={styles.cardPrice}>
-            <span className={styles.priceAmount}>€7</span>
+            <span className={styles.priceAmount}>{isYearly ? '€4.90' : '€7'}</span>
             <span className={styles.pricePeriod}>/ month</span>
           </div>
+          {isYearly && <div className={styles.yearlyNote}>Billed €58.80/year</div>}
           <p className={styles.cardDesc}>For serious travelers who want the full AI companion experience.</p>
           <div className={styles.featureList}>
             {premiumFeatures.map((f, i) => (
@@ -80,6 +95,17 @@ export default function Pricing() {
             ))}
           </div>
           <button className={`${styles.cardBtn} ${styles.btnPremium}`} onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>Start 7-Day Free Trial</button>
+        </div>
+      </div>
+
+      <div className={styles.testimonial}>
+        <p className={styles.testimonialQuote}>"Andor completely changed how I plan trips. The AI itinerary saved me hours of research and found spots I never would've discovered."</p>
+        <div className={styles.testimonialAuthor}>
+          <div className={styles.testimonialAvatar}>M</div>
+          <div>
+            <div className={styles.testimonialName}>Maria Santos</div>
+            <div className={styles.testimonialRole}>Premium user · 23 trips planned</div>
+          </div>
         </div>
       </div>
     </section>

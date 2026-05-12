@@ -78,7 +78,7 @@ export default function Navbar() {
               {user ? (
                 <>
                   <a href="/dashboard" className={styles.ctaBtnMobile} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</a>
-                  <button className={styles.loginBtnMobile} onClick={handleLogout}>Sair</button>
+                  <button className={styles.loginBtnMobile} onClick={handleLogout}>Log out</button>
                 </>
               ) : (
                 <>
@@ -106,10 +106,10 @@ export default function Navbar() {
                     </div>
                     <div className={styles.userMenuDivider}></div>
                     <a href="/dashboard" className={styles.userMenuItem}>🗺️ Dashboard</a>
-                    <a href="/dashboard#trips" className={styles.userMenuItem}>✈️ As minhas viagens</a>
-                    <a href="/dashboard#expenses" className={styles.userMenuItem}>💰 Despesas</a>
+                    <a href="/dashboard#trips" className={styles.userMenuItem}>✈️ My Trips</a>
+                    <a href="/dashboard#expenses" className={styles.userMenuItem}>💰 Expenses</a>
                     <div className={styles.userMenuDivider}></div>
-                    <button className={styles.userMenuLogout} onClick={handleLogout}>Sair</button>
+                    <button className={styles.userMenuLogout} onClick={handleLogout}>Log out</button>
                   </div>
                 )}
               </div>

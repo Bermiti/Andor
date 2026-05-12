@@ -4,12 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import styles from './TravelBuddies.module.css';
 
 const sampleBuddies = [
-  { id: '1', name: 'Sofia C.', bio: 'Adoro mergulho e explorar ilhas. Próximo destino: Grécia!', interests: ['Beach', 'Adventure', 'Photography'], destination: 'Grécia', avatar: '🧜‍♀️' },
-  { id: '2', name: 'Marco T.', bio: 'Foodie e apaixonado por história. Sempre à procura de companhia para roadtrips.', interests: ['Food', 'History', 'Architecture'], destination: 'Itália', avatar: '🧑‍🍳' },
-  { id: '3', name: 'Lena K.', bio: 'Digital nomad. Trabalho de cafés bonitos pelo mundo.', interests: ['Nightlife', 'Art', 'Shopping'], destination: 'Bali', avatar: '💻' },
-  { id: '4', name: 'André M.', bio: 'Backpacker desde os 18. Já visitei 40 países. Próximo: Japão!', interests: ['Adventure', 'Nature', 'Food'], destination: 'Japão', avatar: '🎒' },
-  { id: '5', name: 'Clara R.', bio: 'Amo museus, galerias e vinho. Procuro alguém para visitar Bordeaux.', interests: ['Art', 'History', 'Food'], destination: 'França', avatar: '🎨' },
-  { id: '6', name: 'Diogo P.', bio: 'Surf, campismo e montanha. Próxima aventura: Islândia!', interests: ['Adventure', 'Nature', 'Photography'], destination: 'Islândia', avatar: '🏄' },
+  { id: '1', name: 'Sofia C.', verified: true, bio: 'I love diving and exploring islands. Next destination: Greece!', interests: ['Beach', 'Adventure', 'Photography'], destination: 'Greece', avatar: '🧜‍♀️' },
+  { id: '2', name: 'Marco T.', verified: true, bio: 'Foodie and passionate about history. Always looking for company for roadtrips.', interests: ['Food', 'History', 'Architecture'], destination: 'Italy', avatar: '🧑‍🍳' },
+  { id: '3', name: 'Lena K.', verified: false, bio: 'Digital nomad. Working from beautiful cafes around the world.', interests: ['Nightlife', 'Art', 'Shopping'], destination: 'Bali', avatar: '💻' },
+  { id: '4', name: 'André M.', verified: true, bio: 'Backpacker since 18. Already visited 40 countries. Next: Japan!', interests: ['Adventure', 'Nature', 'Food'], destination: 'Japan', avatar: '🎒' },
+  { id: '5', name: 'Clara R.', verified: false, bio: 'I love museums, galleries and wine. Looking for someone to visit Bordeaux.', interests: ['Art', 'History', 'Food'], destination: 'France', avatar: '🎨' },
+  { id: '6', name: 'Diogo P.', verified: true, bio: 'Surf, camping and mountain. Next adventure: Iceland!', interests: ['Adventure', 'Nature', 'Photography'], destination: 'Iceland', avatar: '🏄' },
 ];
 
 const allInterests = ['History', 'Nature', 'Architecture', 'Shopping', 'Food', 'Nightlife', 'Art', 'Photography', 'Beach', 'Adventure'];
@@ -55,14 +55,14 @@ export default function TravelBuddies() {
           </div>
           <div className={styles.profileDetails}>
             <div className={styles.profileName}>{user?.name}</div>
-            <div className={styles.profileBio}>{user?.bio || 'Sem bio ainda...'}</div>
+            <div className={styles.profileBio}>{user?.bio || 'No bio yet...'}</div>
           </div>
           <div className={styles.profileActions}>
             <button
               className={`${styles.lookingToggle} ${isLooking ? styles.lookingActive : ''}`}
               onClick={toggleLooking}
             >
-              {isLooking ? '✓ Visível' : 'Ativar Perfil'}
+              {isLooking ? '✓ Visible' : 'Activate Profile'}
             </button>
             <button className={styles.editBtn} onClick={() => setEditingProfile(!editingProfile)}>
               ✏️
@@ -82,7 +82,7 @@ export default function TravelBuddies() {
           <div className={styles.editForm}>
             <input
               type="text"
-              placeholder="A tua bio (ex: Adoro explorar cidades novas!)"
+              placeholder="Your bio (e.g. I love exploring new cities!)"
               className={styles.formInput}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -98,27 +98,27 @@ export default function TravelBuddies() {
                 </button>
               ))}
             </div>
-            <button className={styles.saveBtn} onClick={saveProfile}>Guardar Perfil</button>
+            <button className={styles.saveBtn} onClick={saveProfile}>Save Profile</button>
           </div>
         )}
 
         {!isLooking && (
           <div className={styles.profileNotice}>
-            💡 Ativa o teu perfil para outros viajantes te encontrarem!
+            💡 Activate your profile so other travelers can find you!
           </div>
         )}
       </div>
 
       {/* Filters */}
       <div className={styles.filters}>
-        <h3 className={styles.filtersTitle}>Encontrar Parceiros de Viagem</h3>
+        <h3 className={styles.filtersTitle}>Find Travel Partners</h3>
         <div className={styles.filterRow}>
           <select
             className={styles.filterSelect}
             value={filterInterest}
             onChange={(e) => setFilterInterest(e.target.value)}
           >
-            <option value="">Todos os interesses</option>
+            <option value="">All interests</option>
             {allInterests.map(i => (
               <option key={i} value={i}>{i}</option>
             ))}
@@ -126,7 +126,7 @@ export default function TravelBuddies() {
           <input
             type="text"
             className={styles.filterInput}
-            placeholder="Filtrar por destino..."
+            placeholder="Filter by destination..."
             value={filterDest}
             onChange={(e) => setFilterDest(e.target.value)}
           />
@@ -140,7 +140,10 @@ export default function TravelBuddies() {
             <div className={styles.buddyHeader}>
               <div className={styles.buddyAvatar}>{buddy.avatar}</div>
               <div className={styles.buddyInfo}>
-                <div className={styles.buddyName}>{buddy.name}</div>
+                <div className={styles.buddyName}>
+                  {buddy.name}
+                  {buddy.verified && <span className={styles.verifiedBadge} title="Verified Traveler">✓</span>}
+                </div>
                 <div className={styles.buddyDest}>📍 {buddy.destination}</div>
               </div>
             </div>
@@ -151,14 +154,14 @@ export default function TravelBuddies() {
               ))}
             </div>
             <button className={styles.connectBtn}>
-              💬 Enviar Mensagem
+              💬 Send Message
             </button>
           </div>
         ))}
 
         {filtered.length === 0 && (
           <div className={styles.noResults}>
-            <p>Nenhum viajante encontrado com esses filtros.</p>
+            <p>No travelers found with these filters.</p>
           </div>
         )}
       </div>

@@ -9,9 +9,9 @@ import TravelBuddies from './components/TravelBuddies';
 import styles from './dashboard.module.css';
 
 const tabs = [
-  { id: 'map', label: '🗺️ Mapa Mundo', icon: '🗺️' },
-  { id: 'trips', label: '✈️ Viagens', icon: '✈️' },
-  { id: 'expenses', label: '💰 Despesas', icon: '💰' },
+  { id: 'map', label: '🗺️ World Map', icon: '🗺️' },
+  { id: 'trips', label: '✈️ Trips', icon: '✈️' },
+  { id: 'expenses', label: '💰 Expenses', icon: '💰' },
   { id: 'buddies', label: '🤝 Travel Buddies', icon: '🤝' },
 ];
 
@@ -43,10 +43,10 @@ export default function Dashboard() {
         <div className={styles.authRequired}>
           <div className={styles.authCard}>
             <div className={styles.authIcon}>🔒</div>
-            <h2>Inicia sessão para acederes ao Dashboard</h2>
-            <p>Regista-te ou faz login para veres as tuas viagens, mapa mundo e muito mais.</p>
+            <h2>Log in to access your Dashboard</h2>
+            <p>Sign up or log in to view your trips, world map, and more.</p>
             <button className={styles.authBtn} onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>
-              Entrar / Registar
+              Log in / Sign up
             </button>
           </div>
         </div>
@@ -66,7 +66,7 @@ export default function Dashboard() {
             <div className={styles.profileInfo}>
               <div className={styles.profileName}>{user.name}</div>
               <div className={styles.profileStat}>
-                {user.visitedCountries?.length || 0} países • {user.trips?.length || 0} viagens
+                {user.visitedCountries?.length || 0} countries • {user.trips?.length || 0} trips
               </div>
             </div>
           </div>

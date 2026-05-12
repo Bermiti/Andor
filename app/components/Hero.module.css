@@ -23,6 +23,23 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(135deg, rgba(10,22,40,0.92) 0%, rgba(10,22,40,0.8) 50%, rgba(20,50,90,0.6) 100%);
+  z-index: 0;
+}
+
+.particleCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.heroBg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(10,22,40,0.92) 0%, rgba(10,22,40,0.8) 50%, rgba(20,50,90,0.6) 100%);
   z-index: -1;
 }
 
@@ -36,7 +53,7 @@
 .orb1 {
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(30, 111, 217, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(30, 111, 217, 0.2) 0%, transparent 70%);
   top: -200px;
   right: -100px;
 }
@@ -44,7 +61,7 @@
 .orb2 {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(212, 168, 83, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(212, 168, 83, 0.12) 0%, transparent 70%);
   bottom: -100px;
   left: -100px;
   animation-delay: 2s;
@@ -53,7 +70,7 @@
 .orb3 {
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(58, 142, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(58, 142, 246, 0.12) 0%, transparent 70%);
   top: 40%;
   left: 30%;
   animation-delay: 4s;
@@ -305,6 +322,55 @@
   font-weight: 600;
   color: var(--gold);
   margin-top: auto;
+}
+
+/* Phone Live Indicator */
+.phoneLive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  margin-top: var(--space-3);
+  width: fit-content;
+  align-self: center;
+}
+
+.phoneLiveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+/* CTA Shimmer */
+.ctaShimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.ctaShimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: shimmerSlide 3s ease-in-out infinite;
+}
+
+@keyframes shimmerSlide {
+  0% { left: -100%; }
+  100% { left: 200%; }
 }
 
 /* Floating elements */

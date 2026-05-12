@@ -7,7 +7,7 @@ export default function TripsList() {
   const trips = user?.trips || [];
 
   const deleteTrip = (tripId) => {
-    if (!confirm('Tens a certeza que queres apagar esta viagem?')) return;
+    if (!confirm('Are you sure you want to delete this trip?')) return;
     const updated = trips.filter(t => t.id !== tripId);
     updateUser({ trips: updated });
   };
@@ -16,9 +16,9 @@ export default function TripsList() {
     return (
       <div className={styles.empty}>
         <div className={styles.emptyIcon}>✈️</div>
-        <h3>Ainda não guardaste nenhuma viagem</h3>
-        <p>Vai à página principal, gera um itinerário com a IA e clica em "Save Itinerary"!</p>
-        <a href="/#planner" className={styles.emptyBtn}>Gerar Itinerário</a>
+        <h3>You haven't saved any trips yet</h3>
+        <p>Go to the home page, generate an itinerary with AI and click "Save Itinerary"!</p>
+        <a href="/#planner" className={styles.emptyBtn}>Generate Itinerary</a>
       </div>
     );
   }
@@ -30,7 +30,7 @@ export default function TripsList() {
           <div key={trip.id} className={styles.card}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>📍 {trip.destination}</h3>
-              <span className={styles.cardBadge}>{trip.days?.length || 0} dias</span>
+              <span className={styles.cardBadge}>{trip.days?.length || 0} days</span>
             </div>
 
             <div className={styles.cardStops}>
@@ -45,7 +45,7 @@ export default function TripsList() {
                       </div>
                     ))}
                     {day.stops?.length > 3 && (
-                      <span className={styles.moreStops}>+{day.stops.length - 3} mais</span>
+                      <span className={styles.moreStops}>+{day.stops.length - 3} more</span>
                     )}
                   </div>
                 </div>
@@ -54,7 +54,7 @@ export default function TripsList() {
 
             <div className={styles.cardFooter}>
               <span className={styles.cardDate}>
-                Guardado em {new Date(trip.savedAt).toLocaleDateString('pt-PT')}
+                Saved on {new Date(trip.savedAt).toLocaleDateString('en-US')}
               </span>
               {trip.totalCost && (
                 <span className={styles.cardCost}>{trip.totalCost}</span>

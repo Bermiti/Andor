@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { saveGeneratedItinerary } from '../lib/itinerary-store';
 import styles from './QuickPlan.module.css';
 
 const suggestions = [
@@ -10,21 +12,9 @@ const suggestions = [
   'Cultural tour of Rome, 4 days',
 ];
 
-const quickResult = {
-  title: '🇵🇹 2 Days in Lisbon — Romantic',
-  items: [
-    { emoji: '🌅', title: 'Sunset at Miradouro', sub: 'Day 1 — Evening' },
-    { emoji: '🍷', title: 'Wine Tasting in Alfama', sub: 'Day 1 — Night' },
-    { emoji: '⛵', title: 'Tagus River Cruise', sub: 'Day 2 — Morning' },
-    { emoji: '🍽️', title: 'Lunch at Belcanto', sub: 'Day 2 — Afternoon' },
-    { emoji: '🏛️', title: 'Belém Tower Walk', sub: 'Day 2 — Afternoon' },
-    { emoji: '🎵', title: 'Fado Night in Bairro Alto', sub: 'Day 2 — Evening' },
-  ],
-};
-
 export default function QuickPlan() {
+  const router = useRouter();
   const [query, setQuery] = useState('');
-  const [showResult, setShowResult] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
@@ -36,16 +26,44 @@ export default function QuickPlan() {
     return () => clearInterval(interval);
   }, []);
 
-  const handlePlan = (text) => {
+  const parseQuery = (text) => {
+    const lower = text.toLowerCase();
+    // Extract destination — take the main city/country name
+    const dest = text.replace(/\d+[\s-]?days?/gi, '').replace(/under\s*[€$£]?\d+/gi, '').replace(/budget[- ]?friendly/gi, '').replace(/romantic|adventure|cultural|best|weekend|with friends|in|trip|tour/gi, '').trim().replace(/,\s*$/, '').trim() || text;
+    // Extract days
+    const daysMatch = lower.match(/(\d+)\s*days?/);
+    const days = daysMatch ? daysMatch[1] : '2';
+    // Extract budget
+    const budgetMatch = lower.match(/[€$£](\d+)/);
+    const budget = budgetMatch ? budgetMatch[1] : '';
+    return { destination: dest, days, budget };
+  };
+
+  const handlePlan = async (text) => {
     const q = text || query || suggestions[currentPlaceholderIndex];
     if (!q) return;
     setQuery(q);
     setLoading(true);
-    setShowResult(false);
-    setTimeout(() => {
+
+    try {
+      const { destination, days, budget } = parseQuery(q);
+      const response = await fetch('/api/generate-itinerary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination, days, budget, travelers: '2', interests: [] }),
+      });
+
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+
+      // Save and navigate
+      const id = saveGeneratedItinerary(data);
+      router.push(`/itinerary/${id}`);
+    } catch (error) {
+      console.error(error);
+      alert('Something went wrong. Please try again.');
       setLoading(false);
-      setShowResult(true);
-    }, 1800);
+    }
   };
 
   return (
@@ -65,37 +83,20 @@ export default function QuickPlan() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handlePlan()}
+            disabled={loading}
           />
-          <button className={styles.inputBtn} onClick={() => handlePlan()}>
+          <button className={styles.inputBtn} onClick={() => handlePlan()} disabled={loading}>
             {loading ? 'Planning...' : '✨ Plan Now'}
           </button>
         </div>
 
         <div className={styles.suggestions}>
           {suggestions.map((s, i) => (
-            <button key={i} className={styles.suggestion} onClick={() => handlePlan(s)}>
+            <button key={i} className={styles.suggestion} onClick={() => handlePlan(s)} disabled={loading}>
               {s}
             </button>
           ))}
         </div>
-
-        {showResult && (
-          <div className={styles.quickResult}>
-            <div className={styles.quickResultHeader}>
-              <span className={styles.quickResultTitle}>{quickResult.title}</span>
-              <span className={styles.quickResultBadge}>Est. €178</span>
-            </div>
-            <div className={styles.quickResultGrid}>
-              {quickResult.items.map((item, i) => (
-                <div key={i} className={styles.quickResultItem}>
-                  <div className={styles.quickResultItemEmoji}>{item.emoji}</div>
-                  <div className={styles.quickResultItemTitle}>{item.title}</div>
-                  <div className={styles.quickResultItemSub}>{item.sub}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );
