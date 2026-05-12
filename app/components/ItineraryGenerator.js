@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import styles from './ItineraryGenerator.module.css';
 
 const interests = ['History', 'Nature', 'Architecture', 'Shopping', 'Food', 'Nightlife', 'Art', 'Photography', 'Beach', 'Adventure'];
@@ -34,20 +35,39 @@ const sampleItinerary = {
 };
 
 export default function ItineraryGenerator() {
+  const { user, saveTrip } = useAuth();
   const [destination, setDestination] = useState('');
   const [budget, setBudget] = useState('');
+  const [days, setDays] = useState('2');
+  const [travelers, setTravelers] = useState('2');
   const [style, setStyle] = useState('cultural');
   const [activeInterests, setActiveInterests] = useState(['History', 'Food', 'Architecture']);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    if (!destination) return alert('Por favor, indica um destino!');
     setLoading(true);
     setResult(null);
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('/api/generate-itinerary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination, budget, days, style, travelers, interests: activeInterests
+        })
+      });
+      
+      if (!response.ok) throw new Error('Erro na API');
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error(error);
+      alert('Ocorreu um erro ao gerar o itinerário. A chave de API do Gemini está no .env.local?');
+    } finally {
       setLoading(false);
-      setResult(sampleItinerary);
-    }, 2500);
+    }
   };
 
   const toggleInterest = (interest) => {
@@ -97,7 +117,7 @@ export default function ItineraryGenerator() {
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Duration</label>
-                <select className={styles.formSelect} defaultValue="2">
+                <select className={styles.formSelect} value={days} onChange={(e) => setDays(e.target.value)}>
                   <option value="1">1 day</option>
                   <option value="2">2 days</option>
                   <option value="3">3 days</option>
@@ -121,7 +141,7 @@ export default function ItineraryGenerator() {
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Travelers</label>
-                <select className={styles.formSelect} defaultValue="2">
+                <select className={styles.formSelect} value={travelers} onChange={(e) => setTravelers(e.target.value)}>
                   <option value="1">1 person</option>
                   <option value="2">2 people</option>
                   <option value="3">3 people</option>
@@ -207,8 +227,15 @@ export default function ItineraryGenerator() {
                   <span className={styles.costLabel}>Estimated Total</span>
                   <span className={styles.costValue}>{result.totalCost}</span>
                 </div>
-                <button className="btn btn-primary" onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>
-                  Save Itinerary
+                <button className="btn btn-primary" onClick={() => {
+                  if (!user) {
+                    window.dispatchEvent(new Event('open-auth-modal'));
+                  } else {
+                    saveTrip(result);
+                    alert('Viagem guardada! Vai ao Dashboard para a veres.');
+                  }
+                }}>
+                  {user ? 'Save Itinerary ✓' : 'Save Itinerary'}
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>

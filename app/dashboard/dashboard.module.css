@@ -1,0 +1,249 @@
+.loadingPage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #1e6fd9;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.authRequired {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 120px 24px 24px;
+  background: #f8fafc;
+}
+
+.authCard {
+  background: white;
+  border-radius: 24px;
+  padding: 48px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+
+.authIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.authCard h2 {
+  font-size: 22px;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.authCard p {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.authBtn {
+  background: #111;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.authBtn:hover {
+  background: #333;
+}
+
+/* Dashboard Layout */
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  padding-top: 72px;
+  background: #f8fafc;
+}
+
+.sidebar {
+  width: 280px;
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: sticky;
+  top: 72px;
+  height: calc(100vh - 72px);
+}
+
+.sidebarProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 16px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e6fd9, #6c5ce7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.profileInfo {
+  overflow: hidden;
+}
+
+.profileName {
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileStat {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.navItem:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.navItemActive {
+  background: #111 !important;
+  color: white !important;
+}
+
+.navIcon {
+  font-size: 18px;
+}
+
+.navLabel {
+  flex: 1;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 24px 32px;
+  min-width: 0;
+}
+
+.mainHeader {
+  margin-bottom: 24px;
+}
+
+.mainTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.mainContent {
+  animation: contentFade 0.3s ease;
+}
+
+@keyframes contentFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    position: static;
+    height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 12px;
+    gap: 8px;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .sidebarProfile {
+    display: none;
+  }
+
+  .sidebarNav {
+    flex-direction: row;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .navItem {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .navLabel {
+    display: none;
+  }
+
+  .navIcon {
+    font-size: 20px;
+  }
+
+  .main {
+    padding: 16px;
+  }
+}
