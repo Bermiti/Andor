@@ -1,5 +1,6 @@
 'use client';
 import styles from './Footer.module.css';
+import AndorLogo from './AndorLogo';
 
 export default function Footer() {
   return (
@@ -9,11 +10,7 @@ export default function Footer() {
           <div className={styles.brand}>
             <div className={styles.logo}>
               <span className={styles.logoIcon}>
-                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 4L8 32H14L20 18L26 32H32L20 4Z" fill="#1E6FD9"/>
-                  <path d="M12 28C12 28 16 24 20 24C24 24 28 28 28 28" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
-                  <path d="M20 4V18" stroke="#D4A853" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
+                <AndorLogo size={36} />
               </span>
               Andor
             </div>

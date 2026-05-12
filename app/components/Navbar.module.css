@@ -234,3 +234,130 @@
 .toggleActive span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
+
+/* User Area */
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  position: relative;
+}
+
+.dashboardBtn {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--white);
+  background: #111;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+  text-decoration: none;
+}
+
+.dashboardBtn:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+.userAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e6fd9, #6c5ce7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.userAvatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.3);
+}
+
+.userMenu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  min-width: 240px;
+  z-index: 200;
+  overflow: hidden;
+  animation: menuSlide 0.2s ease;
+}
+
+@keyframes menuSlide {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.userMenuHeader {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.userMenuName {
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.userMenuEmail {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.userMenuDivider {
+  height: 1px;
+  background: #f1f5f9;
+}
+
+.userMenuItem {
+  display: block;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #334155;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.userMenuItem:hover {
+  background: #f8fafc;
+}
+
+.userMenuLogout {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #ef4444;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-weight: 500;
+}
+
+.userMenuLogout:hover {
+  background: #fef2f2;
+}
+
+.linkHighlight {
+  color: #1e6fd9 !important;
+  font-weight: 600 !important;
+}
+
+@media (max-width: 768px) {
+  .userArea .dashboardBtn {
+    display: none;
+  }
+}

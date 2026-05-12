@@ -1,0 +1,415 @@
+.container {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  min-height: 500px;
+}
+
+/* Groups Panel */
+.groupsPanel {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.groupsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.groupsHeader h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.newGroupBtn {
+  background: #f1f5f9;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.newGroupBtn:hover {
+  background: #e2e8f0;
+}
+
+.newGroupForm, .addExpenseForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.formInput {
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.formInput:focus {
+  border-color: #1e6fd9;
+}
+
+.formRow {
+  display: flex;
+  gap: 8px;
+}
+
+.createBtn {
+  background: #111;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.createBtn:hover {
+  background: #333;
+}
+
+.groupsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emptyGroups {
+  text-align: center;
+  padding: 24px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.emptyGroups span {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.groupCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.groupCard:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.groupCardActive {
+  border-color: #111 !important;
+  background: #f8fafc !important;
+}
+
+.groupCardInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.groupCardName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.groupCardMeta {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.groupDeleteBtn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+  padding: 4px;
+}
+
+.groupDeleteBtn:hover {
+  opacity: 1;
+}
+
+/* Detail Panel */
+.detailPanel {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.emptyDetail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  color: #94a3b8;
+}
+
+.emptyDetailIcon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.emptyDetail h3 {
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detailTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.detailMembers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.memberChip {
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.addExpenseBtn {
+  background: #1e6fd9;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.addExpenseBtn:hover {
+  background: #1656b0;
+}
+
+/* Summary */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.summaryCard {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Settlements */
+.settlementsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionSubtitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.settlements {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settlement {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fffbeb;
+  border-radius: 12px;
+  border: 1px solid #fde68a;
+  font-size: 14px;
+}
+
+.settlementFrom {
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.settlementArrow {
+  color: #94a3b8;
+}
+
+.settlementTo {
+  font-weight: 600;
+  color: #10b981;
+}
+
+.settlementAmount {
+  margin-left: auto;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Expenses List */
+.expensesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.noExpenses {
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
+  padding: 24px;
+}
+
+.expenseRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fafbfc;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+
+.expenseRow:hover {
+  background: #f1f5f9;
+}
+
+.expenseIcon {
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  background: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+}
+
+.expenseInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.expenseDesc {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.expenseMeta {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.expenseAmount {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.expenseDelete {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.expenseDelete:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryCards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+}

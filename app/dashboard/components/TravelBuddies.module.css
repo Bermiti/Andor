@@ -1,0 +1,342 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Profile Card */
+.profileCard {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profileCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profileAvatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e6fd9, #6c5ce7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.profileDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.profileName {
+  font-weight: 700;
+  font-size: 17px;
+  color: #0f172a;
+}
+
+.profileBio {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.profileActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lookingToggle {
+  padding: 8px 18px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+}
+
+.lookingToggle:hover {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.lookingActive {
+  background: #10b981 !important;
+  color: white !important;
+  border-color: #10b981 !important;
+}
+
+.editBtn {
+  background: #f1f5f9;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.15s;
+}
+
+.editBtn:hover {
+  background: #e2e8f0;
+}
+
+.profileInterests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.interestTag {
+  background: #f0f7ff;
+  color: #1e6fd9;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.profileNotice {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.formInput {
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.formInput:focus {
+  border-color: #1e6fd9;
+}
+
+.interestsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.interestBtn {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.interestBtn:hover {
+  border-color: #1e6fd9;
+  color: #1e6fd9;
+}
+
+.interestBtnActive {
+  background: #1e6fd9 !important;
+  color: white !important;
+  border-color: #1e6fd9 !important;
+}
+
+.saveBtn {
+  background: #111;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveBtn:hover {
+  background: #333;
+}
+
+/* Filters */
+.filters {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.filtersTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.filterRow {
+  display: flex;
+  gap: 10px;
+}
+
+.filterSelect, .filterInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  background: #f8fafc;
+  transition: border-color 0.2s;
+}
+
+.filterSelect:focus, .filterInput:focus {
+  border-color: #1e6fd9;
+  background: white;
+}
+
+/* Buddies Grid */
+.buddiesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.buddyCard {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.buddyCard:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.buddyHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.buddyAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.buddyInfo {
+  flex: 1;
+}
+
+.buddyName {
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.buddyDest {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.buddyBio {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.buddyInterests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.buddyInterestTag {
+  background: #f1f5f9;
+  color: #334155;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.connectBtn {
+  background: #f0f7ff;
+  color: #1e6fd9;
+  border: 1px solid #dbeafe;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.connectBtn:hover {
+  background: #1e6fd9;
+  color: white;
+  border-color: #1e6fd9;
+}
+
+.noResults {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .profileCardHeader {
+    flex-wrap: wrap;
+  }
+
+  .filterRow {
+    flex-direction: column;
+  }
+
+  .buddiesGrid {
+    grid-template-columns: 1fr;
+  }
+}

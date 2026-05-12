@@ -1,0 +1,178 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 0;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cardBadge {
+  background: #f0f7ff;
+  color: #1e6fd9;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+.cardStops {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dayBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dayLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e6fd9;
+}
+
+.stopsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.stopTime {
+  color: #94a3b8;
+  font-weight: 500;
+  min-width: 40px;
+}
+
+.stopName {
+  color: #334155;
+}
+
+.moreStops {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbfc;
+}
+
+.cardDate {
+  font-size: 12px;
+  color: #94a3b8;
+  flex: 1;
+}
+
+.cardCost {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+}
+
+/* Empty State */
+.empty {
+  text-align: center;
+  padding: 60px 24px;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.empty p {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.emptyBtn {
+  display: inline-block;
+  background: #111;
+  color: white;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.emptyBtn:hover {
+  background: #333;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
