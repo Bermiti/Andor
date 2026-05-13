@@ -69,6 +69,7 @@ export default function Navbar() {
             <a href="/#explore" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Explore</a>
             <a href="/#community" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Community</a>
             <a href="/#pricing" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+            <a href="/my-trips" className={`${styles.link} ${styles.linkHighlight}`} onClick={() => setIsMobileMenuOpen(false)}>My Trips</a>
             {user && (
               <a href="/dashboard" className={`${styles.link} ${styles.linkHighlight}`} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</a>
             )}
