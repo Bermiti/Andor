@@ -1,0 +1,182 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.passportCard {
+  background: white;
+  border-radius: 2rem;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E2E8F0;
+  position: relative;
+  overflow: hidden;
+}
+
+.passportCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, transparent 50%, rgba(30, 111, 217, 0.05) 50%);
+}
+
+.passportHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.passportTitle {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: #94A3B8;
+}
+
+.passportChip {
+  width: 32px;
+  height: 24px;
+  background: #E2E8F0;
+  border-radius: 4px;
+  background-image: linear-gradient(90deg, transparent 50%, rgba(255,255,255,0.5) 50%);
+  background-size: 8px 100%;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.statLabel {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #94A3B8;
+  margin-bottom: 0.25rem;
+}
+
+.statValue {
+  font-size: 1.25rem;
+  font-weight: 950;
+  color: #0F172A;
+  letter-spacing: -0.02em;
+}
+
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.progressBar {
+  height: 8px;
+  background: #F1F5F9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #1E6FD9;
+  box-shadow: 0 0 15px rgba(30, 111, 217, 0.3);
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progressLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748B;
+}
+
+.optimizerCard {
+  background: #0F172A;
+  border-radius: 2rem;
+  padding: 2rem;
+  color: white;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+}
+
+.optimizerHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.5rem;
+  color: #3A8EF6;
+}
+
+.optimizerDot {
+  width: 8px;
+  height: 8px;
+  background: #3A8EF6;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #3A8EF6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.aiThinking {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1rem;
+}
+
+.wave {
+  width: 4px;
+  height: 12px;
+  background: #3A8EF6;
+  border-radius: 2px;
+  animation: wave 1s infinite ease-in-out;
+}
+
+.wave:nth-child(2) { animation-delay: 0.1s; }
+.wave:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(2.5); }
+}
+
+.optimizerText {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #94A3B8;
+  margin-bottom: 1.5rem;
+}
+
+.optimizerBtn {
+  width: 100%;
+  padding: 1rem;
+  background: #3A8EF6;
+  color: white;
+  border: none;
+  border-radius: 1rem;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.optimizerBtn:hover {
+  background: #2563EB;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+}

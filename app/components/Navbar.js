@@ -38,13 +38,37 @@ export default function Navbar() {
     }
   }, [isMobileMenuOpen]);
 
+  const handleLinkClick = (e, targetId) => {
+    e.preventDefault();
+    setIsMobileMenuOpen(false);
+    
+    const element = document.getElementById(targetId);
+    if (element) {
+      const offset = 80;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+      
+      // Update hash without jump
+      window.history.pushState(null, null, `#${targetId}`);
+    } else if (window.location.pathname !== '/') {
+      window.location.href = `/#${targetId}`;
+    }
+  };
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   const openLogin = () => {
     setIsLoginOpen(true);
-    setIsMobileMenuOpen(false); // close mobile menu if open
+    setIsMobileMenuOpen(false);
   };
 
   const handleLogout = () => {
@@ -64,37 +88,39 @@ export default function Navbar() {
           </a>
 
           <div className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
-            <a href="/#features" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Features</a>
-            <a href="/#planner" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Plan a Trip</a>
-            <a href="/#explore" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Explore</a>
-            <a href="/#community" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Community</a>
-            <a href="/#pricing" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
-            <a href="/my-trips" className={`${styles.link} ${styles.linkHighlight}`} onClick={() => setIsMobileMenuOpen(false)}>My Trips</a>
-            {user && (
-              <a href="/dashboard" className={`${styles.link} ${styles.linkHighlight}`} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</a>
-            )}
+            <a href="/#features" className={styles.link} onClick={(e) => handleLinkClick(e, 'features')}>Features</a>
+            <a href="/#planner" className={styles.link} onClick={(e) => handleLinkClick(e, 'planner')}>Plan a Trip</a>
+            <a href="/#explore" className={styles.link} onClick={(e) => handleLinkClick(e, 'explore')}>Explore</a>
+            <a href="/community" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Community</a>
+            <a href="/#pricing" className={styles.link} onClick={(e) => handleLinkClick(e, 'pricing')}>Pricing</a>
+            <a href="/my-trips" className={`${styles.link} ${styles.linkHighlight}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Explorer Hub
+              <span className={styles.liveBadge}>LIVE</span>
+            </a>
             
-            {/* Mobile-only actions */}
-            <div className={styles.mobileActions}>
-              {user ? (
-                <>
-                  <a href="/dashboard" className={styles.ctaBtnMobile} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</a>
-                  <button className={styles.loginBtnMobile} onClick={handleLogout}>Log out</button>
-                </>
-              ) : (
-                <>
-                  <button className={styles.loginBtnMobile} onClick={openLogin}>Log in</button>
-                  <button className={styles.ctaBtnMobile} onClick={openLogin}>Get Started</button>
-                </>
-              )}
-            </div>
+            {/* Mobile-only menu items when open */}
+            {isMobileMenuOpen && (
+              <div className={styles.mobileActions}>
+                {user ? (
+                  <>
+                    <a href="/my-trips" className={styles.ctaBtnMobile} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</a>
+                    <button className={styles.loginBtnMobile} onClick={handleLogout}>Log out</button>
+                  </>
+                ) : (
+                  <>
+                    <button className={styles.loginBtnMobile} onClick={openLogin}>Log in</button>
+                    <button className={styles.ctaBtnMobile} onClick={openLogin}>Get Started</button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className={styles.actions}>
             {user ? (
               <div className={styles.userArea}>
-                <a href="/dashboard" className={styles.dashboardBtn}>
-                  Dashboard
+                <a href="/my-trips" className={styles.dashboardBtn}>
+                  Hub
                 </a>
                 <div className={styles.userAvatar} onClick={() => setShowUserMenu(!showUserMenu)}>
                   {user.name?.charAt(0).toUpperCase()}
@@ -106,9 +132,9 @@ export default function Navbar() {
                       <div className={styles.userMenuEmail}>{user.email}</div>
                     </div>
                     <div className={styles.userMenuDivider}></div>
-                    <a href="/dashboard" className={styles.userMenuItem}>🗺️ Dashboard</a>
-                    <a href="/dashboard#trips" className={styles.userMenuItem}>✈️ My Trips</a>
-                    <a href="/dashboard#expenses" className={styles.userMenuItem}>💰 Expenses</a>
+                    <a href="/my-trips" className={styles.userMenuItem}>🗺️ Hub</a>
+                    <a href="/my-trips#trips" className={styles.userMenuItem}>✈️ My Trips</a>
+                    <a href="/my-trips#expenses" className={styles.userMenuItem}>💰 Expenses</a>
                     <div className={styles.userMenuDivider}></div>
                     <button className={styles.userMenuLogout} onClick={handleLogout}>Log out</button>
                   </div>

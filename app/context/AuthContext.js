@@ -38,6 +38,23 @@ export function AuthProvider({ children }) {
     return { success: true };
   };
 
+  const loginAsGuest = () => {
+    const guestUser = {
+      id: 'guest',
+      name: 'Guest Explorer',
+      email: 'guest@andor.ai',
+      createdAt: new Date().toISOString(),
+      visitedCountries: ['620', '392', '250'], // Portugal, Japan, France
+      trips: [],
+      interests: ['History', 'Nature'],
+      bio: 'Just exploring the world with AI.',
+      isGuest: true,
+    };
+    localStorage.setItem('andor_user', JSON.stringify(guestUser));
+    setUser(guestUser);
+    return { success: true };
+  };
+
   const login = (email, password) => {
     const users = JSON.parse(localStorage.getItem('andor_users') || '[]');
     const found = users.find(u => u.email === email && u.password === password);
@@ -86,7 +103,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, register, login, logout, updateUser, saveTrip, toggleCountry
+      user, loading, register, login, loginAsGuest, logout, updateUser, saveTrip, toggleCountry
     }}>
       {children}
     </AuthContext.Provider>

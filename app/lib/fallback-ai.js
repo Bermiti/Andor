@@ -131,7 +131,15 @@ export function generateFallbackItinerary(destination, numDays = 2, budget = '')
     if (key.includes(k) || k.includes(key)) {
       const result = { ...v };
       result.destination = destination;
-      result.days = result.days.slice(0, parseInt(numDays) || 2);
+      result.days = result.days.slice(0, parseInt(numDays) || 2).map(day => ({
+        ...day,
+        stops: day.stops.map(stop => ({
+          ...stop,
+          imageKeyword: `${k}+${stop.name.replace(/ /g, '+')}`,
+          transitToNext: stop.transitToNext || `Walk 10 mins or take a short taxi to the next stop.`,
+          alternatives: stop.alternatives || ['Alternative Place A', 'Alternative Place B']
+        }))
+      }));
       return result;
     }
   }
@@ -147,12 +155,12 @@ export function generateFallbackItinerary(destination, numDays = 2, budget = '')
       title: `Day ${i + 1} — Explore ${cityName}`,
       transportTip: 'Local public transport is highly efficient and recommended.',
       stops: [
-        { time: '09:00', name: `Historic Center Walking Tour`, type: `Culture — Discover old town & main square`, isRestaurant: false },
-        { time: '11:00', name: `${cityName} Main Cathedral/Temple`, type: `History — Iconic religious site`, isRestaurant: false },
-        { time: '13:00', name: `Local Market & Street Food`, type: `Lunch — Authentic local cuisine`, isRestaurant: true },
-        { time: '15:00', name: `${cityName} Museum of Art`, type: `Art — Regional masterpieces & exhibitions`, isRestaurant: false },
-        { time: '17:00', name: `Panoramic Viewpoint`, type: `Views — Best sunset spot in ${cityName}`, isRestaurant: false },
-        { time: '19:30', name: `Traditional Restaurant`, type: `Dinner — Locally recommended cuisine`, isRestaurant: true },
+        { time: '09:00', name: `Historic Center Walking Tour`, type: `Culture — Discover old town & main square`, isRestaurant: false, imageKeyword: `${cityName}+historic+center`, transitToNext: 'Walk 10 mins to the Cathedral.', alternatives: ['Free Walking Tour', 'Audio Guide Tour'] },
+        { time: '11:00', name: `${cityName} Main Cathedral/Temple`, type: `History — Iconic religious site`, isRestaurant: false, imageKeyword: `${cityName}+cathedral`, transitToNext: 'Take bus 2A to the local market (15 mins).', alternatives: ['Local History Museum'] },
+        { time: '13:00', name: `Local Market & Street Food`, type: `Lunch — Authentic local cuisine`, isRestaurant: true, imageKeyword: `${cityName}+street+food`, transitToNext: 'Walk 5 mins down the avenue.', alternatives: ['Boutique Cafe', 'Vegan Restaurant'] },
+        { time: '15:00', name: `${cityName} Museum of Art`, type: `Art — Regional masterpieces & exhibitions`, isRestaurant: false, imageKeyword: `${cityName}+art+museum`, transitToNext: 'Take the tram to the viewpoint.', alternatives: ['Science Center', 'Contemporary Gallery'] },
+        { time: '17:00', name: `Panoramic Viewpoint`, type: `Views — Best sunset spot in ${cityName}`, isRestaurant: false, imageKeyword: `${cityName}+viewpoint+sunset`, transitToNext: 'Walk downhill to the restaurant district.', alternatives: ['Rooftop Bar'] },
+        { time: '19:30', name: `Traditional Restaurant`, type: `Dinner — Locally recommended cuisine`, isRestaurant: true, imageKeyword: `${cityName}+traditional+food`, transitToNext: 'Uber back to the hotel.', alternatives: ['Fine Dining Experience', 'Tapas Bar'] },
       ],
     })),
     mustEat: ['Local Signature Dish', 'Street Food Specialty', 'Traditional Dessert'],

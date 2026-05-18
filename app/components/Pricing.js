@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import styles from './Pricing.module.css';
 
 const freeFeatures = [
@@ -29,15 +30,43 @@ const premiumFeatures = [
 ];
 
 export default function Pricing() {
+  const { user } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState(null);
+  const [successPlan, setSuccessPlan] = useState(null);
+
+  const handleSelectPlan = (plan) => {
+    if (!user) {
+      window.dispatchEvent(new Event('open-auth-modal'));
+      return;
+    }
+    
+    setLoadingPlan(plan);
+    // Simulate payment process
+    setTimeout(() => {
+      setLoadingPlan(null);
+      setSuccessPlan(plan);
+      setTimeout(() => setSuccessPlan(null), 3500);
+    }, 1800);
+  };
 
   return (
     <section className={styles.pricing} id="pricing">
+      {successPlan && (
+        <div className={styles.successOverlay}>
+          <div className={styles.successCard}>
+            <div className={styles.successIcon}>✨</div>
+            <h3>{successPlan} Tier Activated</h3>
+            <p>Your account has been upgraded. Neural Link established.</p>
+          </div>
+        </div>
+      )}
+
       <div className={styles.header}>
-        <span className="section-label">💎 Pricing</span>
-        <h2 className="section-title">Start exploring for free</h2>
+        <span className="section-label">💎 Premium Membership</span>
+        <h2 className="section-title">Invest in your perspective</h2>
         <p className="section-subtitle mx-auto">
-          Get started with powerful AI planning at no cost. Upgrade to unlock the full Andor experience.
+          Start for free, upgrade whenever you're ready for the full autonomous experience.
         </p>
       </div>
 
@@ -48,44 +77,45 @@ export default function Pricing() {
         </button>
         <span className={isYearly ? styles.toggleActive : ''}>
           Yearly
-          <span className={styles.saveBadge}>Save 30%</span>
+          <span className={styles.saveBadge}>-30%</span>
         </span>
       </div>
 
       <div className={styles.grid}>
         {/* Free */}
         <div className={styles.card}>
-          <div className={styles.cardPlan}>Free</div>
+          <div className={styles.cardPlan}>Standard</div>
           <div className={styles.cardPrice}>
             <span className={styles.priceAmount}>€0</span>
             <span className={styles.pricePeriod}>/ forever</span>
           </div>
-          <p className={styles.cardDesc}>Perfect for casual travelers who want smart planning.</p>
+          <p className={styles.cardDesc}>Essential AI travel planning for casual explorers.</p>
           <div className={styles.featureList}>
             {freeFeatures.map((f, i) => (
               <div key={i} className={`${styles.feature} ${!f.included ? styles.featureDisabled : ''}`}>
-                {f.included ? (
-                  <span className={styles.featureCheck}>✓</span>
-                ) : (
-                  <span className={styles.featureCross}>×</span>
-                )}
+                <span className={styles.featureCheck}>{f.included ? '✓' : '×'}</span>
                 {f.text}
               </div>
             ))}
           </div>
-          <button className={`${styles.cardBtn} ${styles.btnFree}`} onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>Get Started Free</button>
+          <button 
+            className={`${styles.cardBtn} ${styles.btnFree}`} 
+            onClick={() => handleSelectPlan('Standard')}
+          >
+            {user ? 'Current Plan' : 'Get Started Free'}
+          </button>
         </div>
 
         {/* Premium */}
         <div className={`${styles.card} ${styles.cardPremium}`}>
-          <span className={styles.popularBadge}>⭐ Most Popular</span>
-          <div className={styles.cardPlan}>Premium</div>
+          <span className={styles.popularBadge}>⭐ RECOMMENDED</span>
+          <div className={styles.cardPlan}>Elite</div>
           <div className={styles.cardPrice}>
             <span className={styles.priceAmount}>{isYearly ? '€4.90' : '€7'}</span>
             <span className={styles.pricePeriod}>/ month</span>
           </div>
-          {isYearly && <div className={styles.yearlyNote}>Billed €58.80/year</div>}
-          <p className={styles.cardDesc}>For serious travelers who want the full AI companion experience.</p>
+          {isYearly && <div className={styles.yearlyNote}>Billed €58.80 annually</div>}
+          <p className={styles.cardDesc}>Full autonomous itinerary engine & pro tools.</p>
           <div className={styles.featureList}>
             {premiumFeatures.map((f, i) => (
               <div key={i} className={styles.feature}>
@@ -94,7 +124,12 @@ export default function Pricing() {
               </div>
             ))}
           </div>
-          <button className={`${styles.cardBtn} ${styles.btnPremium}`} onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}>Start 7-Day Free Trial</button>
+          <button 
+            className={`${styles.cardBtn} ${styles.btnPremium}`} 
+            onClick={() => handleSelectPlan('Elite')}
+          >
+            {loadingPlan === 'Elite' ? 'Establishing Link...' : 'Start 7-Day Trial'}
+          </button>
         </div>
       </div>
 

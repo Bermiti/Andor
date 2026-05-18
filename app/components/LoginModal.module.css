@@ -4,15 +4,16 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(10, 22, 40, 0.6);
-  backdrop-filter: blur(12px);
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .overlay.open {
@@ -21,142 +22,174 @@
 }
 
 .modal {
-  background: #ffffff;
+  background: #0F172A; /* Solid dark background */
   width: 90%;
-  max-width: 420px;
-  border-radius: 24px;
-  padding: 40px 32px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
-  transform: translateY(20px) scale(0.97);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 440px;
+  border-radius: 2.5rem;
+  padding: 3rem 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
+  overflow: hidden;
+  z-index: 1500;
 }
 
 .overlay.open .modal {
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(30, 111, 217, 0.1) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .closeBtn {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f1f5f9;
-  border: none;
-  font-size: 20px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 1rem;
   cursor: pointer;
-  color: #64748b;
-  transition: all 0.2s;
+  color: #94A3B8;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 
 .closeBtn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: rotate(90deg);
 }
 
 .modalLogo {
-  font-size: 48px;
-  text-align: center;
-  margin-bottom: 8px;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #1E6FD9 0%, #3A8EF6 100%);
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 8px 24px rgba(30, 111, 217, 0.3);
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 4px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 0.5rem;
   text-align: center;
+  letter-spacing: -0.04em;
 }
 
 .subtitle {
-  color: #64748b;
+  color: #94A3B8;
   text-align: center;
-  margin-bottom: 28px;
-  font-size: 14px;
+  margin-bottom: 2.5rem;
+  font-size: 0.95rem;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1.25rem;
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.5rem;
 }
 
 .inputLabel {
-  font-size: 13px;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #334155;
+  color: #CBD5E1;
+  margin-left: 0.5rem;
 }
 
 .input {
   width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 15px;
+  padding: 1rem 1.25rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  font-size: 1rem;
+  color: white;
   outline: none;
-  transition: all 0.2s;
-  background: #f8fafc;
+  transition: all 0.3s;
 }
 
 .input:focus {
-  border-color: #1e6fd9;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(30, 111, 217, 0.1);
+  border-color: #1E6FD9;
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 0 4px rgba(30, 111, 217, 0.15);
 }
 
 .error {
-  background: #fef2f2;
-  color: #dc2626;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 13px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #F87171;
+  padding: 0.85rem 1.25rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  border: 1px solid #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .loginBtn {
   width: 100%;
-  background: #111;
-  color: white;
+  background: white;
+  color: #0F172A;
   border: none;
-  padding: 14px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 15px;
+  padding: 1.125rem;
+  border-radius: 1.125rem;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 4px;
+  transition: all 0.3s;
+  margin-top: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .loginBtn:hover {
-  background: #333;
-  transform: translateY(-1px);
+  background: #F1F5F9;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
 .loginBtn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 .divider {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 20px 0;
-  color: #94a3b8;
-  font-size: 13px;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: #64748B;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .divider::before,
@@ -164,22 +197,43 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.guestBtn {
+  width: 100%;
+  background: rgba(37, 99, 235, 0.05);
+  border: 1.5px solid rgba(37, 99, 235, 0.2);
+  color: #1E6FD9;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 1.125rem;
+  border-radius: 1.125rem;
+  transition: all 0.3s;
+  margin-bottom: 1rem;
+}
+
+.guestBtn:hover {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: #1E6FD9;
+  transform: translateY(-2px);
 }
 
 .toggleBtn {
   width: 100%;
-  background: none;
-  border: none;
-  color: #1e6fd9;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.9rem;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background 0.2s;
+  padding: 1rem;
+  border-radius: 1rem;
+  transition: all 0.3s;
 }
 
 .toggleBtn:hover {
-  background: #f0f7ff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }

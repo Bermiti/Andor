@@ -2,7 +2,7 @@ import { generateFallbackItinerary } from '../../lib/fallback-ai';
 
 export async function POST(req) {
   try {
-    const { destination, days, budget, travelers, interests } = await req.json();
+    const { destination, days, budget, travelers, interests, includeFlights, includeAccommodation } = await req.json();
 
     if (!destination) {
       return Response.json({ error: 'Destination is required' }, { status: 400 });
@@ -30,12 +30,20 @@ export async function POST(req) {
                 {
                   "destination": "City, Country",
                   "tripOverview": "Catchy summary",
-                  "flights": {"suggestion": "Arrival/Departure tips", "averagePrice": "€XXX"},
-                  "accommodation": {"hotelName": "Name", "type": "Luxury/Boutique/Budget", "reason": "Why stay here?"},
+                  "flights": {"suggestion": "Arrival/Departure tips", "averagePrice": "€XXX"}, // Omit if not requested
+                  "accommodation": {"hotelName": "Name", "type": "Luxury/Boutique/Budget", "reason": "Why stay here?", "pricePerNight": "€XXX"}, // Omit if not requested
                   "days": [{
                     "title": "Day 1 — Theme",
                     "transportTip": "Best way to move today",
-                    "stops": [{"time": "09:00", "name": "Place Name", "type": "Category — Description", "isRestaurant": true/false}]
+                    "stops": [{
+                      "time": "09:00", 
+                      "name": "Place Name", 
+                      "type": "Category — Description", 
+                      "isRestaurant": true,
+                      "imageKeyword": "one or two english keywords for image search, e.g. eiffel+tower",
+                      "transitToNext": "Detailed instruction to next stop",
+                      "alternatives": ["Alternative spot 1", "Alternative spot 2"]
+                    }]
                   }],
                   "mustEat": ["Dish/Restaurant 1", "Dish/Restaurant 2"],
                   "contingency": {"emergencyInfo": "Local emergency info", "unexpectedTips": "Safety/Fallback tips"},
@@ -45,7 +53,7 @@ export async function POST(req) {
               },
               {
                 role: 'user',
-                content: `Create a ${days || 2}-day "Travel Agency" grade itinerary for ${destination}. Budget: ${budget || 'moderate'}€. Travelers: ${travelers || 2}. Interests: ${interests?.join(', ') || 'general'}. Return ONLY valid JSON.`
+                content: `Create a ${days || 2}-day "Travel Agency" grade itinerary for ${destination}. Budget: ${budget || 'moderate'}€. Travelers: ${travelers || 2}. Interests: ${interests?.join(', ') || 'general'}. Include Flights: ${includeFlights}. Include Accommodation: ${includeAccommodation}. Return ONLY valid JSON.`
               }
             ],
             temperature: 0.7,
@@ -92,6 +100,9 @@ export async function POST(req) {
                 name: z.string(),
                 type: z.string(),
                 isRestaurant: z.boolean().optional(),
+                imageKeyword: z.string(),
+                transitToNext: z.string().optional(),
+                alternatives: z.array(z.string()).optional(),
               })),
             })),
             mustEat: z.array(z.string()),
@@ -101,9 +112,9 @@ export async function POST(req) {
             }),
             totalCost: z.string(),
           }),
-          prompt: `You are a premium travel agency AI. Create a perfect ${days || 2}-day travel itinerary for ${destination}.
+          prompt: `You are a premium travel agency AI. Create a highly detailed ${days || 2}-day travel itinerary for ${destination}.
           Budget: ${budget || 'moderate'}€. Travelers: ${travelers || 2}. Interests: ${interests?.join(', ') || 'general'}.
-          Include flights, specific hotel, must-eat restaurants, transport tips for each day, and a safety contingency section.`,
+          Include flights: ${includeFlights}, accommodation: ${includeAccommodation}. For each stop provide an 'imageKeyword', 'transitToNext' instruction, and 2 'alternatives'.`,
         });
         return Response.json(object);
       } catch (e) {
