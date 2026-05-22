@@ -1,0 +1,127 @@
+.toastContainer {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 150;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 340px;
+  padding: 14px 16px;
+  background: rgba(10, 22, 40, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-family: var(--font-body), sans-serif;
+  pointer-events: auto;
+  animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast.exiting {
+  animation: slideOut 0.4s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.mainText {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.mainText strong {
+  font-weight: 700;
+  color: #fff;
+}
+
+.destHighlight {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.timeText {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 2px;
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+  pointer-events: auto;
+}
+
+.closeBtn:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateX(-110%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-110%);
+    opacity: 0;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .toastContainer {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .toast {
+    max-width: none;
+    width: 100%;
+  }
+}

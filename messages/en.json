@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "features": "Features",
+    "destinations": "Destinations",
+    "itineraries": "Itineraries",
+    "pricing": "Pricing",
+    "login": "Login",
+    "cta": "Start Free"
+  },
+  "hero": {
+    "discover": "Discover",
+    "subtitle": "Your next adventure starts here. Plan, explore and live unique experiences with Andor.",
+    "search_placeholder": "Where do you want to go?",
+    "when": "When?",
+    "travelers": "Travelers",
+    "explore_btn": "Explore",
+    "stats_trips": "Planned Trips",
+    "stats_countries": "Countries",
+    "stats_rating": "Rating"
+  },
+  "ai": {
+    "greeting_morning": "Good morning. Still planning your next adventure?",
+    "greeting_afternoon": "Good afternoon. Where does your imagination take you today?",
+    "greeting_evening": "Good night. The best itineraries are born at this hour.",
+    "placeholder_1": "Where do you want to go?",
+    "placeholder_2": "What kind of trip do you dream of?",
+    "placeholder_3": "What is your budget?",
+    "itinerary_created": "Itinerary created",
+    "see_itinerary": "See Full Itinerary",
+    "adjust": "Adjust"
+  },
+  "itinerary": {
+    "day": "Day",
+    "morning": "Morning",
+    "afternoon": "Afternoon",
+    "evening": "Evening",
+    "meals": "Meals",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "local_secret": "Local Secret",
+    "how_to_get": "How to get there",
+    "book": "Book",
+    "save": "Save",
+    "export_pdf": "Export PDF",
+    "share": "Share",
+    "budget_total": "Total Budget",
+    "per_person": "per person",
+    "flights": "Suggested Flights",
+    "regenerate_day": "Regenerate this day"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done"
+  }
+}

@@ -1,17 +1,15 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CountryManager from '../components/CountryManager';
 import TripHistory from '../components/TripHistory';
-import StatsHUD from '../components/StatsHUD';
-import ExpenseSplitter from '../components/ExpenseSplitter';
 import styles from './page.module.css';
+import { safeParse } from '../lib/safe-json';
 
 // Dynamic import for the Globe (needs browser APIs, no SSR)
-const BeenTracker = dynamic(() => import('../components/BeenTracker'), {
+const GlobeTracker = dynamic(() => import('../components/GlobeTracker'), {
   ssr: false,
   loading: () => (
     <div className={styles.globePlaceholder}>
@@ -179,50 +177,83 @@ const DEMO_TRIPS = [
   },
 ];
 
-// Country name to code mapping for destination matching
-const DEST_TO_CODE = {
-  'china': '156', 'beijing': '156', 'shanghai': '156',
-  'portugal': '620', 'lisbon': '620', 'porto': '620', 'azores': '620',
-  'japan': '392', 'tokyo': '392', 'kyoto': '392', 'osaka': '392',
-  'france': '250', 'paris': '250', 'spain': '724', 'barcelona': '724', 'madrid': '724',
-  'italy': '380', 'rome': '380', 'germany': '276', 'berlin': '276',
-  'uk': '826', 'united kingdom': '826', 'london': '826',
-  'usa': '840', 'united states': '840', 'new york': '840',
-  'brazil': '076', 'india': '356', 'australia': '036',
-  'thailand': '764', 'bangkok': '764', 'indonesia': '360', 'bali': '360',
-  'turkey': '792', 'istanbul': '792', 'greece': '300', 'athens': '300',
-  'mexico': '484', 'egypt': '818', 'morocco': '504', 'south korea': '410',
-  'switzerland': '756', 'netherlands': '528', 'amsterdam': '528',
-};
-
 export default function MyTripsPage() {
-  const { user, toggleCountry } = useAuth();
-  
+  const [visitedCountries, setVisitedCountries] = useState([]);
+  const [userTrips, setUserTrips] = useState([]);
+
+  // Country name to code mapping for destination matching
+  const DEST_TO_CODE = {
+    'china': '156', 'beijing': '156', 'shanghai': '156',
+    'portugal': '620', 'lisbon': '620', 'porto': '620', 'azores': '620',
+    'japan': '392', 'tokyo': '392', 'kyoto': '392', 'osaka': '392',
+    'france': '250', 'paris': '250', 'spain': '724', 'barcelona': '724', 'madrid': '724',
+    'italy': '380', 'rome': '380', 'germany': '276', 'berlin': '276',
+    'uk': '826', 'united kingdom': '826', 'london': '826',
+    'usa': '840', 'united states': '840', 'new york': '840',
+    'brazil': '076', 'india': '356', 'australia': '036',
+    'thailand': '764', 'bangkok': '764', 'indonesia': '360', 'bali': '360',
+    'turkey': '792', 'istanbul': '792', 'greece': '300', 'athens': '300',
+    'mexico': '484', 'egypt': '818', 'morocco': '504', 'south korea': '410',
+    'switzerland': '756', 'netherlands': '528', 'amsterdam': '528',
+  };
+
   // Compute planned country codes from trip destinations that aren't visited yet
   const plannedCountryCodes = useMemo(() => {
-    if (!user) return [];
     const codes = new Set();
-    const trips = [...DEMO_TRIPS, ...(user.trips || [])];
-    trips.forEach(trip => {
+    userTrips.forEach(trip => {
       if (!trip.destination) return;
       const lower = trip.destination.toLowerCase();
       for (const [name, code] of Object.entries(DEST_TO_CODE)) {
-        if (lower.includes(name) && !(user.visitedCountries || []).includes(code)) {
+        if (lower.includes(name) && !visitedCountries.includes(code)) {
           codes.add(code);
           break;
         }
       }
     });
     return [...codes];
-  }, [user]);
+  }, [userTrips, visitedCountries]);
 
-  const allTrips = useMemo(() => {
-    if (!user) return DEMO_TRIPS;
-    return [...DEMO_TRIPS, ...(user.trips || [])];
-  }, [user]);
+  // Load from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('andor_visited_countries');
+    if (stored) {
+      try {
+        setVisitedCountries(safeParse(stored, []));
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Load user trips from auth context (localStorage)
+    const userStored = localStorage.getItem('andor_user');
+    let savedTrips = [];
+    if (userStored) {
+      try {
+        const userData = safeParse(userStored, {});
+        savedTrips = userData?.trips || [];
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Merge demo trips with user trips (avoid duplicates)
+    const demoIds = DEMO_TRIPS.map(t => t.id);
+    const userOnly = savedTrips.filter(t => !demoIds.includes(t.id));
+    setUserTrips([...DEMO_TRIPS, ...userOnly]);
+  }, []);
+
+  // Save to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('andor_visited_countries', JSON.stringify(visitedCountries));
+  }, [visitedCountries]);
 
   const handleToggleCountry = (code) => {
-    toggleCountry(code);
+    setVisitedCountries(prev => {
+      if (prev.includes(code)) {
+        return prev.filter(c => c !== code);
+      }
+      return [...prev, code];
+    });
   };
 
   return (
@@ -248,28 +279,20 @@ export default function MyTripsPage() {
         </div>
 
         <div className={styles.content}>
-          <div className={styles.leftCol}>
-            <div className={styles.globeSection}>
-              <BeenTracker />
-            </div>
-            <div className={styles.managerSection}>
-              <CountryManager
-                visitedCountries={user?.visitedCountries || []}
-                onToggleCountry={handleToggleCountry}
-              />
-            </div>
+          <div className={styles.globeSection}>
+            <GlobeTracker visitedCountries={visitedCountries} plannedCountries={plannedCountryCodes} />
           </div>
-          
-          <div className={styles.rightCol}>
-            <StatsHUD visitedCount={user?.visitedCountries?.length || 0} />
+          <div className={styles.managerSection}>
+            <CountryManager
+              visitedCountries={visitedCountries}
+              onToggleCountry={handleToggleCountry}
+            />
           </div>
         </div>
 
-        <ExpenseSplitter />
-
         <TripHistory
-          trips={allTrips}
-          visitedCountries={user?.visitedCountries || []}
+          trips={userTrips}
+          visitedCountries={visitedCountries}
         />
       </main>
       <Footer />

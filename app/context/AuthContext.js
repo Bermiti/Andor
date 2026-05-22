@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
+import { safeParse, safeStringify } from '../lib/safe-json';
 
 const AuthContext = createContext(null);
 
@@ -8,15 +9,19 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('andor_user');
-    if (stored) {
-      setUser(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem('andor_user');
+      const parsed = safeParse(stored, null);
+      if (parsed) setUser(parsed);
+    } catch (e) {
+      // recover silently
+      setUser(null);
     }
     setLoading(false);
   }, []);
 
   const register = (name, email, password) => {
-    const users = JSON.parse(localStorage.getItem('andor_users') || '[]');
+    const users = safeParse(localStorage.getItem('andor_users'), []) || [];
     if (users.find(u => u.email === email)) {
       return { error: 'This email is already registered.' };
     }
@@ -32,37 +37,20 @@ export function AuthProvider({ children }) {
       lookingForBuddy: false,
     };
     users.push({ ...newUser, password });
-    localStorage.setItem('andor_users', JSON.stringify(users));
-    localStorage.setItem('andor_user', JSON.stringify(newUser));
+    localStorage.setItem('andor_users', safeStringify(users));
+    localStorage.setItem('andor_user', safeStringify(newUser));
     setUser(newUser);
     return { success: true };
   };
 
-  const loginAsGuest = () => {
-    const guestUser = {
-      id: 'guest',
-      name: 'Guest Explorer',
-      email: 'guest@andor.ai',
-      createdAt: new Date().toISOString(),
-      visitedCountries: ['620', '392', '250'], // Portugal, Japan, France
-      trips: [],
-      interests: ['History', 'Nature'],
-      bio: 'Just exploring the world with AI.',
-      isGuest: true,
-    };
-    localStorage.setItem('andor_user', JSON.stringify(guestUser));
-    setUser(guestUser);
-    return { success: true };
-  };
-
   const login = (email, password) => {
-    const users = JSON.parse(localStorage.getItem('andor_users') || '[]');
+    const users = safeParse(localStorage.getItem('andor_users'), []) || [];
     const found = users.find(u => u.email === email && u.password === password);
     if (!found) {
       return { error: 'Invalid email or password.' };
     }
     const { password: _, ...userData } = found;
-    localStorage.setItem('andor_user', JSON.stringify(userData));
+    localStorage.setItem('andor_user', safeStringify(userData));
     setUser(userData);
     return { success: true };
   };
@@ -75,14 +63,14 @@ export function AuthProvider({ children }) {
   const updateUser = (updates) => {
     const updated = { ...user, ...updates };
     setUser(updated);
-    localStorage.setItem('andor_user', JSON.stringify(updated));
+    localStorage.setItem('andor_user', safeStringify(updated));
     // Also update in users array
-    const users = JSON.parse(localStorage.getItem('andor_users') || '[]');
+    const users = safeParse(localStorage.getItem('andor_users'), []) || [];
     const idx = users.findIndex(u => u.id === updated.id);
     if (idx !== -1) {
       const pwd = users[idx].password;
       users[idx] = { ...updated, password: pwd };
-      localStorage.setItem('andor_users', JSON.stringify(users));
+      localStorage.setItem('andor_users', safeStringify(users));
     }
   };
 
@@ -103,7 +91,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, register, login, loginAsGuest, logout, updateUser, saveTrip, toggleCountry
+      user, loading, register, login, logout, updateUser, saveTrip, toggleCountry
     }}>
       {children}
     </AuthContext.Provider>

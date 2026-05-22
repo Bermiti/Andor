@@ -1,31 +1,55 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage, useTranslations } from '../context/LanguageContext';
 import styles from './Navbar.module.css';
 import LoginModal from './LoginModal';
 import AndorLogo from './AndorLogo';
 
+const languages = [
+  { code: 'pt', label: 'Português', flag: '🇵🇹', display: 'PT' },
+  { code: 'pt-BR', label: 'Português (BR)', flag: '🇧🇷', display: 'BR' },
+  { code: 'en', label: 'English', flag: '🇬🇧', display: 'EN' },
+  { code: 'es', label: 'Español', flag: '🇪🇸', display: 'ES' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷', display: 'FR' }
+];
+
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { locale, setLocale, theme, toggleTheme, mounted } = useLanguage();
+  const t = useTranslations('nav');
+  
   const [scrolled, setScrolled] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  
+  const langDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > 80);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     const handleOpenAuth = () => {
       setIsLoginOpen(true);
     };
     window.addEventListener('open-auth-modal', handleOpenAuth);
 
+    const handleClickOutside = (event) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+        setIsLangDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('open-auth-modal', handleOpenAuth);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -37,30 +61,6 @@ export default function Navbar() {
       document.body.style.overflow = 'unset';
     }
   }, [isMobileMenuOpen]);
-
-  const handleLinkClick = (e, targetId) => {
-    e.preventDefault();
-    setIsMobileMenuOpen(false);
-    
-    const element = document.getElementById(targetId);
-    if (element) {
-      const offset = 80;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-      
-      // Update hash without jump
-      window.history.pushState(null, null, `#${targetId}`);
-    } else if (window.location.pathname !== '/') {
-      window.location.href = `/#${targetId}`;
-    }
-  };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -74,53 +74,147 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     setShowUserMenu(false);
+    setIsMobileMenuOpen(false);
   };
+
+  const currentLanguage = languages.find(lang => lang.code === locale) || languages[0];
 
   return (
     <>
       <nav className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
         <div className={styles.inner}>
+          {/* Logo "✦ Andor" */}
           <a href="/" className={styles.logo}>
             <span className={styles.logoIcon}>
-              <AndorLogo size={36} />
+              <AndorLogo size={32} />
             </span>
-            Andor
+            <span>Andor</span>
           </a>
 
+          {/* Navigation Links */}
           <div className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
-            <a href="/#features" className={styles.link} onClick={(e) => handleLinkClick(e, 'features')}>Features</a>
-            <a href="/#planner" className={styles.link} onClick={(e) => handleLinkClick(e, 'planner')}>Plan a Trip</a>
-            <a href="/#explore" className={styles.link} onClick={(e) => handleLinkClick(e, 'explore')}>Explore</a>
-            <a href="/community" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>Community</a>
-            <a href="/#pricing" className={styles.link} onClick={(e) => handleLinkClick(e, 'pricing')}>Pricing</a>
-            <a href="/my-trips" className={`${styles.link} ${styles.linkHighlight}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Explorer Hub
-              <span className={styles.liveBadge}>LIVE</span>
+            <a href="/#como-funciona" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>
+              {t('features')}
+            </a>
+            <a href="/#destinos" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>
+              {t('destinations')}
+            </a>
+            <a 
+              href="/#concierge" 
+              className={styles.link} 
+              onClick={(e) => {
+                setIsMobileMenuOpen(false);
+                // Open AI drawer directly
+                window.dispatchEvent(new Event('open-ai-chat'));
+              }}
+            >
+              {t('itineraries')}
+            </a>
+            <a href="/#pricing" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>
+              {t('pricing')}
             </a>
             
-            {/* Mobile-only menu items when open */}
-            {isMobileMenuOpen && (
-              <div className={styles.mobileActions}>
-                {user ? (
-                  <>
-                    <a href="/my-trips" className={styles.ctaBtnMobile} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</a>
-                    <button className={styles.loginBtnMobile} onClick={handleLogout}>Log out</button>
-                  </>
-                ) : (
-                  <>
-                    <button className={styles.loginBtnMobile} onClick={openLogin}>Log in</button>
-                    <button className={styles.ctaBtnMobile} onClick={openLogin}>Get Started</button>
-                  </>
-                )}
-              </div>
-            )}
+            {/* Mobile-only sections for Language and Theme */}
+            <div className={styles.mobileDivider}></div>
+            <div className={styles.mobileSectionTitle}>Idioma</div>
+            <div className={styles.mobileLangList}>
+              {languages.map((lang) => (
+                <button 
+                  key={lang.code}
+                  className={`${styles.mobileLangItem} ${locale === lang.code ? styles.mobileLangActive : ''}`}
+                  onClick={() => {
+                    setLocale(lang.code);
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <span className={styles.langFlag}>{lang.flag}</span>
+                  <span>{lang.label}</span>
+                </button>
+              ))}
+            </div>
+            
+            <div className={styles.mobileDivider}></div>
+            <div className={styles.mobileSectionTitle}>Tema</div>
+            <button 
+              className={styles.mobileThemeToggle} 
+              onClick={() => {
+                toggleTheme();
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <span>{theme === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Escuro'}</span>
+            </button>
+            
+            {/* Mobile-only actions */}
+            <div className={styles.mobileActions}>
+              {user ? (
+                <>
+                  <a href="/profile" className={styles.ctaBtnMobile} onClick={() => setIsMobileMenuOpen(false)}>Perfil</a>
+                  <a href="/dashboard" className={styles.userMenuItemMobile} onClick={() => setIsMobileMenuOpen(false)}>🗺️ Dashboard</a>
+                  <button className={styles.loginBtnMobile} onClick={handleLogout}>Sair</button>
+                </>
+              ) : (
+                <>
+                  <button className={styles.loginBtnMobile} onClick={openLogin}>{t('login')}</button>
+                  <button className={styles.ctaBtnMobile} onClick={openLogin}>{t('cta')}</button>
+                </>
+              )}
+            </div>
           </div>
 
+          {/* Right Actions */}
           <div className={styles.actions}>
+            {/* Theme Toggle Button (Pill Slider) */}
+            {mounted && (
+              <button 
+                onClick={toggleTheme} 
+                className={styles.themeTogglePill} 
+                aria-label="Toggle theme"
+                title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+              >
+                <div className={`${styles.themeToggleSlider} ${theme === 'light' ? styles.themeToggleSliderLight : ''}`} />
+                <span className={styles.themeToggleIcon}>☀️</span>
+                <span className={styles.themeToggleIcon}>🌙</span>
+              </button>
+            )}
+
+            {/* Language Selector Dropdown */}
+            <div className={styles.langDropdownWrapper} ref={langDropdownRef}>
+              <button 
+                className={styles.langPill} 
+                onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                aria-label="Change language"
+              >
+                <span className={styles.langFlag}>{currentLanguage.flag}</span>
+                <span className={styles.langCode}>{currentLanguage.display}</span>
+                <svg className={`${styles.langArrow} ${isLangDropdownOpen ? styles.langArrowOpen : ''}`} width="10" height="6" viewBox="0 0 10 6" fill="none">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              
+              {isLangDropdownOpen && (
+                <div className={styles.langDropdown}>
+                  {languages.map((lang) => (
+                    <button 
+                      key={lang.code}
+                      className={`${styles.langDropdownItem} ${locale === lang.code ? styles.langActiveItem : ''}`}
+                      onClick={() => {
+                        setLocale(lang.code);
+                        setIsLangDropdownOpen(false);
+                      }}
+                    >
+                      <span className={styles.langFlag}>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {user ? (
               <div className={styles.userArea}>
-                <a href="/my-trips" className={styles.dashboardBtn}>
-                  Hub
+                <a href="/profile" className={styles.dashboardBtn}>
+                  Perfil
                 </a>
                 <div className={styles.userAvatar} onClick={() => setShowUserMenu(!showUserMenu)}>
                   {user.name?.charAt(0).toUpperCase()}
@@ -132,20 +226,21 @@ export default function Navbar() {
                       <div className={styles.userMenuEmail}>{user.email}</div>
                     </div>
                     <div className={styles.userMenuDivider}></div>
-                    <a href="/my-trips" className={styles.userMenuItem}>🗺️ Hub</a>
-                    <a href="/my-trips#trips" className={styles.userMenuItem}>✈️ My Trips</a>
-                    <a href="/my-trips#expenses" className={styles.userMenuItem}>💰 Expenses</a>
+                    <a href="/profile" className={styles.userMenuItem}>👤 Perfil</a>
+                    <a href="/dashboard" className={styles.userMenuItem}>🗺️ Dashboard</a>
                     <div className={styles.userMenuDivider}></div>
-                    <button className={styles.userMenuLogout} onClick={handleLogout}>Log out</button>
+                    <button className={styles.userMenuLogout} onClick={handleLogout}>Sair</button>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                <button className={styles.loginBtn} onClick={() => setIsLoginOpen(true)}>Log in</button>
-                <button className={styles.ctaBtn} onClick={() => setIsLoginOpen(true)}>Get Started</button>
+                <button className={styles.loginBtn} onClick={() => setIsLoginOpen(true)}>{t('login')}</button>
+                <button className={styles.ctaBtn} onClick={() => setIsLoginOpen(true)}>{t('cta')} →</button>
               </>
             )}
+            
+            {/* Hamburger Toggle */}
             <button 
               className={`${styles.mobileToggle} ${isMobileMenuOpen ? styles.toggleActive : ''}`} 
               aria-label="Menu"

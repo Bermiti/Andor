@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "destinations": "Destinations",
+    "itineraries": "Itinéraires",
+    "pricing": "Tarifs",
+    "login": "Connexion",
+    "cta": "Essai Gratuit"
+  },
+  "hero": {
+    "discover": "Découvrez",
+    "subtitle": "Votre prochaine aventure commence ici. Planifiez, explorez et vivez des expériences uniques avec Andor.",
+    "search_placeholder": "Où voulez-vous aller ?",
+    "when": "Quand ?",
+    "travelers": "Voyageurs",
+    "explore_btn": "Explorer",
+    "stats_trips": "Voyages Planifiés",
+    "stats_countries": "Pays",
+    "stats_rating": "Évaluation"
+  },
+  "ai": {
+    "greeting_morning": "Bonjour. Vous planifiez toujours votre prochaine aventure ?",
+    "greeting_afternoon": "Bon après-midi. Où votre imagination vous emmène-t-elle aujourd'hui ?",
+    "greeting_evening": "Bonsoir. Les meilleurs itinéraires naissent à cette heure.",
+    "placeholder_1": "Où voulez-vous aller ?",
+    "placeholder_2": "De quel type de voyage rêvez-vous ?",
+    "placeholder_3": "Quel est votre budget ?",
+    "itinerary_created": "Itinéraire créé",
+    "see_itinerary": "Voir l'Itinéraire Complet",
+    "adjust": "Ajuster"
+  },
+  "itinerary": {
+    "day": "Jour",
+    "morning": "Matin",
+    "afternoon": "Après-midi",
+    "evening": "Soirée",
+    "meals": "Repas",
+    "breakfast": "Petit-déjeuner",
+    "lunch": "Déjeuner",
+    "dinner": "Dîner",
+    "local_secret": "Secret Local",
+    "how_to_get": "Comment s'y rendre",
+    "book": "Réserver",
+    "save": "Enregistrer",
+    "export_pdf": "Exporter PDF",
+    "share": "Partager",
+    "budget_total": "Budget Total",
+    "per_person": "par personne",
+    "flights": "Vols Suggérés",
+    "regenerate_day": "Régénérer ce jour"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "done": "Terminé"
+  }
+}

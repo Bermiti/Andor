@@ -1,49 +1,50 @@
 'use client';
-import dynamic from 'next/dynamic';
+
+import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import Features from './components/Features';
-import Pricing from './components/Pricing';
-import VisualWall from './components/VisualWall';
+import DestinosAlta from './components/DestinosAlta';
+import ComoFunciona from './components/ComoFunciona';
+import ConciergeShowcase from './components/ConciergeShowcase';
+import Testemunhos from './components/Testemunhos';
+import CtaFinal from './components/CtaFinal';
 import Footer from './components/Footer';
-
-// Dynamic imports for heavy components
-const ItineraryGenerator = dynamic(() => import('./components/ItineraryGenerator'), { ssr: false });
-const MapPreview = dynamic(() => import('./components/MapPreview'), { ssr: false });
+import OnboardingModal from './components/OnboardingModal';
 
 export default function Home() {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal-active');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    const sections = document.querySelectorAll('section');
+    sections.forEach((section) => {
+      section.classList.add('reveal-on-scroll');
+      observer.observe(section);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <>
+      <OnboardingModal />
       <Navbar />
-      <main>
-        {/* The Agency Entrance */}
+      <main className="overflow-hidden">
         <Hero />
-        
-        <section id="planner">
-          <ItineraryGenerator />
-          <MapPreview />
-        </section>
-
-        <VisualWall 
-          image="https://images.unsplash.com/photo-1504109586057-7a2ae83d1338?auto=format&fit=crop&q=80&w=2000"
-          title="Untamed Landscapes"
-          subtitle="Deploy your curiosity into the heart of the world's most remote territories."
-        />
-
-        <section id="features">
-          <Features />
-        </section>
-
-        <VisualWall 
-          image="https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&q=80&w=2000"
-          title="Elite Travel Engineering"
-          subtitle="Every mission is a masterpiece of logistics and aesthetic perfection."
-        />
-
-        {/* Subscription Models */}
-        <section id="pricing">
-          <Pricing />
-        </section>
+        <DestinosAlta />
+        <ComoFunciona />
+        <ConciergeShowcase />
+        <Testemunhos />
+        <CtaFinal />
       </main>
       <Footer />
     </>

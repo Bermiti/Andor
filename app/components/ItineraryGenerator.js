@@ -1,347 +1,500 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { saveGeneratedItinerary } from '../lib/itinerary-store';
+import { saveGeneratedItinerary, enrichItineraryData } from '../lib/itinerary-store';
 import styles from './ItineraryGenerator.module.css';
 
-const styleOptions = [
-  { id: 'cultural', label: 'Cultural', icon: '🏛️', img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=600' },
-  { id: 'adventure', label: 'Adventure', icon: '🌋', img: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=600' },
-  { id: 'luxury', label: 'Elite', icon: '💎', img: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&q=80&w=600' },
-  { id: 'budget', label: 'Tactical', icon: '🎒', img: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=600' }
+const interests = ['History', 'Nature', 'Architecture', 'Shopping', 'Food', 'Nightlife', 'Art', 'Photography', 'Beach', 'Adventure'];
+
+const dayOptions = [
+  { value: '1', label: '1 Day', desc: 'Quick Escape', icon: '🌅' },
+  { value: '2', label: '2 Days', desc: 'Weekend Getaway', icon: '🏞️' },
+  { value: '3', label: '3 Days', desc: 'Classic Tour', icon: '🏰' },
+  { value: '5', label: '5 Days', desc: 'Deep Discovery', icon: '🌴' },
+  { value: '7', label: '7 Days', desc: 'Grand Explorer', icon: '🚢' },
 ];
 
-const interestTags = ['Photography', 'Food & Culinary', 'Nightlife', 'History', 'Nature & Wildlife', 'Architecture', 'Shopping', 'Hidden Gems'];
+const travelerOptions = [
+  { value: '1', label: 'Solo', desc: '1 Person', icon: '👤' },
+  { value: '2', label: 'Couple', desc: '2 People', icon: '👩‍❤️‍👨' },
+  { value: '3', label: 'Family', desc: '3 People', icon: '👨‍👩‍👧' },
+  { value: '4', label: 'Friends', desc: '4 People', icon: '👥' },
+  { value: '5+', label: 'Group', desc: '5+ People', icon: '🚌' },
+];
 
-const generateMockItinerary = (dest, numDays, pace, squad) => {
-  const destination = dest || 'Unknown Target';
-  const days = [];
-  const activities = [
-    { name: `Recon: ${destination} Central District`, type: '📍' },
-    { name: `Local Culinary Intelligence`, type: '🍽️' },
-    { name: `Historical Archives Tour`, type: '🏛️' },
-    { name: `High-Altitude Viewpoint`, type: '⛰️' },
-    { name: `Underground Transit Navigation`, type: '🚇' },
-    { name: `Night Ops & Social Infiltration`, type: '🍸' },
-    { name: `Covert Photography Walk`, type: '📷' },
-    { name: `Local Market Asset Extraction`, type: '🛍️' },
-  ];
+const styleOptions = [
+  { value: 'cultural', label: 'Cultural', desc: 'History & Heritage', icon: '🏛️' },
+  { value: 'adventure', label: 'Adventure', desc: 'Active & Outdoors', icon: '🥾' },
+  { value: 'luxury', label: 'Luxury', desc: 'Premium Services', icon: '👑' },
+  { value: 'budget', label: 'Budget', desc: 'Value & Local Finds', icon: '🪙' },
+  { value: 'nightlife', label: 'Nightlife', desc: 'Parties & Clubs', icon: '🎭' },
+  { value: 'romantic', label: 'Romantic', desc: 'Charming & Cozy', icon: '👩‍❤️‍👨' },
+];
 
-  let stopsPerDay = 3;
-  if (pace === 'intensive') stopsPerDay = 5;
-  if (pace === 'relaxed') stopsPerDay = 2;
-
-  for (let i = 1; i <= parseInt(numDays); i++) {
-    const stops = [];
-    let startHour = 8;
-    for (let j = 0; j < stopsPerDay; j++) {
-      const timeStr = `${startHour.toString().padStart(2, '0')}:00`;
-      stops.push({ time: timeStr, name: activities[Math.floor(Math.random() * activities.length)].name, type: 'Operation' });
-      startHour += Math.floor(12 / stopsPerDay);
-    }
-    
-    days.push({
-      title: `Day ${i} — Sector Alpha`,
-      stops: stops,
-    });
-  }
-
-  let costBase = 150;
-  if (squad === 'duo') costBase = 250;
-  if (squad === 'squad') costBase = 500;
-
-  return {
-    destination: destination,
-    days: days,
-    totalCost: `€${Math.floor(Math.random() * costBase) + costBase}`,
-  };
+const sampleItinerary = {
+  destination: 'Lisbon, Portugal',
+  days: [
+    {
+      title: 'Day 1 — Historic Heart',
+      stops: [
+        { time: '09:00', name: 'Pastéis de Belém', type: '☕ Breakfast — Famous pastéis de nata' },
+        { time: '10:30', name: 'Jerónimos Monastery', type: '🏛️ UNESCO Heritage Site' },
+        { time: '13:00', name: 'Time Out Market', type: '🍽️ Lunch — Gourmet food hall' },
+        { time: '15:00', name: 'Alfama District Walk', type: '🚶 Cultural — Oldest neighborhood' },
+        { time: '17:00', name: 'Miradouro da Graça', type: '🌅 Viewpoint — Sunset panorama' },
+        { time: '20:00', name: 'Taberna da Rua das Flores', type: '🍷 Dinner — Traditional Portuguese' },
+      ],
+    },
+    {
+      title: 'Day 2 — Coast & Culture',
+      stops: [
+        { time: '08:30', name: 'Café A Brasileira', type: '☕ Breakfast — Historic café in Chiado' },
+        { time: '10:00', name: 'Tram 28 Ride', type: '🚋 Experience — Iconic tram route' },
+        { time: '12:00', name: 'São Jorge Castle', type: '🏰 Heritage — Moorish castle' },
+        { time: '14:00', name: 'Cervejaria Ramiro', type: '🦐 Lunch — Best seafood in Lisbon' },
+        { time: '16:00', name: 'LX Factory', type: '🎨 Creative hub — Art & shops' },
+        { time: '19:30', name: 'Fado in Alfama', type: '🎵 Music — Traditional Fado show' },
+      ],
+    },
+  ],
+  totalCost: '€178',
 };
 
-const loadingMessages = [
-  "Establishing secure uplink...",
-  "Analyzing topological data...",
-  "Filtering high-value targets...",
-  "Compiling mission vectors...",
-  "Deployment plan ready."
+const loadingTips = [
+  "A calcular a rota perfeita...",
+  "A descobrir restaurantes escondidos...",
+  "A verificar eventos locais...",
+  "A encontrar segredos que os guias não contam...",
+  "A optimizar cada euro do teu orçamento...",
+  "Quase pronto para a aventura..."
 ];
 
 export default function ItineraryGenerator() {
   const { user, saveTrip } = useAuth();
+  const router = useRouter();
+  const [step, setStep] = useState(1);
   const [destination, setDestination] = useState('');
-  const [days, setDays] = useState('3');
+  const [budget, setBudget] = useState(500);
+  const [days, setDays] = useState('2');
+  const [travelers, setTravelers] = useState('2');
   const [style, setStyle] = useState('cultural');
-  const [squad, setSquad] = useState('solo');
-  const [pace, setPace] = useState('moderate');
-  const [selectedInterests, setSelectedInterests] = useState([]);
-  const [includeFlights, setIncludeFlights] = useState(false);
-  const [includeAccommodation, setIncludeAccommodation] = useState(false);
-  
+  const [activeInterests, setActiveInterests] = useState(['History', 'Food', 'Architecture']);
   const [loading, setLoading] = useState(false);
-  const [loadMsgIdx, setLoadMsgIdx] = useState(0);
   const [result, setResult] = useState(null);
-
-  const toggleInterest = (tag) => {
-    if (selectedInterests.includes(tag)) {
-      setSelectedInterests(selectedInterests.filter(t => t !== tag));
-    } else {
-      setSelectedInterests([...selectedInterests, tag]);
-    }
-  };
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingTip, setLoadingTip] = useState(0);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   const handleGenerate = async () => {
-    if (!destination) return;
+    if (!destination) return alert('Por favor, introduz um destino!');
     setLoading(true);
     setResult(null);
-    setLoadMsgIdx(0);
+    setErrorMsg(null);
+    setLoadingProgress(0);
+    setLoadingTip(0);
 
-    const interval = setInterval(() => {
-      setLoadMsgIdx(prev => {
-        if (prev < loadingMessages.length - 1) return prev + 1;
-        return prev;
-      });
-    }, 600);
+    // Setup false progress bar interval (0% -> 85% in 8 seconds with non-linear easing)
+    const startTime = Date.now();
+    const progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= 8000) {
+        setLoadingProgress(85);
+      } else {
+        const x = elapsed / 8000;
+        const ease = 1 - Math.pow(1 - x, 3); // easeOutCubic
+        setLoadingProgress(parseFloat((ease * 85).toFixed(1)));
+      }
+    }, 100);
 
-    // Simulate elite AI agency reasoning
-    await new Promise(r => setTimeout(r, 3000));
-    clearInterval(interval);
+    // Setup rotating tips interval (every 2.5s)
+    const tipsInterval = setInterval(() => {
+      setLoadingTip(t => (t + 1) % loadingTips.length);
+    }, 2500);
 
     try {
       const response = await fetch('/api/generate-itinerary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ destination, days, style, squad, pace, interests: selectedInterests, includeFlights, includeAccommodation })
+        body: JSON.stringify({
+          destination, budget: `€${budget}`, days, style, travelers, interests: activeInterests
+        })
       });
       
-      let data = response.ok ? await response.json() : generateMockItinerary(destination, days, pace, squad);
-      const id = saveGeneratedItinerary(data);
-      const finalResult = { ...data, id };
-      setResult(finalResult);
-      if (user) saveTrip(finalResult);
+      if (!response.ok) throw new Error('Ocorreu um erro no servidor da API. Por favor tenta novamente.');
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        throw new Error('O JSON retornado pela API é inválido ou está malformado.');
+      }
+
+      // Front-end enrichment & validation (Tokyo coordinates clamping, day titles unique, geocoding fallback)
+      const enrichedData = enrichItineraryData(data);
+      if (!enrichedData) {
+        throw new Error('Não foi possível processar ou estruturar os dados do itinerário.');
+      }
+
+      // Finish progress bar to 100%
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+
+      // Short delay for visual smoothness before navigating
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const id = saveGeneratedItinerary(enrichedData);
+      router.push(`/itinerary/${id}`);
     } catch (error) {
-      const data = generateMockItinerary(destination, days, pace, squad);
-      setResult({ ...data, id: saveGeneratedItinerary(data) });
+      console.error(error);
+      setErrorMsg(error.message || 'Ocorreu um erro inesperado ao criar o teu itinerário.');
     } finally {
+      clearInterval(progressInterval);
+      clearInterval(tipsInterval);
       setLoading(false);
     }
   };
 
+  const toggleInterest = (interest) => {
+    setActiveInterests(prev =>
+      prev.includes(interest)
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
+  };
+
   return (
     <section className={styles.planner} id="planner">
-      <div className={styles.plannerOverlay}></div>
-      
-      <div className={styles.container}>
+      <div className={styles.header}>
+        <span className="section-label">🧠 AI Planner</span>
+        <h2 className="section-title">Generate your perfect itinerary</h2>
+        <p className="section-subtitle mx-auto">
+          Tell us about your trip and our AI will create an optimized, personalized plan in seconds.
+        </p>
+      </div>
+
+      <div className={styles.content}>
         <div className={styles.formSide}>
-          <span className={styles.label}>Agency Service</span>
-          <h2 className={styles.title}>Where are we <span className="gradient-text">deploying?</span></h2>
-
-          <div className={styles.inputBox}>
-            <label className={styles.label}>Destination Vector</label>
-            <input 
-              type="text" 
-              className={styles.mainInput} 
-              placeholder="e.g. Kyoto, Japan" 
-              value={destination}
-              onChange={e => setDestination(e.target.value)}
-              spellCheck="false"
-            />
-          </div>
-
-          <div className={styles.grid2Col}>
-            <div className={styles.configGroup}>
-              <label className={styles.label}>Mission Duration</label>
-              <div className={styles.segmentedControl}>
-                {['1', '3', '5', '7', '14'].map(d => (
-                  <button 
-                    key={d} 
-                    className={`${styles.segment} ${days === d ? styles.activeSegment : ''}`}
-                    onClick={() => setDays(d)}
-                  >
-                    {d}
-                  </button>
-                ))}
+          <div className={styles.formCard}>
+            {/* Wizard Progress Bar */}
+            <div className={styles.wizardProgress}>
+              <div className={styles.progressTrack}></div>
+              <div className={styles.progressFill} style={{ width: `${(step - 1) * 50}%` }}></div>
+              <div className={`${styles.progressNode} ${step >= 1 ? styles.progressNodeActive : ''} ${step > 1 ? styles.progressNodeDone : ''}`}>
+                {step > 1 ? '✓' : '1'}
+                <span className={styles.progressNodeLabel}>Destino</span>
+              </div>
+              <div className={`${styles.progressNode} ${step >= 2 ? styles.progressNodeActive : ''} ${step > 2 ? styles.progressNodeDone : ''}`}>
+                {step > 2 ? '✓' : '2'}
+                <span className={styles.progressNodeLabel}>Viajantes</span>
+              </div>
+              <div className={`${styles.progressNode} ${step >= 3 ? styles.progressNodeActive : ''}`}>
+                3
+                <span className={styles.progressNodeLabel}>Estilo</span>
               </div>
             </div>
 
-            <div className={styles.configGroup}>
-              <label className={styles.label}>Squad Size</label>
-              <div className={styles.segmentedControl}>
-                {['solo', 'duo', 'squad'].map(s => (
-                  <button 
-                    key={s} 
-                    className={`${styles.segment} ${squad === s ? styles.activeSegment : ''}`}
-                    onClick={() => setSquad(s)}
-                    style={{ textTransform: 'capitalize' }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.configGroup}>
-            <label className={styles.label}>Mission Pace</label>
-            <div className={styles.segmentedControl}>
-              {['relaxed', 'moderate', 'intensive'].map(p => (
-                <button 
-                  key={p} 
-                  className={`${styles.segment} ${pace === p ? styles.activeSegment : ''}`}
-                  onClick={() => setPace(p)}
-                  style={{ textTransform: 'capitalize' }}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.configGroup}>
-            <label className={styles.label}>Travel Style</label>
-            <div className={styles.styleGrid}>
-              {styleOptions.map(s => (
-                <div 
-                  key={s.id} 
-                  className={`${styles.styleCard} ${style === s.id ? styles.activeStyle : ''}`}
-                  onClick={() => setStyle(s.id)}
-                >
-                  <img src={s.img} alt={s.label} className={styles.styleBg} />
-                  <div className={styles.styleContent}>
-                    <span className={styles.styleIcon}>{s.icon}</span>
-                    <span className={styles.styleLabel}>{s.label}</span>
+            <div style={{ marginTop: 'var(--space-6)' }}>
+              {step === 1 && (
+                <div className="fade-in">
+                  <h3 className={styles.formTitle}>📍 Onde e Quando?</h3>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Destino</label>
+                    <input
+                      type="text"
+                      className={styles.formInput}
+                      placeholder="Ex: Lisboa, Tóquio, Paris..."
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Duração</label>
+                    <div className={styles.wizardGrid}>
+                      {dayOptions.map(opt => (
+                        <div 
+                          key={opt.value} 
+                          className={`${styles.wizardCard} ${days === opt.value ? styles.wizardCardActive : ''}`}
+                          onClick={() => setDays(opt.value)}
+                        >
+                          <span className={styles.wizardCardIcon}>{opt.icon}</span>
+                          <span className={styles.wizardCardTitle}>{opt.label}</span>
+                          <span className={styles.wizardCardDesc}>{opt.desc}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          <div className={styles.configGroup}>
-            <label className={styles.label}>Specific Interests (Optional)</label>
-            <div className={styles.tagsContainer}>
-              {interestTags.map(tag => (
+              {step === 2 && (
+                <div className="fade-in">
+                  <h3 className={styles.formTitle}>👥 Quem e Quanto?</h3>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Viajantes</label>
+                    <div className={styles.wizardGrid}>
+                      {travelerOptions.map(opt => (
+                        <div 
+                          key={opt.value} 
+                          className={`${styles.wizardCard} ${travelers === opt.value ? styles.wizardCardActive : ''}`}
+                          onClick={() => setTravelers(opt.value)}
+                        >
+                          <span className={styles.wizardCardIcon}>{opt.icon}</span>
+                          <span className={styles.wizardCardTitle}>{opt.label}</span>
+                          <span className={styles.wizardCardDesc}>{opt.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Orçamento estimado (por pessoa)</label>
+                    <div className={styles.sliderContainer}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className={styles.budgetValueBadge}>€{budget}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--gray-500)', fontWeight: 600 }}>
+                          {budget <= 250 ? '🎒 Mochileiro' : budget <= 999 ? '🏨 Conforto' : budget <= 2999 ? '✨ Luxo' : '👑 Elite/Ultra-Luxe'}
+                        </span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="100" 
+                        max="5000" 
+                        step="50" 
+                        value={budget} 
+                        onChange={(e) => setBudget(parseInt(e.target.value))} 
+                        className={styles.sliderInput}
+                      />
+                      <div className={styles.sliderLabels}>
+                        <span>€100</span>
+                        <span>€2500</span>
+                        <span>€5000+</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="fade-in">
+                  <h3 className={styles.formTitle}>🎨 Estilo e Interesses</h3>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Estilo de Viagem</label>
+                    <div className={styles.wizardGrid}>
+                      {styleOptions.map(opt => (
+                        <div 
+                          key={opt.value} 
+                          className={`${styles.wizardCard} ${style === opt.value ? styles.wizardCardActive : ''}`}
+                          onClick={() => setStyle(opt.value)}
+                        >
+                          <span className={styles.wizardCardIcon}>{opt.icon}</span>
+                          <span className={styles.wizardCardTitle}>{opt.label}</span>
+                          <span className={styles.wizardCardDesc}>{opt.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.formGroup} style={{ marginTop: 'var(--space-4)' }}>
+                    <label className={styles.formLabel}>Interesses</label>
+                    <div className={styles.tags}>
+                      {interests.map(interest => (
+                        <button
+                          key={interest}
+                          className={`${styles.tag} ${activeInterests.includes(interest) ? styles.tagActive : ''}`}
+                          onClick={() => toggleInterest(interest)}
+                        >
+                          {interest}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.wizardFooter}>
+              {step > 1 ? (
                 <button 
-                  key={tag}
-                  className={`${styles.interestTag} ${selectedInterests.includes(tag) ? styles.activeInterest : ''}`}
-                  onClick={() => toggleInterest(tag)}
+                  type="button" 
+                  className={styles.backWizardBtn} 
+                  onClick={() => setStep(step - 1)}
                 >
-                  {tag}
+                  Voltar
                 </button>
-              ))}
+              ) : (
+                <div></div>
+              )}
+
+              {step < 3 ? (
+                <button 
+                  type="button" 
+                  className={styles.nextWizardBtn} 
+                  onClick={() => {
+                    if (step === 1 && !destination) {
+                      alert('Por favor, indica um destino!');
+                      return;
+                    }
+                    setStep(step + 1);
+                  }}
+                >
+                  Seguinte
+                </button>
+              ) : (
+                <button 
+                  className={styles.generateBtn} 
+                  onClick={handleGenerate} 
+                  disabled={loading}
+                  style={{ width: 'auto', margin: 0 }}
+                >
+                  {loading ? (
+                    <>Gerando...</>
+                  ) : (
+                    <>
+                      Gerar Roteiro
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 3L10 17M10 3L5 8M10 3L15 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(90 10 10)"/>
+                      </svg>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
-
-          <div className={styles.grid2Col}>
-            <div className={styles.checkboxGroup}>
-              <label className={styles.checkboxLabel}>
-                <input type="checkbox" checked={includeFlights} onChange={e => setIncludeFlights(e.target.checked)} />
-                <span className={styles.customCheck}></span>
-                Include Flights Intel
-              </label>
-            </div>
-            <div className={styles.checkboxGroup}>
-              <label className={styles.checkboxLabel}>
-                <input type="checkbox" checked={includeAccommodation} onChange={e => setIncludeAccommodation(e.target.checked)} />
-                <span className={styles.customCheck}></span>
-                Include Accommodation
-              </label>
-            </div>
-          </div>
-
-          <button className={styles.generateBtn} onClick={handleGenerate} disabled={loading}>
-            {loading ? 'Initializing...' : 'Deploy Mission'}
-          </button>
         </div>
 
         <div className={styles.resultSide}>
-          {loading ? (
-            <div className={styles.loadingState}>
-              <div className={styles.loaderTerminal}>
-                <div className={styles.terminalHeader}>
-                  <div className={styles.terminalDots}>
-                    <span></span><span></span><span></span>
-                  </div>
-                  ANDOR.SYS // ORCHESTRATOR
+          {!loading && !result && !errorMsg && (
+            <div className={styles.placeholder}>
+              <div className={styles.placeholderIcon}>🌍</div>
+              <div className={styles.placeholderText}>O teu roteiro aparecerá aqui</div>
+              <div className={styles.placeholderSub}>Preenche os detalhes da viagem e clica em gerar</div>
+            </div>
+          )}
+
+          {!loading && errorMsg && (
+            <div className={styles.errorCard}>
+              <div className={styles.errorIcon}>⚠️</div>
+              <h3 className={styles.errorTitle}>Não foi possível criar o roteiro</h3>
+              <p className={styles.errorText}>{errorMsg}</p>
+              <button className={styles.retryBtn} onClick={handleGenerate}>
+                Tentar Novamente
+              </button>
+            </div>
+          )}
+
+          {loading && (
+            <div className={styles.loader}>
+              <div className={styles.abstractMapLoader}>
+                <svg viewBox="0 0 200 120" className={styles.abstractMapSvg}>
+                  {/* Background network of dots & lines representing cities */}
+                  <circle cx="30" cy="30" r="4" fill="var(--gray-300)" opacity="0.4" />
+                  <circle cx="80" cy="80" r="4" fill="var(--gray-300)" opacity="0.4" />
+                  <circle cx="130" cy="40" r="4" fill="var(--gray-300)" opacity="0.4" />
+                  <circle cx="170" cy="90" r="4" fill="var(--gray-300)" opacity="0.4" />
+                  
+                  <path d="M30 30 L80 80 L130 40 L170 90" stroke="var(--gray-200)" strokeWidth="1" strokeDasharray="3 3" fill="none" />
+                  
+                  {/* Animated route path */}
+                  <path d="M30 30 L80 80 L130 40 L170 90" stroke="url(#mapGrad)" strokeWidth="3" strokeLinecap="round" strokeDasharray="20 180" strokeDashoffset="200" fill="none" className={styles.animatedRoute} />
+                  
+                  {/* Plane icon animating */}
+                  <g className={styles.animatedPlane}>
+                    <text fontSize="14" y="5" x="-7">✈️</text>
+                  </g>
+
+                  <defs>
+                    <linearGradient id="mapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="var(--ocean)" />
+                      <stop offset="100%" stopColor="var(--sunset-coral)" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+
+              <div className={styles.progressContainer}>
+                <div className={styles.progressBar}>
+                  <div className={styles.progressFillBar} style={{ width: `${loadingProgress}%` }}></div>
                 </div>
-                <div className={styles.terminalBody}>
-                  {loadingMessages.slice(0, loadMsgIdx + 1).map((msg, i) => (
-                    <div key={i} className={styles.terminalLine}>
-                      <span className={styles.terminalPrompt}>{'> '}</span>
-                      {msg}
+                <div className={styles.progressLabel}>{Math.round(loadingProgress)}%</div>
+              </div>
+
+              <div className={styles.loaderText}>{loadingTips[loadingTip]}</div>
+            </div>
+          )}
+
+          {result && (
+            <div className={styles.resultCard}>
+              <div className={styles.resultHeader}>
+                <h3 className={styles.resultTitle}>📍 {result.destination}</h3>
+                <span className={styles.resultBadge}>✓ AI Agency Grade</span>
+              </div>
+
+              <div className={styles.agencyPreview}>
+                <p className={styles.overviewText}>{result.tripOverview}</p>
+                <div className={styles.agencyHighlights}>
+                  {result.flights && (
+                    <div className={styles.highlightItem}>
+                      <span className={styles.highlightIcon}>✈️</span>
+                      <div>
+                        <div className={styles.highlightLabel}>Suggested Flight</div>
+                        <div className={styles.highlightValue}>{result.flights.suggestion}</div>
+                      </div>
+                    </div>
+                  )}
+                  {result.accommodation && (
+                    <div className={styles.highlightItem}>
+                      <span className={styles.highlightIcon}>🏨</span>
+                      <div>
+                        <div className={styles.highlightLabel}>Recommended Stay</div>
+                        <div className={styles.highlightValue}>{result.accommodation.hotelName}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {result.days.map((day, di) => (
+                <div key={di} className={styles.daySection}>
+                  <h4 className={styles.dayTitle}>
+                    <span className={styles.dayDot}></span>
+                    {day.title}
+                  </h4>
+                  {day.stops.map((stop, si) => (
+                    <div key={si} className={styles.stop}>
+                      <span className={styles.stopTime}>{stop.time}</span>
+                      <div className={styles.stopInfo}>
+                        <div className={styles.stopName}>{stop.name}</div>
+                        <div className={styles.stopType}>{stop.type}</div>
+                      </div>
                     </div>
                   ))}
-                  <div className={styles.terminalCursor}></div>
                 </div>
-              </div>
-            </div>
-          ) : result ? (
-            <div className={styles.itineraryCard}>
-              <div className={styles.resultHeader}>
-                <h3>{result.destination}</h3>
-                <span className={styles.costBadge}>{result.totalCost}</span>
-              </div>
-              <div className={styles.daysList}>
-                {(result.flights && includeFlights) && (
-                  <div className={styles.logisticsCard}>
-                    <div className={styles.logisticsTitle}>✈️ Flight Intelligence</div>
-                    <div className={styles.logisticsRow}>
-                      <p>{result.flights.suggestion}</p>
-                      <span className={styles.logisticsPrice}>{result.flights.averagePrice}</span>
-                    </div>
-                  </div>
-                )}
-                
-                {(result.accommodation && includeAccommodation) && (
-                  <div className={styles.logisticsCard}>
-                    <div className={styles.logisticsTitle}>🏨 Basecamp: {result.accommodation.hotelName} ({result.accommodation.type})</div>
-                    <div className={styles.logisticsRow}>
-                      <p>{result.accommodation.reason}</p>
-                      {result.accommodation.pricePerNight && <span className={styles.logisticsPrice}>{result.accommodation.pricePerNight}/night</span>}
-                    </div>
-                  </div>
-                )}
+              ))}
 
-                {result.days.map((day, idx) => (
-                  <div key={idx} className={styles.dayItem}>
-                    <h4 className={styles.dayTitle}>{day.title}</h4>
-                    {day.transportTip && <div className={styles.transitTip}>🚗 {day.transportTip}</div>}
-                    
-                    {day.stops.map((stop, sIdx) => (
-                      <div key={sIdx} className={styles.stopCard}>
-                        {stop.imageKeyword && (
-                          <img 
-                            src={`https://image.pollinations.ai/prompt/${stop.imageKeyword}?width=600&height=400&nologo=true`} 
-                            alt={stop.name} 
-                            className={styles.stopImage} 
-                          />
-                        )}
-                        <div className={styles.stopContent}>
-                          <div className={styles.stopHeader}>
-                            <span className={styles.time}>{stop.time}</span>
-                            <span className={styles.stopName}>{stop.name}</span>
-                          </div>
-                          <div className={styles.stopType}>{stop.type}</div>
-                          
-                          {stop.transitToNext && <div className={styles.transitTip}>🧭 {stop.transitToNext}</div>}
-                          
-                          {stop.alternatives && stop.alternatives.length > 0 && (
-                            <div className={styles.alternatives}>
-                              <strong>{stop.isRestaurant ? 'Alternative Food Spots:' : 'Alternatives:'}</strong>
-                              <ul>
-                                {stop.alternatives.map((alt, aIdx) => <li key={aIdx}>{alt}</li>)}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
+              <div className={styles.resultFooter}>
+                <div className={styles.totalCost}>
+                  <span className={styles.costLabel}>Estimated Total</span>
+                  <span className={styles.costValue}>{result.totalCost}</span>
+                </div>
+                <button className="btn btn-primary" onClick={() => {
+                  if (!user) {
+                    window.dispatchEvent(new Event('open-auth-modal'));
+                  } else {
+                    saveTrip(result);
+                    alert('Trip saved! Go to the Dashboard to see it.');
+                  }
+                }}>
+                  {user ? 'Save Itinerary ✓' : 'Save Itinerary'}
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{background: 'var(--navy)', color: 'white'}}
+                  onClick={() => router.push(`/itinerary/${result.id}`)}
+                >
+                  View Full Itinerary →
+                </button>
               </div>
-            </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <div className={styles.hologram}></div>
-              <p style={{color: 'rgba(0,255,200,0.6)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em'}}>Awaiting Strategic Input</p>
             </div>
           )}
         </div>

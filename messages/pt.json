@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "features": "Funcionalidades",
+    "destinations": "Destinos",
+    "itineraries": "Itinerários",
+    "pricing": "Preços",
+    "login": "Entrar",
+    "cta": "Começar Grátis"
+  },
+  "hero": {
+    "discover": "Descobre",
+    "subtitle": "A tua próxima aventura começa aqui. Planeia, explora e vive experiências únicas com o Andor.",
+    "search_placeholder": "Para onde queres ir?",
+    "when": "Quando?",
+    "travelers": "Viajantes",
+    "explore_btn": "Explorar",
+    "stats_trips": "Viagens Planeadas",
+    "stats_countries": "Países",
+    "stats_rating": "Avaliação"
+  },
+  "ai": {
+    "greeting_morning": "Bom dia. Ainda a planear a próxima aventura?",
+    "greeting_afternoon": "Boa tarde. Para onde te leva a imaginação hoje?",
+    "greeting_evening": "Boa noite. Os melhores itinerários nascem a esta hora.",
+    "placeholder_1": "Para onde queres ir?",
+    "placeholder_2": "Que tipo de viagem sonhas?",
+    "placeholder_3": "Qual é o teu orçamento?",
+    "itinerary_created": "Itinerário criado",
+    "see_itinerary": "Ver Itinerário Completo",
+    "adjust": "Ajustar"
+  },
+  "itinerary": {
+    "day": "Dia",
+    "morning": "Manhã",
+    "afternoon": "Tarde",
+    "evening": "Noite",
+    "meals": "Refeições",
+    "breakfast": "Pequeno-almoço",
+    "lunch": "Almoço",
+    "dinner": "Jantar",
+    "local_secret": "Segredo Local",
+    "how_to_get": "Como chegar",
+    "book": "Reservar",
+    "save": "Guardar",
+    "export_pdf": "Exportar PDF",
+    "share": "Partilhar",
+    "budget_total": "Orçamento Total",
+    "per_person": "por pessoa",
+    "flights": "Voos Sugeridos",
+    "regenerate_day": "Regenerar este dia"
+  },
+  "common": {
+    "loading": "A carregar...",
+    "error": "Algo correu mal",
+    "retry": "Tentar novamente",
+    "close": "Fechar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "done": "Concluído"
+  }
+}
