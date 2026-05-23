@@ -39,19 +39,38 @@ function AnimatedCounter({ end, suffix = '', duration = 2000 }) {
 /* ──────────────────────────────────────────────
    Constants & Autocomplete Data
    ────────────────────────────────────────────── */
-const DESTINATIONS_PT = ["Tóquio", "Paris", "Bali", "Nova Iorque", "Lisboa"];
+const DESTINATIONS_PT = ["Tóquio", "Paris", "Bali", "Nova Iorque", "Santorini", "Marrocos"];
 
 const AUTOCOMPLETE_DATA = [
-  { name: 'Lisboa, Portugal', city: 'Lisboa', country: 'Portugal', flag: '🇵🇹', type: 'Capital' },
-  { name: 'Tóquio, Japão', city: 'Tóquio', country: 'Japão', flag: '🇯🇵', type: 'Metrópole' },
-  { name: 'Paris, França', city: 'Paris', country: 'França', flag: '🇫🇷', type: 'Capital' },
-  { name: 'Nova Iorque, EUA', city: 'Nova Iorque', country: 'EUA', flag: '🇺🇸', type: 'Cidade' },
-  { name: 'Bali, Indonésia', city: 'Bali', country: 'Indonésia', flag: '🇮🇩', type: 'Ilha' },
-  { name: 'Santorini, Grécia', city: 'Santorini', country: 'Grécia', flag: '🇬🇷', type: 'Ilha' },
-  { name: 'Barcelona, Espanha', city: 'Barcelona', country: 'Espanha', flag: '🇪🇸', type: 'Cidade' },
-  { name: 'Dubrovnik, Croácia', city: 'Dubrovnik', country: 'Croácia', flag: '🇭🇷', type: 'Cidade' },
-  { name: 'Maldivas', city: 'Maldivas', country: 'Maldivas', flag: '🇲🇻', type: 'Ilha' },
-  { name: 'Roma, Itália', city: 'Roma', country: 'Itália', flag: '🇮🇹', type: 'Capital' },
+  { city: 'Tokyo', country: 'Japan', flag: '🇯🇵', continent: 'Ásia' },
+  { city: 'Paris', country: 'France', flag: '🇫🇷', continent: 'Europa' },
+  { city: 'Bali', country: 'Indonesia', flag: '🇮🇩', continent: 'Ásia' },
+  { city: 'Nova Iorque', country: 'USA', flag: '🇺🇸', continent: 'Américas' },
+  { city: 'Lisboa', country: 'Portugal', flag: '🇵🇹', continent: 'Europa' },
+  { city: 'Barcelona', country: 'Spain', flag: '🇪🇸', continent: 'Europa' },
+  { city: 'Roma', country: 'Italy', flag: '🇮🇹', continent: 'Europa' },
+  { city: 'Amesterdão', country: 'Netherlands', flag: '🇳🇱', continent: 'Europa' },
+  { city: 'Londres', country: 'UK', flag: '🇬🇧', continent: 'Europa' },
+  { city: 'Berlim', country: 'Germany', flag: '🇩🇪', continent: 'Europa' },
+  { city: 'Praga', country: 'Czech Republic', flag: '🇨🇿', continent: 'Europa' },
+  { city: 'Santorini', country: 'Greece', flag: '🇬🇷', continent: 'Europa' },
+  { city: 'Dubrovnik', country: 'Croatia', flag: '🇭🇷', continent: 'Europa' },
+  { city: 'Reykjavik', country: 'Iceland', flag: '🇮🇸', continent: 'Europa' },
+  { city: 'Dubai', country: 'UAE', flag: '🇦🇪', continent: 'Médio Oriente' },
+  { city: 'Marraquexe', country: 'Morocco', flag: '🇲🇦', continent: 'África' },
+  { city: 'Cairo', country: 'Egypt', flag: '🇪🇬', continent: 'África' },
+  { city: 'Cidade do Cabo', country: 'South Africa', flag: '🇿🇦', continent: 'África' },
+  { city: 'Bangkok', country: 'Thailand', flag: '🇹🇭', continent: 'Ásia' },
+  { city: 'Singapura', country: 'Singapore', flag: '🇸🇬', continent: 'Ásia' },
+  { city: 'Kyoto', country: 'Japan', flag: '🇯🇵', continent: 'Ásia' },
+  { city: 'Seul', country: 'South Korea', flag: '🇰🇷', continent: 'Ásia' },
+  { city: 'Maldivas', country: 'Maldives', flag: '🇲🇻', continent: 'Ásia' },
+  { city: 'Hanói', country: 'Vietnam', flag: '🇻🇳', continent: 'Ásia' },
+  { city: 'Buenos Aires', country: 'Argentina', flag: '🇦🇷', continent: 'Américas' },
+  { city: 'Rio de Janeiro', country: 'Brazil', flag: '🇧🇷', continent: 'Américas' },
+  { city: 'México City', country: 'Mexico', flag: '🇲🇽', continent: 'Américas' },
+  { city: 'São Francisco', country: 'USA', flag: '🇺🇸', continent: 'Américas' },
+  { city: 'Sydney', country: 'Australia', flag: '🇦🇺', continent: 'Oceânia' }
 ];
 
 const COLLAGE_IMAGES = [
@@ -66,21 +85,32 @@ const COLLAGE_IMAGES = [
   'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800', // Kyoto
 ];
 
-import CreationWizard from './CreationWizard';
-
 /* ──────────────────────────────────────────────
    Hero Component
    ────────────────────────────────────────────── */
-export default function Hero() {
+export default function Hero({ onOpenWizard }) {
   const heroRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const travelersRef = useRef(null);
   const t = useTranslations('hero');
-
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   // Destination typings
   const [destination, setDestination] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeSuggestionIdx, setActiveSuggestionIdx] = useState(0);
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('andor_user');
+      if (stored) {
+        try {
+          const u = JSON.parse(stored);
+          if (u.name) setUserName(u.name);
+        } catch (e) {}
+      }
+    }
+  }, []);
 
   // Date selectors
   const [dateArrival, setDateArrival] = useState('');
@@ -98,6 +128,22 @@ export default function Hero() {
   // Exploring anim
   const [isExploring, setIsExploring] = useState(false);
 
+  // Live Counter state
+  const [liveCounter, setLiveCounter] = useState(0);
+
+  useEffect(() => {
+    setLiveCounter(200 + Math.floor(Math.random() * 100));
+  }, []);
+
+  useEffect(() => {
+    if (liveCounter === 0) return;
+    const interval = setInterval(() => {
+      const delta = Math.floor(Math.random() * 21) - 10; // -10 to +10
+      setLiveCounter(prev => Math.max(100, prev + delta));
+    }, 8000 + Math.random() * 7000); // 8-15s
+    return () => clearInterval(interval);
+  }, [liveCounter]);
+
   // Word rotations
   useEffect(() => {
     const interval = setInterval(() => {
@@ -106,13 +152,12 @@ export default function Hero() {
         setWordIdx((prev) => (prev + 1) % DESTINATIONS_PT.length);
         setFadeClass(styles.fadeUpEnter);
       }, 350);
-    }, 2800);
+    }, 2150); // 2.5s cycle total (2150ms + 350ms transition)
     return () => clearInterval(interval);
   }, []);
 
   const filteredDestinations = destination.trim().length >= 2
     ? AUTOCOMPLETE_DATA.filter((d) =>
-        d.name.toLowerCase().includes(destination.toLowerCase()) ||
         d.city.toLowerCase().includes(destination.toLowerCase()) ||
         d.country.toLowerCase().includes(destination.toLowerCase())
       )
@@ -151,12 +196,22 @@ export default function Hero() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredDestinations[activeSuggestionIdx]) {
-        setDestination(filteredDestinations[activeSuggestionIdx].name);
-        setShowDropdown(false);
+        handleSelectDestination(filteredDestinations[activeSuggestionIdx]);
       }
     } else if (e.key === 'Escape') {
       setShowDropdown(false);
     }
+  };
+
+  const handleSelectDestination = (destItem) => {
+    const formatted = `${destItem.city}, ${destItem.country}`;
+    setDestination(formatted);
+    setShowDropdown(false);
+    onOpenWizard(formatted, 2);
+  };
+
+  const handleOpenWizardDefault = () => {
+    onOpenWizard('', 1);
   };
 
   // Handle outside clicks for dropdowns
@@ -267,6 +322,11 @@ export default function Hero() {
 
       {/* Centered Main Layout */}
       <div className={styles.content}>
+        {userName && (
+          <div className={styles.personalGreeting}>
+            Olá, {userName}! Com base no teu perfil...
+          </div>
+        )}
         {/* Editorial Heading */}
         <h1 className={styles.title}>
           <div className={styles.descobreText}>{t('discover')}</div>
@@ -281,17 +341,58 @@ export default function Hero() {
         </p>
 
         {/* Redesigned Search CTA - Opens Wizard */}
-        <div className={styles.searchBarContainer}>
-          <button 
-            className={styles.exploreBtn} 
-            onClick={() => setIsWizardOpen(true)}
-            style={{ width: 'auto', padding: '1.25rem 3rem', fontSize: '1.2rem', margin: '0 auto', display: 'block' }}
-          >
-            ✨ Começar Agora
-          </button>
+        <div className={styles.searchBar} ref={dropdownRef}>
+          <div className={styles.searchRow}>
+            <div className={styles.searchField}>
+              <div className={styles.searchFieldLabel}>
+                <span className={styles.fieldIcon}>🔍</span> {t('search_label') || 'Para onde sonhas ir?'}
+              </div>
+              <input
+                type="text"
+                placeholder="Ex: Tóquio, Paris, Bali..."
+                value={destination}
+                onChange={(e) => {
+                  setDestination(e.target.value);
+                  setShowDropdown(true);
+                }}
+                onFocus={() => setShowDropdown(true)}
+                onKeyDown={handleKeyDown}
+              />
+              {showDropdown && (
+                <div className={styles.dropdownList}>
+                  {filteredDestinations.map((d, index) => (
+                    <div
+                      key={index}
+                      className={`${styles.dropdownItem} ${activeSuggestionIdx === index ? styles.dropdownItemActive : ''}`}
+                      onClick={() => handleSelectDestination(d)}
+                    >
+                      <span className={styles.dropdownFlag}>{d.flag}</span>
+                      <span className={styles.dropdownName}>
+                        {highlightMatch(`${d.city}, ${d.country}`, destination)}
+                      </span>
+                      <span className={styles.dropdownContinent} style={{ marginLeft: 'auto', fontSize: '11px', opacity: 0.6 }}>
+                        {d.continent}
+                      </span>
+                    </div>
+                  ))}
+                  {filteredDestinations.length === 0 && (
+                    <div style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
+                      Sem resultados encontrados
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <button 
+              className={styles.exploreBtn} 
+              onClick={handleOpenWizardDefault}
+            >
+              ✨ Começar
+            </button>
+          </div>
         </div>
 
-        <CreationWizard isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} />
+
 
         {/* Stats Bar */}
         <div className={styles.statsBar}>
@@ -316,6 +417,12 @@ export default function Hero() {
             </span>
             <span className={styles.statLabel}>{t('stats_rating')}</span>
           </div>
+        </div>
+
+        {/* Live Active Explorers Counter */}
+        <div className={styles.liveCounterContainer} style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: '#10B981', fontWeight: 600, fontSize: '0.92rem' }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', animation: 'pulse 1.8s infinite' }}></span>
+          {liveCounter} pessoas a explorar destinos agora
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import DestinosAlta from './components/DestinosAlta';
@@ -10,8 +10,20 @@ import Testemunhos from './components/Testemunhos';
 import CtaFinal from './components/CtaFinal';
 import Footer from './components/Footer';
 import OnboardingModal from './components/OnboardingModal';
+import CreationWizard from './components/CreationWizard';
+import SplashScreen from './components/SplashScreen';
 
 export default function Home() {
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardDestination, setWizardDestination] = useState('');
+  const [wizardStep, setWizardStep] = useState(1);
+
+  const openWizard = (destination = '', step = 1) => {
+    setWizardDestination(destination);
+    setWizardStep(step);
+    setIsWizardOpen(true);
+  };
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -34,19 +46,40 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.title = "Andor · O teu Concierge de Viagens AI";
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('wizard') === 'true') {
+        const dest = params.get('dest') || '';
+        const step = parseInt(params.get('step') || '1', 10);
+        openWizard(dest, step);
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, []);
+
   return (
     <>
+      <SplashScreen />
       <OnboardingModal />
       <Navbar />
       <main className="overflow-hidden">
-        <Hero />
-        <DestinosAlta />
+        <Hero onOpenWizard={openWizard} />
+        <DestinosAlta onOpenWizard={openWizard} />
         <ComoFunciona />
         <ConciergeShowcase />
         <Testemunhos />
         <CtaFinal />
       </main>
       <Footer />
+      <CreationWizard 
+        isOpen={isWizardOpen} 
+        onClose={() => setIsWizardOpen(false)} 
+        initialDestination={wizardDestination}
+        initialStep={wizardStep}
+      />
     </>
   );
 }

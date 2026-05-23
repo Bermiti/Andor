@@ -46,6 +46,24 @@ export default function CustomRequestModal() {
     setTimeout(() => {
       setLoading(false);
       setIsSubmitted(true);
+      try {
+        const stored = localStorage.getItem('andor_custom_requests');
+        const reqs = stored ? JSON.parse(stored) : [];
+        const newRequest = {
+          id: `req-${Date.now()}`,
+          destination,
+          startDate,
+          endDate,
+          budget,
+          travelers,
+          notes,
+          status: 'Pendente',
+          dateSubmitted: new Date().toLocaleDateString('pt-PT')
+        };
+        localStorage.setItem('andor_custom_requests', JSON.stringify([newRequest, ...reqs]));
+      } catch (err) {
+        // ignore
+      }
     }, 1200);
   };
 

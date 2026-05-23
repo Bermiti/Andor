@@ -3,31 +3,44 @@ import styles from './Testemunhos.module.css';
 
 const TESTIMONIALS = [
   {
-    name: 'Sofia M.',
-    route: 'Lisboa ➔ Tóquio',
-    avatarLetter: 'S',
-    avatarColor: 'linear-gradient(135deg, #FF6B6B, #FF8E53)',
-    text: 'O Andor planeou 7 dias em Tóquio com um orçamento que eu achava impossível. Cada recomendação de restaurante era uma autêntica descoberta local.',
+    name: "Sofia Mendes",
+    city: "Lisboa",
+    destination: "Tóquio 7 dias",
+    text: "Nunca pensei que conseguia planear uma viagem ao Japão sozinha. O Andor fez um itinerário tão detalhado que me senti guiada em cada momento — até me recomendou o bar escondido no Golden Gai que se tornou o highlight da viagem.",
     rating: 5,
-    date: 'Maio 2026'
+    date: "Março 2025",
+    avatar: "SM",
+    avatarColor: "#D4A843"
   },
   {
-    name: 'Miguel R.',
-    route: 'Porto ➔ Bali',
-    avatarLetter: 'M',
-    avatarColor: 'linear-gradient(135deg, #4EA8DE, #5E60CE)',
-    text: 'Nunca tinha viajado totalmente sozinho. O AI deu-me uma confiança incrível e um plano de rota tão detalhado que me senti sempre super seguro.',
+    name: "Miguel & Ana Rodrigues",
+    city: "Porto",
+    destination: "Bali 10 dias lua de mel",
+    text: "O Andor encontrou um resort que nunca encontraríamos sozinhos — dentro do nosso orçamento e exactamente o estilo que descrevemos. Cada restaurante que recomendou foi uma experiência única.",
     rating: 5,
-    date: 'Abril 2026'
+    date: "Fevereiro 2025",
+    avatar: "MA",
+    avatarColor: "#E8604A"
   },
   {
-    name: 'Ana & Pedro',
-    route: 'Lisboa ➔ Maldivas',
-    avatarLetter: 'A',
-    avatarColor: 'linear-gradient(135deg, #11998e, #38ef7d)',
-    text: 'Viagem de lua de mel perfeita. O Andor encontrou o resort ecológico dos nossos sonhos e geriu os tempos de transferes com precisão cirúrgica.',
+    name: "Carlos Ferreira",
+    city: "Braga",
+    destination: "Nova Iorque 5 dias",
+    text: "Viagem de negócios com 2 dias livres. O Andor optimizou cada hora — de manhã cedo em Central Park, almoço num diner local que os nova-iorquinos frequentam, e uma experiência no topo do Empire State ao anoitecer. Perfeito.",
     rating: 5,
-    date: 'Maio 2026'
+    date: "Abril 2025",
+    avatar: "CF",
+    avatarColor: "#00C9A7"
+  },
+  {
+    name: "Inês Costa",
+    city: "Faro",
+    destination: "Marrocos 6 dias",
+    text: "Tinha medo de ir sozinha para Marrocos. O Andor não só planeou um itinerário seguro e emocionante como me deu dicas culturais que tornaram cada interacção com os locais genuína. Voltei completamente transformada.",
+    rating: 5,
+    date: "Outubro 2024",
+    avatar: "IC",
+    avatarColor: "#8B5CF6"
   }
 ];
 
@@ -49,13 +62,13 @@ export default function Testemunhos() {
               <div className={styles.cardHeader}>
                 <div 
                   className={styles.avatar}
-                  style={{ background: t.avatarColor }}
+                  style={{ backgroundColor: t.avatarColor, color: '#fff', fontWeight: 'bold' }}
                 >
-                  {t.avatarLetter}
+                  {t.avatar}
                 </div>
                 <div className={styles.meta}>
                   <h3 className={styles.name}>{t.name}</h3>
-                  <span className={styles.route}>{t.route}</span>
+                  <span className={styles.cityInfo}>{t.city} · <span className={styles.destName}>{t.destination}</span></span>
                 </div>
               </div>
 
@@ -65,7 +78,7 @@ export default function Testemunhos() {
                 ))}
               </div>
 
-              <p className={styles.text}>"{t.text}"</p>
+              <p className={styles.text}>&ldquo;{t.text}&rdquo;</p>
 
               <div className={styles.cardFooter}>
                 <span className={styles.date}>{t.date}</span>

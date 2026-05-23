@@ -1465,3 +1465,39 @@
 .modalConfirmBtn:hover {
   transform: translateY(-1px);
 }
+
+.cardActionLink {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold, #d4a843);
+  text-decoration: none;
+  margin-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 8px;
+  width: 100%;
+}
+
+.cardActionLink:hover {
+  text-decoration: underline;
+}
+
+.surpriseItineraryBtn {
+  background: linear-gradient(135deg, var(--gold, #d4a843) 0%, #e8604a 100%);
+  color: #050b14;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(212, 168, 67, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-top: 10px;
+}
+
+.surpriseItineraryBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(212, 168, 67, 0.35);
+}
+

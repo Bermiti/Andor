@@ -38,7 +38,7 @@ export default function OnboardingModal() {
   const handleFinish = (selectedBudget) => {
     const finalBudget = selectedBudget || budgetRange;
     if (!finalBudget) {
-      showToast("Por favor, escolhe o teu orçamento típico.", "info");
+      showToast("Por favor, seleciona o teu orçamento.", "info");
       return;
     }
 
@@ -50,12 +50,27 @@ export default function OnboardingModal() {
     };
 
     if (typeof window !== 'undefined') {
+      const email = `${name.toLowerCase().replace(/\s+/g, '')}@andortravels.com`;
+      const newUser = {
+        name,
+        email,
+        trips: [],
+        role: 'user',
+        profile
+      };
+      localStorage.setItem('andor_user', JSON.stringify(newUser));
       localStorage.setItem('userProfile', JSON.stringify(profile));
       localStorage.setItem('firstVisitDone', 'true');
+      
+      // Dispatch authentication change event and reload to propagate user info
+      window.dispatchEvent(new Event('auth-state-change'));
+      window.location.reload();
     }
 
     setShow(false);
   };
+
+  if (!show) return null;
 
   return (
     <div className={styles.overlay}>
@@ -70,11 +85,11 @@ export default function OnboardingModal() {
         {step === 1 && (
           <div className={styles.stepContent}>
             <span className={styles.badge}>Passo 1 de 3</span>
-            <h2 className={styles.title}>Como te chamas?</h2>
-            <p className={styles.subtitle}>Queremos personalizar a tua experiência ao detalhe.</p>
+            <h2 className={styles.title}>Bem-vindo ao Andor 👋</h2>
+            <p className={styles.subtitle}>O teu concierge de viagens pessoal. Antes de começar, diz-nos o teu nome.</p>
             <input
               type="text"
-              placeholder="O teu nome..."
+              placeholder="O teu nome"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={styles.textInput}
@@ -90,16 +105,17 @@ export default function OnboardingModal() {
         {step === 2 && (
           <div className={styles.stepContent}>
             <span className={styles.badge}>Passo 2 de 3</span>
-            <h2 className={styles.title}>Que tipo de viajante és?</h2>
+            <h2 className={styles.title}>Que tipo de viajante és, {name}?</h2>
             <p className={styles.subtitle}>Escolhe o estilo que melhor te descreve.</p>
             <div className={styles.optionsGrid}>
               {[
-                { key: 'Aventureiro', label: 'Aventureiro', emoji: '🏔️', desc: 'Trilhos, natureza e adrenalina' },
-                { key: 'Gourmet', label: 'Gourmet', emoji: '🍽️', desc: 'Mercados locais e alta gastronomia' },
-                { key: 'Cultural', label: 'Cultural', emoji: '🏛️', desc: 'Museus, história e monumentos' },
-                { key: 'Relaxar', label: 'Relaxar', emoji: '🏖️', desc: 'Praias, spas e slow living' }
+                { key: 'Urbano', label: 'Explorador Urbano', emoji: '🏙️', desc: 'Cidades, cultura e gastronomia' },
+                { key: 'Espirito', label: 'Espírito Livre', emoji: '🧘', desc: 'Natureza, aventura e experiências únicas' },
+                { key: 'Curado', label: 'Viajante Curado', emoji: '💎', desc: 'Qualidade, conforto e momentos especiais' },
+                { key: 'Eficiente', label: 'Nómada Eficiente', emoji: '⚡', desc: 'Muito mundo, orçamento inteligente' }
               ].map((opt) => (
                 <button
+                  type="button"
                   key={opt.key}
                   onClick={() => setTravelerType(opt.key)}
                   className={`${styles.optionCard} ${travelerType === opt.key ? styles.selectedCard : ''}`}
@@ -122,30 +138,33 @@ export default function OnboardingModal() {
         {step === 3 && (
           <div className={styles.stepContent}>
             <span className={styles.badge}>Passo 3 de 3</span>
-            <h2 className={styles.title}>Qual é o teu orçamento típico?</h2>
-            <p className={styles.subtitle}>Ajudar-nos-á a desenhar as melhores experiências para a tua carteira.</p>
+            <h2 className={styles.title}>Qual é o teu orçamento típico por viagem?</h2>
+            <p className={styles.subtitle}>Seleciona o nível de investimento habitual para as tuas escapadelas.</p>
             <div className={styles.budgetList}>
               {[
-                { key: '0-500', label: '€0 - 500', desc: 'Viajante Económico (Restrições criativas)' },
-                { key: '500-1500', label: '€500 - 1500', desc: 'Viajante Moderado (Melhor relação custo-benefício)' },
-                { key: '1500-4000', label: '€1500 - 4000', desc: 'Viajante Premium (Hotéis boutique e experiências ricas)' },
-                { key: '4000+', label: '€4000+', desc: 'Viajante de Luxo (Conforto absoluto e exclusividade)' }
+                { key: '€', desc: 'Até €800' },
+                { key: '€€', desc: '€800-2.000' },
+                { key: '€€€', desc: '€2.000-5.000' },
+                { key: '€€€€', desc: '€5.000+' }
               ].map((opt) => (
                 <button
+                  type="button"
                   key={opt.key}
-                  onClick={() => handleFinish(opt.key)}
-                  className={styles.budgetCard}
+                  onClick={() => setBudgetRange(opt.key)}
+                  className={`${styles.budgetCard} ${budgetRange === opt.key ? styles.selectedCard : ''}`}
                 >
                   <div className={styles.budgetHeader}>
-                    <span className={styles.budgetValue}>{opt.label}</span>
+                    <span className={styles.budgetValue}>{opt.key}</span>
                     <span className={styles.budgetDesc}>{opt.desc}</span>
                   </div>
-                  <span className={styles.arrowIcon}>→</span>
                 </button>
               ))}
             </div>
             <div className={styles.btnRow}>
               <button onClick={() => setStep(2)} className={styles.backBtn}>Voltar</button>
+              <button onClick={() => handleFinish(budgetRange)} className={styles.actionBtn}>
+                Começar a Explorar →
+              </button>
             </div>
           </div>
         )}

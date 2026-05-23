@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './FloatingAi.module.css';
+import { useChatContext } from '../context/ChatContext';
 import { safeParse } from '../lib/safe-json';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from './ToastProvider';
@@ -225,9 +226,30 @@ export default function FloatingAi() {
   const pathname = usePathname();
   const { locale } = useLanguage();
   const { showToast: showGlobalToast } = useToast();
+  const { currentPage, currentDestination, currentItinerary } = useChatContext();
   
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [currentMonthName, setCurrentMonthName] = useState('Outubro');
+  
+  useEffect(() => {
+    const months = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    setCurrentMonthName(months[new Date().getMonth()]);
+  }, []);
+
+  const getCurrentDestinationName = () => {
+    if (pathname && pathname.startsWith('/destination/')) {
+      const slug = pathname.split('/').pop();
+      return slug.charAt(0).toUpperCase() + slug.slice(1);
+    }
+    if (pathname && pathname.includes('/itinerary/')) {
+      return getLastDestination() || 'Tóquio';
+    }
+    return 'Tóquio';
+  };
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
@@ -348,13 +370,18 @@ export default function FloatingAi() {
 
   // Contextual initial suggestions based on active page
   useEffect(() => {
-    if (!isOpen || messages.length > 0) return;
-    
-    // Auto-inject initial greeting or dynamic context alert
-    if (pathname.includes('/itinerary/')) {
-      showToast('🗺️ Andor: Detetei que estás a visualizar um itinerário. Queres que o melhore?');
-    } else if (pathname === '/') {
-      showToast('✨ Andor: Bem-vindo à homepage! Não sabes para onde ir? Deixa-me surpreender-te.');
+    if (isOpen && messages.length === 0) {
+      let welcomeContent = '';
+      if (pathname && pathname.startsWith('/destination/')) {
+        const slug = pathname.split('/').pop();
+        const destName = slug.charAt(0).toUpperCase() + slug.slice(1);
+        welcomeContent = `Estou a ver que estás a explorar ${destName}. Queres que crie um itinerário personalizado?`;
+      } else if (pathname && pathname.includes('/itinerary/')) {
+        welcomeContent = "Posso melhorar este itinerário, adicionar um dia, ou ajustar o orçamento. O que precisas?";
+      } else {
+        welcomeContent = `Olá! ${getGreeting()} Eu sou o Andor, o teu concierge AI de elite. Como posso ajudar na tua próxima aventura?`;
+      }
+      setMessages([{ role: 'assistant', content: welcomeContent, id: `welcome-${Date.now()}` }]);
     }
   }, [isOpen, pathname]);
 
@@ -539,13 +566,50 @@ export default function FloatingAi() {
     };
   }, []);
 
+  const handleSurpriseMe = () => {
+    const userMessage = { role: 'user', content: '🎲 Surpreende-me', id: `user-${Date.now()}` };
+    const tempAssistantMsg = { 
+      role: 'assistant', 
+      content: `A pensar no destino perfeito para ${currentMonthName}...`, 
+      isStreaming: true, 
+      id: `assistant-${Date.now()}` 
+    };
+    
+    const newMessages = [...messages, userMessage, tempAssistantMsg];
+    saveMessages(newMessages);
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      setMessages(prev => {
+        return prev.map(m => {
+          if (m.id === tempAssistantMsg.id) {
+            return {
+              ...m,
+              content: `A tua próxima aventura é... **Reykjavik, Islândia 🇮🇸**\n\nEm ${currentMonthName} tens a aurora boreal com 80% de probabilidade, temperaturas de 5-10°C, e preços 30% mais baixos que no Verão. É um destino que muda perspectivas.\n\nQuer que crie um itinerário completo?`,
+              isStreaming: false
+            };
+          }
+          return m;
+        });
+      });
+      const updatedMsgs = [...newMessages.slice(0, -1), { 
+        role: 'assistant', 
+        content: `A tua próxima aventura é... **Reykjavik, Islândia 🇮🇸**\n\nEm ${currentMonthName} tens a aurora boreal com 80% de probabilidade, temperaturas de 5-10°C, e preços 30% mais baixos que no Verão. É um destino que muda perspectivas.\n\nQuer que crie um itinerário completo?`,
+        isStreaming: false,
+        id: tempAssistantMsg.id
+      }];
+      localStorage.setItem('andor_concierge_messages', JSON.stringify(updatedMsgs.slice(-20)));
+      setIsLoading(false);
+    }, 3500);
+  };
+
   const handleChipClick = (chipText) => {
     if (chipText.includes("Surpreende-me")) {
-      setSurpriseWizard(true);
+      handleSurpriseMe();
     } else if (chipText.includes("Planeia uma viagem")) {
       handleSend("Planeia uma viagem incrível de 3 dias para mim. Escolhe um destino europeu fascinante e cria o itinerário completo.");
     } else if (chipText.includes("Melhora o meu itinerário")) {
-      const pageInfo = pathname.includes('/itinerary/') ? ` que estou a ver (${pathname.split('/').pop()})` : '';
+      const pageInfo = pathname && pathname.includes('/itinerary/') ? ` que estou a ver (${pathname.split('/').pop()})` : '';
       handleSend(`Ajuda-me a melhorar o meu itinerário actual${pageInfo}. Sugere hacks locais e experiências fora da rota turística.`);
     } else if (chipText.includes("hotel perfeito")) {
       handleSend("Recomenda-me um hotel verdadeiramente excecional, boutique ou luxo, que não seja apenas famoso no Instagram mas que valha a pena.");
@@ -791,7 +855,7 @@ export default function FloatingAi() {
     // 2. Intent detection fallbacks
     // Detect coordinates: e.g. [35.6762, 139.6503] or "lat: 35.6, lng: 139.6"
     let coords = null;
-    const arrayMatch = text.match(/\[\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/);
+    const arrayMatch = text.match(/\[\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s+\]/) || text.match(/\[\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/);
     if (arrayMatch) {
       coords = [parseFloat(arrayMatch[1]), parseFloat(arrayMatch[2])];
     } else {
@@ -801,34 +865,97 @@ export default function FloatingAi() {
       }
     }
 
-    // Detect flight prices
-    let detectedFlight = null;
-    const flightKeywords = ['voo', 'voos', 'voar', 'flight', 'flights'];
-    const hasFlight = flightKeywords.some(kw => text.toLowerCase().includes(kw));
-    const priceMatch = text.match(/(?:€|\$|eur)\s*(\d+)|(\d+)\s*(?:€|\$|eur|euros)/i);
-    if (hasFlight && priceMatch && !text.includes('[FLIGHT:')) {
-      const priceVal = priceMatch[0];
-      const route = "Voo sugerido para a tua viagem";
-      detectedFlight = {
-        route,
-        airline: "Companhia Aérea Sugerida",
-        price: priceVal,
-        tip: "Preços estimados de ida e volta por pessoa."
-      };
+    // Enhanced dynamic card parsing
+    const parsedHotels = [];
+    const parsedFlights = [];
+    const parsedRestaurants = [];
+
+    // Parse hotels: e.g. "Hotel Gracery Shinjuku" or "Gracery Shinjuku Hotel"
+    const hotelKeywords = ['hotel', 'hostel', 'resort', 'guesthouse', 'villa', 'alojamento', 'hospedagem'];
+    if (hotelKeywords.some(kw => text.toLowerCase().includes(kw)) && !text.includes('[HOTEL:')) {
+      const matches = text.match(/(?:hotel|hostel|resort|guesthouse|villa)\s+([A-Z][a-zA-Zãõáéíóúçñ\s\-]{3,30})/gi) || 
+                      text.match(/([A-Z][a-zA-Zãõáéíóúçñ\s\-]{3,30})\s+(?:hotel|hostel|resort|guesthouse|villa)/gi);
+      if (matches) {
+        matches.forEach(m => {
+          const name = m.trim();
+          if (!parsedHotels.some(h => h.name.toLowerCase() === name.toLowerCase()) && name.length > 5) {
+            let rating = "⭐⭐⭐⭐";
+            let location = "Centro";
+            let price = "~€130/noite";
+            let desc = "Excelente localização e conforto recomendado pelo Andor.";
+            
+            if (name.toLowerCase().includes('gracery')) {
+              rating = "⭐⭐⭐⭐";
+              location = "Shinjuku";
+              price = "~€130/noite";
+              desc = "Icónico Godzilla na fachada";
+            }
+            parsedHotels.push({ name, rating, location, price, desc });
+          }
+        });
+      }
     }
 
-    // Detect hotel mentions
-    let detectedHotel = null;
-    const hotelKeywords = ['hotel', 'hospedagem', 'alojamento', 'resort', 'hostel'];
-    const hasHotel = hotelKeywords.some(kw => text.toLowerCase().includes(kw));
-    if (hasHotel && !text.includes('[HOTEL:')) {
-      const destination = getLastDestination() || "o teu destino";
-      detectedHotel = {
-        name: "Hotel Boutique Sugerido",
-        rating: "4.9",
-        price: "Preço estimado sob consulta",
-        why: `Localizado no centro de ${destination}, com avaliação excelente dos viajantes.`
-      };
+    // Parse flights: e.g. "Finnair LIS→NRT"
+    const airlines = ['Finnair', 'TAP', 'Emirates', 'Lufthansa', 'Ryanair', 'Iberia', 'KLM', 'Air France', 'Qatar Airways', 'British Airways'];
+    if (!text.includes('[FLIGHT:')) {
+      airlines.forEach(airline => {
+        if (text.includes(airline)) {
+          let route = "LIS→NRT";
+          let duration = "14h30";
+          let stops = "1 escala";
+          let price = "~€720 eco";
+          
+          const routeMatch = text.match(/([A-Z]{3})\s*[→|-]\s*([A-Z]{3})/);
+          if (routeMatch) {
+            route = `${routeMatch[1]}→${routeMatch[2]}`;
+          } else if (text.toLowerCase().includes('paris')) {
+            route = "LIS→CDG";
+            duration = "2h30";
+            stops = "direto";
+            price = "~€120 eco";
+          } else if (text.toLowerCase().includes('bali')) {
+            route = "LIS→DPS";
+            duration = "18h15";
+            stops = "2 escalas";
+            price = "~€890 eco";
+          }
+
+          parsedFlights.push({
+            airline: `${airline} ${route}`,
+            details: `${duration} · ${stops} · ${price}`
+          });
+        }
+      });
+    }
+
+    // Parse restaurants: e.g. "Ichiran Ramen"
+    if (!text.includes('[RESTAURANT:')) {
+      if (text.toLowerCase().includes('ichiran')) {
+        parsedRestaurants.push({
+          name: "Ichiran Ramen",
+          location: "Shibuya",
+          price: "€€",
+          type: "🍜 Ramen",
+          desc: "Solo booths, order kaedama"
+        });
+      } else {
+        const restMatches = text.match(/(?:restaurante|tasca|bistrô|ramen)\s+([A-Z][a-zA-Zãõáéíóúçñ\s\-]{3,30})/gi);
+        if (restMatches) {
+          restMatches.forEach(m => {
+            const name = m.replace(/(?:restaurante|tasca|bistrô|ramen)\s+/i, '').trim();
+            if (name && !parsedRestaurants.some(r => r.name.toLowerCase() === name.toLowerCase()) && name.length > 3) {
+              parsedRestaurants.push({
+                name,
+                location: "Centro",
+                price: "€€",
+                type: "🍽️ Gastronomia Local",
+                desc: "Recomendado para provar sabores locais autênticos."
+              });
+            }
+          });
+        }
+      }
     }
 
     const renderInlineMap = (lat, lng) => {
@@ -877,7 +1004,7 @@ export default function FloatingAi() {
               <div key={idx} className={styles.inlineCard}>
                 <div className={styles.inlineCardHeader}>
                   <span className={styles.cardEmoji}>🏨</span>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h5 className={styles.cardName}>{name}</h5>
                     <div className={styles.cardMeta}>
                       <span className={styles.cardRating}>★ {rating}</span>
@@ -886,6 +1013,14 @@ export default function FloatingAi() {
                   </div>
                 </div>
                 <p className={styles.cardText}>{why}</p>
+                <a 
+                  href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(name)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.cardActionLink}
+                >
+                  Ver no Booking.com →
+                </a>
               </div>
             );
           }
@@ -901,7 +1036,7 @@ export default function FloatingAi() {
               <div key={idx} className={styles.inlineCard}>
                 <div className={styles.inlineCardHeader}>
                   <span className={styles.cardEmoji}>🍽️</span>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h5 className={styles.cardName}>{name}</h5>
                     <div className={styles.cardMeta}>
                       <span className={styles.cardRating}>★ {rating}</span>
@@ -910,6 +1045,14 @@ export default function FloatingAi() {
                   </div>
                 </div>
                 <p className={styles.cardText}>{note}</p>
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.cardActionLink}
+                >
+                  Ver no Google Maps →
+                </a>
               </div>
             );
           }
@@ -929,6 +1072,14 @@ export default function FloatingAi() {
                 </div>
                 <h5 className={styles.flightRoute}>{route}</h5>
                 <p className={styles.flightDetails}>{airline} • {tip}</p>
+                <a 
+                  href="https://www.skyscanner.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.cardActionLink}
+                >
+                  Pesquisar no Skyscanner →
+                </a>
               </div>
             );
           }
@@ -939,30 +1090,82 @@ export default function FloatingAi() {
         {/* Intent-based Widgets */}
         {coords && renderInlineMap(coords[0], coords[1])}
 
-        {detectedFlight && (
-          <div className={styles.inlineFlightCard}>
-            <div className={styles.flightHeader}>
-              <span className={styles.flightBadge}>✈️ Sugestão de Voo</span>
-              <span className={styles.flightPrice}>{detectedFlight.price}</span>
-            </div>
-            <h5 className={styles.flightRoute}>{detectedFlight.route}</h5>
-            <p className={styles.flightDetails}>{detectedFlight.airline} • {detectedFlight.tip}</p>
-          </div>
-        )}
-
-        {detectedHotel && (
-          <div className={styles.inlineCard}>
+        {/* Parsed Hotels */}
+        {parsedHotels.map((hotel, idx) => (
+          <div key={`p-hotel-${idx}`} className={styles.inlineCard}>
             <div className={styles.inlineCardHeader}>
               <span className={styles.cardEmoji}>🏨</span>
-              <div>
-                <h5 className={styles.cardName}>{detectedHotel.name}</h5>
+              <div style={{ flex: 1 }}>
+                <h5 className={styles.cardName}>{hotel.name}</h5>
                 <div className={styles.cardMeta}>
-                  <span className={styles.cardRating}>★ {detectedHotel.rating}</span>
-                  <span className={styles.cardPrice}>{detectedHotel.price}</span>
+                  <span className={styles.cardRating}>{hotel.rating}</span>
+                  <span> · {hotel.location} · {hotel.price}</span>
                 </div>
               </div>
             </div>
-            <p className={styles.cardText}>{detectedHotel.why}</p>
+            <p className={styles.cardText}>"{hotel.desc}"</p>
+            <a 
+              href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(hotel.name)}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className={styles.cardActionLink}
+            >
+              Ver no Booking.com →
+            </a>
+          </div>
+        ))}
+
+        {/* Parsed Flights */}
+        {parsedFlights.map((flight, idx) => (
+          <div key={`p-flight-${idx}`} className={styles.inlineFlightCard}>
+            <div className={styles.flightHeader}>
+              <span className={styles.flightBadge}>✈️ {flight.airline}</span>
+            </div>
+            <p className={styles.flightDetails}>{flight.details}</p>
+            <a 
+              href="https://www.skyscanner.com/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className={styles.cardActionLink}
+            >
+              Pesquisar no Skyscanner →
+            </a>
+          </div>
+        ))}
+
+        {/* Parsed Restaurants */}
+        {parsedRestaurants.map((rest, idx) => (
+          <div key={`p-rest-${idx}`} className={styles.inlineCard}>
+            <div className={styles.inlineCardHeader}>
+              <span className={styles.cardEmoji}>🍜</span>
+              <div style={{ flex: 1 }}>
+                <h5 className={styles.cardName}>{rest.name}</h5>
+                <div className={styles.cardMeta}>
+                  <span>{rest.location} · {rest.price} · {rest.type}</span>
+                </div>
+              </div>
+            </div>
+            <p className={styles.cardText}>"{rest.desc}"</p>
+            <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rest.name)}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className={styles.cardActionLink}
+            >
+              Ver no Google Maps →
+            </a>
+          </div>
+        ))}
+
+        {/* Surprise Me confirmation button */}
+        {text.includes("Quer que crie um itinerário completo?") && (
+          <div style={{ marginTop: '12px' }}>
+            <button 
+              className={styles.surpriseItineraryBtn} 
+              onClick={() => handleSend("Sim, cria o itinerário para Reykjavik")}
+            >
+              Sim, cria o itinerário →
+            </button>
           </div>
         )}
       </div>
@@ -1059,10 +1262,10 @@ export default function FloatingAi() {
 
         {/* Quick Actions Row */}
         <div className={styles.quickActionsRow}>
-          <button onClick={() => handleSend("Mostra-me o mapa das atividades principais.")} className={styles.quickActionBtn}>🗺️ Ver no mapa</button>
-          <button onClick={() => handleSend("Cria um itinerário detalhado para mim.")} className={styles.quickActionBtn}>📋 Criar itinerário</button>
-          <button onClick={() => handleSend("Ajuda-me a calcular o orçamento estimado desta viagem.")} className={styles.quickActionBtn}>💰 Calcular orçamento</button>
-          <button onClick={() => handleSend("Quais são as melhores opções de voos?")} className={styles.quickActionBtn}>✈️ Pesquisar voos</button>
+          <button onClick={() => handleSend("Quero planear uma viagem. Podes ajudar-me a escolher destino e datas?")} className={styles.quickActionBtn}>🗺️ Planear Viagem</button>
+          <button onClick={() => handleSend(`Quanto custa uma viagem de 5 dias para ${getCurrentDestinationName()}? Orçamento Médio`)} className={styles.quickActionBtn}>💰 Calcular Custo</button>
+          <button onClick={() => handleSend(`Quais são as melhores opções de voo de Lisboa para ${getCurrentDestinationName()}?`)} className={styles.quickActionBtn}>✈️ Voos</button>
+          <button onClick={() => handleSend(`Que hotel recomendas em ${getCurrentDestinationName()} para orçamento Médio?`)} className={styles.quickActionBtn}>🏨 Hotéis</button>
         </div>
 
         {/* Restore Prompt Banner */}
@@ -1114,7 +1317,7 @@ export default function FloatingAi() {
                   "✈️ Planeia uma viagem para mim",
                   "🗺️ Melhora o meu itinerário actual",
                   "💰 Viagem a Tóquio por €800",
-                  "🌍 Surpreende-me com um destino",
+                  "🎲 Surpreende-me",
                   "🏨 Encontra-me o hotel perfeito",
                   "⚡ Resolvo uma emergência de viagem"
                 ].map((chip, idx) => (

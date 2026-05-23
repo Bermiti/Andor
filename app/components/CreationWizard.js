@@ -42,12 +42,12 @@ const SEASONAL_SUGGESTIONS = {
   11: [{ name: 'New York, USA', flag: '🇺🇸', why: 'Natal mágico 🎄' }, { name: 'Prague, Czech Republic', flag: '🇨🇿', why: 'Mercados de Natal' }, { name: 'Bali, Indonesia', flag: '🇮🇩', why: 'Escapar ao inverno' }],
 };
 
-export default function CreationWizard({ isOpen, onClose }) {
+export default function CreationWizard({ isOpen, onClose, initialDestination = '', initialStep = 1 }) {
   const router = useRouter();
   const { showToast } = useToast();
   
-  const [step, setStep] = useState(1);
-  const [destination, setDestination] = useState('');
+  const [step, setStep] = useState(initialStep);
+  const [destination, setDestination] = useState(initialDestination);
   const [isSurprise, setIsSurprise] = useState(false);
   const [dates, setDates] = useState({ start: '', end: '', flexible: false });
   const [travelers, setTravelers] = useState({ adults: 2, children: 0 });
@@ -56,6 +56,14 @@ export default function CreationWizard({ isOpen, onClose }) {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(initialStep);
+      setDestination(initialDestination);
+      setIsSurprise(false);
+    }
+  }, [isOpen, initialDestination, initialStep]);
 
   // Backgrounds map
   const bgMap = {
@@ -70,6 +78,15 @@ export default function CreationWizard({ isOpen, onClose }) {
   useEffect(() => {
     if (bgMap[destination]) setBgImage(bgMap[destination]);
   }, [destination]);
+
+  const getDaysCount = () => {
+    if (!dates.start || !dates.end) return 5;
+    const start = new Date(dates.start);
+    const end = new Date(dates.end);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(1, diffDays + 1);
+  };
 
   if (!isOpen) return null;
 
@@ -97,7 +114,7 @@ export default function CreationWizard({ isOpen, onClose }) {
     try {
       const payload = {
         destination: isSurprise ? 'Destino Surpresa' : destination,
-        days: 5, // calculate from dates ideally
+        days: getDaysCount(),
         budget: budgetTier,
         travelers: travelers.adults + travelers.children,
         style: stylesList.join(', ')

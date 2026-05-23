@@ -61,20 +61,19 @@
   top: 36px; /* center vertical of iconCircle (72px height) */
   left: 15%;
   right: 15%;
-  height: 2px;
-  background: rgba(26, 34, 53, 0.08);
+  height: 4px;
   z-index: 1;
 }
 
-.lineProgress {
-  width: 0%;
-  height: 100%;
-  background: linear-gradient(90deg, var(--gold, #D4A843) 0%, var(--coral, #FF6B6B) 100%);
-  transition: width 1.5s cubic-bezier(0.25, 1, 0.5, 1);
+.svgPathProgress {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 1.5s ease-in-out;
+  transition-delay: 200ms;
 }
 
-.animated .lineProgress {
-  width: 100%;
+.animated .svgPathProgress {
+  stroke-dashoffset: 0;
 }
 
 .grid {

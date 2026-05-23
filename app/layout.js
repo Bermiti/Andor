@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ToastProvider } from './components/ToastProvider';
+import { ChatContextProvider } from './context/ChatContext';
 import CommandCenter from './components/CommandCenter';
 import FloatingAi from './components/FloatingAi';
 import CustomRequestModal from './components/CustomRequestModal';
@@ -10,6 +11,7 @@ import NewsletterPopup from './components/NewsletterPopup';
 import SocialProofToast from './components/SocialProofToast';
 import ActiveTravelers from './components/ActiveTravelers';
 import EasterEgg from './components/EasterEgg';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const playfair = Playfair_Display({ 
   subsets: ['latin'], 
@@ -41,6 +43,7 @@ export default function RootLayout({ children }) {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0A1628" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script dangerouslySetInnerHTML={{__html: `
@@ -56,14 +59,18 @@ export default function RootLayout({ children }) {
         <LanguageProvider>
           <AuthProvider>
             <ToastProvider>
-              <EasterEgg />
-              <CommandCenter />
-              <FloatingAi />
-              <CustomRequestModal />
-              <NewsletterPopup />
-              <SocialProofToast />
-              <ActiveTravelers />
-              {children}
+              <ChatContextProvider>
+                <EasterEgg />
+                <CommandCenter />
+                <ErrorBoundary>
+                  <FloatingAi />
+                </ErrorBoundary>
+                <CustomRequestModal />
+                <NewsletterPopup />
+                <SocialProofToast />
+                <ActiveTravelers />
+                {children}
+              </ChatContextProvider>
             </ToastProvider>
           </AuthProvider>
         </LanguageProvider>

@@ -10,6 +10,7 @@ import LiveMap from '../../components/LiveMap';
 import BudgetCalculator from '../../components/BudgetCalculator';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useToast } from '../../components/ToastProvider';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 import styles from './itinerary.module.css';
 import html2pdf from 'html2pdf.js';
 
@@ -134,6 +135,16 @@ export default function ItineraryPage() {
     }
     setLoading(false);
   }, [params.id]);
+
+  useEffect(() => {
+    if (itinerary) {
+      const destObj = itinerary.destination || {};
+      const tripObj = itinerary.trip || {};
+      const city = typeof destObj === 'string' ? destObj : (destObj.city || destObj.name || (typeof itinerary.destination === 'string' ? itinerary.destination : 'Viagem'));
+      const daysCount = tripObj.totalDays || itinerary.days?.length || 0;
+      document.title = `${city} ${daysCount} dias · Andor`;
+    }
+  }, [itinerary]);
 
   const handleShare = async () => {
     try {
@@ -405,7 +416,8 @@ export default function ItineraryPage() {
   return (
     <>
       <Navbar />
-      <div className={styles.page} ref={printRef}>
+      <ErrorBoundary>
+        <div className={styles.page} ref={printRef}>
         
         {/* HEADER DO DESTINO */}
         <header className={styles.premiumHeader}>
@@ -477,7 +489,9 @@ export default function ItineraryPage() {
             
             {/* MAPA INTERACTIVO */}
             <div className={styles.mapContainer}>
-              <LiveMap stops={currentDay.stops || []} />
+              <ErrorBoundary>
+                <LiveMap stops={currentDay.stops || []} />
+              </ErrorBoundary>
             </div>
 
             {/* CLIMA E TRANSPORTE */}
@@ -807,6 +821,7 @@ export default function ItineraryPage() {
           </div>
         </div>
       </div>
+      </ErrorBoundary>
 
       {/* REGENERATE MODAL */}
       {showAdaptModal && (
@@ -852,11 +867,13 @@ export default function ItineraryPage() {
               <button className={styles.modalClose} onClick={() => setShowBudgetDrawer(false)} style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>&times;</button>
             </div>
             <div className={styles.modalBody} style={{ padding: '20px 0' }}>
-              <BudgetCalculator 
-                baseCost={trip.budgetBreakdown?.grandTotal?.min || 500} 
-                daysCount={trip.totalDays || itinerary.days?.length || 3} 
-                currency="€" 
-              />
+              <ErrorBoundary>
+                <BudgetCalculator 
+                  baseCost={trip.budgetBreakdown?.grandTotal?.min || 500} 
+                  daysCount={trip.totalDays || itinerary.days?.length || 3} 
+                  currency="€" 
+                />
+              </ErrorBoundary>
             </div>
             <div className={styles.modalActions}>
               <button className={styles.btnPrimary} onClick={() => setShowBudgetDrawer(false)}>Concluído</button>
