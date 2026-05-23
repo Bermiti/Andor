@@ -12,7 +12,6 @@ export function enrichItineraryData(itinerary) {
     enriched = typeof itinerary === 'string' ? safeParse(itinerary, null) : JSON.parse(JSON.stringify(itinerary));
     if (!enriched) return null;
   } catch (e) {
-    console.error('Failed to parse itinerary JSON', e);
     return null;
   }
 

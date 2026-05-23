@@ -18,9 +18,13 @@ User Feedback on what to change: "${feedback}"
 Total Itinerary Days Context: ${JSON.stringify(allDays.map(d => ({ dayNumber: d.dayNumber, title: d.title })))}
 
 CRITICAL INSTRUCTION:
-- Regenerate ONLY this day. Keep the output aligned with the rest of the trip.
+- Regenerate ONLY this day. DO NOT return the full itinerary. DO NOT modify other days.
+- Return ONLY the JSON object for this specific day.
 - Make sure coordinates are geographically accurate.
-- Day title must be unique and evocative.
+- Day title MUST be highly unique, cinematic, and story-driven.
+  FORBIDDEN: "Explore Tokyo", "Day in Paris", "Visit Bali"
+  REQUIRED: "Neon Cathedrals: Shibuya Crossing", "Ancient Kyoto at Dawn", "Cliffside Sunsets in Santorini"
+- Ban all generic titles.
 - Return ONLY valid JSON representing the new version of this day. Do not include markdown wraps or explanations.
 
 Use this exact structure for the day object:
@@ -227,7 +231,6 @@ Use this exact structure for the day object:
     return Response.json({ day: fallbackDay });
 
   } catch (error) {
-    console.error('Regenerate day route error:', error);
     return Response.json({ error: 'Failed to regenerate day' }, { status: 500 });
   }
 }

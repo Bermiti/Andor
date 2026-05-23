@@ -145,7 +145,6 @@ export default function ItineraryGenerator() {
       const id = saveGeneratedItinerary(enrichedData);
       router.push(`/itinerary/${id}`);
     } catch (error) {
-      console.error(error);
       setErrorMsg(error.message || 'Ocorreu um erro inesperado ao criar o teu itinerário.');
     } finally {
       clearInterval(progressInterval);

@@ -173,7 +173,7 @@ export default function Social() {
         try {
           setFavorites(safeParse(stored, []));
         } catch (e) {
-          console.error(e);
+          // silent parse fail
         }
       }
     }

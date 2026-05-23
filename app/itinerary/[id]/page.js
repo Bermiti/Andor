@@ -3,11 +3,20 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getItinerary, saveGeneratedItinerary } from '../../lib/itinerary-store';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
+import { enrichItinerary } from '../../lib/itinerary-enricher';
 import { safeParse } from '../../lib/safe-json';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import LiveMap from '../../components/LiveMap';
 import BudgetCalculator from '../../components/BudgetCalculator';
+import DailyPlanTimeline from '../../components/DailyPlanTimeline';
+import BudgetVisualization from '../../components/BudgetVisualization';
+import BookingChecklist from '../../components/BookingChecklist';
+import FlightSection from '../../components/FlightSection';
+import HotelSection from '../../components/HotelSection';
+import AirportTransferSection from '../../components/AirportTransferSection';
+import AlertsSection from '../../components/AlertsSection';
+import LocalTransportSection from '../../components/LocalTransportSection';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
@@ -133,7 +142,6 @@ export default function ItineraryPage() {
       const sharedData = urlParams.get('data');
       if (sharedData) {
         try {
-          // Use modern TextDecoder instead of deprecated escape
           const decoder = new TextDecoder();
           const binaryString = atob(sharedData);
           const bytes = new Uint8Array(binaryString.length);
@@ -142,12 +150,20 @@ export default function ItineraryPage() {
           }
           const jsonStr = decoder.decode(bytes);
           data = safeParse(jsonStr, null);
-        } catch (e) {
-          console.error('Failed to decode shared itinerary', e);
+        } catch (e) {}
+      } else {
+        const urlId = urlParams.get('id');
+        if (urlId) {
+          const stored = localStorage.getItem(`andor_shared_${urlId}`);
+          if (stored) data = safeParse(stored, null);
         }
       }
     } else {
       data = getItinerary(params.id);
+      if (!data && typeof window !== 'undefined') {
+        const stored = localStorage.getItem(`andor_shared_${params.id}`);
+        if (stored) data = safeParse(stored, null);
+      }
     }
 
     if (data) {
@@ -156,12 +172,14 @@ export default function ItineraryPage() {
         if (val.fatal) {
           setValidationError(val.errors.join('; '));
         } else {
-          setItinerary(val.normalized || data);
+          const normalized = val.normalized || data;
+          const enriched = enrichItinerary(normalized);
+          setItinerary(enriched);
           setExpandedStops({ 0: true });
         }
       } catch (e) {
-        console.error('Validation failed', e);
-        setItinerary(data);
+        const enriched = enrichItinerary(data);
+        setItinerary(enriched);
       }
     }
     setLoading(false);
@@ -184,19 +202,12 @@ export default function ItineraryPage() {
       try {
         localStorage.setItem(`andor_shared_${uuid}`, JSON.stringify(itinerary));
       } catch (storageErr) {
-        console.warn('localStorage not available, using URL encoding', storageErr);
+        // silent: localStorage not available
       }
-      const shareUrl = `${window.location.origin}/itinerary/share?id=${uuid}`;
-      // For immediate URL fallback: use modern encoding instead of deprecated unescape
-      const jsonStr = JSON.stringify(itinerary);
-      const encoder = new TextEncoder();
-      const encoded = btoa(String.fromCharCode.apply(null, encoder.encode(jsonStr)));
-      const payloadUrl = `${window.location.origin}/itinerary/share?data=${encoded}`;
-      
-      await navigator.clipboard.writeText(payloadUrl);
+      const shareUrl = `${window.location.origin}/itinerary/share/${uuid}`;
+      await navigator.clipboard.writeText(shareUrl);
       showToast('✅ Link copiado para a área de transferência!', 'success');
     } catch (err) {
-      console.error('Failed to copy text: ', err);
       showToast('❌ Erro ao partilhar.', 'error');
     }
   };
@@ -367,7 +378,6 @@ export default function ItineraryPage() {
       setItinerary(newItinerary);
       showToast(`✅ Dia ${activeDay + 1} regenerado com sucesso!`, 'success');
     } catch (error) {
-      console.error(error);
       showToast('❌ Ocorreu um erro inesperado.', 'error');
     } finally {
       setIsAdapting(false);
@@ -410,7 +420,7 @@ export default function ItineraryPage() {
     try {
       localStorage.setItem('andor_favorites', JSON.stringify(nextFavorites));
     } catch (err1) {
-      console.warn('Failed to save favorites', err1);
+      // silent fail
     }
 
     // Also update andor_favorite_activities for the favorites page with error handling
@@ -437,7 +447,7 @@ export default function ItineraryPage() {
     try {
       localStorage.setItem('andor_favorite_activities', JSON.stringify(favActivities));
     } catch (err2) {
-      console.warn('Failed to save favorite activities', err2);
+      // silent fail
     }
     
     trackEvent(exists ? 'favorite_removed' : 'favorite_added', {
@@ -589,9 +599,11 @@ export default function ItineraryPage() {
             {/* MAPA INTERACTIVO */}
             <div className={styles.mapContainer}>
               <ErrorBoundary>
-                <LiveMap stops={currentDay.stops || []} />
+                <LiveMap stops={currentDay.stops || []} destination={dest} />
               </ErrorBoundary>
             </div>
+
+            <DailyPlanTimeline dailyPlans={itinerary.days} destination={dest.city || dest.name} />
 
             {/* CLIMA E TRANSPORTE */}
             <div className={styles.dayMetaCards}>
@@ -821,82 +833,57 @@ export default function ItineraryPage() {
           {/* PAINEL LATERAL (DIREITO) */}
           <div className={styles.rightPanel}>
             
-            {/* ORÇAMENTO */}
-            <div className={styles.sidebarCard}>
-              <div className={styles.sidebarCardHeader}>
-                <h3>💰 Orçamento</h3>
-                <div className={styles.budgetTotal}>
-                  {budgetDisplay || '€---'}
-                </div>
-              </div>
-              
-              {trip.budgetBreakdown && (
-                <div className={styles.budgetList}>
-                  <div className={styles.budgetItem}><span>✈️ Voos</span> <strong>€{trip.budgetBreakdown.flights?.min || 0} – €{trip.budgetBreakdown.flights?.max || 0}</strong></div>
-                  <div className={styles.budgetItem}><span>🏨 Alojamento</span> <strong>€{trip.budgetBreakdown.accommodation?.total || 0}</strong></div>
-                  <div className={styles.budgetItem}><span>🍽️ Alimentação</span> <strong>€{trip.budgetBreakdown.food?.total || 0}</strong></div>
-                  <div className={styles.budgetItem}><span>🚇 Transportes</span> <strong>€{trip.budgetBreakdown.transport?.total || 0}</strong></div>
-                  <div className={styles.budgetItem}><span>🎭 Actividades</span> <strong>€{trip.budgetBreakdown.activities?.total || 0}</strong></div>
-                  {trip.budgetBreakdown.shopping && (
-                    <div className={styles.budgetItem}><span>🛍️ Compras</span> <strong>€{trip.budgetBreakdown.shopping?.total || 0}</strong></div>
-                  )}
-                  {trip.budgetBreakdown.misc && (
-                    <div className={styles.budgetItem}><span>📦 Outros</span> <strong>€{trip.budgetBreakdown.misc?.total || 0}</strong></div>
-                  )}
-                  <div className={`${styles.budgetItem} ${styles.budgetItemTotal}`}>
-                    <span>Total estimado</span>
-                    <strong>{budgetDisplay || '€---'}</strong>
-                  </div>
-                </div>
-              )}
-              <button className={styles.btnOutlineFull} onClick={() => setShowBudgetDrawer(true)} style={{ marginTop: '16px' }}>
-                ⚙️ Ajustar Orçamento
-              </button>
-            </div>
+            <BudgetVisualization budget={trip.budget || trip.budgetScenarios || (trip.budgetBreakdown ? { 
+              scenarios: [{ 
+                tier: 'balanced', 
+                total: trip.budgetBreakdown.grandTotal?.min || 0, 
+                breakdown: {
+                  flights: trip.budgetBreakdown.flights?.min || 0,
+                  accommodation: trip.budgetBreakdown.accommodation?.total || 0,
+                  food: trip.budgetBreakdown.food?.total || 0,
+                  activities: trip.budgetBreakdown.activities?.total || 0,
+                  transport: trip.budgetBreakdown.transport?.total || 0
+                }
+              }] 
+            } : { scenarios: [] })} />
+            
+            <button className={styles.btnOutlineFull} onClick={() => setShowBudgetDrawer(true)} style={{ marginBottom: '16px' }}>
+              ⚙️ Ajustar Orçamento
+            </button>
+
+            <BookingChecklist bookingChecklist={itinerary.bookingChecklist || trip.bookingChecklist || itinerary.trip?.bookingChecklist} />
 
             {/* VOOS */}
-            {itinerary.flightOptions && itinerary.flightOptions.map((flight, idx) => (
-              <div key={idx} className={styles.sidebarCard}>
-                {flight.badge && (
-                  <div className={styles.badge}>{flight.badge === 'recommended' ? '⭐ Recomendado' : 'Opção de Voo'}</div>
-                )}
-                <h4 className={styles.cardTitle}>✈️ {flight.airline}</h4>
-                <div className={styles.cardMeta}>{flight.route}</div>
-                <div className={styles.cardMeta}>{flight.totalDuration} · {flight.stops} escala(s)</div>
-                <div className={styles.cardPrices}>
-                  <span>Economy: ~€{flight.estimatedPrice?.economy}</span>
-                  <span>Business: ~€{flight.estimatedPrice?.business}</span>
-                </div>
-                {flight.tip && <div className={styles.cardTip}>💡 {flight.tip}</div>}
-                <a
-                  href={flight.searchUrl || `https://www.skyscanner.pt/transport/flights/${encodeURIComponent(dest.city || '')}?adults=2`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.btnOutlineFull}
-                >
-                  Pesquisar no Skyscanner →
-                </a>
-              </div>
-            ))}
+            <FlightSection 
+              flights={{ 
+                options: itinerary.flightOptions || [], 
+                overview: trip.flightOverview || '',
+                externalLinks: {
+                  skyscanner: `https://www.skyscanner.net/transport/flights-from/pt/${encodeURIComponent((dest.city || dest.name || '').toLowerCase())}`
+                }
+              }} 
+              destination={dest.city || dest.name} 
+            />
 
             {/* HOTEL */}
-            {itinerary.accommodation?.recommended && (
-              <div className={styles.sidebarCard}>
-                <h4 className={styles.cardTitle}>🏨 {itinerary.accommodation.recommended.name}</h4>
-                <div className={styles.cardMeta}>📍 {itinerary.accommodation.recommended.area}</div>
-                <div className={styles.cardMeta}>⭐ {itinerary.accommodation.recommended.stars} estrelas</div>
-                <div className={styles.cardPrice}>~€{itinerary.accommodation.recommended.pricePerNight}/noite</div>
-                <p className={styles.cardDesc}>&ldquo;{itinerary.accommodation.recommended.whyHere}&rdquo;</p>
-                <a
-                  href={itinerary.accommodation.recommended.bookingUrl || `https://www.booking.com/search.html?ss=${encodeURIComponent(itinerary.accommodation.recommended.name + ' ' + (dest.city || ''))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.btnOutlineFull}
-                >
-                  Ver no Booking.com →
-                </a>
-              </div>
-            )}
+            <HotelSection 
+              accommodation={{
+                ...itinerary.accommodation,
+                externalLinks: {
+                  booking: `https://www.booking.com/searchresults.pt-pt.html?ss=${encodeURIComponent(dest.city || dest.name || '')}`
+                }
+              }} 
+              destination={dest.city || dest.name} 
+            />
+
+            {/* AIRPORT TRANSFER */}
+            <AirportTransferSection airportTransfer={itinerary.airportTransfer || trip.airportTransfer} />
+
+            {/* LOCAL TRANSPORT */}
+            <LocalTransportSection localTransport={itinerary.localTransport || trip.localTransport} />
+
+            {/* ALERTS & WARNINGS */}
+            <AlertsSection warnings={itinerary.warnings || trip.warnings || []} destination={dest.city || dest.name} />
 
             {/* TOP TIPS */}
             {trip.topTips && (

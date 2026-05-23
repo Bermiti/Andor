@@ -1,0 +1,254 @@
+/* PHASE 11.3: AlertsSection Styles */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0) 100%);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.1);
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.6s ease-out 0.4s both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon {
+  font-size: 2rem;
+}
+
+.subtitle {
+  color: #a0aec0;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Alert Groups */
+.alertGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.groupIcon {
+  font-size: 1.25rem;
+}
+
+.groupTitle {
+  flex: 1;
+}
+
+.groupCount {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  background: rgba(59, 130, 246, 0.2);
+  color: #7dd3fc;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Alert Styles by Type */
+.group_scams .groupHeader {
+  color: #fca5a5;
+  border-left: 3px solid #ef4444;
+}
+
+.group_safety .groupHeader {
+  color: #fdba74;
+  border-left: 3px solid #f97316;
+}
+
+.group_cultural .groupHeader {
+  color: #7dd3fc;
+  border-left: 3px solid #3b82f6;
+}
+
+.group_health .groupHeader {
+  color: #86efac;
+  border-left: 3px solid #10b981;
+}
+
+.group_practical .groupHeader {
+  color: #c4b5fd;
+  border-left: 3px solid #a855f7;
+}
+
+.group_weather .groupHeader {
+  color: #fbbf24;
+  border-left: 3px solid #eab308;
+}
+
+/* Alerts List */
+.alertsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.alert {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.3);
+  border-left: 3px solid;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.alert:hover {
+  background: rgba(30, 41, 59, 0.5);
+  transform: translateX(4px);
+}
+
+.alert_scams {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.alert_scams:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.alert_safety {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.alert_safety:hover {
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.alert_cultural {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.alert_cultural:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.alert_health {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.alert_health:hover {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.alert_practical {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.alert_practical:hover {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.alert_weather {
+  border-color: #eab308;
+  background: rgba(234, 179, 8, 0.05);
+}
+
+.alert_weather:hover {
+  background: rgba(234, 179, 8, 0.1);
+}
+
+.alertIcon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.alertContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.alertTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.alertDescription {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.alertAdvice {
+  font-size: 0.8rem;
+  color: #a0aec0;
+  padding: 0.5rem;
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 0.3rem;
+  line-height: 1.4;
+}
+
+.alertAdvice strong {
+  color: #cbd5e1;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .section {
+    padding: 1.5rem;
+    gap: 1.25rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .alert {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .alertIcon {
+    font-size: 1.25rem;
+  }
+}

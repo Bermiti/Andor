@@ -1,47 +1,105 @@
 @import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ==========================================
-   ANDOR — AI Travel Platform
-   Design System & Global Styles
+   ANDOR 10/10 — Premium Design System
    ========================================== */
 
-
-
-/* ---- CSS Custom Properties ---- */
 :root {
-  /* BACKGROUNDS — mais claros e com profundidade */
-  --bg-primary:     #0F1520;   /* Era #0D1117 — ligeiramente mais azul/rico */
-  --bg-secondary:   #1A2235;   /* Cards e painéis — azul-marinho médio */
-  --bg-elevated:    #212D42;   /* Hover states, dropdowns */
-  --bg-glass:       rgba(26, 34, 53, 0.75); /* Glassmorphism */
-  --bg-light:       #F7F4EE;   /* Secções claras — areia quente */
-  --bg-light-card:  #FFFFFF;   /* Cards em fundo claro */
+  /* BACKGROUNDS */
+  --bg-0: #080C14;
+  --bg-1: #0F1520;
+  --bg-2: #1A2235;
+  --bg-3: #212D42;
+  --bg-4: #2A3A52;
+  
+  /* Light mode */
+  --light-0: #F7F4EE;
+  --light-1: #FFFFFF;
+  --light-2: #F0EDE6;
+  
+  /* Brand colors */
+  --gold: #D4A843;
+  --gold-light: #F0C96A;
+  --gold-dark: #A8832D;
+  --gold-glow: rgba(212,168,67,0.2);
+  --coral: #E8604A;
+  --coral-light: #FF7A5C;
+  --teal: #00C9A7;
+  --sky: #4A9EE8;
+  --violet: #8B5CF6;
+  
+  /* Text */
+  --t-1: #F0EDE6;
+  --t-2: #A8B3C8;
+  --t-3: #6B7A99;
+  --t-dark: #1A2235;
+  
+  /* Borders */
+  --b-1: rgba(240,237,230,0.06);
+  --b-2: rgba(240,237,230,0.12);
+  --b-gold: rgba(212,168,67,0.25);
+  
+  /* Shadows */
+  --s-1: 0 2px 8px rgba(0,0,0,0.2);
+  --s-2: 0 8px 32px rgba(0,0,0,0.35);
+  --s-gold: 0 8px 40px rgba(212,168,67,0.2);
+  --s-card: 0 4px 24px rgba(0,0,0,0.3);
+  
+  /* Typography */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 9999px;
+  
+  /* Transitions */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 150ms;
+  --t-base: 250ms;
+  --t-slow: 400ms;
 
-  /* TEXTO — hierarquia clara */
-  --text-primary:   #F0EDE6;   /* Branco quente, não frio */
-  --text-secondary: #A8B3C8;   /* Cinza azulado suave */
-  --text-muted:     #6B7A99;   /* Placeholders, labels */
-  --text-dark:      #1A2235;   /* Texto em fundos claros */
-
-  /* ACENTOS — paleta de viagem premium */
-  --gold:           #D4A843;   /* Ouro principal */
-  --gold-light:     #F0C96A;   /* Ouro brilhante para highlights */
-  --gold-dim:       rgba(212,168,67,0.15); /* Ouro suave para backgrounds */
-  --coral:          #E8604A;   /* Acção e urgência */
-  --coral-light:    #FF8066;   /* Hover do coral */
-  --teal:           #00C9A7;   /* Sucesso e confirmação */
-  --sky:            #4A9EE8;   /* Info e links */
-
-  /* BORDAS */
+  /* Legacy compatibility */
+  --bg-primary:     #0F1520;
+  --bg-secondary:   #1A2235;
+  --bg-elevated:    #212D42;
+  --bg-glass:       rgba(26, 34, 53, 0.75);
+  --bg-light:       #F7F4EE;
+  --bg-light-card:  #FFFFFF;
+  --text-primary:   #F0EDE6;
+  --text-secondary: #A8B3C8;
+  --text-muted:     #6B7A99;
+  --text-dark:      #1A2235;
+  --gold:           #D4A843;
+  --gold-light:     #F0C96A;
+  --gold-dim:       rgba(212,168,67,0.15);
+  --coral:          #E8604A;
+  --coral-light:    #FF8066;
+  --teal:           #00C9A7;
+  --sky:            #4A9EE8;
   --border:         rgba(240,237,230,0.08);
   --border-light:   rgba(240,237,230,0.15);
   --border-gold:    rgba(212,168,67,0.3);
-
-  /* SOMBRAS */
-  --shadow-sm:   0 2px 8px rgba(0,0,0,0.2);
-  --shadow-md:   0 8px 32px rgba(0,0,0,0.3);
-  --shadow-gold: 0 8px 32px rgba(212,168,67,0.15);
-  --shadow-card: 0 4px 24px rgba(0,0,0,0.25);
+  --shadow-sm:      0 2px 8px rgba(0,0,0,0.2);
+  --shadow-md:      0 8px 32px rgba(0,0,0,0.3);
+  --shadow-gold:    0 8px 32px rgba(212,168,67,0.15);
+  --shadow-card:    0 4px 24px rgba(0,0,0,0.25);
   
   /* Retained layout variables from old design */
   --white: #FFFFFF;
@@ -124,6 +182,54 @@
   --z-overlay: 100;
   --z-modal: 200;
   --z-toast: 300;
+}
+
+/* ---- LIGHT MODE ---- */
+[data-theme="light"] {
+  --bg-0: #F7F4EE;
+  --bg-1: #F0EDE6;
+  --bg-2: #FFFFFF;
+  --bg-3: #F7F4EE;
+  --bg-4: #EDE9E0;
+  --t-1: #1A2235;
+  --t-2: #4A5568;
+  --t-3: #9AA5B4;
+  --b-1: rgba(26,34,53,0.06);
+  --b-2: rgba(26,34,53,0.12);
+  --s-card: 0 4px 24px rgba(0,0,0,0.08);
+  
+  --bg-primary: #F7F4EE;
+  --bg-secondary: #FFFFFF;
+  --bg-light: #F7F4EE;
+  --text-primary: #1A2235;
+  --text-secondary: #4A5568;
+}
+
+/* ---- CARD STANDARD ---- */
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: var(--r-lg);
+  transition: transform var(--t-base) var(--ease),
+              box-shadow var(--t-base) var(--ease),
+              border-color var(--t-base) var(--ease);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--s-gold);
+  border-color: var(--b-gold);
+}
+
+/* ---- GLASSMORPHISM STANDARD ---- */
+.glass {
+  background: rgba(26, 34, 53, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--b-2);
+}
+
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.7);
 }
 
 /* ---- Reset & Base ---- */

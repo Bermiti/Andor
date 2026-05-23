@@ -67,8 +67,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log the error if needed
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    // silently catch
   }
 
   resetError = () => {

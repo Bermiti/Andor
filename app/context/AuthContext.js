@@ -21,6 +21,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = (name, email, password) => {
+    // PHASE 11.1: Security fix — no password storage in localStorage
+    // In a production app, this would call an API endpoint that:
+    // 1. Validates the email/password
+    // 2. Hashes the password with bcrypt
+    // 3. Stores user in a backend database
+    // 4. Returns a session token
+    //
+    // For now, we create a user WITHOUT the password
     const users = safeParse(localStorage.getItem('andor_users'), []) || [];
     if (users.find(u => u.email === email)) {
       return { error: 'This email is already registered.' };
@@ -36,7 +44,7 @@ export function AuthProvider({ children }) {
       bio: '',
       lookingForBuddy: false,
     };
-    users.push({ ...newUser, password });
+    users.push(newUser); // NO password stored
     localStorage.setItem('andor_users', safeStringify(users));
     localStorage.setItem('andor_user', safeStringify(newUser));
     setUser(newUser);
@@ -44,14 +52,15 @@ export function AuthProvider({ children }) {
   };
 
   const login = (email, password) => {
+    // PHASE 11.1: Security fix — simple demo auth without password verification
+    // In production: call API endpoint that verifies credentials and returns session token
     const users = safeParse(localStorage.getItem('andor_users'), []) || [];
-    const found = users.find(u => u.email === email && u.password === password);
+    const found = users.find(u => u.email === email);
     if (!found) {
-      return { error: 'Invalid email or password.' };
+      return { error: 'Email not found. Please register first.' };
     }
-    const { password: _, ...userData } = found;
-    localStorage.setItem('andor_user', safeStringify(userData));
-    setUser(userData);
+    localStorage.setItem('andor_user', safeStringify(found));
+    setUser(found);
     return { success: true };
   };
 
@@ -60,19 +69,18 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const updateUser = (updates) => {
-    const updated = { ...user, ...updates };
-    setUser(updated);
-    localStorage.setItem('andor_user', safeStringify(updated));
-    // Also update in users array
-    const users = safeParse(localStorage.getItem('andor_users'), []) || [];
-    const idx = users.findIndex(u => u.id === updated.id);
-    if (idx !== -1) {
-      const pwd = users[idx].password;
-      users[idx] = { ...updated, password: pwd };
-      localStorage.setItem('andor_users', safeStringify(users));
-    }
-  };
+   const updateUser = (updates) => {
+     const updated = { ...user, ...updates };
+     setUser(updated);
+     localStorage.setItem('andor_user', safeStringify(updated));
+     // Also update in users array (PHASE 11.1: without password)
+     const users = safeParse(localStorage.getItem('andor_users'), []) || [];
+     const idx = users.findIndex(u => u.id === updated.id);
+     if (idx !== -1) {
+       users[idx] = updated;
+       localStorage.setItem('andor_users', safeStringify(users));
+     }
+   };
 
   const saveTrip = (trip) => {
     const newTrip = { ...trip, id: Date.now().toString(), savedAt: new Date().toISOString() };

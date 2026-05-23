@@ -1,279 +1,191 @@
 .overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100000;
-  animation: fadeIn 0.4s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  z-index: 1000;
+  padding: 1rem;
 }
 
 .modal {
-  background: var(--bg-secondary);
-  border: 1.5px solid rgba(212, 175, 55, 0.35);
-  border-radius: 20px;
-  padding: 36px;
+  background: var(--bg, #1a1a1a);
+  color: var(--text, #fff);
+  border-radius: 24px;
+  width: 100%;
   max-width: 500px;
-  width: 90%;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
-  position: relative;
   overflow: hidden;
-  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from { opacity: 0; transform: translateY(40px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Progress bar indicators */
-.progressBar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 30px;
-}
-
-.progressSegment {
+.progress {
   height: 4px;
-  flex: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  transition: background 0.3s;
+  background: rgba(255,255,255,0.1);
+  width: 100%;
 }
 
-.progressSegment.active {
-  background: linear-gradient(90deg, #FF6F61, #D4AF37);
+.progressBar {
+  height: 100%;
+  background: var(--accent, #00ff88);
+  transition: width 0.3s ease;
 }
 
-.stepContent {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+.step {
+  padding: 2.5rem;
+  text-align: center;
 }
 
-.badge {
-  font-size: 11px;
-  color: #D4AF37;
+.step h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 10px;
 }
 
-.title {
-  font-family: var(--font-cormorant), serif;
-  font-weight: 600;
-  font-size: 28px;
-  color: #F8FAFC;
-  margin: 0 0 8px 0;
-  letter-spacing: -0.5px;
+.step p {
+  color: #aaa;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
 }
 
-.subtitle {
-  font-size: 14px;
-  color: #94A3B8;
-  line-height: 1.5;
-  margin: 0 0 24px 0;
-}
-
-/* Step 1 input */
-.textInput {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #F8FAFC;
-  font-size: 16px;
-  padding: 14px 18px;
+.input {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1);
   border-radius: 12px;
+  color: #fff;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
   outline: none;
-  margin-bottom: 24px;
-  transition: all 0.3s;
-  font-family: inherit;
 }
 
-.textInput:focus {
-  border-color: #D4AF37;
-  background: rgba(212, 175, 55, 0.03);
-  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.2);
+.input:focus {
+  border-color: var(--accent, #00ff88);
+  background: rgba(255,255,255,0.1);
 }
 
-/* Step 2 Cards Grid */
-.optionsGrid {
+.cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 1rem;
 }
 
-.optionCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  text-align: left;
+.card {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: inherit;
-  color: inherit;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.optionCard:hover {
-  background: rgba(212, 175, 55, 0.04);
-  border-color: rgba(212, 175, 55, 0.3);
+.card:hover {
+  background: rgba(255,255,255,0.1);
   transform: translateY(-2px);
 }
 
-.selectedCard {
-  background: rgba(212, 175, 55, 0.1) !important;
-  border-color: #D4AF37 !important;
-  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15);
+.cardActive {
+  border-color: var(--accent, #00ff88);
+  background: rgba(0, 255, 136, 0.1);
 }
 
-.optionEmoji {
-  font-size: 24px;
+.cardIcon {
+  font-size: 2.5rem;
 }
 
-.optionInfo {
-  display: flex;
-  flex-direction: column;
-}
-
-.optionLabel {
+.cardTitle {
   font-weight: 600;
-  font-size: 14.5px;
-  color: #F8FAFC;
+  color: #fff;
 }
 
-.optionDesc {
-  font-size: 11.5px;
-  color: #94A3B8;
-  margin-top: 2px;
+.cardDesc {
+  font-size: 0.85rem;
+  color: #888;
   line-height: 1.3;
 }
 
-/* Step 3 list */
-.budgetList {
+.budgetOptions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
+  gap: 0.75rem;
 }
 
-.budgetCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.budgetBtn {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid transparent;
+  padding: 1rem;
   border-radius: 12px;
-  padding: 16px 20px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budgetBtn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.budgetBtnActive {
+  border-color: var(--accent, #00ff88);
+  background: rgba(0, 255, 136, 0.1);
+}
+
+.footer {
+  padding: 1.5rem 2.5rem;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  text-align: left;
-  font-family: inherit;
-  color: inherit;
-}
-
-.budgetCard:hover {
-  background: rgba(212, 175, 55, 0.08);
-  border-color: rgba(212, 175, 55, 0.4);
-  transform: translateX(4px);
-  color: #D4AF37;
-}
-
-.budgetHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.budgetValue {
-  font-weight: 700;
-  font-size: 16px;
-  color: #F8FAFC;
-}
-
-.budgetCard:hover .budgetValue {
-  color: #D4AF37;
-}
-
-.budgetDesc {
-  font-size: 12px;
-  color: #94A3B8;
-}
-
-.arrowIcon {
-  font-size: 18px;
-  color: #64748B;
-  transition: transform 0.2s, color 0.2s;
-}
-
-.budgetCard:hover .arrowIcon {
-  transform: translateX(4px);
-  color: #D4AF37;
-}
-
-/* Buttons */
-.actionBtn {
-  background: linear-gradient(135deg, #FF6F61 0%, #D4AF37 100%);
-  color: white;
-  border: none;
-  padding: 14px 20px;
-  border-radius: 12px;
-  font-size: 14.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(255, 111, 97, 0.25);
-  text-align: center;
-  font-family: inherit;
-}
-
-.actionBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 111, 97, 0.4);
-}
-
-.btnRow {
-  display: flex;
-  gap: 12px;
-}
-
-.btnRow .actionBtn {
-  flex: 2;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.05);
 }
 
 .backBtn {
-  background: transparent;
-  color: #94A3B8;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 14px 20px;
-  border-radius: 12px;
-  font-size: 14.5px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s;
-  flex: 1;
-  font-family: inherit;
+  transition: color 0.2s;
 }
 
 .backBtn:hover {
-  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
 }
 
-@media (max-width: 480px) {
-  .optionsGrid {
-    grid-template-columns: 1fr;
-  }
+.nextBtn {
+  background: var(--accent, #00ff88);
+  color: #000;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nextBtn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(0,255,136,0.4);
+}
+
+.nextBtn:disabled {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.3);
+  cursor: not-allowed;
 }

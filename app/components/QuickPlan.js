@@ -60,8 +60,7 @@ export default function QuickPlan() {
       const id = saveGeneratedItinerary(data);
       router.push(`/itinerary/${id}`);
     } catch (error) {
-      console.error(error);
-      // alert('Something went wrong. Please try again.');
+      // error occurred, but app continues silently
       setLoading(false);
     }
   };

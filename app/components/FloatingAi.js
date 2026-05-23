@@ -167,35 +167,8 @@ function playCinematicSound() {
   }
 }
 
-// Sub-component for typewriter streaming effect
 function TypewriterText({ text, isStreaming }) {
-  const [displayedText, setDisplayedText] = useState('');
-  const indexRef = useRef(0);
-  
-  useEffect(() => {
-    if (!isStreaming) {
-      setDisplayedText(text);
-      indexRef.current = text.length;
-      return;
-    }
-    
-    let timeoutId;
-    const tick = () => {
-      if (indexRef.current < text.length) {
-        const catchUpChars = Math.max(1, Math.floor((text.length - indexRef.current) / 3));
-        indexRef.current += catchUpChars;
-        setDisplayedText(text.slice(0, indexRef.current));
-        timeoutId = setTimeout(tick, 10 + Math.random() * 15);
-      } else {
-        timeoutId = setTimeout(tick, 40);
-      }
-    };
-    
-    tick();
-    return () => clearTimeout(timeoutId);
-  }, [text, isStreaming]);
-
-  const cleanText = formatMarkdown(displayedText);
+  const cleanText = formatMarkdown(text);
   return (
     <div style={{ display: 'inline' }}>
       <span dangerouslySetInnerHTML={{ __html: cleanText }} />
@@ -343,7 +316,7 @@ export default function FloatingAi() {
             setShowRestorePrompt(true);
           }
         } catch (e) {
-          console.error(e);
+          // silent fail on parse
         }
       }
     }
@@ -376,7 +349,7 @@ export default function FloatingAi() {
       if (pathname && pathname.startsWith('/destination/')) {
         const slug = pathname.split('/').pop();
         const destName = slug.charAt(0).toUpperCase() + slug.slice(1);
-        welcomeContent = `Estou a ver que estás a explorar ${destName}. Queres que crie um itinerário personalizado?`;
+        welcomeContent = `Estou a ver que estás a explorar ${destName}...`;
       } else if (pathname && pathname.includes('/itinerary/')) {
         welcomeContent = "Posso melhorar este itinerário, adicionar um dia, ou ajustar o orçamento. O que precisas?";
       } else {
@@ -421,7 +394,7 @@ export default function FloatingAi() {
             showToast('💾 Itinerário guardado nos teus favoritos!');
           }
         } catch (e) {
-          console.error(e);
+          // silent fail on parse
         }
       }
     }
@@ -528,7 +501,7 @@ export default function FloatingAi() {
       checkAndExecuteActions(assistantMessage);
 
     } catch (error) {
-      console.error(error);
+      // silent error, show UI fallback instead
       saveMessages([...newMessages, { role: 'assistant', content: '⚠️ Ocorreu um erro no servidor. Verifica a tua ligação.', isStreaming: false }]);
     } finally {
       setIsLoading(false);
@@ -769,7 +742,7 @@ export default function FloatingAi() {
                 });
               }
             } catch (err) {
-              console.error(err);
+              // silent error on collaboration fetch
             } finally {
               setIsLoading(false);
             }

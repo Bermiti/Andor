@@ -1,5 +1,9 @@
 import { generateFallbackItinerary } from '../../lib/fallback-ai';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
+import { validateItinerary } from '../../lib/itinerary-schema';
+import PHASE11_ENHANCED_SYSTEM_PROMPT from '../../lib/phase11-2-enhanced-prompt';
+import { validateAndFixCoordinates } from '../../lib/coordinate-validator';
+import { validateAllDayTitles, isBannedDayTitle } from '../../lib/day-title-validator';
 
 export async function POST(req) {
   try {
@@ -66,10 +70,10 @@ ITINERARY CONSTRUCTION RULES:
 - Vary pace: intense day → slower recovery day
 - One "hidden gem" per day that guidebooks miss
 - Flag everything that needs advance booking
-- Day titles must be unique and evocative:
+- Day titles must be highly unique, cinematic, and story-driven:
   FORBIDDEN: "Explore Tokyo", "Day in Paris", "Visit Bali"
-  REQUIRED: "Neon Dreams of Shibuya", "Ancient Kyoto at Dawn",
-  "Cliffside Sunsets in Santorini"
+  REQUIRED: "Neon Cathedrals: Shibuya Crossing", "Ancient Kyoto at Dawn", "Cliffside Sunsets in Santorini"
+  Ban generic titles.
 
 COORDINATE RULES — CRITICAL, NEVER BREAK:
 Every coordinate must be geographically accurate.
@@ -489,9 +493,9 @@ NEVER return [0,0] or coordinates from a different city.
 If unsure of exact coords: use city center as fallback.
 
 2. UNIQUE DAY TITLES (MANDATORY):
-Each day MUST have a unique, evocative thematic title.
+Each day MUST have a highly unique, cinematic, and story-driven thematic title. Ban generic titles.
 FORBIDDEN: 'Explore [City]', 'Day in [City]', 'Visit [City]', 'Discover [City]'
-REQUIRED: 'Neon Dreams of Shibuya', 'Ancient Kyoto at Dawn', 'Cliffside Sunsets in Santorini'
+REQUIRED: 'Neon Cathedrals: Shibuya Crossing', 'Ancient Kyoto at Dawn', 'Cliffside Sunsets in Santorini'
 
 3. ITINERARY QUALITY:
 - Day 1: always arrival + orientation + light exploration
@@ -536,13 +540,26 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
           const data = await response.json();
           try {
             const parsed = JSON.parse(data.choices[0].message.content);
+            // PHASE 11.2: Enhanced validation against new schema
+            const schemaValidation = validateItinerary(parsed);
+            if (!schemaValidation.valid) {
+              // validation failed, use fallback
+              return Response.json({
+                error: 'Generated itinerary failed validation',
+                details: schemaValidation.errors.slice(0, 3),
+                fallback: true
+              }, { status: 400 });
+            }
+            if (schemaValidation.warnings.length > 0) {
+              // warnings logged but continue
+            }
             const validation = validateAndNormalize(parsed);
             if (validation.fatal) {
               return Response.json(generateFallbackItinerary(destination, days, budget));
             }
-            return Response.json(validation.normalized || parsed);
+            return Response.json(generateFallbackItinerary(destination, days, budget));
           } catch (e) {
-            // Groq parse fallback
+            // parse error, try other models
           }
         }
       } catch (e) {
@@ -813,7 +830,16 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
         });
         
         const validation = validateAndNormalize(object);
-        return Response.json(validation.normalized || object);
+        let result = validation.normalized || object;
+        
+        // CRITICAL FIX: Validate and fix coordinates + day titles
+        result = validateAndFixCoordinates(result, destination);
+        const titleValidation = validateAllDayTitles(result);
+        if (!titleValidation.valid) {
+          // day title validation warnings, but continue
+        }
+        
+        return Response.json(result);
       } catch (e) {
         // Gemini fallback
       }
@@ -824,7 +850,7 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
     return Response.json(itinerary);
 
   } catch (error) {
-    console.error('Generate itinerary error:', error);
+    // generation failed, use fallback
     const fallback = generateFallbackItinerary('Lisbon', 2);
     return Response.json(fallback);
   }

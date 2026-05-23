@@ -1,0 +1,307 @@
+/* PHASE 11.3: LocalTransportSection Styles */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(6, 182, 212, 0) 100%);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(6, 182, 212, 0.1);
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.6s ease-out 0.15s both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.titleArea {
+  flex: 1;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon {
+  font-size: 2rem;
+}
+
+.subtitle {
+  color: #a0aec0;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Passes Section */
+.passesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.passesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .passesGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+.passCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.passCard:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  background: rgba(30, 41, 59, 0.6);
+  transform: translateY(-2px);
+}
+
+.passName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.passCost {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #7dd3fc;
+}
+
+.passValidity {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.passIncludes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.includesLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.includesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.includesList li {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.recommendation {
+  padding: 0.5rem;
+  background: rgba(6, 182, 212, 0.1);
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  color: #7dd3fc;
+  border-left: 2px solid rgba(6, 182, 212, 0.3);
+}
+
+/* Apps Section */
+.appsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.appsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .appsList {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+.appCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.appCard:hover {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: rgba(30, 41, 59, 0.6);
+  transform: translateY(-2px);
+}
+
+.appName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #d8b4fe;
+}
+
+.appPurpose {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+/* Tips Section */
+.tipsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tipsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.tipsList li {
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.08);
+  border-left: 2px solid #3b82f6;
+  border-radius: 0.3rem;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Modes Section */
+.modesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.modeTag {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: rgba(6, 182, 212, 0.15);
+  color: #7dd3fc;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Empty */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .section {
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .sectionTitle {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+  }
+
+  .passesGrid,
+  .appsList {
+    grid-template-columns: 1fr;
+  }
+
+  .passCard,
+  .appCard {
+    padding: 0.75rem;
+  }
+
+  .modesList {
+    gap: 0.4rem;
+  }
+
+  .modeTag {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}

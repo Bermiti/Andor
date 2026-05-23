@@ -1,4 +1,5 @@
 import { generateChatResponse } from '../../lib/fallback-ai';
+import { buildChatSystemPrompt } from '../../lib/phase11-2-chat-prompt';
 
 const SYSTEM_PROMPT = `You are ANDOR — an elite AI travel agent with the combined
 expertise of a luxury travel consultant, a local guide who
@@ -16,11 +17,12 @@ CORE IDENTITY:
 - You are warm but efficient — like a brilliant friend
   who happens to be a world expert in travel
 
-LANGUAGE RULE:
-Always respond in the user's selected language.
-If language is 'pt' use European Portuguese.
-If language is 'pt-BR' use Brazilian Portuguese.
-Never mix languages in the same response.
+LANGUAGE RULE - CRITICAL:
+You MUST respond EXCLUSIVELY in the user's selected language.
+If language is 'pt', use European Portuguese ONLY.
+If language is 'pt-BR', use Brazilian Portuguese ONLY.
+If language is 'en', use English ONLY.
+NEVER mix languages. NEVER default to English if not requested.
 
 DESTINATION EXPERTISE — for every place you know:
 → Best/worst months to visit and exactly why
@@ -56,10 +58,10 @@ ITINERARY CONSTRUCTION RULES:
 - Vary pace: intense day → slower recovery day
 - One "hidden gem" per day that guidebooks miss
 - Flag everything that needs advance booking
-- Day titles must be unique and evocative:
-  FORBIDDEN: "Explore Tokyo", "Day in Paris", "Visit Bali"
-  REQUIRED: "Neon Dreams of Shibuya", "Ancient Kyoto at Dawn",
-  "Cliffside Sunsets in Santorini"
+- Day titles must be highly unique, cinematic, and story-driven:
+  FORBIDDEN: "Explore Tokyo", "Day in Paris", "Visit Bali", "Discover London"
+  REQUIRED: "Neon Cathedrals: Shibuya Crossing", "Ancient Kyoto at Dawn", "Cliffside Sunsets in Santorini", "Whispers of the Colosseum"
+  Ban generic titles.
 
 COORDINATE RULES — CRITICAL, NEVER BREAK:
 Every coordinate must be geographically accurate.
@@ -125,12 +127,19 @@ WHAT YOU NEVER DO:
 
 export async function POST(req) {
   try {
-    const { messages, locale } = await req.json();
+    const { messages, locale, destination, itinerary } = await req.json();
     const lastMessage = messages[messages.length - 1]?.content || '';
     const userLocale = locale || 'pt';
     
-    // Dynamically append the language guideline to the system prompt
-    const activeSystemPrompt = `${SYSTEM_PROMPT}\n\nAlways respond in the user's selected language: ${userLocale}. If locale is 'pt', use European Portuguese. If 'pt-BR', use Brazilian Portuguese.`;
+    // PHASE 11.2: Build context-aware prompt
+    // If we have destination/itinerary, use enhanced prompt with context
+    let activeSystemPrompt;
+    if (destination) {
+      activeSystemPrompt = buildChatSystemPrompt(destination, itinerary, userLocale);
+    } else {
+      // Fallback to original system prompt
+      activeSystemPrompt = `${SYSTEM_PROMPT}\n\nAlways respond in: ${userLocale === 'pt-BR' ? 'Brazilian Portuguese' : 'European Portuguese'}.`;
+    }
 
     // Try Groq Llama first
     const groqKey = process.env.GROQ_API_KEY;
@@ -242,7 +251,6 @@ export async function POST(req) {
     });
 
   } catch (error) {
-    console.error('Chat error:', error);
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {

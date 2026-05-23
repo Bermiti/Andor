@@ -1,179 +1,114 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import styles from './OnboardingModal.module.css';
-import { useToast } from './ToastProvider';
-import { trackEvent } from '../lib/analytics';
 
 export default function OnboardingModal() {
-  const { showToast } = useToast();
-  const [show, setShow] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
-  const [travelerType, setTravelerType] = useState('');
-  const [budgetRange, setBudgetRange] = useState('');
+  const [persona, setPersona] = useState('');
+  const [budget, setBudget] = useState('');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isDone = localStorage.getItem('firstVisitDone');
-      if (!isDone) {
-        setShow(true);
-      }
+    const hasOnboarded = localStorage.getItem('andor_onboarded');
+    if (!hasOnboarded) {
+      setIsOpen(true);
     }
   }, []);
 
-  if (!show) return null;
+  if (!isOpen) return null;
 
   const handleNext = () => {
-    if (step === 1 && !name.trim()) {
-      showToast("Por favor, introduz o teu nome.", "info");
-      return;
-    }
-    if (step === 2 && !travelerType) {
-      showToast("Por favor, escolhe o teu perfil de viajante.", "info");
-      return;
-    }
-    setStep(prev => prev + 1);
+    if (step < 3) setStep(step + 1);
+    else handleComplete();
   };
 
-  const handleFinish = (selectedBudget) => {
-    const finalBudget = selectedBudget || budgetRange;
-    if (!finalBudget) {
-      showToast("Por favor, seleciona o teu orçamento.", "info");
-      return;
-    }
-
-    const profile = {
-      name,
-      travelerType,
-      budgetRange: finalBudget,
-      createdDate: new Date().toISOString()
-    };
-
-    if (typeof window !== 'undefined') {
-      const email = `${name.toLowerCase().replace(/\s+/g, '')}@andortravels.com`;
-      const newUser = {
-        name,
-        email,
-        trips: [],
-        role: 'user',
-        profile
-      };
-      localStorage.setItem('andor_user', JSON.stringify(newUser));
-      localStorage.setItem('userProfile', JSON.stringify(profile));
-      localStorage.setItem('firstVisitDone', 'true');
-      
-      trackEvent('onboarding_completed', {
-        travelerType: travelerType,
-        budgetRange: finalBudget
-      });
-      
-      // Dispatch authentication change event and reload to propagate user info
-      window.dispatchEvent(new Event('auth-state-change'));
-      window.location.reload();
-    }
-
-    setShow(false);
+  const handleComplete = () => {
+    localStorage.setItem('andor_user', JSON.stringify({ name, persona, budget }));
+    localStorage.setItem('andor_onboarded', 'true');
+    setIsOpen(false);
   };
 
-  if (!show) return null;
+  const personas = [
+    { id: 'adventurer', title: 'The Adventurer', icon: '🧗', desc: 'Thrill-seeker looking for action' },
+    { id: 'culture', title: 'Culture Vulture', icon: '🏛️', desc: 'Deep dives into history & art' },
+    { id: 'relaxer', title: 'The Relaxer', icon: '🏖️', desc: 'Chill vibes and luxury' },
+    { id: 'foodie', title: 'The Foodie', icon: '🍝', desc: 'Traveling for the next great meal' }
+  ];
 
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        {/* Progress Bar */}
-        <div className={styles.progressBar}>
-          <div className={`${styles.progressSegment} ${step >= 1 ? styles.active : ''}`} />
-          <div className={`${styles.progressSegment} ${step >= 2 ? styles.active : ''}`} />
-          <div className={`${styles.progressSegment} ${step >= 3 ? styles.active : ''}`} />
+        <div className={styles.progress}>
+          <div className={styles.progressBar} style={{ width: `${(step / 3) * 100}%` }}></div>
         </div>
 
         {step === 1 && (
-          <div className={styles.stepContent}>
-            <span className={styles.badge}>Passo 1 de 3</span>
-            <h2 className={styles.title}>Bem-vindo ao Andor 👋</h2>
-            <p className={styles.subtitle}>O teu concierge de viagens pessoal. Antes de começar, diz-nos o teu nome.</p>
-            <input
-              type="text"
-              placeholder="O teu nome"
+          <div className={styles.step}>
+            <h2>Welcome to Andor</h2>
+            <p>What should we call you?</p>
+            <input 
+              type="text" 
+              className={styles.input} 
+              placeholder="Your name" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={styles.textInput}
               autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleNext()}
             />
-            <button onClick={handleNext} className={styles.actionBtn}>
-              Continuar →
-            </button>
           </div>
         )}
 
         {step === 2 && (
-          <div className={styles.stepContent}>
-            <span className={styles.badge}>Passo 2 de 3</span>
-            <h2 className={styles.title}>Que tipo de viajante és, {name}?</h2>
-            <p className={styles.subtitle}>Escolhe o estilo que melhor te descreve.</p>
-            <div className={styles.optionsGrid}>
-              {[
-                { key: 'Urbano', label: 'Explorador Urbano', emoji: '🏙️', desc: 'Cidades, cultura e gastronomia' },
-                { key: 'Espirito', label: 'Espírito Livre', emoji: '🧘', desc: 'Natureza, aventura e experiências únicas' },
-                { key: 'Curado', label: 'Viajante Curado', emoji: '💎', desc: 'Qualidade, conforto e momentos especiais' },
-                { key: 'Eficiente', label: 'Nómada Eficiente', emoji: '⚡', desc: 'Muito mundo, orçamento inteligente' }
-              ].map((opt) => (
-                <button
-                  type="button"
-                  key={opt.key}
-                  onClick={() => setTravelerType(opt.key)}
-                  className={`${styles.optionCard} ${travelerType === opt.key ? styles.selectedCard : ''}`}
+          <div className={styles.step}>
+            <h2>Your Travel Persona</h2>
+            <p>What kind of traveler are you, {name || 'friend'}?</p>
+            <div className={styles.cards}>
+              {personas.map(p => (
+                <button 
+                  key={p.id} 
+                  className={`${styles.card} ${persona === p.id ? styles.cardActive : ''}`}
+                  onClick={() => setPersona(p.id)}
                 >
-                  <span className={styles.optionEmoji}>{opt.emoji}</span>
-                  <div className={styles.optionInfo}>
-                    <span className={styles.optionLabel}>{opt.label}</span>
-                    <span className={styles.optionDesc}>{opt.desc}</span>
-                  </div>
+                  <span className={styles.cardIcon}>{p.icon}</span>
+                  <span className={styles.cardTitle}>{p.title}</span>
+                  <span className={styles.cardDesc}>{p.desc}</span>
                 </button>
               ))}
-            </div>
-            <div className={styles.btnRow}>
-              <button onClick={() => setStep(1)} className={styles.backBtn}>Voltar</button>
-              <button onClick={handleNext} className={styles.actionBtn}>Continuar →</button>
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className={styles.stepContent}>
-            <span className={styles.badge}>Passo 3 de 3</span>
-            <h2 className={styles.title}>Qual é o teu orçamento típico por viagem?</h2>
-            <p className={styles.subtitle}>Seleciona o nível de investimento habitual para as tuas escapadelas.</p>
-            <div className={styles.budgetList}>
-              {[
-                { key: '€', desc: 'Até €800' },
-                { key: '€€', desc: '€800-2.000' },
-                { key: '€€€', desc: '€2.000-5.000' },
-                { key: '€€€€', desc: '€5.000+' }
-              ].map((opt) => (
-                <button
-                  type="button"
-                  key={opt.key}
-                  onClick={() => setBudgetRange(opt.key)}
-                  className={`${styles.budgetCard} ${budgetRange === opt.key ? styles.selectedCard : ''}`}
+          <div className={styles.step}>
+            <h2>Travel Budget</h2>
+            <p>How do you typically spend?</p>
+            <div className={styles.budgetOptions}>
+              {['Shoestring', 'Moderate', 'Luxury', 'Whatever it takes'].map(b => (
+                <button 
+                  key={b} 
+                  className={`${styles.budgetBtn} ${budget === b ? styles.budgetBtnActive : ''}`}
+                  onClick={() => setBudget(b)}
                 >
-                  <div className={styles.budgetHeader}>
-                    <span className={styles.budgetValue}>{opt.key}</span>
-                    <span className={styles.budgetDesc}>{opt.desc}</span>
-                  </div>
+                  {b}
                 </button>
               ))}
             </div>
-            <div className={styles.btnRow}>
-              <button onClick={() => setStep(2)} className={styles.backBtn}>Voltar</button>
-              <button onClick={() => handleFinish(budgetRange)} className={styles.actionBtn}>
-                Começar a Explorar →
-              </button>
-            </div>
           </div>
         )}
+
+        <div className={styles.footer}>
+          {step > 1 ? (
+            <button className={styles.backBtn} onClick={() => setStep(step - 1)}>Back</button>
+          ) : <div></div>}
+          
+          <button 
+            className={styles.nextBtn} 
+            onClick={handleNext}
+            disabled={(step === 1 && !name) || (step === 2 && !persona) || (step === 3 && !budget)}
+          >
+            {step === 3 ? 'Start Exploring' : 'Next'}
+          </button>
+        </div>
       </div>
     </div>
   );

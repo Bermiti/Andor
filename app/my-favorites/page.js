@@ -17,7 +17,7 @@ export default function MyFavoritesPage() {
         try {
           setFavorites(safeParse(stored, []));
         } catch (e) {
-          console.error(e);
+          // silent fail
         }
       }
       setLoaded(true);

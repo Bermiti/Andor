@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './ActiveTravelers.module.css';
 
-function getRandomCount() {
-  return Math.floor(Math.random() * 151) + 200; // 200-350
+function getRandomInitial() {
+  return Math.floor(Math.random() * 80) + 180;
 }
 
-export default function ActiveTravelers() {
-  const [count, setCount] = useState(247);
+export default function ActiveTravelers({ embedded = false }) {
+  const [count, setCount] = useState(getRandomInitial);
   const [visible, setVisible] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
   const intervalRef = useRef(null);
@@ -24,15 +24,27 @@ export default function ActiveTravelers() {
     }
   }, []);
 
-  // Fluctuate count every 10 seconds
+  // Fluctuate count every 8-15 seconds
   useEffect(() => {
     if (!visible) return;
 
-    intervalRef.current = setInterval(() => {
-      setCount(getRandomCount());
-    }, 10000);
+    const scheduleNext = () => {
+      const delay = Math.floor(Math.random() * 7000) + 8000; // 8-15s
+      intervalRef.current = setTimeout(() => {
+        setCount(prev => {
+          const change = Math.floor(Math.random() * 21) - 10; // -10 to +10
+          let newCount = prev + change;
+          if (newCount < 150) newCount = 150;
+          if (newCount > 400) newCount = 400;
+          return newCount;
+        });
+        scheduleNext();
+      }, delay);
+    };
 
-    return () => clearInterval(intervalRef.current);
+    scheduleNext();
+
+    return () => clearTimeout(intervalRef.current);
   }, [visible]);
 
   const handleDismiss = useCallback(() => {
@@ -50,7 +62,7 @@ export default function ActiveTravelers() {
   if (!visible) return null;
 
   return (
-    <div className={`${styles.badge} ${isExiting ? styles.exiting : ''}`}>
+    <div className={`${embedded ? styles.embeddedBadge : styles.badge} ${isExiting ? styles.exiting : ''}`}>
       <span className={styles.dotWrapper}>
         <span className={styles.dot} />
         <span className={styles.dotPulse} />
@@ -59,13 +71,15 @@ export default function ActiveTravelers() {
         <span className={styles.count}>{count}</span>{' '}
         <span className={styles.text}>pessoas a explorar destinos agora</span>
       </span>
-      <button
-        className={styles.closeBtn}
-        onClick={handleDismiss}
-        aria-label="Fechar"
-      >
-        ✕
-      </button>
+      {!embedded && (
+        <button
+          className={styles.closeBtn}
+          onClick={handleDismiss}
+          aria-label="Fechar"
+        >
+          ✕
+        </button>
+      )}
     </div>
   );
 }

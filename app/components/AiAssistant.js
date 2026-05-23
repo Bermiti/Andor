@@ -72,8 +72,6 @@ export default function AiAssistant() {
           }
         }
       }
-    } catch (error) {
-      console.error(error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: '⚠️ Sorry, an error occurred. Please check if the Gemini API key is set in .env.local.' 

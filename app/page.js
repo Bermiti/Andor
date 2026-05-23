@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import DestinosAlta from './components/DestinosAlta';
-import ComoFunciona from './components/ComoFunciona';
-import ConciergeShowcase from './components/ConciergeShowcase';
-import Testemunhos from './components/Testemunhos';
+import HomeHero from './components/home/HomeHero';
+import HomeTrending from './components/home/HomeTrending';
+import HomeHowItWorks from './components/home/HomeHowItWorks';
+import HomeTestimonials from './components/home/HomeTestimonials';
 import CtaFinal from './components/CtaFinal';
 import Footer from './components/Footer';
 import OnboardingModal from './components/OnboardingModal';
@@ -65,12 +64,11 @@ export default function Home() {
       <SplashScreen />
       <OnboardingModal />
       <Navbar />
-      <main className="overflow-hidden">
-        <Hero onOpenWizard={openWizard} />
-        <DestinosAlta onOpenWizard={openWizard} />
-        <ComoFunciona />
-        <ConciergeShowcase />
-        <Testemunhos />
+      <main className="overflow-hidden" style={{ width: '100%', maxWidth: '100vw' }}>
+        <HomeHero onOpenWizard={openWizard} />
+        <HomeTrending onOpenWizard={openWizard} />
+        <HomeHowItWorks />
+        <HomeTestimonials />
         <CtaFinal />
       </main>
       <Footer />

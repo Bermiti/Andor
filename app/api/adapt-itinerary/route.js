@@ -67,7 +67,7 @@ export async function POST(req) {
     return Response.json(newDay);
 
   } catch (error) {
-    console.error("AI Adaptation Error:", error);
+    // adaptation failed, return error response
     return Response.json({ error: "Failed to adapt itinerary" }, { status: 500 });
   }
 }

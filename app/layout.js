@@ -9,9 +9,9 @@ import FloatingAi from './components/FloatingAi';
 import CustomRequestModal from './components/CustomRequestModal';
 import NewsletterPopup from './components/NewsletterPopup';
 import SocialProofToast from './components/SocialProofToast';
-import ActiveTravelers from './components/ActiveTravelers';
 import EasterEgg from './components/EasterEgg';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import SplashScreen from './components/SplashScreen';
 
 const playfair = Playfair_Display({ 
   subsets: ['latin'], 
@@ -108,6 +108,7 @@ export default function RootLayout({ children }) {
           <AuthProvider>
             <ToastProvider>
               <ChatContextProvider>
+                <SplashScreen />
                 <EasterEgg />
                 <CommandCenter />
                 <ErrorBoundary>
@@ -116,7 +117,6 @@ export default function RootLayout({ children }) {
                 <CustomRequestModal />
                 <NewsletterPopup />
                 <SocialProofToast />
-                <ActiveTravelers />
                 {children}
               </ChatContextProvider>
             </ToastProvider>

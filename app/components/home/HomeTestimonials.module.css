@@ -1,0 +1,98 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: 24px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="light"] .card {
+  background: #fff;
+  border-color: rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-card);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+}
+
+.stars {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.star {
+  color: var(--gold);
+}
+
+.quote {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1.5;
+  color: var(--t-1);
+  margin-bottom: 32px;
+  flex: 1;
+  font-style: italic;
+}
+
+[data-theme="light"] .quote {
+  color: var(--text-primary);
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: auto;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: 1px;
+}
+
+.authorInfo h4 {
+  font-size: 1.125rem;
+  color: var(--t-1);
+  margin: 0 0 4px 0;
+}
+
+[data-theme="light"] .authorInfo h4 {
+  color: var(--text-primary);
+}
+
+.authorInfo span {
+  font-size: 0.875rem;
+  color: var(--t-3);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .card {
+    padding: 32px 24px;
+  }
+  .quote {
+    font-size: 1.25rem;
+  }
+}

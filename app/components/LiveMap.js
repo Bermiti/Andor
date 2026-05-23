@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './LiveMap.module.css';
 
-export default function LiveMap({ stops = [] }) {
+export default function LiveMap({ stops = [], destination = {} }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -103,17 +103,23 @@ export default function LiveMap({ stops = [] }) {
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
 
-      const validStops = fadingStops.filter(
-        (stop) =>
-          stop.coordinates &&
-          typeof stop.coordinates.lat === 'number' &&
-          typeof stop.coordinates.lng === 'number'
-      );
+      const validateAndFixCoordinates = (stops) => {
+        return stops.filter((stop) => {
+          if (!stop.coordinates) return false;
+          const { lat, lng } = stop.coordinates;
+          if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+          // Filter out obvious invalid coordinates like [0, 0] or completely invalid ones
+          if (Math.abs(lat) < 0.1 && Math.abs(lng) < 0.1) return false;
+          return true;
+        });
+      };
+
+      const validStops = validateAndFixCoordinates(fadingStops);
 
       if (!mapInstanceRef.current) {
         const initialCenter = validStops.length > 0
           ? [validStops[0].coordinates.lat, validStops[0].coordinates.lng]
-          : [38.7223, -9.1393];
+          : destination?.coordinates ? [destination.coordinates.lat, destination.coordinates.lng] : [38.7223, -9.1393];
 
         const map = L.map(mapContainerRef.current, {
           center: initialCenter,
@@ -254,6 +260,8 @@ export default function LiveMap({ stops = [] }) {
       if (latlngs.length > 0) {
         const bounds = L.latLngBounds(latlngs);
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true, duration: 1.2 });
+      } else if (destination?.coordinates) {
+        map.setView([destination.coordinates.lat, destination.coordinates.lng], 12);
       }
     };
 

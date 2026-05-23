@@ -113,7 +113,6 @@ export function validateAndNormalize(itinerary) {
 
       if (bounds) {
         if (lat < bounds.latMin || lat > bounds.latMax || lng < bounds.lngMin || lng > bounds.lngMax) {
-          console.error('COORDINATE MISMATCH:', destName, lat, lng);
           lat = bounds.center.lat;
           lng = bounds.center.lng;
         }

@@ -149,7 +149,6 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
       }, 1500);
 
     } catch (error) {
-      console.error(error);
       setIsSubmitting(false);
       showToast('❌ Erro ao gerar itinerário. Tenta novamente.', 'error');
     }
