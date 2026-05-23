@@ -175,6 +175,7 @@
   overflow-x: auto;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 var(--space-8);
@@ -188,7 +189,7 @@
 }
 
 .dayTab {
-  background: transparent;
+  background: var(--bg-elevated, var(--bg-secondary));
   border: none;
   padding: var(--space-4) var(--space-3);
   display: flex;
@@ -196,24 +197,47 @@
   gap: var(--space-3);
   min-width: 180px;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
   color: var(--text-secondary);
   transition: all 0.25s ease;
   text-align: left;
   scroll-snap-align: start;
   flex-shrink: 0;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
+  position: relative;
 }
 
 .dayTab:hover {
   color: var(--text-primary);
-  background: rgba(212, 168, 67, 0.04);
+  background: rgba(212, 168, 67, 0.08);
 }
 
 .dayTabActive {
-  background: linear-gradient(135deg, rgba(212, 168, 67, 0.12), rgba(232, 116, 97, 0.08));
-  border-bottom-color: var(--gold);
-  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--gold), var(--coral)) !important;
+  color: #ffffff !important;
+}
+
+.dayTabActive .dayTabNumber,
+.dayTabActive .dayTabTitle,
+.dayTabActive .dayTabBudget {
+  color: #ffffff !important;
+}
+
+.dayTab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: transparent;
+  transition: background-color 0.25s ease, transform 0.25s ease;
+  transform: scaleX(0);
+  transform-origin: center;
+}
+
+.dayTabActive::after {
+  background: linear-gradient(90deg, var(--gold), var(--coral));
+  transform: scaleX(1);
 }
 
 .dayTabEmoji {
@@ -365,12 +389,17 @@
   color: var(--text-secondary);
 }
 
-/* ── Timeline ── */
 .timeline {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
   scroll-margin-top: 160px;
+  transition: opacity 150ms ease;
+  opacity: 1;
+}
+
+.timeline.transitioning {
+  opacity: 0;
 }
 
 .timeline.loading {
@@ -1091,14 +1120,16 @@
 
   .headerActionsDesktop {
     width: 100%;
-    flex-wrap: wrap;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .headerActionsDesktop button {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.85rem;
-    padding: 0.5rem 0.5rem;
+    width: 100% !important;
+    margin: 8px 0 !important;
+    font-size: 0.9rem;
+    padding: 0.75rem;
   }
 
   .dayTabs {
@@ -1107,7 +1138,7 @@
   }
 
   .dayTab {
-    min-width: 150px;
+    min-width: 140px;
     padding: var(--space-3) var(--space-2);
   }
 
@@ -1115,6 +1146,11 @@
     grid-template-columns: 1fr;
     padding: 0 var(--space-4);
     gap: var(--space-6);
+  }
+
+  .rightPanel {
+    margin-top: 24px;
+    width: 100%;
   }
 
   .mapContainer {
@@ -1133,6 +1169,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-3);
+    padding: 16px !important;
   }
 
   .activityHeaderRight {
@@ -1141,8 +1178,8 @@
   }
 
   .activityThumb {
-    width: 40px;
-    height: 40px;
+    width: 56px !important;
+    height: 56px !important;
   }
 
   .activityActions {

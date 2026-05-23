@@ -194,7 +194,7 @@ export async function POST(req) {
           });
         }
       } catch (e) {
-        // console.log('Groq chat failed:', e.message);
+        // Groq chat fallback
       }
     }
 
@@ -212,7 +212,7 @@ export async function POST(req) {
         });
         return result.toDataStreamResponse();
       } catch (e) {
-        // console.log('Gemini chat failed:', e.message);
+        // Gemini chat fallback
       }
     }
 

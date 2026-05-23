@@ -92,7 +92,9 @@ export default function ItineraryPage() {
   const [loading, setLoading] = useState(true);
   const [expandedStops, setExpandedStops] = useState({});
   const [isAdapting, setIsAdapting] = useState(false);
+  const [dayTransitioning, setDayTransitioning] = useState(false);
   const [showAdaptModal, setShowAdaptModal] = useState(false);
+  const [showBudgetDrawer, setShowBudgetDrawer] = useState(false);
   const [adaptFeedback, setAdaptFeedback] = useState('');
   const [adaptChecks, setAdaptChecks] = useState({});
   const [savedStops, setSavedStops] = useState({});
@@ -151,18 +153,125 @@ export default function ItineraryPage() {
   };
 
   const handleExportPDF = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !itinerary) return;
     showToast('📄 A gerar PDF...', 'info');
-    const element = printRef.current;
-    const opt = {
-      margin: 10,
-      filename: `Andor_${itinerary.destination?.city || 'Itinerario'}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
+    
+    const content = document.createElement('div');
+    content.innerHTML = `
+      <div style="font-family:'Georgia',serif; padding:40px; max-width:800px; color:#1A2235; background-color:#ffffff;">
+        
+        <!-- CAPA -->
+        <div style="text-align:center; padding:60px 0; border-bottom:2px solid #D4A843; margin-bottom: 40px;">
+          <div style="font-size:48px; margin-bottom:16px;">${itinerary.destination?.flag || '✈️'}</div>
+          <h1 style="font-size:36px; color:#1A2235; margin:0;">${itinerary.destination?.city || itinerary.destination?.name || 'O teu Destino'}</h1>
+          <p style="font-size:18px; color:#666; margin:8px 0;">${itinerary.trip?.totalDays || itinerary.days?.length || '–'} dias · ${itinerary.trip?.groupType || 'Viagem'} · ${itinerary.trip?.travelStyle || 'Exploração'}</p>
+          <p style="font-size:14px; color:#D4A843; margin:16px 0; font-style:italic;">"${itinerary.destination?.andorVerdict || ''}"</p>
+          <p style="font-size:12px; color:#999;">Gerado por Andor Travels · andortravels.com</p>
+        </div>
+        
+        <!-- RESUMO DE ORÇAMENTO -->
+        <div style="margin:40px 0; padding:24px; background:#f8f8f8; border-radius:8px; page-break-inside:avoid;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">💰 Estimativa de Orçamento</h2>
+          <table style="width:100%; border-collapse:collapse; font-size:14px;">
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">✈️ Voos</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.flights?.min || 0}-${itinerary.trip?.budgetBreakdown?.flights?.max || 0}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🏨 Alojamento</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.accommodation?.total || 0}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🍽️ Refeições</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.food?.total || 0}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🎭 Actividades</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.activities?.total || 0}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🚇 Transportes</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.transport?.total || 0}</td></tr>
+            <tr style="border-top:2px solid #D4A843; font-weight:bold;">
+              <td style="padding:12px 0;">TOTAL ESTIMADO</td>
+              <td style="text-align:right; padding:12px 0; color:#D4A843;">~€${itinerary.trip?.budgetBreakdown?.grandTotal?.min || 0}-${itinerary.trip?.budgetBreakdown?.grandTotal?.max || 0}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- DIAS -->
+        ${(itinerary.days || []).map(day => {
+          const dayBudget = getDayBudget(day);
+          const morningActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'morning');
+          const afternoonActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'afternoon');
+          const eveningActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'evening');
+          
+          return `
+            <div style="margin:40px 0; page-break-inside:avoid; border-bottom:1px solid #eee; padding-bottom:30px;">
+              <h2 style="font-size:22px; color:#1A2235; border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:12px;">
+                ${getDayEmoji(day)} Dia ${day.dayNumber} — ${day.title}
+              </h2>
+              <p style="color:#666; font-style:italic; font-size:14px; margin-bottom:10px;">${day.moodDescription || ''}</p>
+              <p style="font-size:13px; color:#555; margin-bottom:15px;">💰 Orçamento do dia: ~€${dayBudget} · ⛅ ${day.weather?.avgTemp || ''} ${day.weather?.condition || ''}</p>
+              
+              ${morningActivities.length ? `
+                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">🌅 Manhã</h3>
+                ${morningActivities.map(a => `
+                  <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
+                    <strong>${a.emoji || '📍'} ${a.name}</strong>
+                    <br/><span style="font-size:12px; color:#888;">📍 ${a.address || ''} · ⏱ ${a.duration || '2h'} · 💰 ${a.cost > 0 ? '€'+a.cost : 'Grátis'}</span>
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">💡 ${a.insiderTip}</span>` : ''}
+                  </div>
+                `).join('')}
+              ` : ''}
+
+              ${afternoonActivities.length ? `
+                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">☀️ Tarde</h3>
+                ${afternoonActivities.map(a => `
+                  <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
+                    <strong>${a.emoji || '📍'} ${a.name}</strong>
+                    <br/><span style="font-size:12px; color:#888;">📍 ${a.address || ''} · ⏱ ${a.duration || '2h'} · 💰 ${a.cost > 0 ? '€'+a.cost : 'Grátis'}</span>
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">💡 ${a.insiderTip}</span>` : ''}
+                  </div>
+                `).join('')}
+              ` : ''}
+
+              ${eveningActivities.length ? `
+                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">🌙 Noite</h3>
+                ${eveningActivities.map(a => `
+                  <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
+                    <strong>${a.emoji || '📍'} ${a.name}</strong>
+                    <br/><span style="font-size:12px; color:#888;">📍 ${a.address || ''} · ⏱ ${a.duration || '2h'} · 💰 ${a.cost > 0 ? '€'+a.cost : 'Grátis'}</span>
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">💡 ${a.insiderTip}</span>` : ''}
+                  </div>
+                `).join('')}
+              ` : ''}
+              
+              ${day.localSecret ? `
+                <div style="background:#fffbf0; padding:12px; border-radius:6px; margin-top:12px; border-left:3px solid #D4A843;">
+                  <strong style="font-size:12px; color:#D4A843;">🗝️ Segredo do Andor:</strong>
+                  <p style="font-size:12px; color:#555; margin:4px 0;">${day.localSecret}</p>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+        
+        <!-- INFO PRÁTICA -->
+        <div style="margin:40px 0; padding:24px; background:#f0f8ff; border-radius:8px; page-break-before:always;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">ℹ️ Informação Prática</h2>
+          <p style="font-size:14px; margin:8px 0;">🛂 <strong>Visto:</strong> ${itinerary.destination?.visaInfo || 'Não necessita de visto para estadias curtas'}</p>
+          <p style="font-size:14px; margin:8px 0;">🏥 <strong>Saúde:</strong> ${itinerary.destination?.healthInfo || 'Sem requisitos especiais'}</p>
+          <p style="font-size:14px; margin:8px 0;">🔒 <strong>Segurança:</strong> ${itinerary.destination?.safetyLevel || 'Normal'}</p>
+          <p style="font-size:14px; margin:8px 0;">💵 <strong>Gorjetas:</strong> ${itinerary.destination?.tippingCulture || 'Opcional'}</p>
+          <p style="font-size:14px; margin:8px 0;">🔌 <strong>Tomadas:</strong> ${itinerary.destination?.electricityPlug || 'Tipos padrão'}</p>
+          ${itinerary.destination?.simCard ? `<p style="font-size:14px; margin:8px 0;">📱 <strong>Cartão SIM:</strong> ${itinerary.destination.simCard}</p>` : ''}
+        </div>
+        
+        <div style="text-align:center; padding:20px; color:#999; font-size:11px; border-top:1px solid #eee;">
+          Gerado por Andor AI · andortravels.com · Preços são estimativas, verifica antes de reservar
+        </div>
+      </div>
+    `;
+    
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: `Andor_${itinerary.destination?.city || 'Itinerario'}_${itinerary.trip?.totalDays || itinerary.days?.length}dias.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    html2pdf().from(element).set(opt).save().then(() => {
+    
+    html2pdf().set(options).from(content).save().then(() => {
       showToast('✅ PDF exportado com sucesso!', 'success');
+    }).catch(err => {
+      showToast('❌ Erro ao exportar PDF.', 'error');
     });
   };
 
@@ -175,13 +284,15 @@ export default function ItineraryPage() {
     setIsAdapting(true);
     setShowAdaptModal(false);
     try {
-      const response = await fetch('/api/adapt-itinerary', {
+      const response = await fetch('/api/regenerate-day', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          originalItinerary: itinerary,
-          dayIndex: activeDay,
-          feedback: combined
+          destination: dest.city || dest.name || itinerary.destination,
+          dayNumber: activeDay + 1,
+          currentDay: currentDay,
+          feedback: combined,
+          allDays: itinerary.days
         })
       });
 
@@ -190,11 +301,22 @@ export default function ItineraryPage() {
         return;
       }
       
-      const newDay = await response.json();
+      const data = await response.json();
+      const newDay = data.day;
+      if (!newDay) {
+        showToast('❌ Erro ao processar a resposta do dia.', 'error');
+        return;
+      }
+
+      // Validate & normalize the new day
+      const mockItinerary = { ...itinerary, days: itinerary.days.map((d, i) => i === activeDay ? newDay : d) };
+      const val = validateAndNormalize(mockItinerary);
+      const normalizedDay = val.normalized?.days?.[activeDay] || newDay;
+
       const newItinerary = { ...itinerary };
-      newItinerary.days[activeDay] = newDay;
+      newItinerary.days[activeDay] = normalizedDay;
       setItinerary(newItinerary);
-      showToast('✅ Dia regenerado com sucesso!', 'success');
+      showToast(`✅ Dia ${activeDay + 1} regenerado com sucesso!`, 'success');
     } catch (error) {
       console.error(error);
       showToast('❌ Ocorreu um erro inesperado.', 'error');
@@ -218,10 +340,15 @@ export default function ItineraryPage() {
   };
 
   const handleDayChange = (i) => {
-    setActiveDay(i);
-    if (timelineRef.current) {
-      timelineRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (i === activeDay || dayTransitioning) return;
+    setDayTransitioning(true);
+    setTimeout(() => {
+      setActiveDay(i);
+      setDayTransitioning(false);
+      if (timelineRef.current) {
+        timelineRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
   };
 
   const openAIChat = () => {
@@ -324,7 +451,9 @@ export default function ItineraryPage() {
                   className={`${styles.dayTab} ${activeDay === i ? styles.dayTabActive : ''}`}
                   onClick={() => handleDayChange(i)}
                 >
-                  <div className={styles.dayTabEmoji}>{getDayEmoji(day)}</div>
+                  <div className={styles.dayTabEmoji}>
+                    {isAdapting && activeDay === i ? '⏳' : getDayEmoji(day)}
+                  </div>
                   <div className={styles.dayTabContent}>
                     <div className={styles.dayTabNumber}>DIA {i + 1}</div>
                     <div className={styles.dayTabTitle} title={day.title}>
@@ -389,22 +518,28 @@ export default function ItineraryPage() {
             </div>
 
             {/* TIMELINE (MANHÃ, TARDE, NOITE) */}
-            <div className={`${styles.timeline} ${isAdapting ? styles.loading : ''}`} ref={timelineRef}>
+            <div className={`${styles.timeline} ${isAdapting ? styles.loading : ''} ${dayTransitioning ? styles.transitioning : ''}`} ref={timelineRef}>
               <div className={styles.timelineHeader}>
                 <h2 className={styles.dayHeading}>{currentDay.title}</h2>
-                <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)}>
-                  🔄 Regenerar este dia
+                <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting}>
+                  {isAdapting ? '⏳ A processar...' : '🔄 Regenerar este dia'}
                 </button>
               </div>
 
-              {['morning', 'afternoon', 'evening'].map(periodKey => {
-                const stops = groupedStops[periodKey];
-                if (!stops || stops.length === 0) return null;
-                
-                const periodNames = { morning: 'MANHÃ 🌅', afternoon: 'TARDE ☀️', evening: 'NOITE 🌙' };
+              {isAdapting ? (
+                <div style={{ padding: '20px 0' }}>
+                  <SkeletonLoader variant="text" />
+                  <div style={{ height: '20px' }}></div>
+                  <SkeletonLoader variant="card" count={2} />
+                </div>
+              ) : ['morning', 'afternoon', 'evening'].map(periodKey => {
+                  const stops = groupedStops[periodKey];
+                  if (!stops || stops.length === 0) return null;
+                  
+                  const periodNames = { morning: 'MANHÃ 🌅', afternoon: 'TARDE ☀️', evening: 'NOITE 🌙' };
 
-                return (
-                  <div key={periodKey} className={styles.periodSection}>
+                  return (
+                    <div key={periodKey} className={styles.periodSection}>
                     <h3 className={styles.periodHeading}>{periodNames[periodKey]}</h3>
                     <div className={styles.periodStops}>
                       {stops.map((stop) => {
@@ -601,6 +736,9 @@ export default function ItineraryPage() {
                   </div>
                 </div>
               )}
+              <button className={styles.btnOutlineFull} onClick={() => setShowBudgetDrawer(true)} style={{ marginTop: '16px' }}>
+                ⚙️ Ajustar Orçamento
+              </button>
             </div>
 
             {/* VOOS */}
@@ -700,6 +838,28 @@ export default function ItineraryPage() {
             <div className={styles.modalActions}>
               <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(false)}>Cancelar</button>
               <button className={styles.btnPrimary} onClick={handleRegenerateDay}>Regenerar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DRAWER AJUSTAR ORÇAMENTO */}
+      {showBudgetDrawer && (
+        <div className={styles.modalOverlay} onClick={() => setShowBudgetDrawer(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>⚙️ Ajustar Orçamento</h3>
+              <button className={styles.modalClose} onClick={() => setShowBudgetDrawer(false)} style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>&times;</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: '20px 0' }}>
+              <BudgetCalculator 
+                baseCost={trip.budgetBreakdown?.grandTotal?.min || 500} 
+                daysCount={trip.totalDays || itinerary.days?.length || 3} 
+                currency="€" 
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.btnPrimary} onClick={() => setShowBudgetDrawer(false)}>Concluído</button>
             </div>
           </div>
         </div>

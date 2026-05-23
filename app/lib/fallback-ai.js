@@ -191,7 +191,7 @@ export function generateFallbackItinerary(destination, numDays = 2, budget = '')
     flights: { suggestion: `Direct flights to ${cityName} available from major hubs.`, averagePrice: '€150-300' },
     accommodation: { hotelName: `${cityName} Grand Hotel`, type: 'Boutique', reason: 'Central location with excellent reviews.' },
     days: Array.from({ length: Math.min(parseInt(numDays) || 2, 5) }, (_, i) => ({
-      title: `Day ${i + 1} — Explore ${cityName}`,
+      title: `Day ${i + 1} — ${['Secrets and Ancient Streets', 'Culinary Wonders and Hidden Alleys', 'Sunset Vistas and Local Life', 'Cultural Legends and Modern Pulse', 'Scenic Escapes and Quiet Paths'][i % 5]} of ${cityName}`,
       transportTip: 'Local public transport is highly efficient and recommended.',
       localSecrets: `Visit the small alleys off the main street in ${cityName} to find local artisan shops.`,
       stops: [

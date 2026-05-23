@@ -253,7 +253,7 @@ export default function LiveMap({ stops = [] }) {
 
       if (latlngs.length > 0) {
         const bounds = L.latLngBounds(latlngs);
-        map.fitBounds(bounds, { padding: [50, 50] });
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true, duration: 1.2 });
       }
     };
 

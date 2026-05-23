@@ -255,22 +255,31 @@ export default function CreationWizard({ isOpen, onClose }) {
                 <p className={styles.stepSubtitle}>Escolhe até 2 estilos.</p>
                 <div className={styles.styleGrid}>
                   {[
-                    { id: 'aventura', icon: '🏔️', label: 'Aventura' },
-                    { id: 'gastronomia', icon: '🍽️', label: 'Gastronomia' },
-                    { id: 'cultura', icon: '🏛️', label: 'Cultura' },
-                    { id: 'romance', icon: '💑', label: 'Romance' },
-                    { id: 'familia', icon: '👨‍👩‍👧', label: 'Família' },
-                    { id: 'bem-estar', icon: '🧘', label: 'Bem-estar' }
-                  ].map(s => (
-                    <div 
-                      key={s.id} 
-                      className={`${styles.styleCard} ${stylesList.includes(s.id) ? styles.selected : ''}`}
-                      onClick={() => handleStyleToggle(s.id)}
-                    >
-                      <span className={styles.styleIcon}>{s.icon}</span>
-                      <span className={styles.styleLabel}>{s.label}</span>
-                    </div>
-                  ))}
+                    { id: 'aventura', icon: '🏔️', label: 'Aventura', desc: 'Trilhos, desportos extremos e natureza selvagem', bg: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=70' },
+                    { id: 'gastronomia', icon: '🍽️', label: 'Gastronomia', desc: 'Mercados locais, restaurantes estrelados e cooking classes', bg: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=70' },
+                    { id: 'cultura', icon: '🏛️', label: 'Cultura', desc: 'Museus, história, arte e arquitectura', bg: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=400&q=70' },
+                    { id: 'romance', icon: '💑', label: 'Romance', desc: 'Experiências íntimas, sunsets e jantares especiais', bg: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=400&q=70' },
+                    { id: 'familia', icon: '👨‍👩‍👧', label: 'Família', desc: 'Actividades para todas as idades, ritmo mais calmo', bg: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=70' },
+                    { id: 'bem-estar', icon: '🧘', label: 'Bem-estar', desc: 'Spas, yoga, natureza e desconexão total', bg: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&q=70' }
+                  ].map(s => {
+                    const isSelected = stylesList.includes(s.id);
+                    return (
+                      <div 
+                        key={s.id} 
+                        className={`${styles.styleCard} ${isSelected ? styles.selected : ''}`}
+                        onClick={() => handleStyleToggle(s.id)}
+                      >
+                        <div className={styles.styleCardBg} style={{ backgroundImage: `url(${s.bg})` }}></div>
+                        <div className={styles.styleCardMask}></div>
+                        {isSelected && <div className={styles.checkmark}>✓</div>}
+                        <div className={styles.styleCardContent}>
+                          <span className={styles.styleIcon}>{s.icon}</span>
+                          <span className={styles.styleLabel}>{s.label}</span>
+                          <span className={styles.styleDesc}>{s.desc}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

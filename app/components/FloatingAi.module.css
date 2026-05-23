@@ -1220,12 +1220,25 @@
 /* Mobile Viewports (fullscreen slide-in overlay) */
 @media (max-width: 480px) {
   .chatWindow {
-    width: 100vw;
+    width: 100vw !important;
     right: -100vw;
+    height: 100dvh !important;
   }
   .container {
     bottom: 20px;
     right: 20px;
+  }
+  .inputArea {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+  }
+  .messages {
+    padding-bottom: 90px !important;
   }
 }
 

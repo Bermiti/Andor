@@ -161,7 +161,7 @@ function playCinematicSound() {
     osc1.stop(ctx.currentTime + 5);
     osc2.stop(ctx.currentTime + 5);
   } catch (err) {
-    // console.log('Web Audio context blocked or failed:', err);
+    // Audio load fail handler
   }
 }
 

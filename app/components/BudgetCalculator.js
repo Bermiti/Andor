@@ -41,14 +41,14 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
 
   return (
     <div className={styles.calculator}>
-      <h3 className={styles.title}>🧮 Interactive Budget Planner</h3>
-      <p className={styles.subtitle}>Customize your travel tiers to calculate instant cost breakdowns.</p>
+      <h3 className={styles.title}>🧮 Planeador de Orçamento Interativo</h3>
+      <p className={styles.subtitle}>Personaliza os teus níveis de viagem para calcular a estimativa de custos instantaneamente.</p>
 
       {/* Sliders */}
       <div className={styles.sliderGroup}>
         <div className={styles.sliderLabelRow}>
-          <span>👥 Travelers</span>
-          <span className={styles.sliderVal}>{travelers} {travelers === 1 ? 'person' : 'people'}</span>
+          <span>👥 Viajantes</span>
+          <span className={styles.sliderVal}>{travelers} {travelers === 1 ? 'pessoa' : 'pessoas'}</span>
         </div>
         <input
           type="range"
@@ -62,8 +62,8 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
 
       <div className={styles.sliderGroup}>
         <div className={styles.sliderLabelRow}>
-          <span>📅 Duration</span>
-          <span className={styles.sliderVal}>{days} days</span>
+          <span>📅 Duração</span>
+          <span className={styles.sliderVal}>{days} {days === 1 ? 'dia' : 'dias'}</span>
         </div>
         <input
           type="range"
@@ -77,45 +77,57 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
 
       {/* Tiers Selectors */}
       <div className={styles.tierSelector}>
-        <label className={styles.selectorLabel}>✈️ Flight Class</label>
+        <label className={styles.selectorLabel}>✈️ Classe do Voo</label>
         <div className={styles.tabsGrid}>
-          {['economy', 'business', 'first'].map((tier) => (
+          {[
+            { id: 'economy', label: 'Económica' },
+            { id: 'business', label: 'Executiva' },
+            { id: 'first', label: 'Primeira' }
+          ].map((tier) => (
             <button
-              key={tier}
-              className={`${styles.tabBtn} ${flightClass === tier ? styles.tabBtnActive : ''}`}
-              onClick={() => setFlightClass(tier)}
+              key={tier.id}
+              className={`${styles.tabBtn} ${flightClass === tier.id ? styles.tabBtnActive : ''}`}
+              onClick={() => setFlightClass(tier.id)}
             >
-              {tier.charAt(0).toUpperCase() + tier.slice(1)}
+              {tier.label}
             </button>
           ))}
         </div>
       </div>
 
       <div className={styles.tierSelector}>
-        <label className={styles.selectorLabel}>🏨 Accommodation</label>
+        <label className={styles.selectorLabel}>🏨 Alojamento</label>
         <div className={styles.tabsGrid}>
-          {['budget', 'boutique', 'luxury'].map((tier) => (
+          {[
+            { id: 'budget', label: 'Económico' },
+            { id: 'boutique', label: 'Conforto' },
+            { id: 'luxury', label: 'Luxo' }
+          ].map((tier) => (
             <button
-              key={tier}
-              className={`${styles.tabBtn} ${hotelTier === tier ? styles.tabBtnActive : ''}`}
-              onClick={() => setHotelTier(tier)}
+              key={tier.id}
+              className={`${styles.tabBtn} ${hotelTier === tier.id ? styles.tabBtnActive : ''}`}
+              onClick={() => setHotelTier(tier.id)}
             >
-              {tier.charAt(0).toUpperCase() + tier.slice(1)}
+              {tier.label}
             </button>
           ))}
         </div>
       </div>
 
       <div className={styles.tierSelector}>
-        <label className={styles.selectorLabel}>🍽️ Dining & Culinary</label>
+        <label className={styles.selectorLabel}>🍽️ Refeições & Gastronomia</label>
         <div className={styles.tabsGrid}>
-          {['budget', 'mid', 'fine'].map((tier) => (
+          {[
+            { id: 'budget', label: 'Local' },
+            { id: 'mid', label: 'Misto' },
+            { id: 'fine', label: 'Premium' }
+          ].map((tier) => (
             <button
-              key={tier}
-              className={`${styles.tabBtn} ${diningTier === tier ? styles.tabBtnActive : ''}`}
-              onClick={() => setDiningTier(tier)}
+              key={tier.id}
+              className={`${styles.tabBtn} ${diningTier === tier.id ? styles.tabBtnActive : ''}`}
+              onClick={() => setDiningTier(tier.id)}
             >
-              {tier === 'mid' ? 'Mid-Range' : tier.charAt(0).toUpperCase() + tier.slice(1)}
+              {tier.label}
             </button>
           ))}
         </div>
@@ -124,34 +136,34 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
       {/* Visual Breakdown */}
       <div className={styles.resultsArea}>
         <div className={styles.totalDisplay}>
-          <span className={styles.totalLabel}>Estimated Total</span>
+          <span className={styles.totalLabel}>Total Estimado</span>
           <h2 className={styles.totalAmount}>
             {currency}{breakdown.total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </h2>
           <span className={styles.perPerson}>
-            ~{currency}{Math.round(breakdown.total / travelers)} / person
+            ~{currency}{Math.round(breakdown.total / travelers)} / pessoa
           </span>
         </div>
 
         <div className={styles.breakdownList}>
           <div className={styles.breakdownItem}>
             <span className={styles.breakdownDot} style={{ background: 'var(--ocean)' }}></span>
-            <span className={styles.breakdownName}>Flights</span>
+            <span className={styles.breakdownName}>Voos</span>
             <span className={styles.breakdownVal}>{currency}{breakdown.flights}</span>
           </div>
           <div className={styles.breakdownItem}>
             <span className={styles.breakdownDot} style={{ background: 'var(--gold)' }}></span>
-            <span className={styles.breakdownName}>Lodging</span>
+            <span className={styles.breakdownName}>Alojamento</span>
             <span className={styles.breakdownVal}>{currency}{breakdown.accommodation}</span>
           </div>
           <div className={styles.breakdownItem}>
             <span className={styles.breakdownDot} style={{ background: 'var(--coral)' }}></span>
-            <span className={styles.breakdownName}>Dining</span>
+            <span className={styles.breakdownName}>Refeições</span>
             <span className={styles.breakdownVal}>{currency}{breakdown.dining}</span>
           </div>
           <div className={styles.breakdownItem}>
             <span className={styles.breakdownDot} style={{ background: '#A3A3A3' }}></span>
-            <span className={styles.breakdownName}>Activities</span>
+            <span className={styles.breakdownName}>Atividades</span>
             <span className={styles.breakdownVal}>{currency}{breakdown.activities}</span>
           </div>
         </div>
@@ -161,22 +173,22 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
           <div
             className={styles.progressSeg}
             style={{ width: `${(breakdown.flights / breakdown.total) * 100}%`, background: 'var(--ocean)' }}
-            title="Flights"
+            title="Voos"
           />
           <div
             className={styles.progressSeg}
             style={{ width: `${(breakdown.accommodation / breakdown.total) * 100}%`, background: 'var(--gold)' }}
-            title="Lodging"
+            title="Alojamento"
           />
           <div
             className={styles.progressSeg}
             style={{ width: `${(breakdown.dining / breakdown.total) * 100}%`, background: 'var(--coral)' }}
-            title="Dining"
+            title="Refeições"
           />
           <div
             className={styles.progressSeg}
             style={{ width: `${(breakdown.activities / breakdown.total) * 100}%`, background: '#A3A3A3' }}
-            title="Activities"
+            title="Atividades"
           />
         </div>
       </div>
