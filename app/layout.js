@@ -43,6 +43,14 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#0A1628" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <script dangerouslySetInnerHTML={{__html: `
+          (function() {
+            try {
+              const theme = localStorage.getItem('andor_theme') || 'dark';
+              document.documentElement.setAttribute('data-theme', theme);
+            } catch(e) {}
+          })();
+        `}} />
       </head>
       <body>
         <LanguageProvider>

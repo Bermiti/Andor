@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import styles from './FloatingAi.module.css';
 import { safeParse } from '../lib/safe-json';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from './ToastProvider';
 
 // Converter from ANDOR rich JSON format to Legacy format for itinerary pages
 function convertAndorToLegacy(andor) {
@@ -160,7 +161,7 @@ function playCinematicSound() {
     osc1.stop(ctx.currentTime + 5);
     osc2.stop(ctx.currentTime + 5);
   } catch (err) {
-    console.log('Web Audio context blocked or failed:', err);
+    // console.log('Web Audio context blocked or failed:', err);
   }
 }
 
@@ -223,6 +224,7 @@ export default function FloatingAi() {
   const router = useRouter();
   const pathname = usePathname();
   const { locale } = useLanguage();
+  const { showToast: showGlobalToast } = useToast();
   
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -557,7 +559,7 @@ export default function FloatingAi() {
 
   const handleSurpriseReveal = () => {
     if (!surpriseOrigin.trim()) {
-      alert("Por favor, diz-nos de onde vais partir!");
+      showGlobalToast("Por favor, diz-nos de onde vais partir!", "info");
       return;
     }
     setSurpriseReveal(true);

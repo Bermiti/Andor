@@ -4,6 +4,7 @@ import Link from 'next/link';
 import styles from './Social.module.css';
 import { safeParse } from '../lib/safe-json';
 import { useDebounce } from '../lib/useDebounce';
+import { useToast } from './ToastProvider';
 
 const tabs = ['🔥 Trending', '⭐ Top Rated', '🆕 New', '💰 Budget', '🌍 Europe', '🌏 Asia', '🗽 Americas'];
 
@@ -147,6 +148,7 @@ export const itineraries = [
 ];
 
 export default function Social() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('🔥 Trending');
   
   // Filtering states
@@ -250,7 +252,7 @@ export default function Social() {
       setCompareList(prev => prev.filter(c => c.slug !== item.slug));
     } else {
       if (compareList.length >= 2) {
-        alert('You can compare up to 2 packages side-by-side.');
+        showToast('Podes comparar no máximo 2 pacotes lado a lado.', 'info');
         return;
       }
       setCompareList(prev => [...prev, item]);

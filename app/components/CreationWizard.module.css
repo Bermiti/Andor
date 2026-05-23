@@ -323,6 +323,18 @@
   font-size: 1.1rem;
 }
 
+.rotatingText {
+  animation: fadeInOut 2.5s infinite;
+  display: inline-block;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(5px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-5px); }
+}
+
 .budgetRange {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -437,4 +449,106 @@
   font-style: italic;
   margin-top: var(--space-4);
   z-index: 1;
+}
+
+/* Autocomplete continent badge */
+.autoContinent {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* Seasonal suggestions */
+.surpriseSubtext {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-4);
+}
+
+.seasonalGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.seasonalCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.seasonalCard:hover {
+  border-color: var(--gold);
+  transform: translateX(4px);
+}
+
+.seasonalFlag {
+  font-size: 2rem;
+}
+
+.seasonalInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.seasonalInfo strong {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.seasonalInfo span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .wizardContainer {
+    max-width: 100%;
+    margin: 0 16px;
+    padding: var(--space-6);
+  }
+
+  .stepTitle {
+    font-size: 1.5rem;
+  }
+
+  .hugeInput {
+    font-size: 1.5rem;
+  }
+
+  .styleGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .destToggleRow {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+
+  .stepper button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .nextBtn, .submitBtn, .backBtn {
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+  }
 }

@@ -38,7 +38,7 @@ export default function CustomRequestModal() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!destination || !startDate || !endDate || !budget) {
-      alert('Please fill out all required fields.');
+      // alert('Please fill out all required fields.');
       return;
     }
     setLoading(true);

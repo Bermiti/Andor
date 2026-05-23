@@ -233,14 +233,40 @@ and ensure ALL coordinates are geographically accurate:
   "andorInsights": []
 }
 
-CRITICAL: Every single coordinate in the JSON must be geographically accurate for the requested destination.
-Tokyo = 35.6x lat, 139.6x lng
-Paris = 48.8x lat, 2.3x lng  
-Bali = -8.3x lat, 115.0x lng
-London = 51.5x lat, -0.1x lng
-NYC = 40.7x lat, -74.0x lng
-Lisbon = 38.7x lat, -9.1x lng
-NEVER use default or placeholder coordinates.`;
+CRITICAL RULES — NEVER BREAK THESE:
+
+1. COORDINATE ACCURACY (MANDATORY):
+Every coordinate must be geographically accurate for the destination.
+Tokyo: lat 35.6-35.8, lng 139.5-139.9
+Paris: lat 48.8-48.9, lng 2.2-2.5
+Bali: lat -8.8 to -8.1, lng 114.9-115.7
+London: lat 51.4-51.6, lng -0.3 to 0.1
+NYC: lat 40.6-40.9, lng -74.1 to -73.7
+Barcelona: lat 41.3-41.5, lng 2.0-2.3
+Lisbon: lat 38.7-38.8, lng -9.2 to -9.0
+Rome: lat 41.8-42.0, lng 12.4-12.6
+Amsterdam: lat 52.3-52.4, lng 4.8-5.0
+Bangkok: lat 13.6-13.9, lng 100.4-100.7
+NEVER return [0,0] or coordinates from a different city.
+If unsure of exact coords: use city center as fallback.
+
+2. UNIQUE DAY TITLES (MANDATORY):
+Each day MUST have a unique, evocative thematic title.
+FORBIDDEN: 'Explore [City]', 'Day in [City]', 'Visit [City]', 'Discover [City]'
+REQUIRED: 'Neon Dreams of Shibuya', 'Ancient Kyoto at Dawn', 'Cliffside Sunsets in Santorini'
+
+3. ITINERARY QUALITY:
+- Day 1: always arrival + orientation + light exploration
+- Max 3-4 major activities per day
+- Group activities geographically — never backtrack
+- Include exact travel times and costs between stops
+- Every day: morning coffee, lunch spot, activities, dinner, optional evening
+- Vary pace: intense day followed by slower recovery day
+- One hidden gem per day that guidebooks miss
+- Flag everything needing advance booking
+
+4. RESPONSE FORMAT:
+Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`;
 
     const userPrompt = `Create a perfect ${days || 3}-day travel itinerary for ${destination}. Budget: ${budget || 'Confortável'}. Travelers: ${travelers || 2}. Travel style: ${style || 'cultural'}. Interests: ${interests?.join(', ') || 'general'}. Return ONLY valid JSON matching the exact requested schema.`;
 
@@ -278,11 +304,11 @@ NEVER use default or placeholder coordinates.`;
             }
             return Response.json(validation.normalized || parsed);
           } catch (e) {
-            console.log('Failed to parse Groq AI JSON, falling back', e.message);
+            // console.log('Failed to parse Groq AI JSON, falling back', e.message);
           }
         }
       } catch (e) {
-        console.log('Groq failed:', e.message);
+        // console.log('Groq failed:', e.message);
       }
     }
 
@@ -349,7 +375,7 @@ NEVER use default or placeholder coordinates.`;
         const validation = validateAndNormalize(object);
         return Response.json(validation.normalized || object);
       } catch (e) {
-        console.log('Gemini failed:', e.message);
+        // console.log('Gemini failed:', e.message);
       }
     }
 

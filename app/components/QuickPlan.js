@@ -61,7 +61,7 @@ export default function QuickPlan() {
       router.push(`/itinerary/${id}`);
     } catch (error) {
       console.error(error);
-      alert('Something went wrong. Please try again.');
+      // alert('Something went wrong. Please try again.');
       setLoading(false);
     }
   };

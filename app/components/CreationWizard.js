@@ -1,18 +1,50 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from './ToastProvider';
 import styles from './CreationWizard.module.css';
 
 const AUTOCOMPLETE_DATA = [
-  { name: 'Lisboa, Portugal', flag: '🇵🇹' },
-  { name: 'Tóquio, Japão', flag: '🇯🇵' },
-  { name: 'Paris, França', flag: '🇫🇷' },
-  { name: 'Nova Iorque, EUA', flag: '🇺🇸' },
-  { name: 'Bali, Indonésia', flag: '🇮🇩' }
+  { name: 'Tokyo, Japan', flag: '🇯🇵', continent: 'Ásia' },
+  { name: 'Paris, France', flag: '🇫🇷', continent: 'Europa' },
+  { name: 'Bali, Indonesia', flag: '🇮🇩', continent: 'Ásia' },
+  { name: 'New York, USA', flag: '🇺🇸', continent: 'América' },
+  { name: 'Lisboa, Portugal', flag: '🇵🇹', continent: 'Europa' },
+  { name: 'Barcelona, Spain', flag: '🇪🇸', continent: 'Europa' },
+  { name: 'London, UK', flag: '🇬🇧', continent: 'Europa' },
+  { name: 'Rome, Italy', flag: '🇮🇹', continent: 'Europa' },
+  { name: 'Amsterdam, Netherlands', flag: '🇳🇱', continent: 'Europa' },
+  { name: 'Bangkok, Thailand', flag: '🇹🇭', continent: 'Ásia' },
+  { name: 'Dubai, UAE', flag: '🇦🇪', continent: 'Médio Oriente' },
+  { name: 'Istanbul, Turkey', flag: '🇹🇷', continent: 'Europa/Ásia' },
+  { name: 'Kyoto, Japan', flag: '🇯🇵', continent: 'Ásia' },
+  { name: 'Sydney, Australia', flag: '🇦🇺', continent: 'Oceânia' },
+  { name: 'Marrakech, Morocco', flag: '🇲🇦', continent: 'África' },
+  { name: 'Prague, Czech Republic', flag: '🇨🇿', continent: 'Europa' },
+  { name: 'Santorini, Greece', flag: '🇬🇷', continent: 'Europa' },
+  { name: 'Seoul, South Korea', flag: '🇰🇷', continent: 'Ásia' },
+  { name: 'Buenos Aires, Argentina', flag: '🇦🇷', continent: 'América' },
+  { name: 'Cape Town, South Africa', flag: '🇿🇦', continent: 'África' },
 ];
+
+const SEASONAL_SUGGESTIONS = {
+  0: [{ name: 'Tokyo, Japan', flag: '🇯🇵', why: 'Inverno suave, sem multidões' }, { name: 'Bangkok, Thailand', flag: '🇹🇭', why: 'Época seca, perfeito' }, { name: 'Dubai, UAE', flag: '🇦🇪', why: 'Temperatura ideal' }],
+  1: [{ name: 'Bali, Indonesia', flag: '🇮🇩', why: 'Preços baixos' }, { name: 'Marrakech, Morocco', flag: '🇲🇦', why: 'Clima perfeito' }, { name: 'Buenos Aires, Argentina', flag: '🇦🇷', why: 'Verão portenho' }],
+  2: [{ name: 'Tokyo, Japan', flag: '🇯🇵', why: 'Cerejeiras em flor 🌸' }, { name: 'Lisbon, Portugal', flag: '🇵🇹', why: 'Primavera atlântica' }, { name: 'Rome, Italy', flag: '🇮🇹', why: 'Antes da alta temporada' }],
+  3: [{ name: 'Amsterdam, Netherlands', flag: '🇳🇱', why: 'Tulipas em flor 🌷' }, { name: 'Barcelona, Spain', flag: '🇪🇸', why: 'Clima perfeito' }, { name: 'Kyoto, Japan', flag: '🇯🇵', why: 'Últimas cerejeiras' }],
+  4: [{ name: 'Santorini, Greece', flag: '🇬🇷', why: 'Antes das multidões de verão' }, { name: 'Prague, Czech Republic', flag: '🇨🇿', why: 'Primavera mágica' }, { name: 'Seoul, South Korea', flag: '🇰🇷', why: 'Clima ideal' }],
+  5: [{ name: 'Barcelona, Spain', flag: '🇪🇸', why: 'Festival de San Juan' }, { name: 'London, UK', flag: '🇬🇧', why: 'Verão londrino' }, { name: 'Bali, Indonesia', flag: '🇮🇩', why: 'Época seca' }],
+  6: [{ name: 'Santorini, Greece', flag: '🇬🇷', why: 'Pico do verão grego' }, { name: 'Cape Town, South Africa', flag: '🇿🇦', why: 'Inverno com baleias' }, { name: 'Istanbul, Turkey', flag: '🇹🇷', why: 'Noites quentes' }],
+  7: [{ name: 'Sydney, Australia', flag: '🇦🇺', why: 'Inverno suave, preços baixos' }, { name: 'Santorini, Greece', flag: '🇬🇷', why: 'Verão perfeito' }, { name: 'Tokyo, Japan', flag: '🇯🇵', why: 'Festivais de verão' }],
+  8: [{ name: 'Paris, France', flag: '🇫🇷', why: 'Rentrée, cidade calma' }, { name: 'Marrakech, Morocco', flag: '🇲🇦', why: 'Calor moderado' }, { name: 'New York, USA', flag: '🇺🇸', why: 'Outono dourado' }],
+  9: [{ name: 'Tokyo, Japan', flag: '🇯🇵', why: 'Folhas de outono 🍁' }, { name: 'Rome, Italy', flag: '🇮🇹', why: 'Outono romano' }, { name: 'Seoul, South Korea', flag: '🇰🇷', why: 'Cores de outono' }],
+  10: [{ name: 'Bangkok, Thailand', flag: '🇹🇭', why: 'Início da época seca' }, { name: 'Dubai, UAE', flag: '🇦🇪', why: 'Tempo perfeito' }, { name: 'Kyoto, Japan', flag: '🇯🇵', why: 'Folhagem vermelha' }],
+  11: [{ name: 'New York, USA', flag: '🇺🇸', why: 'Natal mágico 🎄' }, { name: 'Prague, Czech Republic', flag: '🇨🇿', why: 'Mercados de Natal' }, { name: 'Bali, Indonesia', flag: '🇮🇩', why: 'Escapar ao inverno' }],
+};
 
 export default function CreationWizard({ isOpen, onClose }) {
   const router = useRouter();
+  const { showToast } = useToast();
   
   const [step, setStep] = useState(1);
   const [destination, setDestination] = useState('');
@@ -93,7 +125,7 @@ export default function CreationWizard({ isOpen, onClose }) {
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
-      alert('Erro ao gerar itinerário');
+      showToast('❌ Erro ao gerar itinerário. Tenta novamente.', 'error');
     }
   };
 
@@ -149,6 +181,7 @@ export default function CreationWizard({ isOpen, onClose }) {
                         {filteredDestinations.map(d => (
                           <div key={d.name} className={styles.autoItem} onClick={() => { setDestination(d.name); setShowDropdown(false); }}>
                             <span>{d.flag}</span> {d.name}
+                            {d.continent && <span className={styles.autoContinent}>{d.continent}</span>}
                           </div>
                         ))}
                       </div>
@@ -156,8 +189,19 @@ export default function CreationWizard({ isOpen, onClose }) {
                   </div>
                 ) : (
                   <div className={styles.surpriseBox}>
-                    <h3>Temos o destino perfeito para esta época.</h3>
-                    <p>Vamos escolher baseado no clima e eventos actuais.</p>
+                    <h3>🎲 Destinos recomendados para esta época</h3>
+                    <p className={styles.surpriseSubtext}>Baseado no clima, festivais e preços actuais.</p>
+                    <div className={styles.seasonalGrid}>
+                      {(SEASONAL_SUGGESTIONS[new Date().getMonth()] || SEASONAL_SUGGESTIONS[0]).map((s, i) => (
+                        <div key={i} className={styles.seasonalCard} onClick={() => { setDestination(s.name); setIsSurprise(false); }}>
+                          <span className={styles.seasonalFlag}>{s.flag}</span>
+                          <div className={styles.seasonalInfo}>
+                            <strong>{s.name}</strong>
+                            <span>{s.why}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -283,7 +327,9 @@ export default function CreationWizard({ isOpen, onClose }) {
             <div className={styles.takeoffAnim}>
               ✈️
             </div>
-            <h2 className={styles.loadingText}>A planear a viagem da tua vida...</h2>
+            <h2 className={styles.loadingText}>
+              <LoadingTextRotator />
+            </h2>
             <div className={styles.fakeProgress}>
               <div className={styles.fakeProgressBar}></div>
             </div>
@@ -293,4 +339,23 @@ export default function CreationWizard({ isOpen, onClose }) {
       </div>
     </div>
   );
+}
+
+function LoadingTextRotator() {
+  const texts = [
+    "A planear a viagem da tua vida...",
+    "A analisar opções de voos e hotéis...",
+    "A descobrir segredos locais...",
+    "A desenhar o itinerário perfeito..."
+  ];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex(prev => (prev + 1) % texts.length);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [texts.length]);
+
+  return <span className={styles.rotatingText}>{texts[index]}</span>;
 }

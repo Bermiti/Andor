@@ -2,8 +2,21 @@
 const DESTINATION_BOUNDS = {
   tokyo: { latMin: 35.0, latMax: 36.5, lngMin: 138.5, lngMax: 140.5, center: { lat: 35.6762, lng: 139.6503 } },
   lisbon: { latMin: 38.4, latMax: 39.1, lngMin: -9.6, lngMax: -8.7, center: { lat: 38.7223, lng: -9.1393 } },
+  lisboa: { latMin: 38.4, latMax: 39.1, lngMin: -9.6, lngMax: -8.7, center: { lat: 38.7223, lng: -9.1393 } },
   paris: { latMin: 48.5, latMax: 49.1, lngMin: 1.8, lngMax: 2.8, center: { lat: 48.8566, lng: 2.3522 } },
   newyork: { latMin: 40.3, latMax: 41.0, lngMin: -74.3, lngMax: -73.5, center: { lat: 40.7128, lng: -74.0060 } },
+  london: { latMin: 51.2, latMax: 51.7, lngMin: -0.5, lngMax: 0.3, center: { lat: 51.5074, lng: -0.1278 } },
+  londres: { latMin: 51.2, latMax: 51.7, lngMin: -0.5, lngMax: 0.3, center: { lat: 51.5074, lng: -0.1278 } },
+  barcelona: { latMin: 41.2, latMax: 41.6, lngMin: 1.8, lngMax: 2.4, center: { lat: 41.3874, lng: 2.1686 } },
+  rome: { latMin: 41.7, latMax: 42.1, lngMin: 12.2, lngMax: 12.8, center: { lat: 41.9028, lng: 12.4964 } },
+  roma: { latMin: 41.7, latMax: 42.1, lngMin: 12.2, lngMax: 12.8, center: { lat: 41.9028, lng: 12.4964 } },
+  amsterdam: { latMin: 52.2, latMax: 52.5, lngMin: 4.7, lngMax: 5.1, center: { lat: 52.3676, lng: 4.9041 } },
+  bangkok: { latMin: 13.5, latMax: 14.0, lngMin: 100.3, lngMax: 100.8, center: { lat: 13.7563, lng: 100.5018 } },
+  bali: { latMin: -8.9, latMax: -8.0, lngMin: 114.8, lngMax: 115.8, center: { lat: -8.3405, lng: 115.0920 } },
+  dubai: { latMin: 24.8, latMax: 25.4, lngMin: 54.9, lngMax: 55.6, center: { lat: 25.2048, lng: 55.2708 } },
+  istanbul: { latMin: 40.8, latMax: 41.3, lngMin: 28.7, lngMax: 29.3, center: { lat: 41.0082, lng: 28.9784 } },
+  kyoto: { latMin: 34.8, latMax: 35.2, lngMin: 135.5, lngMax: 135.9, center: { lat: 35.0116, lng: 135.7681 } },
+  sydney: { latMin: -34.0, latMax: -33.6, lngMin: 150.9, lngMax: 151.4, center: { lat: -33.8688, lng: 151.2093 } },
 };
 
 function normalizeDestinationKey(dest) {
@@ -59,21 +72,18 @@ export function validateAndNormalize(itinerary) {
   }
 
   // Build normalized days
+    // Verify unique titles
+    const titles = rawDays.map(d => d?.title || d?.dayTitle || '').filter(Boolean);
+    const uniqueTitles = new Set(titles);
+    if (uniqueTitles.size < titles.length) {
+      throw new Error('DUPLICATE_DAY_TITLES');
+    }
+
   const seenTitles = new Map();
   normalized.days = rawDays.map((d, idx) => {
     const day = d || {};
-    // Accept different property names
     const title = day.title || day.dayTitle || `Day ${idx + 1}`;
     let fixedTitle = title;
-    if (seenTitles.has(title)) {
-      // repair duplicate titles by suffixing
-      const count = seenTitles.get(title) + 1;
-      seenTitles.set(title, count);
-      fixedTitle = `${title} — ${count}`;
-      result.warnings.push(`Duplicate day title repaired: ${title} -> ${fixedTitle}`);
-    } else {
-      seenTitles.set(title, 1);
-    }
 
     let activities = day.activities || day.stops || [];
     
@@ -95,11 +105,19 @@ export function validateAndNormalize(itinerary) {
     }
 
     const normalizedActivities = (Array.isArray(activities) ? activities : []).map((a, ai) => {
-      const coordObj = a.coordinates || a.coords || a.location || a.coordinates || a.coordinate || null;
+      const coordObj = a.coordinates || a.coords || a.location || a.coordinate || null;
       let lat = coordObj?.lat ?? (Array.isArray(a.coordinates) ? a.coordinates[0] : undefined);
       let lng = coordObj?.lng ?? (Array.isArray(a.coordinates) ? a.coordinates[1] : undefined);
       if (typeof lat === 'string') lat = parseFloat(lat);
       if (typeof lng === 'string') lng = parseFloat(lng);
+
+      if (bounds) {
+        if (lat < bounds.latMin || lat > bounds.latMax || lng < bounds.lngMin || lng > bounds.lngMax) {
+          console.error('COORDINATE MISMATCH:', destName, lat, lng);
+          lat = bounds.center.lat;
+          lng = bounds.center.lng;
+        }
+      }
 
       const activity = {
         id: a.id || `d${idx}-a${ai}`,
@@ -108,7 +126,7 @@ export function validateAndNormalize(itinerary) {
         address: a.address || a.area || '',
         coordinates: isPlausibleCoord(lat, lng) ? { lat, lng } : null,
         startTime: a.startTime || a.time || a.hour || '',
-        durationMinutes: a.durationMinutes || a.duration || a.durationMinutes || (a.durationHours ? parseInt(a.durationHours,10)*60 : undefined) || null,
+        durationMinutes: a.durationMinutes || a.duration || (a.durationHours ? parseInt(a.durationHours,10)*60 : undefined) || null,
         estimatedCost: a.estimatedCost || a.cost || a.price || null,
         category: a.category || a.type || null,
         period: a.period || (a.startTime ? (parseInt((a.startTime||'09:00').split(':')[0],10) < 12 ? 'morning' : 'afternoon') : null),

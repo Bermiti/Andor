@@ -91,7 +91,7 @@ export default function NewsletterPopup() {
                 className={styles.copyBtn} 
                 onClick={() => {
                   navigator.clipboard.writeText('WELCOME10');
-                  alert('Code copied to clipboard!');
+                  // alert('Code copied to clipboard!');
                 }}
               >
                 Copy Code

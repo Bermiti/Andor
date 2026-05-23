@@ -609,3 +609,7 @@ html, body {
   background: var(--border-gold);
 }
 
+
+html { overflow-x: hidden; max-width: 100vw; }
+body { overflow-x: hidden; }
+* { box-sizing: border-box; }

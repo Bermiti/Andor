@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import styles from './OnboardingModal.module.css';
+import { useToast } from './ToastProvider';
 
 export default function OnboardingModal() {
+  const { showToast } = useToast();
   const [show, setShow] = useState(false);
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -23,11 +25,11 @@ export default function OnboardingModal() {
 
   const handleNext = () => {
     if (step === 1 && !name.trim()) {
-      alert("Por favor, introduz o teu nome.");
+      showToast("Por favor, introduz o teu nome.", "info");
       return;
     }
     if (step === 2 && !travelerType) {
-      alert("Por favor, escolhe o teu perfil de viajante.");
+      showToast("Por favor, escolhe o teu perfil de viajante.", "info");
       return;
     }
     setStep(prev => prev + 1);
@@ -36,7 +38,7 @@ export default function OnboardingModal() {
   const handleFinish = (selectedBudget) => {
     const finalBudget = selectedBudget || budgetRange;
     if (!finalBudget) {
-      alert("Por favor, escolhe o teu orçamento típico.");
+      showToast("Por favor, escolhe o teu orçamento típico.", "info");
       return;
     }
 

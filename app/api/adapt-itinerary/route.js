@@ -58,7 +58,7 @@ export async function POST(req) {
         const newDay = JSON.parse(jsonMatch[0]);
         return Response.json(newDay);
       } catch (e) {
-        console.log('Gemini adaptation failed, using fallback:', e.message);
+        // console.log('Gemini adaptation failed, using fallback:', e.message);
       }
     }
 
