@@ -66,3 +66,60 @@ Executar os seguintes testes manuais após o deploy em produção estar concluí
 - [ ] Abrir as ferramentas de desenvolvedor (F12) na consola após interações e escrever `window.andor_events`. Confirmar se os eventos disparados (ex: `pricing_toggle`, `destination_viewed`) estão registados no array.
 - [ ] Validar a presença do sitemap digitando `/sitemap.xml` no browser.
 - [ ] Validar orobots txt digitando `/robots.txt` no browser.
+
+---
+
+## 🔍 Performance & Lighthouse
+
+Depois de deploy em produção, valida a pontuação Lighthouse em `https://seu-dominio.com`:
+
+### Como Correr Lighthouse
+
+1. **Via Chrome DevTools** (Local):
+   - Abre DevTools (F12)
+   - Vai à aba **Lighthouse**
+   - Clica **Analyze page load**
+   - Aguarda resultado
+
+2. **Via PageSpeed Insights** (Produção):
+   - Vai a [pagespeed.web.dev](https://pagespeed.web.dev)
+   - Digita a URL de produção
+   - Clica **Analyze**
+   - Recebe relatório detalhado
+
+3. **Via Vercel Analytics** (Integrado):
+   - Vai a Vercel Dashboard → **Analytics**
+   - Vê Core Web Vitals automáticos
+
+### Métricas-Alvo
+
+| Métrica | Alvo |
+| :--- | :--- |
+| **Performance** | > 70 |
+| **Accessibility** | > 90 |
+| **Best Practices** | > 90 |
+| **SEO** | > 90 |
+
+### Otimizações Recomendadas
+
+- **Imagens**: Compress e lazy-load — usa Next.js `<Image>` component
+- **Fonts**: Google Fonts já estão otimizadas
+- **CSS**: Vanilla CSS modules já são bem-otimizados
+- **JavaScript**: Evita grandes bundles — tree-shaking automático
+- **Core Web Vitals**:
+  - **LCP** (Largest Contentful Paint): Deve ser < 2.5s
+  - **FID** (First Input Delay): Deve ser < 100ms
+  - **CLS** (Cumulative Layout Shift): Deve ser < 0.1
+
+### Checklist Lighthouse
+
+- [ ] Performance > 70
+- [ ] Accessibility > 90
+- [ ] Best Practices > 90
+- [ ] SEO > 90
+- [ ] Sem erros críticos no relatório
+- [ ] LCP < 2.5s
+- [ ] FID < 100ms
+- [ ] CLS < 0.1
+
+---

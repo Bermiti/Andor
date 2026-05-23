@@ -133,7 +133,15 @@ export default function ItineraryPage() {
       const sharedData = urlParams.get('data');
       if (sharedData) {
         try {
-          data = safeParse(decodeURIComponent(escape(atob(sharedData))), null);
+          // Use modern TextDecoder instead of deprecated escape
+          const decoder = new TextDecoder();
+          const binaryString = atob(sharedData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const jsonStr = decoder.decode(bytes);
+          data = safeParse(jsonStr, null);
         } catch (e) {
           console.error('Failed to decode shared itinerary', e);
         }
@@ -172,11 +180,18 @@ export default function ItineraryPage() {
   const handleShare = async () => {
     try {
       const uuid = crypto.randomUUID();
-      localStorage.setItem(`andor_shared_${uuid}`, JSON.stringify(itinerary));
+      // Safely write to localStorage with fallback
+      try {
+        localStorage.setItem(`andor_shared_${uuid}`, JSON.stringify(itinerary));
+      } catch (storageErr) {
+        console.warn('localStorage not available, using URL encoding', storageErr);
+      }
       const shareUrl = `${window.location.origin}/itinerary/share?id=${uuid}`;
-      // For immediate URL fallback if uuid server side not implemented:
-      const payload = btoa(unescape(encodeURIComponent(JSON.stringify(itinerary))));
-      const payloadUrl = `${window.location.origin}/itinerary/share?data=${payload}`;
+      // For immediate URL fallback: use modern encoding instead of deprecated unescape
+      const jsonStr = JSON.stringify(itinerary);
+      const encoder = new TextEncoder();
+      const encoded = btoa(String.fromCharCode.apply(null, encoder.encode(jsonStr)));
+      const payloadUrl = `${window.location.origin}/itinerary/share?data=${encoded}`;
       
       await navigator.clipboard.writeText(payloadUrl);
       showToast('✅ Link copiado para a área de transferência!', 'success');
@@ -391,9 +406,14 @@ export default function ItineraryPage() {
     }
     
     setFavorites(nextFavorites);
-    localStorage.setItem('andor_favorites', JSON.stringify(nextFavorites));
+    // Safely write to localStorage with fallback
+    try {
+      localStorage.setItem('andor_favorites', JSON.stringify(nextFavorites));
+    } catch (err1) {
+      console.warn('Failed to save favorites', err1);
+    }
 
-    // Also update andor_favorite_activities for the favorites page!
+    // Also update andor_favorite_activities for the favorites page with error handling
     const storedActs = localStorage.getItem('andor_favorite_activities');
     let favActivities = [];
     if (storedActs) {
@@ -408,13 +428,17 @@ export default function ItineraryPage() {
         type: stop.type || 'Actividade',
         cost: stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis',
         duration: stop.duration || '2h',
-        city: dest.city || dest.name || itinerary?.destination || '',
+        city: dest.city || dest.name || (typeof itinerary?.destination === 'string' ? itinerary.destination : ''),
         destinationSlug: dest.slug || 'tokyo',
         image: stop.photoKeyword ? `https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=75&auto=format&fit=crop` : '',
         dateSaved: new Date().toLocaleDateString('pt-PT')
       });
     }
-    localStorage.setItem('andor_favorite_activities', JSON.stringify(favActivities));
+    try {
+      localStorage.setItem('andor_favorite_activities', JSON.stringify(favActivities));
+    } catch (err2) {
+      console.warn('Failed to save favorite activities', err2);
+    }
     
     trackEvent(exists ? 'favorite_removed' : 'favorite_added', {
       type: 'activity',
@@ -462,7 +486,9 @@ export default function ItineraryPage() {
     );
   }
 
-  const dest = itinerary.destination || {};
+  const dest = typeof itinerary.destination === 'string' 
+    ? { name: itinerary.destination } 
+    : (itinerary.destination || {});
   const trip = itinerary.trip || {};
   const currentDay = itinerary.days?.[activeDay] || {};
   
@@ -541,8 +567,8 @@ export default function ItineraryPage() {
                   </div>
                   <div className={styles.dayTabContent}>
                     <div className={styles.dayTabNumber}>DIA {i + 1}</div>
-                    <div className={styles.dayTabTitle} title={day.title}>
-                      {day.title?.length > 16 ? day.title.substring(0, 16) + '…' : day.title}
+                    <div className={styles.dayTabTitle} title={day.title || `Dia ${i + 1}`}>
+                      {(day.title?.length > 16 ? day.title.substring(0, 16) + '…' : day.title) || `Dia ${i + 1}`}
                     </div>
                     {dayBudget > 0 && (
                       <div className={styles.dayTabBudget}>~€{dayBudget}</div>

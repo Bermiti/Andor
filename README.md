@@ -94,3 +94,75 @@ A forma mais rápida de publicar este projeto é usar a plataforma Vercel:
 1. Conecta o repositório na tua conta da Vercel.
 2. Adiciona a variável de ambiente `GOOGLE_GENERATIVE_AI_API_KEY` nas definições do projeto.
 3. Clica em **Deploy**. O Next.js tratará de otimizar os caminhos estáticos e rotas do App Router automaticamente.
+
+---
+
+## 🚀 Production Deploy
+
+### Pré-Requisitos de Produção
+
+Antes de fazer deploy, certifica-te de:
+
+- ✅ Build local: `npm run build` passou sem erros
+- ✅ Testes: `npm run test:e2e` passaram
+- ✅ Chave de API: `GOOGLE_GENERATIVE_AI_API_KEY` válida e ativa
+- ✅ Domínio: Domínio personalizado pronto (opcional mas recomendado)
+- ✅ DNS: Se domínio custom, DNS apontado para Vercel
+
+### Variáveis de Ambiente em Produção
+
+Configure as seguintes variáveis em **Vercel Dashboard → Settings → Environment Variables**:
+
+| Variável | Descrição | Exemplo |
+| :--- | :--- | :--- |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Chave de API Google Gemini (obrigatória) | `AIzaSyD...` |
+| `NEXT_PUBLIC_SITE_URL` | URL público de produção (recomendada) | `https://andor-travels.vercel.app` |
+
+**Notas importantes**:
+- `GOOGLE_GENERATIVE_AI_API_KEY` é **obrigatória** para funcionalidades de IA
+- `NEXT_PUBLIC_SITE_URL` afecta Open Graph, canónicos e sitemap
+- Nunca commit variáveis sensíveis no repositório
+
+### Deploy Step-by-Step
+
+1. **Conecta repositório**: [Vercel Dashboard](https://vercel.com/dashboard) → New Project → Import Git Repository
+2. **Configura variáveis**: Settings → Environment Variables → Adiciona as 2 variáveis acima
+3. **Deploy**: Clica Deploy — Vercel fará build automático
+4. **Valida**: Acede `https://seu-dominio.com` e testa funcionalidades principais
+
+**Para instruções detalhadas**, consulta **[DEPLOY_NOTES.md](DEPLOY_NOTES.md)**.
+
+### Pós-Deploy
+
+Após deploy estar live, executa:
+
+1. **Validação Manual**: Segue checklist em **[PRODUCTION_QA.md](PRODUCTION_QA.md)**
+2. **Analytics**: Verifica `window.andor_events` em DevTools Console
+3. **Sitemap**: Acede `/sitemap.xml` para confirmar geração dinâmica
+4. **Robots**: Acede `/robots.txt` para confirmar
+5. **Google Search Console**: Submete sitemap manualmente
+
+### Documentação de Produção
+
+- 📋 **[.env.example](.env.example)** — Variáveis de ambiente (copia para `.env.local` em desenvolvimento)
+- 📊 **[ANALYTICS_PLAN.md](ANALYTICS_PLAN.md)** — Estratégia de telemetria e eventos instrumentados
+- ✅ **[PRODUCTION_QA.md](PRODUCTION_QA.md)** — Checklist completa de validação pós-deploy
+- 🚀 **[DEPLOY_NOTES.md](DEPLOY_NOTES.md)** — Guia passo-a-passo de deploy via Vercel
+- 🎯 **[GO_TO_MARKET.md](GO_TO_MARKET.md)** — Posicionamento comercial e estratégia de lançamento
+
+### Monitorização em Produção
+
+- **Vercel Analytics**: Built-in no dashboard, mostra pageviews, geolocation, etc
+- **Eventos de App**: `window.andor_events` rastreia todas as interações do utilizador
+- **Performance**: Lighthouse score deve estar > 70 (SEO, Accessibility, Best Practices, Performance)
+- **Uptime**: Monitora com [Updown.io](https://updown.io) ou similar (opcional)
+- **Custos da API**: Verifica quota em [Google Cloud Console](https://console.cloud.google.com)
+
+### Troubleshooting
+
+- **AI Concierge não responde**: Verifica API key em Vercel Settings e quota no Google Cloud Console
+- **Sitemap retorna 404**: Triggerredeploy ou verifica se `app/sitemap.js` existe
+- **Build falha**: Consulta Build Logs em Vercel Deployments, revê erros específicos
+- **Domain não resolve**: Aguarda propagação de DNS (até 48h) ou verifica config em Vercel
+
+---
