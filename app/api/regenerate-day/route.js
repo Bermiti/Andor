@@ -21,10 +21,25 @@ CRITICAL INSTRUCTION:
 - Regenerate ONLY this day. DO NOT return the full itinerary. DO NOT modify other days.
 - Return ONLY the JSON object for this specific day.
 - Make sure coordinates are geographically accurate.
-- Day title MUST be highly unique, cinematic, and story-driven.
-  FORBIDDEN: "Explore Tokyo", "Day in Paris", "Visit Bali"
-  REQUIRED: "Neon Cathedrals: Shibuya Crossing", "Ancient Kyoto at Dawn", "Cliffside Sunsets in Santorini"
-- Ban all generic titles.
+- DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
+  Every day title must be unique, cinematic, and evocative.
+  It must make someone excited to live that specific day.
+  It must reference specific places or experiences from that day.
+  Required format: '[Atmospheric Hook]: [Specific Places & Moments]'
+
+  Examples of required quality:
+  - 'The City Wakes Up: Tsukiji at Dawn & Senso-ji in Silence'
+  - 'Neon Cathedrals: Shibuya Crossing & Harajuku After Dark'
+  - 'Ancient Kyoto Hiding Inside Modern Tokyo'
+  - 'Last Morning Light: Market Breakfast & Airport Farewell'
+
+  PERMANENTLY BANNED (never use these patterns):
+  - 'Explore [City]'
+  - 'Day [N] in [City]'
+  - 'Visit [City]'
+  - '[City] Day [N]'
+  - 'Discover [City]'
+  - Any title identical or similar to another day in the same itinerary
 - Return ONLY valid JSON representing the new version of this day. Do not include markdown wraps or explanations.
 
 Use this exact structure for the day object:

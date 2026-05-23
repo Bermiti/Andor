@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getItinerary, saveGeneratedItinerary } from '../../lib/itinerary-store';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
 import { enrichItinerary } from '../../lib/itinerary-enricher';
+import { validateAndFixCoordinates } from '../../lib/coordinate-validator';
 import { safeParse } from '../../lib/safe-json';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
@@ -173,7 +174,11 @@ export default function ItineraryPage() {
           setValidationError(val.errors.join('; '));
         } else {
           const normalized = val.normalized || data;
-          const enriched = enrichItinerary(normalized);
+          const validatedData = validateAndFixCoordinates(
+            normalized, 
+            normalized.destination?.city || ''
+          );
+          const enriched = enrichItinerary(validatedData);
           setItinerary(enriched);
           setExpandedStops({ 0: true });
         }

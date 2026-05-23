@@ -464,29 +464,30 @@ export default function FloatingAi() {
         if (done) break;
         
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
+        const lines = buffer.split('\n\n');
         buffer = lines.pop() || '';
         
         for (const line of lines) {
-            if (line.startsWith('0:')) {
-            try {
-              const text = safeParse(line.slice(2), '');
+          if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+          try {
+            const {text} = JSON.parse(line.slice(6));
+            if (text) {
               assistantMessage += text;
               setMessages(prev => {
                 const updated = [...prev];
                 updated[targetMsgIndex] = { role: 'assistant', content: assistantMessage, isStreaming: true };
                 return updated;
               });
-            } catch { /* skip */ }
-          }
+            }
+          } catch(e) {}
         }
       }
 
-      if (buffer.startsWith('0:')) {
+      if (buffer.startsWith('data: ') && buffer !== 'data: [DONE]') {
         try {
-          const text = safeParse(buffer.slice(2), '');
-          assistantMessage += text;
-        } catch {}
+          const {text} = JSON.parse(buffer.slice(6));
+          if (text) assistantMessage += text;
+        } catch(e) {}
       }
 
       setMessages(prev => {
@@ -718,19 +719,22 @@ export default function FloatingAi() {
                   if (done) break;
                   
                   buffer += decoder.decode(value, { stream: true });
-                  const lines = buffer.split('\n');
+                  const lines = buffer.split('\n\n');
                   buffer = lines.pop() || '';
                   
                   for (const line of lines) {
-                    if (line.startsWith('0:')) {
-                          const text = safeParse(line.slice(2), '');
-                          assistantMsg += text;
-                          setMessages(prev => {
-                            const updated = [...prev];
-                            updated[updated.length - 1] = { role: 'assistant', content: assistantMsg, isStreaming: true };
-                            return updated;
-                          });
-                        }
+                    if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+                    try {
+                      const {text} = JSON.parse(line.slice(6));
+                      if (text) {
+                        assistantMsg += text;
+                        setMessages(prev => {
+                          const updated = [...prev];
+                          updated[updated.length - 1] = { role: 'assistant', content: assistantMsg, isStreaming: true };
+                          return updated;
+                        });
+                      }
+                    } catch(e) {}
                   }
                 }
                 

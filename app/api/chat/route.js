@@ -1,5 +1,6 @@
 import { generateChatResponse } from '../../lib/fallback-ai';
 import { buildChatSystemPrompt } from '../../lib/phase11-2-chat-prompt';
+import { Anthropic } from '@anthropic-ai/sdk';
 
 const SYSTEM_PROMPT = `You are ANDOR — an elite AI travel agent with the combined
 expertise of a luxury travel consultant, a local guide who
@@ -58,10 +59,25 @@ ITINERARY CONSTRUCTION RULES:
 - Vary pace: intense day → slower recovery day
 - One "hidden gem" per day that guidebooks miss
 - Flag everything that needs advance booking
-- Day titles must be highly unique, cinematic, and story-driven:
-  FORBIDDEN: "Explore Tokyo", "Day in Paris", "Visit Bali", "Discover London"
-  REQUIRED: "Neon Cathedrals: Shibuya Crossing", "Ancient Kyoto at Dawn", "Cliffside Sunsets in Santorini", "Whispers of the Colosseum"
-  Ban generic titles.
+- DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
+  Every day title must be unique, cinematic, and evocative.
+  It must make someone excited to live that specific day.
+  It must reference specific places or experiences from that day.
+  Required format: '[Atmospheric Hook]: [Specific Places & Moments]'
+
+  Examples of required quality:
+  - 'The City Wakes Up: Tsukiji at Dawn & Senso-ji in Silence'
+  - 'Neon Cathedrals: Shibuya Crossing & Harajuku After Dark'
+  - 'Ancient Kyoto Hiding Inside Modern Tokyo'
+  - 'Last Morning Light: Market Breakfast & Airport Farewell'
+
+  PERMANENTLY BANNED (never use these patterns):
+  - 'Explore [City]'
+  - 'Day [N] in [City]'
+  - 'Visit [City]'
+  - '[City] Day [N]'
+  - 'Discover [City]'
+  - Any title identical or similar to another day in the same itinerary
 
 COORDINATE RULES — CRITICAL, NEVER BREAK:
 Every coordinate must be geographically accurate.
@@ -132,18 +148,57 @@ export async function POST(req) {
     const userLocale = locale || 'pt';
     
     // PHASE 11.2: Build context-aware prompt
-    // If we have destination/itinerary, use enhanced prompt with context
     let activeSystemPrompt;
     if (destination) {
       activeSystemPrompt = buildChatSystemPrompt(destination, itinerary, userLocale);
     } else {
-      // Fallback to original system prompt
       activeSystemPrompt = `${SYSTEM_PROMPT}\n\nAlways respond in: ${userLocale === 'pt-BR' ? 'Brazilian Portuguese' : 'European Portuguese'}.`;
+    }
+
+    const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
+
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey && anthropicKey !== 'cola_aqui_a_tua_chave') {
+      try {
+        const anthropic = new Anthropic({ apiKey: anthropicKey });
+        const stream = await anthropic.messages.stream({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: activeSystemPrompt,
+          messages: cleanMessages
+        });
+
+        const encoder = new TextEncoder();
+        const readable = new ReadableStream({
+          async start(controller) {
+            for await (const chunk of stream) {
+              if (chunk.type === 'content_block_delta' && 
+                  chunk.delta.type === 'text_delta') {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({text: chunk.delta.text})}\n\n`
+                  )
+                );
+              }
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          }
+        });
+
+        return new Response(readable, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+          }
+        });
+      } catch (e) {
+        // Fallback
+      }
     }
 
     // Try Groq Llama first
     const groqKey = process.env.GROQ_API_KEY;
-
     if (groqKey && groqKey !== 'cola_aqui_a_tua_chave') {
       try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -155,11 +210,8 @@ export async function POST(req) {
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: [
-              {
-                role: 'system',
-                content: activeSystemPrompt
-              },
-              ...messages,
+              { role: 'system', content: activeSystemPrompt },
+              ...cleanMessages,
             ],
             temperature: 0.7,
             max_tokens: 1000,
@@ -168,20 +220,16 @@ export async function POST(req) {
         });
 
         if (response.ok) {
-          // Stream the Groq response
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             async start(controller) {
               const reader = response.body.getReader();
               const decoder = new TextDecoder();
-
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-
                 const chunk = decoder.decode(value);
                 const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-
                 for (const line of lines) {
                   const data = line.slice(6);
                   if (data === '[DONE]') continue;
@@ -189,40 +237,24 @@ export async function POST(req) {
                     const parsed = JSON.parse(data);
                     const text = parsed.choices?.[0]?.delta?.content || '';
                     if (text) {
-                      controller.enqueue(encoder.encode(`0:${JSON.stringify(text)}\n`));
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({text})}\n\n`));
                     }
                   } catch {}
                 }
               }
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               controller.close();
             },
           });
 
           return new Response(stream, {
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+            }
           });
         }
-      } catch (e) {
-        // Groq chat fallback
-      }
-    }
-
-    // Try Gemini
-    const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    if (geminiKey && geminiKey !== 'cola_aqui_a_tua_chave_gemini') {
-      try {
-        const { google } = await import('@ai-sdk/google');
-        const { streamText } = await import('ai');
-
-        const result = streamText({
-          model: google('gemini-1.5-pro'),
-          system: activeSystemPrompt,
-          messages,
-        });
-        return result.toDataStreamResponse();
-      } catch (e) {
-        // Gemini chat fallback
-      }
+      } catch (e) {}
     }
 
     // Fallback — smart pre-built responses
@@ -230,36 +262,43 @@ export async function POST(req) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        // Simulate streaming word by word for a natural feel
         const words = reply.split(' ');
         let i = 0;
         const interval = setInterval(() => {
           if (i >= words.length) {
             clearInterval(interval);
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
             return;
           }
           const word = (i === 0 ? '' : ' ') + words[i];
-          controller.enqueue(encoder.encode(`0:${JSON.stringify(word)}\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({text: word})}\n\n`));
           i++;
         }, 30);
       },
     });
 
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      }
     });
 
   } catch (error) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(encoder.encode(`0:${JSON.stringify("Sorry, something went wrong. Please try again!")}\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({text: "Sorry, something went wrong. Please try again!"})}\n\n`));
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();
       },
     });
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      }
     });
   }
 }

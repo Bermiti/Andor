@@ -70,10 +70,25 @@ ITINERARY CONSTRUCTION RULES:
 - Vary pace: intense day → slower recovery day
 - One "hidden gem" per day that guidebooks miss
 - Flag everything that needs advance booking
-- Day titles must be highly unique, cinematic, and story-driven:
-  FORBIDDEN: "Explore Tokyo", "Day in Paris", "Visit Bali"
-  REQUIRED: "Neon Cathedrals: Shibuya Crossing", "Ancient Kyoto at Dawn", "Cliffside Sunsets in Santorini"
-  Ban generic titles.
+- DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
+  Every day title must be unique, cinematic, and evocative.
+  It must make someone excited to live that specific day.
+  It must reference specific places or experiences from that day.
+  Required format: '[Atmospheric Hook]: [Specific Places & Moments]'
+
+  Examples of required quality:
+  - 'The City Wakes Up: Tsukiji at Dawn & Senso-ji in Silence'
+  - 'Neon Cathedrals: Shibuya Crossing & Harajuku After Dark'
+  - 'Ancient Kyoto Hiding Inside Modern Tokyo'
+  - 'Last Morning Light: Market Breakfast & Airport Farewell'
+
+  PERMANENTLY BANNED (never use these patterns):
+  - 'Explore [City]'
+  - 'Day [N] in [City]'
+  - 'Visit [City]'
+  - '[City] Day [N]'
+  - 'Discover [City]'
+  - Any title identical or similar to another day in the same itinerary
 
 COORDINATE RULES — CRITICAL, NEVER BREAK:
 Every coordinate must be geographically accurate.
@@ -493,10 +508,25 @@ NEVER return [0,0] or coordinates from a different city.
 If unsure of exact coords: use city center as fallback.
 
 2. UNIQUE DAY TITLES (MANDATORY):
-Each day MUST have a highly unique, cinematic, and story-driven thematic title. Ban generic titles.
-FORBIDDEN: 'Explore [City]', 'Day in [City]', 'Visit [City]', 'Discover [City]'
-REQUIRED: 'Neon Cathedrals: Shibuya Crossing', 'Ancient Kyoto at Dawn', 'Cliffside Sunsets in Santorini'
+DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
+Every day title must be unique, cinematic, and evocative.
+It must make someone excited to live that specific day.
+It must reference specific places or experiences from that day.
+Required format: '[Atmospheric Hook]: [Specific Places & Moments]'
 
+Examples of required quality:
+- 'The City Wakes Up: Tsukiji at Dawn & Senso-ji in Silence'
+- 'Neon Cathedrals: Shibuya Crossing & Harajuku After Dark'
+- 'Ancient Kyoto Hiding Inside Modern Tokyo'
+- 'Last Morning Light: Market Breakfast & Airport Farewell'
+
+PERMANENTLY BANNED (never use these patterns):
+- 'Explore [City]'
+- 'Day [N] in [City]'
+- 'Visit [City]'
+- '[City] Day [N]'
+- 'Discover [City]'
+- Any title identical or similar to another day in the same itinerary
 3. ITINERARY QUALITY:
 - Day 1: always arrival + orientation + light exploration
 - Max 3-4 major activities per day
