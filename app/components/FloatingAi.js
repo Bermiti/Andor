@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { trackEvent } from '../lib/analytics';
 import styles from './FloatingAi.module.css';
 import { useChatContext } from '../context/ChatContext';
 import { safeParse } from '../lib/safe-json';
@@ -384,6 +385,12 @@ export default function FloatingAi() {
       setMessages([{ role: 'assistant', content: welcomeContent, id: `welcome-${Date.now()}` }]);
     }
   }, [isOpen, pathname]);
+
+  useEffect(() => {
+    if (isOpen) {
+      trackEvent('ai_concierge_opened');
+    }
+  }, [isOpen]);
 
   // Direct actions trigger checking
   const checkAndExecuteActions = (text) => {
@@ -1231,7 +1238,7 @@ export default function FloatingAi() {
             <div className={styles.logoMark}>A</div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 className={styles.chatHeaderTitle}>ANDOR AI</h2>
+                <div className={styles.chatHeaderTitle}>ANDOR AI</div>
                 {messages.length > 0 && (
                   <span className={styles.contextSavedBadge} title="Histórico de mensagens guardado localmente">
                     💭 Contexto guardado
@@ -1398,9 +1405,9 @@ export default function FloatingAi() {
                   ) : (
                     <div className={styles.revealResult}>
                       <span className={styles.revealTitle}>A tua próxima aventura começa em...</span>
-                      <h2 className={styles.revealDestination}>
+                      <div className={styles.revealDestination}>
                         {surpriseData.city}, {surpriseData.country}
-                      </h2>
+                      </div>
                       
                       {/* Andor Score Badge */}
                       <div className={styles.revealScoreBadge}>

@@ -657,3 +657,10 @@ body { overflow-x: hidden; }
     left: 150%;
   }
 }
+
+/* ---- Accessibility Focus Indicator ---- */
+*:focus-visible {
+  outline: 2px solid var(--gold, #D4A843) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(212, 168, 67, 0.25) !important;
+}

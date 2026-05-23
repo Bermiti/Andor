@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { trackEvent } from '../lib/analytics';
 import styles from './pricing.module.css';
 
 export default function PricingPage() {
@@ -11,10 +12,13 @@ export default function PricingPage() {
 
   useEffect(() => {
     document.title = "Preços · Andor Travels";
+    trackEvent('page_view', { page: 'pricing' });
   }, []);
 
   const toggleBilling = () => {
-    setIsYearly(!isYearly);
+    const nextVal = !isYearly;
+    setIsYearly(nextVal);
+    trackEvent('pricing_toggle', { billing_cycle: nextVal ? 'yearly' : 'monthly' });
   };
 
   const toggleFaq = (index) => {
@@ -48,8 +52,28 @@ export default function PricingPage() {
     }
   ];
 
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Andor Travels Pro",
+    "description": "Itinerários de viagem ilimitados e concierge de viagem com IA disponível 24 horas por dia.",
+    "image": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=75&auto=format&fit=crop",
+    "offers": {
+      "@type": "Offer",
+      "price": "9.00",
+      "priceCurrency": "EUR",
+      "priceValidUntil": "2028-12-31",
+      "availability": "https://schema.org/InStock",
+      "url": "https://andor.travels/pricing"
+    }
+  };
+
   return (
     <>
+      <script 
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
       <Navbar />
       <main className={styles.container}>
         {/* HERO SECTION */}
@@ -119,7 +143,11 @@ export default function PricingPage() {
               </li>
             </ul>
             
-            <a href="/?wizard=true" className={`${styles.btn} ${styles.btnFree}`}>
+            <a 
+              href="/?wizard=true" 
+              className={`${styles.btn} ${styles.btnFree}`}
+              onClick={() => trackEvent('pricing_click', { tier: 'free' })}
+            >
               Começar Grátis
             </a>
           </div>
@@ -168,7 +196,10 @@ export default function PricingPage() {
             </ul>
             
             <button 
-              onClick={() => window.dispatchEvent(new Event('open-ai-chat'))}
+              onClick={() => {
+                trackEvent('pricing_click', { tier: 'pro' });
+                window.dispatchEvent(new Event('open-ai-chat'));
+              }}
               className={`${styles.btn} ${styles.btnPro}`}
             >
               Começar Pro — 7 dias grátis
@@ -214,7 +245,10 @@ export default function PricingPage() {
             </ul>
             
             <button 
-              onClick={() => window.dispatchEvent(new Event('open-custom-request'))}
+              onClick={() => {
+                trackEvent('pricing_click', { tier: 'agency' });
+                window.dispatchEvent(new Event('open-custom-request'));
+              }}
               className={`${styles.btn} ${styles.btnAgency}`}
             >
               Contactar para Demo

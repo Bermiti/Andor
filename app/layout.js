@@ -27,25 +27,73 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata = {
-  title: 'Andor — Your AI Travel Companion',
-  description: 'Andor is an AI-powered travel platform that plans, adapts, and guides your journey in real time. Discover smarter travel with personalized itineraries, real-time navigation, and an intelligent assistant.',
-  keywords: 'AI travel, travel planner, itinerary generator, smart travel, travel companion',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://andor.travels'),
+  title: {
+    default: 'Andor — O Teu Concierge de Viagens AI',
+    template: '%s · Andor'
+  },
+  description: 'Andor é um concierge de viagens inteligente com inteligência artificial. Planeia, adapta e guia a tua aventura em tempo real com itinerários premium e recomendações locais.',
+  keywords: 'viagens, roteiro de viagem, planear viagem, inteligência artificial, itinerários personalizados, turismo de luxo',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
-    title: 'Andor — Your AI Travel Companion',
-    description: 'Plan, adapt, and explore with the smartest travel platform powered by AI.',
+    title: 'Andor — O Teu Concierge de Viagens AI',
+    description: 'Planeia, adapta e explora com o planeador de viagens inteligente movido a IA.',
+    url: '/',
+    siteName: 'Andor Travels',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80&fit=crop',
+        width: 1200,
+        height: 630,
+        alt: 'Andor Travels — Premium Travel Planner'
+      }
+    ],
+    locale: 'pt-PT',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Andor — O Teu Concierge de Viagens AI',
+    description: 'Roteiros de viagens personalizados e recomendações exclusivas gerados por IA em segundos.',
+    images: ['https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80&fit=crop'],
+    creator: '@andortravels'
+  }
+};
+
+const jsonLdData = {
+  "@context": "https://schema.org",
+  "@type": "TravelAgency",
+  "name": "Andor Travels",
+  "description": "Concierge de viagens inteligente com inteligência artificial. Planeia itinerários de luxo personalizados em segundos.",
+  "url": "https://andor.travels",
+  "telephone": "+351900000000",
+  "priceRange": "$$",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Lisboa",
+    "addressCountry": "PT"
+  },
+  "sameAs": [
+    "https://twitter.com/andortravels",
+    "https://github.com/Bermiti/Andor"
+  ]
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${dmSans.variable} ${cormorant.variable}`}>
+    <html lang="pt" className={`${playfair.variable} ${dmSans.variable} ${cormorant.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0A1628" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
+        />
         <script dangerouslySetInnerHTML={{__html: `
           (function() {
             try {

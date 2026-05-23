@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { trackEvent } from '../lib/analytics';
 import styles from './favorites.module.css';
 
 export default function FavoritesPage() {
@@ -16,6 +17,7 @@ export default function FavoritesPage() {
 
   useEffect(() => {
     document.title = "Os Meus Favoritos · Andor";
+    trackEvent('page_view', { page: 'favorites' });
     
     const loadFavorites = () => {
       // Load destinations
@@ -122,6 +124,7 @@ export default function FavoritesPage() {
     setFavDestinations(updated);
     localStorage.setItem('andor_favorite_destinations', JSON.stringify(updated));
     setConfirmDeleteId(null);
+    trackEvent('favorite_removed', { type: 'destination', slug });
   };
 
   const handleRemoveActivity = (id) => {
@@ -129,6 +132,7 @@ export default function FavoritesPage() {
     setFavActivities(updated);
     localStorage.setItem('andor_favorite_activities', JSON.stringify(updated));
     setConfirmDeleteId(null);
+    trackEvent('favorite_removed', { type: 'activity', id });
   };
 
   const handleRemoveItinerary = (id) => {
@@ -149,6 +153,7 @@ export default function FavoritesPage() {
       } catch (e) {}
     }
     setConfirmDeleteId(null);
+    trackEvent('favorite_removed', { type: 'itinerary', id });
   };
 
   const handleDuplicateItinerary = (itinerary) => {
@@ -173,6 +178,7 @@ export default function FavoritesPage() {
         }
       } catch (e) {}
     }
+    trackEvent('itinerary_duplicated', { destination: itinerary.destination });
   };
 
   // Group activities by destination city

@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { trackEvent } from '../../lib/analytics';
 import styles from './destination.module.css';
 
 const destinations = {
@@ -520,6 +521,7 @@ export default function DestinationDetail({ params }) {
   useEffect(() => {
     if (dest) {
       document.title = `${dest.name} · Andor Travels`;
+      trackEvent('destination_viewed', { slug: dest.slug, name: dest.name, country: dest.country });
     }
 
     const handleScroll = () => {
@@ -550,6 +552,7 @@ export default function DestinationDetail({ params }) {
       if (isFavorited) {
         favs = favs.filter(f => f.slug !== dest.slug);
         setIsFavorited(false);
+        trackEvent('favorite_removed', { type: 'destination', slug: dest.slug });
       } else {
         const newItem = {
           slug: dest.slug,
@@ -563,6 +566,7 @@ export default function DestinationDetail({ params }) {
         setIsFavorited(true);
         setShowParticles(true);
         setTimeout(() => setShowParticles(false), 800);
+        trackEvent('favorite_added', { type: 'destination', slug: dest.slug, name: dest.name });
       }
       localStorage.setItem('andor_favorite_destinations', JSON.stringify(favs));
       
@@ -594,8 +598,28 @@ export default function DestinationDetail({ params }) {
     return 'var(--danger, #ef4444)';
   };
 
+  const destinationJsonLd = dest ? {
+    "@context": "https://schema.org",
+    "@type": "TouristDestination",
+    "name": dest.name,
+    "description": dest.tagline,
+    "image": dest.heroImage,
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": dest.coordinates?.[0] || 0,
+      "longitude": dest.coordinates?.[1] || 0
+    },
+    "touristType": "Leisure, Culture, Nature"
+  } : null;
+
   return (
     <>
+      {destinationJsonLd && (
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(destinationJsonLd) }} 
+        />
+      )}
       <Navbar />
       <main className={styles.main}>
         {/* HERO SECTION */}

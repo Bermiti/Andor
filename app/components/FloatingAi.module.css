@@ -133,20 +133,25 @@
 .chatWindow {
   position: fixed;
   top: 0;
-  right: -450px;
+  right: 0;
   width: 420px;
   height: 100vh;
   background: var(--bg-primary);
-  display: flex;
+  display: none;
   flex-direction: column;
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
   z-index: 99;
   overflow: hidden;
-  transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .drawerOpen .chatWindow {
-  right: 0;
+  display: flex;
+  animation: slideInChat 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInChat {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* Grain / Noise Overlay */
@@ -1221,7 +1226,7 @@
 @media (max-width: 480px) {
   .chatWindow {
     width: 100vw !important;
-    right: -100vw;
+    right: 0 !important;
     height: 100dvh !important;
   }
   .container {

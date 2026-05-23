@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from './ToastProvider';
+import { trackEvent } from '../lib/analytics';
 import styles from './CreationWizard.module.css';
 
 const AUTOCOMPLETE_DATA = [
@@ -127,6 +128,14 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
       });
       
       const data = await response.json();
+      
+      trackEvent('itinerary_generated', {
+        destination: payload.destination,
+        days: payload.days,
+        budget: payload.budget,
+        travelers: payload.travelers,
+        style: payload.style
+      });
       
       // We import saveGeneratedItinerary inline to avoid issues
       const { saveGeneratedItinerary } = await import('../lib/itinerary-store');

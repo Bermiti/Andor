@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './OnboardingModal.module.css';
 import { useToast } from './ToastProvider';
+import { trackEvent } from '../lib/analytics';
 
 export default function OnboardingModal() {
   const { showToast } = useToast();
@@ -61,6 +62,11 @@ export default function OnboardingModal() {
       localStorage.setItem('andor_user', JSON.stringify(newUser));
       localStorage.setItem('userProfile', JSON.stringify(profile));
       localStorage.setItem('firstVisitDone', 'true');
+      
+      trackEvent('onboarding_completed', {
+        travelerType: travelerType,
+        budgetRange: finalBudget
+      });
       
       // Dispatch authentication change event and reload to propagate user info
       window.dispatchEvent(new Event('auth-state-change'));

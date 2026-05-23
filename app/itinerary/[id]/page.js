@@ -13,6 +13,7 @@ import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import styles from './itinerary.module.css';
 import html2pdf from 'html2pdf.js';
+import { trackEvent } from '../../lib/analytics';
 
 const getStopIcon = (stop) => {
   const type = (stop.type || '').toLowerCase();
@@ -98,7 +99,29 @@ export default function ItineraryPage() {
   const [showBudgetDrawer, setShowBudgetDrawer] = useState(false);
   const [adaptFeedback, setAdaptFeedback] = useState('');
   const [adaptChecks, setAdaptChecks] = useState({});
-  const [savedStops, setSavedStops] = useState({});
+  const [favorites, setFavorites] = useState([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('andor_favorites');
+      if (stored) {
+        try {
+          setFavorites(JSON.parse(stored) || []);
+        } catch (e) {
+          setFavorites([]);
+        }
+      }
+    }
+  }, []);
+
+  const isStopSaved = (stopName) => {
+    return favorites.some(fav => {
+      if (typeof fav === 'object' && fav !== null) {
+        return fav.name === stopName;
+      }
+      return fav === stopName;
+    });
+  };
   
   const printRef = useRef();
   const timelineRef = useRef();
@@ -342,11 +365,61 @@ export default function ItineraryPage() {
     setExpandedStops(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
-  const toggleSaved = (idx) => {
-    setSavedStops(prev => {
-      const next = { ...prev, [idx]: !prev[idx] };
-      showToast(next[idx] ? '❤️ Guardado nos favoritos!' : '💔 Removido dos favoritos.', next[idx] ? 'success' : 'info');
-      return next;
+  const toggleSaved = (stop) => {
+    const stopName = stop.name;
+    const destName = itinerary?.destination || (dest.city || dest.name) || '';
+    
+    let nextFavorites;
+    const exists = favorites.some(fav => {
+      if (typeof fav === 'object' && fav !== null) {
+        return fav.name === stopName;
+      }
+      return fav === stopName;
+    });
+
+    if (exists) {
+      nextFavorites = favorites.filter(fav => {
+        if (typeof fav === 'object' && fav !== null) {
+          return fav.name !== stopName;
+        }
+        return fav !== stopName;
+      });
+      showToast('💔 Removido dos favoritos.', 'info');
+    } else {
+      nextFavorites = [...favorites, { name: stopName, destination: destName }];
+      showToast('❤️ Guardado nos favoritos!', 'success');
+    }
+    
+    setFavorites(nextFavorites);
+    localStorage.setItem('andor_favorites', JSON.stringify(nextFavorites));
+
+    // Also update andor_favorite_activities for the favorites page!
+    const storedActs = localStorage.getItem('andor_favorite_activities');
+    let favActivities = [];
+    if (storedActs) {
+      try { favActivities = JSON.parse(storedActs) || []; } catch (e) {}
+    }
+    if (exists) {
+      favActivities = favActivities.filter(a => a.name !== stopName);
+    } else {
+      favActivities.push({
+        id: stopName.toLowerCase().replace(/\s+/g, '-'),
+        name: stopName,
+        type: stop.type || 'Actividade',
+        cost: stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis',
+        duration: stop.duration || '2h',
+        city: dest.city || dest.name || itinerary?.destination || '',
+        destinationSlug: dest.slug || 'tokyo',
+        image: stop.photoKeyword ? `https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=75&auto=format&fit=crop` : '',
+        dateSaved: new Date().toLocaleDateString('pt-PT')
+      });
+    }
+    localStorage.setItem('andor_favorite_activities', JSON.stringify(favActivities));
+    
+    trackEvent(exists ? 'favorite_removed' : 'favorite_added', {
+      type: 'activity',
+      name: stopName,
+      destination: destName
     });
   };
 
@@ -559,7 +632,7 @@ export default function ItineraryPage() {
                       {stops.map((stop) => {
                         const idx = globalStopCounter++;
                         const isExpanded = !!expandedStops[idx];
-                        const isSaved = !!savedStops[idx];
+                        const isSaved = isStopSaved(stop.name);
                         const crowd = getCrowdLabel(stop.crowdLevel);
                         
                         return (
@@ -647,10 +720,10 @@ export default function ItineraryPage() {
                                     className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      toggleSaved(idx);
+                                      toggleSaved(stop);
                                     }}
                                   >
-                                    {isSaved ? '❤️' : '🤍'} Guardar
+                                    {isSaved ? '❤️ Guardado' : '🤍 Guardar'}
                                   </button>
                                 </div>
                               </div>

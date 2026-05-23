@@ -281,7 +281,7 @@
   .links {
     position: fixed;
     top: 0;
-    right: -100%;
+    right: 0;
     width: 80%;
     max-width: 300px;
     height: 100vh;
@@ -290,14 +290,20 @@
     flex-direction: column;
     align-items: flex-start;
     padding: var(--space-24) var(--space-6) var(--space-8);
-    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: -10px 0 45px rgba(0, 0, 0, 0.6);
     z-index: 100;
     gap: var(--space-4);
+    display: none;
   }
 
   .links.mobileOpen {
-    right: 0;
+    display: flex;
+    animation: slideInNavbar 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes slideInNavbar {
+    from { opacity: 0; transform: translateX(50px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 
   .link {
