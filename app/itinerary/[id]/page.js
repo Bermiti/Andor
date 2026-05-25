@@ -21,6 +21,7 @@ import LocalTransportSection from '../../components/LocalTransportSection';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { Modal, Drawer } from '../../components/ui/Modal';
 import styles from './itinerary.module.css';
 import { trackEvent } from '../../lib/analytics';
 
@@ -106,6 +107,10 @@ export default function ItineraryPage() {
   const [dayTransitioning, setDayTransitioning] = useState(false);
   const [showAdaptModal, setShowAdaptModal] = useState(false);
   const [showBudgetDrawer, setShowBudgetDrawer] = useState(false);
+  const [showMobileBudget, setShowMobileBudget] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [bookingStop, setBookingStop] = useState(null);
   const [adaptFeedback, setAdaptFeedback] = useState('');
   const [adaptChecks, setAdaptChecks] = useState({});
   const [favorites, setFavorites] = useState([]);
@@ -134,6 +139,7 @@ export default function ItineraryPage() {
   
   const printRef = useRef();
   const timelineRef = useRef();
+  const dayTabRefs = useRef([]);
 
   useEffect(() => {
     let data = null;
@@ -199,20 +205,69 @@ export default function ItineraryPage() {
     }
   }, [itinerary]);
 
-  const handleShare = async () => {
+  useEffect(() => {
+    dayTabRefs.current[activeDay]?.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center',
+      block: 'nearest'
+    });
+  }, [activeDay]);
+
+  const createShareUrl = () => {
+    const uuid = crypto.randomUUID();
     try {
-      const uuid = crypto.randomUUID();
-      // Safely write to localStorage with fallback
-      try {
-        localStorage.setItem(`andor_shared_${uuid}`, JSON.stringify(itinerary));
-      } catch (storageErr) {
-        // silent: localStorage not available
-      }
-      const shareUrl = `${window.location.origin}/itinerary/share/${uuid}`;
-      await navigator.clipboard.writeText(shareUrl);
+      localStorage.setItem(`andor_shared_${uuid}`, JSON.stringify(itinerary));
+    } catch (storageErr) {}
+    return `${window.location.origin}/itinerary/share/${uuid}`;
+  };
+
+  const handleShare = () => {
+    if (typeof window === 'undefined' || !itinerary) return;
+    const nextUrl = shareUrl || createShareUrl();
+    setShareUrl(nextUrl);
+    setShowShareModal(true);
+  };
+
+  const copyShareUrl = async () => {
+    try {
+      const nextUrl = shareUrl || createShareUrl();
+      setShareUrl(nextUrl);
+      await navigator.clipboard.writeText(nextUrl);
       showToast('✅ Link copiado para a área de transferência!', 'success');
     } catch (err) {
       showToast('❌ Erro ao partilhar.', 'error');
+    }
+  };
+
+  const copyActivityDetails = async (stop) => {
+    try {
+      const text = [
+        stop.name,
+        stop.address ? `Endereço: ${stop.address}` : null,
+        stop.duration ? `Duração: ${stop.duration}` : null,
+        stop.cost !== undefined ? `Custo: €${stop.cost}` : stop.estimatedCost ? `Custo: ${stop.estimatedCost}` : null,
+        stop.insiderTip ? `Segredo do Andor: ${stop.insiderTip}` : null,
+      ].filter(Boolean).join('\n');
+      await navigator.clipboard.writeText(text);
+      showToast('📋 Actividade copiada.', 'success');
+    } catch (err) {
+      showToast('❌ Não foi possível copiar a actividade.', 'error');
+    }
+  };
+
+  const copyCurrentDayPlan = async () => {
+    try {
+      const day = currentDay;
+      const lines = [
+        `${getDayEmoji(day)} Dia ${activeDay + 1}: ${day.title}`,
+        day.moodDescription || null,
+        ...(day.stops || []).map((stop, index) => `${index + 1}. ${stop.name} · ${stop.duration || '2h'} · ${stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis'}`),
+        day.localSecret ? `Segredo do Andor: ${day.localSecret}` : null,
+      ].filter(Boolean);
+      await navigator.clipboard.writeText(lines.join('\n'));
+      showToast('📋 Plano do dia copiado.', 'success');
+    } catch (err) {
+      showToast('❌ Não foi possível copiar o dia.', 'error');
     }
   };
 
@@ -227,6 +282,13 @@ export default function ItineraryPage() {
       showToast('❌ Erro ao inicializar gerador de PDF.', 'error');
       return;
     }
+
+    const safeText = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
     
     const content = document.createElement('div');
     content.innerHTML = `
@@ -331,10 +393,22 @@ export default function ItineraryPage() {
         </div>
       </div>
     `;
+
+    content.querySelectorAll('script, style, iframe, object, embed').forEach((node) => node.remove());
+    content.querySelectorAll('*').forEach((node) => {
+      Array.from(node.attributes).forEach((attribute) => {
+        if (/^on/i.test(attribute.name) || attribute.name === 'srcdoc') {
+          node.removeAttribute(attribute.name);
+        }
+      });
+    });
     
+    const pdfDate = new Date(trip.startDate || Date.now());
+    const pdfMonthYear = pdfDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).replace(/\s/g, '');
+    const pdfCity = (itinerary.destination?.city || itinerary.destination?.name || 'Itinerario').replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '');
     const options = {
       margin: [10, 10, 10, 10],
-      filename: `Andor_${itinerary.destination?.city || 'Itinerario'}_${itinerary.trip?.totalDays || itinerary.days?.length}dias.pdf`,
+      filename: `Andor_${pdfCity}_${itinerary.trip?.totalDays || itinerary.days?.length}dias_${pdfMonthYear}.pdf`,
       image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -485,6 +559,17 @@ export default function ItineraryPage() {
     window.dispatchEvent(new Event('open-ai-chat'));
   };
 
+  const handleActivityKeyDown = (event, idx) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      document.querySelector(`[data-activity-index="${idx + 1}"]`)?.focus();
+    }
+    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      document.querySelector(`[data-activity-index="${idx - 1}"]`)?.focus();
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -513,6 +598,16 @@ export default function ItineraryPage() {
     : (itinerary.destination || {});
   const trip = itinerary.trip || {};
   const currentDay = itinerary.days?.[activeDay] || {};
+  const dayCoordinates = (currentDay.stops || [])
+    .map(stop => Array.isArray(stop.coordinates)
+      ? stop.coordinates
+      : stop.coordinates?.lat && stop.coordinates?.lng
+        ? [stop.coordinates.lat, stop.coordinates.lng]
+        : null)
+    .filter(Boolean);
+  const dayDirectionsUrl = dayCoordinates.length > 1
+    ? `https://www.google.com/maps/dir/?api=1&origin=${dayCoordinates[0].join(',')}&destination=${dayCoordinates[dayCoordinates.length - 1].join(',')}&waypoints=${dayCoordinates.slice(1, -1).map(coord => coord.join(',')).join('|')}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.city || dest.name || '')}`;
   
   // Budget estimate
   const budgetMin = trip.budgetBreakdown?.grandTotal?.min;
@@ -566,9 +661,11 @@ export default function ItineraryPage() {
               </div>
             </div>
             <div className={styles.headerActionsDesktop}>
-              <button className={styles.btnSecondary} onClick={handleShare}>🔗 Partilhar</button>
-              <button className={styles.btnSecondary} onClick={handleExportPDF}>📄 PDF</button>
-              <button className={styles.btnPrimary} onClick={openAIChat}>💬 Pedir ao Andor</button>
+              <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title="Editar este dia">✏️ <span>Editar</span></button>
+              <button className={styles.btnSecondary} onClick={handleShare} aria-label="Partilhar itinerário" title="Partilhar itinerário">🔗 <span>Partilhar</span></button>
+              <button className={styles.btnSecondary} onClick={handleExportPDF} aria-label="Exportar PDF" title="Exportar PDF">📄 <span>PDF</span></button>
+              <button className={styles.btnSecondary} onClick={copyCurrentDayPlan} aria-label="Copiar plano do dia" title="Copiar plano do dia">📋 <span>Copiar</span></button>
+              <button className={styles.btnPrimary} onClick={openAIChat} aria-label="Pedir ajuda ao Andor" title="Pedir ajuda ao Andor">💬 <span>Andor</span></button>
             </div>
           </div>
         </header>
@@ -581,6 +678,7 @@ export default function ItineraryPage() {
               return (
                 <button
                   key={i}
+                  ref={(node) => { dayTabRefs.current[i] = node; }}
                   className={`${styles.dayTab} ${activeDay === i ? styles.dayTabActive : ''}`}
                   onClick={() => handleDayChange(i)}
                 >
@@ -600,6 +698,15 @@ export default function ItineraryPage() {
               );
             })}
           </div>
+          <div className={styles.dayProgress}>
+            <span>Dia {activeDay + 1} de {itinerary.days?.length || 1}</span>
+            <div className={styles.dayProgressTrack} aria-hidden="true">
+              <div
+                className={styles.dayProgressFill}
+                style={{ width: `${(((activeDay + 1) / (itinerary.days?.length || 1)) * 100).toFixed(2)}%` }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* MAIN LAYOUT (DOIS PAINÉIS) */}
@@ -614,6 +721,14 @@ export default function ItineraryPage() {
                 <LiveMap stops={currentDay.stops || []} destination={dest} />
               </ErrorBoundary>
             </div>
+            <a
+              className={styles.googleMapsDayButton}
+              href={dayDirectionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              🗺️ Abrir este dia no Google Maps
+            </a>
 
             <DailyPlanTimeline dailyPlans={itinerary.days} destination={dest.city || dest.name} />
 
@@ -625,6 +740,9 @@ export default function ItineraryPage() {
                   <div>
                     <div className={styles.metaLabel}>Clima</div>
                     <div className={styles.metaValue}>{currentDay.weather.avgTemp} · {currentDay.weather.condition}</div>
+                    {currentDay.weather.tip && (
+                      <div className={styles.metaValueSub}>{currentDay.weather.tip}</div>
+                    )}
                   </div>
                 </div>
               )}
@@ -686,16 +804,29 @@ export default function ItineraryPage() {
                         const crowd = getCrowdLabel(stop.crowdLevel);
                         
                         return (
-                          <div key={idx} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`}>
+                          <div key={idx} id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`}>
                             
                             {/* Collapsed State */}
-                            <div className={styles.activityHeader} onClick={() => toggleStop(idx)}>
+                            <button
+                              type="button"
+                              className={styles.activityHeader}
+                              onClick={() => toggleStop(idx)}
+                              onKeyDown={(event) => handleActivityKeyDown(event, idx)}
+                              aria-expanded={isExpanded}
+                              data-activity-index={idx}
+                            >
                               <div className={styles.activityHeaderLeft}>
+                                <span className={styles.activitySequence}>{idx + 1}</span>
                                 {stop.photoKeyword && (
                                   <img
-                                    src={`https://source.unsplash.com/128x128/?${encodeURIComponent(stop.photoKeyword || stop.name)}`}
-                                    alt=""
+                                    src={`https://source.unsplash.com/128x128/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`}
+                                    alt={stop.name}
                                     className={styles.activityThumb}
+                                    width="56"
+                                    height="56"
+                                    loading="lazy"
+                                    decoding="async"
+                                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
                                   />
                                 )}
                                 <div className={styles.activityIcon}>{getStopIcon(stop)}</div>
@@ -711,7 +842,7 @@ export default function ItineraryPage() {
                                 )}
                                 <span className={styles.chevron}>{isExpanded ? '▲' : '▼'}</span>
                               </div>
-                            </div>
+                            </button>
 
                             {/* Expanded State */}
                             {isExpanded && (
@@ -719,9 +850,14 @@ export default function ItineraryPage() {
                                 {stop.photoKeyword && (
                                   <div className={styles.activityPhotoWrapper}>
                                     <img 
-                                      src={`https://source.unsplash.com/800x400/?${encodeURIComponent(stop.photoKeyword || stop.name)}`} 
+                                      src={`https://source.unsplash.com/800x400/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`} 
                                       alt={stop.name}
                                       className={styles.activityPhoto}
+                                      width="800"
+                                      height="400"
+                                      loading="lazy"
+                                      decoding="async"
+                                      onError={(event) => { event.currentTarget.style.display = 'none'; }}
                                     />
                                   </div>
                                 )}
@@ -746,6 +882,14 @@ export default function ItineraryPage() {
                                       </div>
                                     </div>
                                   )}
+                                  <button
+                                    type="button"
+                                    className={styles.copyActivityBtn}
+                                    onClick={() => copyActivityDetails(stop)}
+                                    aria-label={`Copiar detalhes de ${stop.name}`}
+                                  >
+                                    📋 Copiar detalhes
+                                  </button>
                                 </div>
                                 <div className={styles.activityActions}>
                                   <a 
@@ -756,16 +900,12 @@ export default function ItineraryPage() {
                                   >
                                     🗺️ Ver no Mapa
                                   </a>
-                                  {stop.bookingUrl && (
-                                    <a
-                                      href={stop.bookingUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={styles.btnOutline}
-                                    >
-                                      🎟️ Reservar
-                                    </a>
-                                  )}
+                                  <button
+                                    className={styles.btnOutline}
+                                    onClick={() => setBookingStop(stop)}
+                                  >
+                                    🎟️ Reservar
+                                  </button>
                                   <button
                                     className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
                                     onClick={(e) => {
@@ -840,10 +980,19 @@ export default function ItineraryPage() {
                 </div>
               </div>
             )}
+
+            <button
+              type="button"
+              className={styles.mobileBudgetToggle}
+              onClick={() => setShowMobileBudget((value) => !value)}
+              aria-expanded={showMobileBudget}
+            >
+              💰 Ver Orçamento Completo {showMobileBudget ? '▲' : '▼'}
+            </button>
           </div>
 
           {/* PAINEL LATERAL (DIREITO) */}
-          <div className={styles.rightPanel}>
+          <div className={`${styles.rightPanel} ${showMobileBudget ? styles.mobileBudgetOpen : styles.mobileBudgetCollapsed}`}>
             
             <BudgetVisualization budget={trip.budget || trip.budgetScenarios || (trip.budgetBreakdown ? { 
               scenarios: [{ 
@@ -921,64 +1070,102 @@ export default function ItineraryPage() {
       </div>
       </ErrorBoundary>
 
-      {/* REGENERATE MODAL */}
-      {showAdaptModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowAdaptModal(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>🔄 Regenerar Dia {activeDay + 1}</h3>
-            <p className={styles.modalSubtitle}>O que não gostaste neste dia?</p>
+      <Modal
+        isOpen={showAdaptModal}
+        onClose={() => setShowAdaptModal(false)}
+        title={`🔄 Regenerar Dia ${activeDay + 1}`}
+      >
+        <p className={styles.modalSubtitle}>O que não gostaste neste dia?</p>
             
-            <div className={styles.adaptOptions}>
-              {ADAPT_OPTIONS.map(opt => (
-                <label key={opt.id} className={`${styles.adaptCheckbox} ${adaptChecks[opt.id] ? styles.adaptCheckboxActive : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={!!adaptChecks[opt.id]}
-                    onChange={() => setAdaptChecks(prev => ({ ...prev, [opt.id]: !prev[opt.id] }))}
-                    className={styles.adaptCheckboxInput}
-                  />
-                  <span className={styles.adaptCheckboxLabel}>{opt.label}</span>
-                </label>
-              ))}
-            </div>
+        <div className={styles.adaptOptions}>
+          {ADAPT_OPTIONS.map(opt => (
+            <label key={opt.id} className={`${styles.adaptCheckbox} ${adaptChecks[opt.id] ? styles.adaptCheckboxActive : ''}`}>
+              <input
+                type="checkbox"
+                checked={!!adaptChecks[opt.id]}
+                onChange={() => setAdaptChecks(prev => ({ ...prev, [opt.id]: !prev[opt.id] }))}
+                className={styles.adaptCheckboxInput}
+              />
+              <span className={styles.adaptCheckboxLabel}>{opt.label}</span>
+            </label>
+          ))}
+        </div>
 
-            <textarea 
-              className={styles.adaptTextarea} 
-              placeholder="Descreve o que preferias, em detalhe..."
-              value={adaptFeedback}
-              onChange={e => setAdaptFeedback(e.target.value)}
+        <textarea 
+          className={styles.adaptTextarea} 
+          placeholder="Descreve o que preferias, em detalhe..."
+          value={adaptFeedback}
+          onChange={e => setAdaptFeedback(e.target.value)}
+        />
+        <div className={styles.modalActions}>
+          <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(false)}>Cancelar</button>
+          <button className={styles.btnPrimary} onClick={handleRegenerateDay} disabled={isAdapting || (!adaptFeedback.trim() && !Object.values(adaptChecks).some(Boolean))}>
+            {isAdapting ? 'A regenerar...' : 'Regenerar'}
+          </button>
+        </div>
+      </Modal>
+
+      <Drawer
+        isOpen={showBudgetDrawer}
+        onClose={() => setShowBudgetDrawer(false)}
+        title="⚙️ Ajustar Orçamento"
+      >
+        <div className={styles.modalBody}>
+          <ErrorBoundary>
+            <BudgetCalculator 
+              baseCost={trip.budgetBreakdown?.grandTotal?.min || 500} 
+              daysCount={trip.totalDays || itinerary.days?.length || 3} 
+              currency="€" 
             />
-            <div className={styles.modalActions}>
-              <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(false)}>Cancelar</button>
-              <button className={styles.btnPrimary} onClick={handleRegenerateDay}>Regenerar</button>
-            </div>
-          </div>
+          </ErrorBoundary>
         </div>
-      )}
+        <div className={styles.modalActions}>
+          <button className={styles.btnPrimary} onClick={() => setShowBudgetDrawer(false)}>Aplicar e fechar</button>
+        </div>
+      </Drawer>
 
-      {/* DRAWER AJUSTAR ORÇAMENTO */}
-      {showBudgetDrawer && (
-        <div className={styles.modalOverlay} onClick={() => setShowBudgetDrawer(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>⚙️ Ajustar Orçamento</h3>
-              <button className={styles.modalClose} onClick={() => setShowBudgetDrawer(false)} style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>&times;</button>
+      <Modal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title="🔗 Partilhar Itinerário"
+      >
+        <div className={styles.sharePreview}>
+          <span>URL privada deste roteiro</span>
+          <input value={shareUrl} readOnly aria-label="URL de partilha" />
+        </div>
+        <div className={styles.shareActions}>
+          <button className={styles.btnPrimary} onClick={copyShareUrl}>Copiar link</button>
+          <a className={styles.btnOutline} href={`https://wa.me/?text=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <a className={styles.btnOutline} href={`mailto:?subject=${encodeURIComponent('O meu roteiro Andor')}&body=${encodeURIComponent(shareUrl)}`}>Email</a>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!bookingStop}
+        onClose={() => setBookingStop(null)}
+        title={`🎟️ Reservar ${bookingStop?.name || ''}`}
+      >
+        {bookingStop && (
+          <div className={styles.bookingModal}>
+            <p>
+              {bookingStop.bookingRequired
+                ? 'Reserva recomendada. Garante lugar antes de ajustares o resto do dia.'
+                : 'Normalmente não exige reserva, mas vale confirmar horários e lotação antes de saíres.'}
+            </p>
+            <div className={styles.bookingTip}>
+              <strong>Dica Andor:</strong> {bookingStop.bookingTip || bookingStop.crowdTip || 'Procura o primeiro horário disponível ou o final da tarde para evitar grupos grandes.'}
             </div>
-            <div className={styles.modalBody} style={{ padding: '20px 0' }}>
-              <ErrorBoundary>
-                <BudgetCalculator 
-                  baseCost={trip.budgetBreakdown?.grandTotal?.min || 500} 
-                  daysCount={trip.totalDays || itinerary.days?.length || 3} 
-                  currency="€" 
-                />
-              </ErrorBoundary>
-            </div>
-            <div className={styles.modalActions}>
-              <button className={styles.btnPrimary} onClick={() => setShowBudgetDrawer(false)}>Concluído</button>
+            <div className={styles.shareActions}>
+              {bookingStop.bookingUrl && (
+                <a className={styles.btnPrimary} href={bookingStop.bookingUrl} target="_blank" rel="noopener noreferrer">Site oficial</a>
+              )}
+              <a className={styles.btnOutline} href={`https://www.getyourguide.com/s/?q=${encodeURIComponent(bookingStop.name)}`} target="_blank" rel="noopener noreferrer">GetYourGuide</a>
+              <a className={styles.btnOutline} href={`https://www.viator.com/searchResults/all?text=${encodeURIComponent(bookingStop.name)}`} target="_blank" rel="noopener noreferrer">Viator</a>
+              <a className={styles.btnOutline} href={`https://www.google.com/search?q=${encodeURIComponent(`${bookingStop.name} tickets reservation ${dest.city || dest.name || ''}`)}`} target="_blank" rel="noopener noreferrer">Google</a>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </>
   );
 }

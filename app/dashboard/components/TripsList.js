@@ -1,15 +1,21 @@
 'use client';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import styles from './TripsList.module.css';
 
 export default function TripsList() {
   const { user, updateUser } = useAuth();
   const trips = user?.trips || [];
+  const [pendingDeleteTripId, setPendingDeleteTripId] = useState(null);
 
-  const deleteTrip = (tripId) => {
-    if (!confirm('Are you sure you want to delete this trip?')) return;
+  const requestDeleteTrip = (tripId) => {
+    setPendingDeleteTripId(tripId);
+  };
+
+  const confirmDeleteTrip = (tripId) => {
     const updated = trips.filter(t => t.id !== tripId);
     updateUser({ trips: updated });
+    setPendingDeleteTripId(null);
   };
 
   if (trips.length === 0) {
@@ -59,10 +65,19 @@ export default function TripsList() {
               {trip.totalCost && (
                 <span className={styles.cardCost}>{trip.totalCost}</span>
               )}
-              <button className={styles.deleteBtn} onClick={() => deleteTrip(trip.id)}>
+              <button className={styles.deleteBtn} aria-label={`Delete ${trip.destination}`} onClick={() => requestDeleteTrip(trip.id)}>
                 🗑️
               </button>
             </div>
+            {pendingDeleteTripId === trip.id && (
+              <div className={styles.inlineConfirm}>
+                <span>Delete this saved trip?</span>
+                <div>
+                  <button type="button" onClick={() => setPendingDeleteTripId(null)}>Cancel</button>
+                  <button type="button" onClick={() => confirmDeleteTrip(trip.id)}>Delete</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

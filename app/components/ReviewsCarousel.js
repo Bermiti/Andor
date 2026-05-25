@@ -82,7 +82,10 @@ export default function ReviewsCarousel() {
               src={reviewsData[index].avatar} 
               alt={reviewsData[index].name} 
               className={styles.avatar} 
+              width="56"
+              height="56"
               loading="lazy"
+              decoding="async"
             />
             <div className={styles.userInfo}>
               <h4 className={styles.userName}>{reviewsData[index].name}</h4>

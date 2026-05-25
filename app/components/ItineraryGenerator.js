@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { saveGeneratedItinerary, enrichItineraryData } from '../lib/itinerary-store';
+import { useToast } from './ToastProvider';
 import styles from './ItineraryGenerator.module.css';
 
 const interests = ['History', 'Nature', 'Architecture', 'Shopping', 'Food', 'Nightlife', 'Art', 'Photography', 'Beach', 'Adventure'];
@@ -72,6 +73,7 @@ const loadingTips = [
 
 export default function ItineraryGenerator() {
   const { user, saveTrip } = useAuth();
+  const { showToast } = useToast();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [destination, setDestination] = useState('');
@@ -87,7 +89,10 @@ export default function ItineraryGenerator() {
   const [errorMsg, setErrorMsg] = useState(null);
 
   const handleGenerate = async () => {
-    if (!destination) return alert('Por favor, introduz um destino!');
+    if (!destination) {
+      showToast('Indica um destino para o Andor desenhar a viagem.', 'warning');
+      return;
+    }
     setLoading(true);
     setResult(null);
     setErrorMsg(null);
@@ -328,7 +333,7 @@ export default function ItineraryGenerator() {
                   className={styles.nextWizardBtn} 
                   onClick={() => {
                     if (step === 1 && !destination) {
-                      alert('Por favor, indica um destino!');
+                      showToast('Indica primeiro o destino da viagem.', 'warning');
                       return;
                     }
                     setStep(step + 1);
@@ -478,7 +483,7 @@ export default function ItineraryGenerator() {
                     window.dispatchEvent(new Event('open-auth-modal'));
                   } else {
                     saveTrip(result);
-                    alert('Trip saved! Go to the Dashboard to see it.');
+                    showToast('Itinerário guardado. Já aparece no dashboard.', 'success');
                   }
                 }}>
                   {user ? 'Save Itinerary ✓' : 'Save Itinerary'}

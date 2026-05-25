@@ -1249,6 +1249,15 @@
     font-size: 22px;
   }
 
+  .particleWrapper {
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .tooltip {
+    display: none;
+  }
+
   .chatHeader {
     padding: 16px 16px;
   }
@@ -1767,4 +1776,3 @@
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(212, 168, 67, 0.35);
 }
-

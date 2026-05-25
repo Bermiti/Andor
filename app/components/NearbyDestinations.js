@@ -79,7 +79,18 @@ export default function NearbyDestinations({ destination = '' }) {
         {nearby.map((d, i) => (
           <div key={i} className={styles.card}>
             <div className={styles.imageWrap}>
-              <img src={d.image} alt={d.name} className={styles.image} loading="lazy" />
+              <img
+                src={d.image}
+                alt={d.name}
+                className={styles.image}
+                width="360"
+                height="240"
+                loading="lazy"
+                decoding="async"
+                onError={(event) => {
+                  event.currentTarget.style.opacity = '0';
+                }}
+              />
               <div className={styles.distanceBadge}>📍 {d.distance}</div>
             </div>
             <div className={styles.info}>

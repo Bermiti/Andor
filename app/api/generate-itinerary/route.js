@@ -1,9 +1,113 @@
 import { generateFallbackItinerary } from '../../lib/fallback-ai';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
-import { validateItinerary } from '../../lib/itinerary-schema';
 import PHASE11_ENHANCED_SYSTEM_PROMPT from '../../lib/phase11-2-enhanced-prompt';
-import { validateAndFixCoordinates } from '../../lib/coordinate-validator';
-import { validateAllDayTitles, isBannedDayTitle } from '../../lib/day-title-validator';
+import { validateAndFixCoordinates, getDestinationCenter } from '../../lib/coordinate-validator';
+import { validateAllDayTitles, isBannedDayTitle, suggestDayTitle } from '../../lib/day-title-validator';
+
+function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedDays) {
+  if (!itinerary || typeof itinerary !== 'object') {
+    throw new Error('Generated itinerary is not an object');
+  }
+
+  const fallbackDestination = requestedDestination || 'Lisbon';
+  const destination = typeof itinerary.destination === 'object'
+    ? { ...itinerary.destination }
+    : { city: itinerary.destination || fallbackDestination };
+  destination.city = destination.city || destination.name || fallbackDestination;
+  destination.name = destination.name || destination.city;
+
+  const [centerLat, centerLng] = getDestinationCenter(destination.city || fallbackDestination);
+  if (!Array.isArray(destination.coordinates)) {
+    destination.coordinates = [centerLat, centerLng];
+  }
+
+  const days = Array.isArray(itinerary.days) ? itinerary.days : [];
+  if (days.length === 0) {
+    throw new Error('Generated itinerary has no days');
+  }
+
+  const seenTitles = new Set();
+  const repairedDays = days.slice(0, Number(requestedDays) || days.length).map((day, dayIndex) => {
+    const nextDay = { ...day, dayNumber: day.dayNumber || dayIndex + 1 };
+    if (!nextDay.title || isBannedDayTitle(nextDay.title) || seenTitles.has(nextDay.title.trim().toLowerCase())) {
+      nextDay.title = suggestDayTitle({ ...nextDay, dayIndex }, destination.city);
+    }
+    seenTitles.add(String(nextDay.title).trim().toLowerCase());
+
+    const periods = nextDay.periods || {};
+    const periodKeys = ['morning', 'afternoon', 'evening'];
+    const allActivities = [];
+
+    periodKeys.forEach((periodKey) => {
+      const period = periods[periodKey] || { label: periodKey, activities: [] };
+      const activities = Array.isArray(period.activities) ? period.activities : [];
+      period.activities = activities.slice(0, 4).map((activity, activityIndex) => {
+        const nextActivity = { ...activity, period: periodKey };
+        nextActivity.id = nextActivity.id || `d${dayIndex + 1}-${periodKey}-${activityIndex + 1}`;
+        nextActivity.name = nextActivity.name || `Local ${activityIndex + 1}`;
+        nextActivity.type = nextActivity.type || nextActivity.category || 'experience';
+        nextActivity.duration = nextActivity.duration || '90 min';
+        nextActivity.cost = typeof nextActivity.cost === 'number' ? nextActivity.cost : (parseFloat(nextActivity.estimatedCost) || 0);
+        nextActivity.currency = nextActivity.currency || 'EUR';
+        nextActivity.address = nextActivity.address || destination.city;
+        if (!Array.isArray(nextActivity.coordinates)) {
+          nextActivity.coordinates = [centerLat, centerLng];
+        }
+        nextActivity.bookingRequired = Boolean(nextActivity.bookingRequired);
+        nextActivity.crowd = nextActivity.crowd || 'medium';
+        nextActivity.insiderTip = nextActivity.insiderTip || nextActivity.localTip || `Vai cedo e confirma horários no próprio dia.`;
+        nextActivity.photoKeyword = nextActivity.photoKeyword || `${nextActivity.name} ${destination.city}`;
+        allActivities.push(nextActivity);
+        return nextActivity;
+      });
+      periods[periodKey] = period;
+    });
+
+    if (allActivities.length > 4) {
+      const allowedIds = new Set(allActivities.slice(0, 4).map((activity) => activity.id));
+      periodKeys.forEach((periodKey) => {
+        periods[periodKey].activities = periods[periodKey].activities.filter((activity) => allowedIds.has(activity.id));
+      });
+    }
+
+    nextDay.periods = periods;
+    nextDay.stops = allActivities.slice(0, 4);
+    nextDay.activities = nextDay.stops;
+    nextDay.meals = nextDay.meals || {};
+    nextDay.localSecret = nextDay.localSecret || `Pergunta ao staff do hotel qual é a rua onde eles jantariam numa noite livre.`;
+    nextDay.weather = nextDay.weather || { avgTemp: '18°C', condition: 'Variável', emoji: '🌤️', tip: 'Leva uma camada leve.' };
+    nextDay.transport = nextDay.transport || { mainMode: 'A pé + transporte público', apps: ['Google Maps'], cost: 8 };
+    return nextDay;
+  });
+
+  const repaired = {
+    ...itinerary,
+    destination,
+    trip: {
+      totalDays: Number(requestedDays) || itinerary.trip?.totalDays || repairedDays.length,
+      travelStyle: itinerary.trip?.travelStyle || 'cultural',
+      groupType: itinerary.trip?.groupType || 'casal',
+      budgetTier: itinerary.trip?.budgetTier || 'comfort',
+      topTips: itinerary.trip?.topTips || [],
+      ...itinerary.trip,
+    },
+    days: repairedDays,
+    flightOptions: Array.isArray(itinerary.flightOptions) ? itinerary.flightOptions : [],
+    accommodation: itinerary.accommodation || {},
+    packingList: itinerary.packingList || { essential: [], weatherSpecific: [], appsMustHave: [], doNotBring: [] },
+    nearbyEscapes: Array.isArray(itinerary.nearbyEscapes) ? itinerary.nearbyEscapes : [],
+    andorInsights: Array.isArray(itinerary.andorInsights) ? itinerary.andorInsights : [],
+    suggestions: Array.isArray(itinerary.suggestions) ? itinerary.suggestions : [],
+  };
+
+  const coordinateFixed = validateAndFixCoordinates(repaired, destination.city);
+  const validation = validateAndNormalize(coordinateFixed);
+  if (validation.fatal) {
+    throw new Error(validation.errors.join('; '));
+  }
+
+  return validation.normalized || coordinateFixed;
+}
 
 export async function POST(req) {
   try {
@@ -570,24 +674,8 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
           const data = await response.json();
           try {
             const parsed = JSON.parse(data.choices[0].message.content);
-            // PHASE 11.2: Enhanced validation against new schema
-            const schemaValidation = validateItinerary(parsed);
-            if (!schemaValidation.valid) {
-              // validation failed, use fallback
-              return Response.json({
-                error: 'Generated itinerary failed validation',
-                details: schemaValidation.errors.slice(0, 3),
-                fallback: true
-              }, { status: 400 });
-            }
-            if (schemaValidation.warnings.length > 0) {
-              // warnings logged but continue
-            }
-            const validation = validateAndNormalize(parsed);
-            if (validation.fatal) {
-              return Response.json(generateFallbackItinerary(destination, days, budget));
-            }
-            return Response.json(generateFallbackItinerary(destination, days, budget));
+            const result = normalizeGeneratedItinerary(parsed, destination, days);
+            return Response.json(result);
           } catch (e) {
             // parse error, try other models
           }
@@ -859,11 +947,7 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
           prompt: `${systemPrompt}\n\n${userPrompt}`,
         });
         
-        const validation = validateAndNormalize(object);
-        let result = validation.normalized || object;
-        
-        // CRITICAL FIX: Validate and fix coordinates + day titles
-        result = validateAndFixCoordinates(result, destination);
+        let result = normalizeGeneratedItinerary(object, destination, days);
         const titleValidation = validateAllDayTitles(result);
         if (!titleValidation.valid) {
           // day title validation warnings, but continue

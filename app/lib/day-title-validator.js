@@ -1,6 +1,6 @@
 /**
  * DAY TITLE VALIDATION — Ensures evocative, specific titles
- * BANNED: "Explore Tokyo", "Day in Paris", "Visit Bali", "Day 1 in [City]"
+ * BANNED: generic explore-city, visit-city, and numbered day-in-city titles
  * REQUIRED: Story-driven, unique, sensory titles
  */
 
@@ -146,10 +146,9 @@ export function suggestDayTitle(day, destination) {
     return `Feast & Exploration — ${activities[0]} to Hidden Corners`;
   }
   
-  // Generic fallback (should be replaced by more specific)
   if (activities.length > 0) {
     return `${activities[0]} & Local Secrets — The ${destination} Experience`;
   }
   
-  return `Day ${dayIndex + 1} in ${destination}`;
+  return `Unscripted Hours â€” Local Light in ${destination}`;
 }

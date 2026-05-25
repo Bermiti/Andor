@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useToast } from './ToastProvider';
 import styles from './NewsletterPopup.module.css';
 
 export default function NewsletterPopup() {
+  const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -90,8 +92,9 @@ export default function NewsletterPopup() {
                 type="button"
                 className={styles.copyBtn} 
                 onClick={() => {
-                  navigator.clipboard.writeText('WELCOME10');
-                  // alert('Code copied to clipboard!');
+                  navigator.clipboard.writeText('WELCOME10')
+                    .then(() => showToast('Código WELCOME10 copiado.', 'success'))
+                    .catch(() => showToast('Não foi possível copiar o código.', 'error'));
                 }}
               >
                 Copy Code

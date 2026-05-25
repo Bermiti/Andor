@@ -67,8 +67,8 @@
 }
 
 .markerDotInner {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   background: var(--navy);
   color: var(--white);
   border-radius: 50%;
@@ -96,8 +96,8 @@
 }
 
 .markerClusterInner {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, var(--gold) 0%, #D4AF37 100%);
   color: var(--navy);
   border-radius: 50%;
@@ -150,6 +150,44 @@
   padding: var(--space-2);
   min-width: 220px;
   font-family: var(--font-body);
+  max-width: 260px;
+}
+
+.brandedPopup {
+  max-width: 260px;
+}
+
+.popupPhoto {
+  display: block;
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.25), rgba(74, 158, 232, 0.2));
+}
+
+.popupMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.popupMetaRow span {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gray-200);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.popupActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .popupTime {
@@ -263,9 +301,9 @@
     border-radius: 0;
     border-left: none;
     border-right: none;
-    margin-left: -16px;
-    margin-right: -16px;
-    width: calc(100% + 32px);
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
   }
 
   /* Move toggle to bottom-left for thumb reach */
@@ -285,16 +323,16 @@
 
   /* Touch-friendly markers (bigger touch target) */
   .markerDotInner {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     font-size: 11px;
     border-width: 2.5px;
     /* Extra invisible touch padding via icon size */
   }
 
   .markerClusterInner {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     font-size: 13px;
   }
 
@@ -307,7 +345,7 @@
   .popupMapBtn {
     padding: 8px 10px;
     font-size: 11px;
-    min-height: 36px;
+    min-height: 44px;
   }
 
   :global(.leaflet-popup-content-wrapper) {
@@ -315,17 +353,18 @@
   }
 
   :global(.leaflet-popup-close-button) {
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 18px !important;
-    right: 6px !important;
-    top: 6px !important;
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 24px !important;
+    right: 0 !important;
+    top: 0 !important;
+    color: #fff !important;
   }
 }
 
 @media (max-width: 480px) {
   .mapContainer {
-    height: 220px;
+    height: 240px;
   }
 
   .mapPopup {

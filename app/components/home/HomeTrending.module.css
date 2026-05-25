@@ -7,11 +7,12 @@
 
 .card {
   background: var(--bg-2);
-  border-radius: 20px;
+  border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--b-1);
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 [data-theme="light"] .card {
@@ -111,5 +112,76 @@
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
+  }
+}
+
+@media (max-width: 430px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .card {
+    position: relative;
+    min-height: 0;
+    border-radius: 8px;
+  }
+
+  .imgWrapper {
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
+
+  .imgWrapper::after {
+    content: '';
+    position: absolute;
+    inset: 35% 0 0;
+    background: linear-gradient(to top, rgba(7, 12, 20, 0.92), rgba(7, 12, 20, 0));
+    pointer-events: none;
+  }
+
+  .scoreBadge {
+    top: 10px;
+    right: 10px;
+    padding: 5px 9px;
+    font-size: 0.78rem;
+  }
+
+  .cardBody {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 2;
+    padding: 12px;
+    background: transparent;
+    gap: 8px;
+  }
+
+  .tags {
+    gap: 5px;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 0.64rem;
+    padding: 3px 7px;
+    color: #dbeafe;
+    background: rgba(14, 165, 233, 0.22);
+  }
+
+  .cardTitle {
+    margin-bottom: 0;
+    color: #fff !important;
+    font-size: 1.05rem;
+    line-height: 1.05;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .exploreBtn {
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.78rem;
   }
 }

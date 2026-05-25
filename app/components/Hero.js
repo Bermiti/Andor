@@ -272,7 +272,17 @@ export default function Hero({ onOpenWizard }) {
       >
         {COLLAGE_IMAGES.map((url, i) => (
           <div key={i} className={styles.collageItem}>
-            <img src={url} alt="Destino" loading="lazy" />
+            <img
+              src={url}
+              alt="Destino"
+              width="420"
+              height="560"
+              loading="lazy"
+              decoding="async"
+              onError={(event) => {
+                event.currentTarget.style.opacity = '0';
+              }}
+            />
           </div>
         ))}
       </div>

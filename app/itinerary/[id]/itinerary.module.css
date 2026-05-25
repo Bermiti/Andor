@@ -10,6 +10,7 @@
   min-height: 100dvh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  --border-color: var(--border, rgba(240, 237, 230, 0.08));
 }
 
 .content {
@@ -173,6 +174,31 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+.dayProgress {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px var(--space-8) 10px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dayProgressTrack {
+  width: 100%;
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dayProgressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--coral));
+  transition: width 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .dayTabs {
   display: flex;
   overflow-x: auto;
@@ -328,6 +354,19 @@
   overflow: hidden;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
+}
+
+.googleMapsDayButton {
+  width: 100%;
+  min-height: 48px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 /* ── Day Meta Cards ── */
@@ -494,11 +533,16 @@
 .activityHeader {
   padding: var(--space-4);
   display: flex;
+  width: 100%;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
   user-select: none;
   gap: var(--space-3);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
 }
 
 .activityHeaderLeft {
@@ -520,6 +564,21 @@
 .activityIcon {
   font-size: 1.3rem;
   flex-shrink: 0;
+}
+
+.activitySequence {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--gold), var(--coral));
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 14px rgba(212, 168, 67, 0.24);
 }
 
 .activityName {
@@ -684,6 +743,26 @@
   display: flex;
   gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.copyActivityBtn {
+  width: fit-content;
+  min-height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copyActivityBtn:hover {
+  color: var(--gold);
+  border-color: var(--gold);
 }
 
 /* ── Meals Section ── */
@@ -984,6 +1063,66 @@
   gap: var(--space-3);
 }
 
+.mobileBudgetToggle {
+  display: none;
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.16), rgba(232, 96, 74, 0.12));
+  color: var(--gold);
+  border: 1px solid rgba(212, 168, 67, 0.34);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sharePreview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: var(--space-4);
+}
+
+.sharePreview span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.sharePreview input {
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 0 var(--space-3);
+}
+
+.shareActions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.bookingModal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.bookingModal p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.bookingTip {
+  border-left: 4px solid var(--gold);
+  background: rgba(212, 168, 67, 0.08);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  line-height: 1.55;
+}
+
 /* ── Modals ── */
 .modalOverlay {
   position: fixed;
@@ -1205,17 +1344,22 @@
     justify-content: center;
   }
 
-  /* Show only the icon (emoji/svg), hide text */
-  .headerActionsDesktop button svg,
-  .headerActionsDesktop button span:first-child,
-  .headerActionsDesktop a svg,
-  .headerActionsDesktop a span:first-child {
-    font-size: 1.15rem;
+  .headerActionsDesktop button {
+    font-size: 1.1rem;
+  }
+
+  .headerActionsDesktop button span,
+  .headerActionsDesktop a span {
+    display: none;
   }
 
   /* ── Day Tabs ── */
   .dayTabsWrapper {
     top: 60px;
+  }
+
+  .dayProgress {
+    padding: 8px var(--space-4) 10px;
   }
 
   .dayTabs {
@@ -1263,6 +1407,29 @@
     width: 100%;
   }
 
+  .leftPanel,
+  .timeline,
+  .periodSection {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .mobileBudgetToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: var(--space-3);
+  }
+
+  .mobileBudgetCollapsed {
+    display: none;
+  }
+
+  .mobileBudgetOpen {
+    display: flex;
+  }
+
   .sidebarCard {
     width: 100%;
   }
@@ -1275,6 +1442,10 @@
     border-radius: 0;
     border-left: none;
     border-right: none;
+  }
+
+  .googleMapsDayButton {
+    display: flex;
   }
 
   /* ── Day Meta ── */
@@ -1372,6 +1543,12 @@
     text-align: center;
   }
 
+  .copyActivityBtn {
+    min-height: 44px;
+    width: 100%;
+    justify-content: center;
+  }
+
   /* ── Meals ── */
   .mealsGrid {
     grid-template-columns: 1fr;
@@ -1433,6 +1610,10 @@
     width: 100%;
     min-height: 44px;
     justify-content: center;
+  }
+
+  .shareActions {
+    grid-template-columns: 1fr;
   }
 
   .adaptOptions {
@@ -1521,7 +1702,7 @@
 
   /* ── Map ── */
   .mapContainer {
-    height: 200px;
+    height: 240px;
     width: calc(100% + 24px);
     margin-left: -12px;
   }
@@ -1562,16 +1743,16 @@
     font-size: 0.88rem;
   }
 
-  /* Activity actions: 2 columns on very small screens */
+  /* Activity actions stay equal width and touch friendly */
   .activityActions {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-2);
   }
 
   .activityActions a,
   .activityActions button {
-    font-size: 0.75rem;
-    padding: var(--space-2);
+    font-size: 0.68rem;
+    padding: var(--space-2) 2px;
   }
 
   /* ── Meals ── */

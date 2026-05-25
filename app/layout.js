@@ -1,4 +1,3 @@
-import { Playfair_Display, DM_Sans, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -12,19 +11,6 @@ import SocialProofToast from './components/SocialProofToast';
 import EasterEgg from './components/EasterEgg';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import SplashScreen from './components/SplashScreen';
-
-const playfair = Playfair_Display({ 
-  subsets: ['latin'], 
-  variable: '--font-heading',
-  weight: ['400', '500', '600', '700', '800', '900'] 
-});
-const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-body' });
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  variable: '--font-cormorant',
-  weight: ['300', '400', '500', '600', '700'],
-  style: ['normal', 'italic']
-});
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://andor.travels'),
@@ -83,7 +69,7 @@ const jsonLdData = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt" className={`${playfair.variable} ${dmSans.variable} ${cormorant.variable}`}>
+    <html lang="pt">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0A1628" />
@@ -126,5 +112,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-
 

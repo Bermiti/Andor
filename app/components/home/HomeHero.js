@@ -27,6 +27,8 @@ const chatSequence = [
 export default function HomeHero({ onOpenWizard }) {
   const [destIndex, setDestIndex] = useState(0);
   const [query, setQuery] = useState('');
+  const [travelDate, setTravelDate] = useState('');
+  const [travelers, setTravelers] = useState('2');
   const [isFocused, setIsFocused] = useState(false);
   
   const [chatStep, setChatStep] = useState(0);
@@ -62,7 +64,16 @@ export default function HomeHero({ onOpenWizard }) {
       <div className={styles.bgGrid}>
         {bgImages.map((src, i) => (
           <div key={i} className={styles.gridImgWrapper}>
-            <img src={src} alt="Destino" className={styles.gridImg} style={{ animationDelay: `-${i * 2}s` }} />
+            <img
+              src={src}
+              alt="Destino"
+              className={styles.gridImg}
+              style={{ animationDelay: `-${i * 2}s` }}
+              width="800"
+              height="600"
+              loading={i < 3 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
           </div>
         ))}
       </div>
@@ -82,21 +93,43 @@ export default function HomeHero({ onOpenWizard }) {
             <ActiveTravelers embedded={true} />
 
             <form onSubmit={handleSearch} className={`${styles.searchForm} ${isFocused ? styles.focused : ''}`}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Para onde queres ir?" 
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                className={styles.searchInput}
+              <div className={styles.searchField}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  placeholder="Para onde queres ir?" 
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  className={styles.searchInput}
+                  aria-label="Destino"
+                />
+              </div>
+              <input
+                type="date"
+                value={travelDate}
+                onChange={(event) => setTravelDate(event.target.value)}
+                className={styles.compactInput}
+                aria-label="Data de partida"
               />
+              <select
+                value={travelers}
+                onChange={(event) => setTravelers(event.target.value)}
+                className={styles.compactInput}
+                aria-label="Viajantes"
+              >
+                <option value="1">1 viajante</option>
+                <option value="2">2 viajantes</option>
+                <option value="3">3 viajantes</option>
+                <option value="4">4 viajantes</option>
+                <option value="5">5+ viajantes</option>
+              </select>
               <button type="submit" className={styles.searchButton}>
-                Explorar
+                Desenhar a viagem
               </button>
 
               {/* Autocomplete mocked dropdown */}

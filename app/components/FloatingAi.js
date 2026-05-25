@@ -177,7 +177,16 @@ function TypewriterText({ text, isStreaming }) {
   );
 }
 
-// Basic markdown formatter that strips tags
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Basic markdown formatter with HTML escaped before lightweight formatting
 function formatMarkdown(text) {
   if (!text) return '';
   
@@ -187,6 +196,8 @@ function formatMarkdown(text) {
     .replace(/\[HOTEL:[^\]]+\]/g, '')
     .replace(/\[RESTAURANT:[^\]]+\]/g, '')
     .replace(/\[FLIGHT:[^\]]+\]/g, '');
+
+  cleanText = escapeHtml(cleanText);
   
   cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   cleanText = cleanText.replace(/^\s*-\s+(.*)$/gm, '<li>$1</li>');
@@ -235,7 +246,6 @@ export default function FloatingAi() {
   const [isTherapyMode, setIsTherapyMode] = useState(false);
   const [collabActive, setCollabActive] = useState(false);
   const [collabPartnerTyping, setCollabPartnerTyping] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [showNewChatConfirm, setShowNewChatConfirm] = useState(false);
   
@@ -417,11 +427,8 @@ export default function FloatingAi() {
     }
   };
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 4500);
+  const showToast = (msg, type = 'info') => {
+    showGlobalToast(msg, type);
   };
 
   const handleSend = async (userText = null) => {
@@ -1170,8 +1177,9 @@ export default function FloatingAi() {
       .replace(/\[HOTEL:[^\]]+\]/g, '')
       .replace(/\[RESTAURANT:[^\]]+\]/g, '')
       .replace(/\[FLIGHT:[^\]]+\]/g, '');
-    navigator.clipboard.writeText(clean.trim());
-    showToast('📋 Copiado para a área de transferência!');
+    navigator.clipboard.writeText(clean.trim())
+      .then(() => showToast('📋 Copiado para a área de transferência!', 'success'))
+      .catch(() => showToast('Não foi possível copiar. Tenta novamente.', 'error'));
   };
 
   const handleInputResize = (e) => {
@@ -1494,13 +1502,6 @@ export default function FloatingAi() {
 
           <div ref={messagesEndRef} />
         </div>
-
-        {/* Toast Notification Container */}
-        {toastMessage && (
-          <div className={styles.toastNotification}>
-            {toastMessage}
-          </div>
-        )}
 
         {/* Input Bar */}
         <div className={styles.inputArea}>

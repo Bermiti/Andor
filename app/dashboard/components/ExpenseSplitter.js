@@ -15,10 +15,18 @@ export default function ExpenseSplitter() {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expensePaidBy, setExpensePaidBy] = useState('');
   const [expenseCategory, setExpenseCategory] = useState('other');
+  const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(`andor_expenses_${user?.id}`);
-    if (stored) setGroups(JSON.parse(stored));
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setGroups(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setGroups([]);
+      }
+    }
   }, [user?.id]);
 
   const saveGroups = (updated) => {
@@ -79,9 +87,13 @@ export default function ExpenseSplitter() {
   };
 
   const deleteGroup = (groupId) => {
-    if (!confirm('Delete this group?')) return;
+    setPendingDeleteGroupId(groupId);
+  };
+
+  const confirmDeleteGroup = (groupId) => {
     saveGroups(groups.filter(g => g.id !== groupId));
     if (activeGroupId === groupId) setActiveGroupId(null);
+    setPendingDeleteGroupId(null);
   };
 
   const calculateBalances = (group) => {
@@ -178,10 +190,18 @@ export default function ExpenseSplitter() {
           {groups.map(group => {
             const calc = calculateBalances(group);
             return (
-              <button
+              <div
                 key={group.id}
                 className={`${styles.groupCard} ${activeGroupId === group.id ? styles.groupCardActive : ''}`}
+                role="button"
+                tabIndex={0}
                 onClick={() => setActiveGroupId(group.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setActiveGroupId(group.id);
+                  }
+                }}
               >
                 <div className={styles.groupCardInfo}>
                   <div className={styles.groupCardName}>{group.name}</div>
@@ -189,10 +209,19 @@ export default function ExpenseSplitter() {
                     {group.members.length} people • €{calc.totalExpenses.toFixed(2)}
                   </div>
                 </div>
-                <button className={styles.groupDeleteBtn} onClick={(e) => { e.stopPropagation(); deleteGroup(group.id); }}>
+                <button className={styles.groupDeleteBtn} aria-label={`Delete ${group.name}`} onClick={(e) => { e.stopPropagation(); deleteGroup(group.id); }}>
                   🗑️
                 </button>
-              </button>
+                {pendingDeleteGroupId === group.id && (
+                  <div className={styles.inlineConfirm} onClick={(event) => event.stopPropagation()}>
+                    <span>Delete this expense group?</span>
+                    <div>
+                      <button type="button" onClick={() => setPendingDeleteGroupId(null)}>Cancel</button>
+                      <button type="button" onClick={() => confirmDeleteGroup(group.id)}>Delete</button>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

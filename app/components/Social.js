@@ -512,6 +512,10 @@ export default function Social() {
                     src={item.image} 
                     alt={item.title} 
                     className={styles.compareThumb} 
+                    width="56"
+                    height="56"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ))}
               </div>
@@ -555,14 +559,14 @@ export default function Social() {
                     <th className={styles.compareFeatureLabel}>Package</th>
                     <th>
                       <div className={styles.compareHeaderCard}>
-                        <img src={compareList[0].image} alt={compareList[0].title} className={styles.compareHeaderImg} />
+                        <img src={compareList[0].image} alt={compareList[0].title} className={styles.compareHeaderImg} width="220" height="140" loading="lazy" decoding="async" />
                         <h4 className={styles.compareHeaderTitle}>{compareList[0].title}</h4>
                         <span className={styles.compareHeaderBadge}>{compareList[0].badge}</span>
                       </div>
                     </th>
                     <th>
                       <div className={styles.compareHeaderCard}>
-                        <img src={compareList[1].image} alt={compareList[1].title} className={styles.compareHeaderImg} />
+                        <img src={compareList[1].image} alt={compareList[1].title} className={styles.compareHeaderImg} width="220" height="140" loading="lazy" decoding="async" />
                         <h4 className={styles.compareHeaderTitle}>{compareList[1].title}</h4>
                         <span className={styles.compareHeaderBadge}>{compareList[1].badge}</span>
                       </div>

@@ -43,47 +43,50 @@ export function validateAndNormalize(itinerary) {
     return result;
   }
 
-  // Lightweight normalization: accept both legacy shape and new shape
-  const normalized = {};
+  // Lightweight normalization: accept both legacy shape and new rich shape
+  const normalized = { ...itinerary };
 
   // Destination handling
-  let destName = itinerary.destination?.name || itinerary.destination || itinerary.city || null;
-  if (typeof destName === 'object' && destName.name) destName = destName.name;
+  const destInput = itinerary.destination || itinerary.city || null;
+  let destName = typeof destInput === 'object'
+    ? (destInput.city || destInput.name || destInput.country)
+    : destInput;
   if (!destName) {
     result.errors.push('Missing destination');
     result.fatal = true;
     return result;
   }
-  normalized.destination = destName;
+  normalized.destination = typeof destInput === 'object'
+    ? { ...destInput, name: destInput.name || destInput.city || destName, city: destInput.city || destInput.name || destName }
+    : { name: destName, city: String(destName).split(',')[0].trim() };
 
   const destKey = normalizeDestinationKey(destName);
   const bounds = DESTINATION_BOUNDS[destKey] || null;
 
   // Trip-level fields
-  normalized.trip = itinerary.trip || { startDate: itinerary.startDate || '', endDate: itinerary.endDate || '', days: itinerary.days?.length || (itinerary.days?.length || 0) };
-  normalized.summary = itinerary.summary || { title: itinerary.trip?.title || `${normalized.destination} trip`, estimatedTotalCost: itinerary.totalCost || itinerary.total_cost || 0 };
+  normalized.trip = itinerary.trip || { startDate: itinerary.startDate || '', endDate: itinerary.endDate || '', totalDays: itinerary.days?.length || 0 };
+  normalized.summary = itinerary.summary || { title: itinerary.trip?.title || `${destName} trip`, estimatedTotalCost: itinerary.totalCost || itinerary.total_cost || 0 };
 
   // Days: various shapes -> unify to days[]. Each day should have stops/activities array
-  const rawDays = itinerary.days || itinerary.days || itinerary.trip?.days || itinerary.days || [];
+  const rawDays = itinerary.days || itinerary.trip?.days || itinerary.dailyPlan || [];
   if (!Array.isArray(rawDays)) {
     result.errors.push('Missing days array');
     result.fatal = true;
     return result;
   }
 
-  // Build normalized days
-    // Verify unique titles
-    const titles = rawDays.map(d => d?.title || d?.dayTitle || '').filter(Boolean);
-    const uniqueTitles = new Set(titles);
-    if (uniqueTitles.size < titles.length) {
-      throw new Error('DUPLICATE_DAY_TITLES');
-    }
-
   const seenTitles = new Map();
   normalized.days = rawDays.map((d, idx) => {
     const day = d || {};
     const title = day.title || day.dayTitle || `Day ${idx + 1}`;
     let fixedTitle = title;
+
+    const titleKey = String(fixedTitle).trim().toLowerCase();
+    if (seenTitles.has(titleKey)) {
+      fixedTitle = `${fixedTitle}: ${idx + 1}`;
+      result.warnings.push(`Duplicate day title repaired for day ${idx + 1}`);
+    }
+    seenTitles.set(String(fixedTitle).trim().toLowerCase(), true);
 
     let activities = day.activities || day.stops || [];
     
@@ -93,9 +96,7 @@ export function validateAndNormalize(itinerary) {
       ['morning', 'afternoon', 'evening'].forEach(period => {
         if (day.periods[period] && Array.isArray(day.periods[period].activities)) {
           day.periods[period].activities.forEach(act => {
-             // ensure period is assigned
-             act.period = period;
-             allPeriodActivities.push(act);
+             allPeriodActivities.push({ ...act, period });
           });
         }
       });
@@ -119,17 +120,22 @@ export function validateAndNormalize(itinerary) {
       }
 
       const activity = {
+        ...a,
         id: a.id || `d${idx}-a${ai}`,
         name: a.name || a.title || `Stop ${ai + 1}`,
         description: a.description || a.type || '',
         address: a.address || a.area || '',
         coordinates: isPlausibleCoord(lat, lng) ? { lat, lng } : null,
         startTime: a.startTime || a.time || a.hour || '',
+        time: a.time || a.startTime || a.hour || '',
         durationMinutes: a.durationMinutes || a.duration || (a.durationHours ? parseInt(a.durationHours,10)*60 : undefined) || null,
         estimatedCost: a.estimatedCost || a.cost || a.price || null,
+        cost: a.cost ?? a.estimatedCost ?? a.price ?? null,
         category: a.category || a.type || null,
+        type: a.type || a.category || null,
         period: a.period || (a.startTime ? (parseInt((a.startTime||'09:00').split(':')[0],10) < 12 ? 'morning' : 'afternoon') : null),
         localTip: a.localTip || a.localSecret || a.insiderTip || '',
+        insiderTip: a.insiderTip || a.localTip || a.localSecret || '',
         transportFromPrevious: a.transportFromPrevious || a.transport || null,
         bookingUrl: a.bookingUrl || a.booking || null,
       };
@@ -144,6 +150,7 @@ export function validateAndNormalize(itinerary) {
     });
 
     return {
+      ...day,
       dayNumber: day.dayNumber || idx + 1,
       date: day.date || '',
       title: fixedTitle,

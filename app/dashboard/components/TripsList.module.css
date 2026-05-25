@@ -128,6 +128,41 @@
   opacity: 1;
 }
 
+.inlineConfirm {
+  margin: 0 20px 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #7c2d12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.inlineConfirm div {
+  display: flex;
+  gap: 8px;
+}
+
+.inlineConfirm button {
+  border: 1px solid #fdba74;
+  background: #fff;
+  color: #7c2d12;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inlineConfirm button:last-child {
+  background: #c2410c;
+  border-color: #c2410c;
+  color: #fff;
+}
+
 /* Empty State */
 .empty {
   text-align: center;
@@ -174,5 +209,15 @@
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .inlineConfirm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inlineConfirm div,
+  .inlineConfirm button {
+    width: 100%;
   }
 }

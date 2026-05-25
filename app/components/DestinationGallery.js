@@ -120,7 +120,13 @@ export default function DestinationGallery({ destination = '' }) {
               src={url} 
               alt={`${destination} view ${index + 1}`} 
               className={styles.image} 
+              width="600"
+              height="420"
               loading="lazy" 
+              decoding="async"
+              onError={(event) => {
+                event.currentTarget.style.opacity = '0';
+              }}
             />
             <div className={styles.overlay}>
               <span className={styles.zoomIcon}>🔍 View Full</span>
@@ -154,6 +160,10 @@ export default function DestinationGallery({ destination = '' }) {
               src={photos[lightboxIndex]} 
               alt={`${destination} detailed view ${lightboxIndex + 1}`} 
               className={styles.lightboxImage}
+              width="1200"
+              height="800"
+              loading="lazy"
+              decoding="async"
             />
             <div className={styles.caption}>
               {destination} — Photo {lightboxIndex + 1} of {photos.length}

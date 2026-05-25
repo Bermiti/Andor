@@ -200,8 +200,8 @@ export default function LiveMap({ stops = [], destination = {} }) {
           html: isCluster 
             ? `<div class="${styles.markerClusterInner}"><span>${cluster.stops.length}</span></div>`
             : `<div class="${styles.markerDotInner}" style="background-color: ${markerColor}; border-color: #ffffff;">${mainStop.originalIndex + 1}</div>`,
-          iconSize: isCluster ? [34, 34] : [28, 28],
-          iconAnchor: isCluster ? [17, 17] : [14, 14],
+          iconSize: isCluster ? [40, 40] : [36, 36],
+          iconAnchor: isCluster ? [20, 20] : [18, 18],
         });
 
         const marker = L.marker([cluster.lat, cluster.lng], { icon: customIcon }).addTo(map);
@@ -224,21 +224,28 @@ export default function LiveMap({ stops = [], destination = {} }) {
         } else {
           const photoUrl = getCategoryPhoto(mainStop);
           popupContent += `
-            <div style="display: flex; gap: 10px; align-items: flex-start;">
-              <img src="${photoUrl}" style="width: 60px; height: 60px; border-radius: 6px; object-fit: cover;" alt="${mainStop.name}" />
-              <div style="flex: 1; min-width: 140px;">
-                <div class="${styles.popupTime}">${mainStop.time || ''}</div>
-                <h4 class="${styles.popupName}">${mainStop.name}</h4>
-                ${mainStop.estimatedCost ? `<div class="${styles.popupCost}">💰 ${mainStop.estimatedCost}</div>` : ''}
-                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mainStop.name)}" target="_blank" rel="noopener noreferrer" class="${styles.popupMapBtn}">Abrir no Google Maps ↗</a>
-              </div>
+            <img src="${photoUrl}" width="260" height="100" loading="lazy" decoding="async" class="${styles.popupPhoto}" alt="${mainStop.name}" />
+            <div class="${styles.popupTime}">${mainStop.time || mainStop.period || ''}</div>
+            <h4 class="${styles.popupName}">${mainStop.name}</h4>
+            <div class="${styles.popupMetaRow}">
+              <span>${mainStop.duration || '90 min'}</span>
+              <span>${mainStop.cost !== undefined ? `€${mainStop.cost}` : mainStop.estimatedCost || 'Grátis'}</span>
+              ${mainStop.rating ? `<span>★ ${mainStop.rating}</span>` : ''}
+            </div>
+            ${mainStop.transportFromPrevious?.duration ? `<div class="${styles.popupType}">Como chegar: ${mainStop.transportFromPrevious.duration}</div>` : ''}
+            <div class="${styles.popupActions}">
+              <a href="#activity-${mainStop.originalIndex}" class="${styles.popupMapBtn}">Ver detalhes</a>
+              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mainStop.name)}" target="_blank" rel="noopener noreferrer" class="${styles.popupMapBtn}">Directions</a>
             </div>
           `;
         }
         popupContent += `</div>`;
 
         marker.bindPopup(popupContent, {
-          closeButton: false,
+          closeButton: true,
+          autoPan: true,
+          maxWidth: 260,
+          className: styles.brandedPopup,
           offset: [0, -5],
         });
 

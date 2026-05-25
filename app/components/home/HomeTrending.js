@@ -46,7 +46,7 @@ export default function HomeTrending({ onOpenWizard }) {
           {destinations.map((dest, i) => (
             <div key={i} className={`${styles.card} card-interactive`} style={{ animationDelay: `${i * 0.1}s` }}>
               <div className={styles.imgWrapper}>
-                <img src={dest.img} alt={dest.name} loading="lazy" />
+                <img src={dest.img} alt={dest.name} width="600" height="800" loading="lazy" decoding="async" />
                 <div className={styles.scoreBadge}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   {dest.score}

@@ -113,6 +113,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   padding: 12px 14px;
   border-radius: 12px;
   border: 1.5px solid #e2e8f0;
@@ -164,6 +165,42 @@
 
 .groupDeleteBtn:hover {
   opacity: 1;
+}
+
+.inlineConfirm {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #7c2d12;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.inlineConfirm div {
+  display: flex;
+  gap: 8px;
+}
+
+.inlineConfirm button {
+  border: 1px solid #fdba74;
+  background: #fff;
+  color: #7c2d12;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inlineConfirm button:last-child {
+  background: #c2410c;
+  border-color: #c2410c;
+  color: #fff;
 }
 
 /* Detail Panel */
