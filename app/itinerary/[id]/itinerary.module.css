@@ -1,11 +1,13 @@
 /* ================================================
    ANDOR – Premium Itinerary Page Styles
+   Complete Rewrite: Mobile-first responsive
    ================================================ */
 
 /* ── Page Shell ── */
 .page {
   padding-top: 80px;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -106,7 +108,7 @@
   border-radius: var(--radius-md);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -130,7 +132,7 @@
   border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -168,6 +170,7 @@
   position: sticky;
   top: 70px;
   z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .dayTabs {
@@ -198,7 +201,7 @@
   min-width: 180px;
   cursor: pointer;
   color: var(--text-secondary);
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
   scroll-snap-align: start;
   flex-shrink: 0;
@@ -453,8 +456,11 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 600;
-  padding-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-color);
+  background: rgba(212, 168, 67, 0.04);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  margin: 0 calc(var(--space-2) * -1);
 }
 
 .periodStops {
@@ -472,9 +478,12 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.activityCard:hover {
-  border-color: rgba(212, 168, 67, 0.4);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+@media (hover: hover) {
+  .activityCard:hover {
+    border-color: rgba(212, 168, 67, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    transform: scale(1.008);
+  }
 }
 
 .activityCard.expanded {
@@ -559,10 +568,11 @@
 
 .chevron {
   font-size: 0.75rem;
-  transition: transform 0.3s;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--text-secondary);
 }
 
+/* Activity Body: smooth expand via max-height */
 .activityBody {
   padding: 0 var(--space-4) var(--space-4);
   border-top: 1px solid var(--border-color);
@@ -570,9 +580,23 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  animation: fadeSlideIn 0.3s ease;
+  animation: expandIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    max-height: 700px;
+    transform: translateY(0);
+  }
+}
+
+/* Keep legacy animation name for compat */
 @keyframes fadeSlideIn {
   from {
     opacity: 0;
@@ -595,7 +619,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .activityPhotoWrapper:hover .activityPhoto {
@@ -685,7 +709,7 @@
   padding: var(--space-4);
   border-radius: var(--radius-md);
   border-left: 4px solid var(--border-color);
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -966,6 +990,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -985,7 +1010,7 @@
   border-radius: var(--radius-lg);
   max-width: 520px;
   width: 92%;
-  animation: slideUp 0.3s ease;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
 }
 
@@ -996,6 +1021,15 @@
   }
   to {
     opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUpFromBottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
     transform: translateY(0);
   }
 }
@@ -1077,19 +1111,39 @@
 }
 
 /* ══════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE – Tablet (≤ 1024px)
    ══════════════════════════════════ */
 
 @media (max-width: 1024px) {
   .twoPanelLayout {
     grid-template-columns: 1fr;
   }
+
   .rightPanel {
     position: static;
   }
 }
 
+/* ══════════════════════════════════
+   RESPONSIVE – Tablet / Small (≤ 768px)
+   ══════════════════════════════════ */
+
 @media (max-width: 768px) {
+  /* ── Page ── */
+  .page {
+    padding-top: 60px;
+  }
+
+  .content {
+    margin-top: 60px;
+  }
+
+  .notFound {
+    padding: var(--space-6);
+    min-height: 50vh;
+  }
+
+  /* ── Header ── */
   .premiumHeader {
     padding: var(--space-6) var(--space-4) var(--space-4);
   }
@@ -1101,7 +1155,8 @@
   }
 
   .headerCity {
-    font-size: 1.75rem;
+    font-size: clamp(1.4rem, 5vw, 2.5rem);
+    flex-wrap: wrap;
   }
 
   .headerFlag {
@@ -1114,34 +1169,88 @@
 
   .headerMetaChip,
   .headerMetaChipGold {
-    font-size: 0.78rem;
-    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.55rem;
   }
 
+  /* Header actions: horizontal scroll row of icon buttons */
   .headerActionsDesktop {
-    width: 100%;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row;
+    gap: var(--space-2);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: var(--space-2);
+    flex-shrink: 0;
   }
 
-  .headerActionsDesktop button {
-    width: 100% !important;
-    margin: 8px 0 !important;
-    font-size: 0.9rem;
-    padding: 0.75rem;
+  .headerActionsDesktop::-webkit-scrollbar {
+    display: none;
+  }
+
+  .headerActionsDesktop button,
+  .headerActionsDesktop a {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0 !important;
+    border-radius: var(--radius-md);
+    font-size: 0;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Show only the icon (emoji/svg), hide text */
+  .headerActionsDesktop button svg,
+  .headerActionsDesktop button span:first-child,
+  .headerActionsDesktop a svg,
+  .headerActionsDesktop a span:first-child {
+    font-size: 1.15rem;
+  }
+
+  /* ── Day Tabs ── */
+  .dayTabsWrapper {
+    top: 60px;
   }
 
   .dayTabs {
     padding: 0 var(--space-4);
     gap: var(--space-2);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .dayTabs::-webkit-scrollbar {
+    display: none;
   }
 
   .dayTab {
-    min-width: 140px;
-    padding: var(--space-3) var(--space-2);
+    min-width: 130px;
+    padding: var(--space-3) var(--space-3);
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-2);
+    scroll-snap-align: start;
   }
 
+  .dayTabContent {
+    align-items: center;
+    text-align: center;
+  }
+
+  .dayTabTitle {
+    max-width: 100px;
+    font-size: 0.8rem;
+  }
+
+  /* ── Layout ── */
   .twoPanelLayout {
     grid-template-columns: 1fr;
     padding: 0 var(--space-4);
@@ -1149,68 +1258,181 @@
   }
 
   .rightPanel {
-    margin-top: 24px;
+    position: static;
+    margin-top: var(--space-6);
     width: 100%;
   }
 
-  .mapContainer {
-    height: 220px;
+  .sidebarCard {
+    width: 100%;
   }
 
+  /* ── Map – edge-to-edge ── */
+  .mapContainer {
+    height: 240px;
+    width: calc(100% + 32px);
+    margin-left: -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* ── Day Meta ── */
   .dayMetaCards {
     grid-template-columns: 1fr;
-  }
-
-  .mealsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .activityHeader {
-    flex-direction: column;
-    align-items: flex-start;
     gap: var(--space-3);
-    padding: 16px !important;
   }
 
-  .activityHeaderRight {
-    flex-wrap: wrap;
-    gap: var(--space-2);
+  .metaCard {
+    padding: var(--space-3);
   }
 
-  .activityThumb {
-    width: 56px !important;
-    height: 56px !important;
-  }
-
-  .activityActions {
-    flex-direction: column;
-  }
-
-  .activityActions a,
-  .activityActions button {
-    width: 100%;
-    justify-content: center;
-  }
-
+  /* ── Timeline ── */
   .timelineHeader {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-3);
   }
 
+  .dayHeading {
+    font-size: 1.5rem;
+  }
+
   .btnRegenerate {
     width: 100%;
     text-align: center;
     justify-content: center;
+    min-height: 44px;
   }
 
+  .periodHeading {
+    font-size: 0.9rem;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* ── Activity Cards ── */
+  .activityHeader {
+    padding: var(--space-4);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .activityHeaderLeft {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .activityHeaderRight {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: flex-start;
+    padding-left: 0;
+  }
+
+  .activityThumb {
+    width: 52px;
+    height: 52px;
+  }
+
+  .activityName {
+    font-size: 1rem;
+    white-space: normal;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .activityBody {
+    padding: var(--space-4);
+    padding-top: var(--space-4);
+  }
+
+  .activityPhotoWrapper {
+    height: 180px;
+    width: 100%;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Activity actions: 3 equal columns */
+  .activityActions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  .activityActions a,
+  .activityActions button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: var(--space-2) var(--space-1);
+    text-align: center;
+  }
+
+  /* ── Meals ── */
+  .mealsGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .mealCard {
+    min-height: 100px;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .mealMapLink {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── Local Secret ── */
   .localSecretCard {
     padding: var(--space-4);
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .localSecretIcon {
+    font-size: 1.8rem;
+  }
+
+  /* ── Modal – Bottom Sheet ── */
+  .modalOverlay {
+    align-items: flex-end;
   }
 
   .modalContent {
-    padding: var(--space-6);
-    margin: var(--space-4);
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 85vh;
+    max-height: 85dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-6) var(--space-5);
+    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+    margin: 0;
+    animation: slideUpFromBottom 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
+  .modalTitle {
+    font-size: 1.2rem;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+    gap: var(--space-2);
+  }
+
+  .modalActions button,
+  .modalActions a {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
   }
 
   .adaptOptions {
@@ -1220,19 +1442,249 @@
   .adaptCheckbox {
     font-size: 0.8rem;
     padding: 0.35rem 0.65rem;
+    min-height: 36px;
+  }
+
+  .adaptTextarea {
+    font-size: 1rem; /* prevent iOS zoom */
+  }
+
+  /* ── Global touch-friendly ── */
+  .btnSecondary,
+  .btnOutline,
+  .btnOutlineFull,
+  .btnSecondaryFull,
+  .btnPrimary,
+  .btnPrimaryFull,
+  .btnFullWidth {
+    min-height: 44px;
+  }
+
+  /* ── Insider Tip ── */
+  .insiderTipBox {
+    flex-direction: column;
+    gap: var(--space-2);
   }
 }
 
+/* ══════════════════════════════════
+   RESPONSIVE – Mobile (≤ 480px)
+   ══════════════════════════════════ */
+
 @media (max-width: 480px) {
+  /* ── Header ── */
   .headerCity {
-    font-size: 1.4rem;
+    font-size: clamp(1.25rem, 6vw, 1.6rem);
   }
 
+  .headerFlag {
+    font-size: 1.6rem;
+  }
+
+  .headerMetaChip,
+  .headerMetaChipGold {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  /* ── Day Tabs ── */
   .dayTab {
-    min-width: 130px;
+    min-width: 110px;
+    padding: var(--space-2) var(--space-2);
   }
 
-  .dayHeading {
-    font-size: 1.35rem;
+  .dayTabEmoji {
+    width: 36px;
+    height: 36px;
+    font-size: 1.25rem;
   }
+
+  .dayTabNumber {
+    font-size: 0.6rem;
+  }
+
+  .dayTabTitle {
+    font-size: 0.75rem;
+    max-width: 80px;
+  }
+
+  .dayTabBudget {
+    font-size: 0.65rem;
+  }
+
+  /* ── Layout ── */
+  .twoPanelLayout {
+    padding: 0 var(--space-3);
+    gap: var(--space-5);
+    margin: var(--space-5) auto;
+  }
+
+  /* ── Map ── */
+  .mapContainer {
+    height: 200px;
+    width: calc(100% + 24px);
+    margin-left: -12px;
+  }
+
+  /* ── Timeline ── */
+  .dayHeading {
+    font-size: 1.3rem;
+  }
+
+  .timeline {
+    gap: var(--space-6);
+  }
+
+  /* ── Activity Cards ── */
+  .activityHeader {
+    padding: var(--space-3);
+  }
+
+  .activityThumb {
+    width: 44px;
+    height: 44px;
+  }
+
+  .activityName {
+    font-size: 0.92rem;
+  }
+
+  .activityBody {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .activityPhotoWrapper {
+    height: 160px;
+  }
+
+  .activityDetailRow {
+    font-size: 0.88rem;
+  }
+
+  /* Activity actions: 2 columns on very small screens */
+  .activityActions {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  .activityActions a,
+  .activityActions button {
+    font-size: 0.75rem;
+    padding: var(--space-2);
+  }
+
+  /* ── Meals ── */
+  .mealCard {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .mealName {
+    font-size: 1rem;
+  }
+
+  .mealMeta {
+    font-size: 0.82rem;
+  }
+
+  /* ── Sidebar ── */
+  .sidebarCard {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+  }
+
+  .sidebarCardHeader h3 {
+    font-size: 1rem;
+  }
+
+  .budgetTotal {
+    font-size: 1.2rem;
+  }
+
+  .budgetItem {
+    font-size: 0.82rem;
+  }
+
+  /* ── Modal ── */
+  .modalContent {
+    padding: var(--space-5) var(--space-4);
+    padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+
+  .modalTitle {
+    font-size: 1.1rem;
+  }
+
+  .modalSubtitle {
+    font-size: 0.88rem;
+  }
+
+  /* ── Local Secret ── */
+  .localSecretCard {
+    padding: var(--space-3);
+  }
+
+  .localSecretTitle {
+    font-size: 1rem;
+  }
+
+  .localSecretContent p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* ── Period ── */
+  .periodHeading {
+    font-size: 0.82rem;
+    letter-spacing: 0.5px;
+  }
+
+  .periodStops {
+    gap: var(--space-3);
+  }
+
+  /* ── Insider Tip ── */
+  .insiderTipBox {
+    padding: var(--space-3);
+  }
+
+  .insiderTipText {
+    font-size: 0.88rem;
+  }
+
+  /* ── Section Title ── */
+  .sectionTitle {
+    font-size: 1.1rem;
+  }
+
+  /* ── Safe area bottom padding ── */
+  .page {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* ══════════════════════════════════
+   LIGHT THEME OVERRIDES
+   ══════════════════════════════════ */
+
+[data-theme="light"] .activityCard:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .modalOverlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .periodHeading {
+  background: rgba(212, 168, 67, 0.06);
+}
+
+[data-theme="light"] .tipsItem {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .dayTabsWrapper {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }

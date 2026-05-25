@@ -669,21 +669,138 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .hero {
+    padding: 100px 0 60px 0;
+    min-height: auto;
+  }
+
+  .content {
+    padding: 0 16px;
+  }
+
   .title {
+    font-size: clamp(52px, 13vw, 72px);
+    margin-bottom: var(--space-3);
+  }
+
+  .subtitle {
+    font-size: clamp(14px, 3.5vw, 18px);
+    margin-bottom: var(--space-8);
+  }
+
+  /* Search bar stacked vertically */
+  .searchBar {
+    padding: 16px;
+    border-radius: 20px;
+    margin-bottom: var(--space-8);
+  }
+
+  .searchRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .searchField {
+    width: 100%;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .searchField:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+
+  /* Full-width inputs with proper height */
+  .searchField input[type="text"],
+  .searchField input[type="date"],
+  .searchField select {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px !important; /* prevents iOS zoom */
+    padding: 8px 0;
+  }
+
+  /* Full-width explore button */
+  .exploreBtn {
+    width: 100%;
+    height: 56px;
+    font-size: 16px;
+    border-radius: 16px;
+    margin-top: 8px;
+  }
+
+  /* Dropdown fits mobile */
+  .dropdownList {
+    min-width: 100%;
+    max-height: 240px;
+    border-radius: 12px;
+  }
+
+  .dropdownItem {
+    padding: 14px 16px;
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  /* Stats 2x2 grid */
+  .statsBar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: var(--space-8);
+    width: 100%;
+  }
+
+  .statDivider {
+    display: none;
+  }
+
+  .stat {
+    min-width: unset;
+    text-align: center;
+  }
+
+  /* Collage grid 2 columns on mobile */
+  .collageGrid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 80px 0 40px 0;
+  }
+
+  .title {
+    font-size: clamp(42px, 11vw, 56px);
     margin-bottom: var(--space-2);
   }
-  
+
+  .subtitle {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
   .searchBar {
-    padding: var(--space-4);
-    border-radius: 20px;
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .searchFieldLabel {
+    font-size: 10px;
   }
 
   .statsBar {
     margin-top: var(--space-6);
+    gap: 12px;
   }
-  
+
   .statValue {
-    font-size: var(--text-4xl);
+    font-size: var(--text-3xl);
   }
 }

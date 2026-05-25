@@ -1,15 +1,22 @@
+/* ═══════════════════════════════════════════════════════
+   ToastProvider — Premium Toast Notification Styles
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Container ────────────────────────────────────────── */
+
 .toastContainer {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
   right: 24px;
-  z-index: var(--z-toast, 300);
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-width: 360px;
-  width: calc(100% - 48px);
+  gap: 8px;
+  width: 360px;
   pointer-events: none;
 }
+
+/* ─── Individual Toast ─────────────────────────────────── */
 
 .toastItem {
   pointer-events: auto;
@@ -17,24 +24,66 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
-  background: var(--bg-secondary, #1A2235);
-  border: 1px solid var(--border);
+  padding: 14px 16px;
+
+  /* Glass surface */
+  background: var(--bg-2, #1A2235);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+
+  border: 1px solid var(--b-2, rgba(255, 255, 255, 0.08));
+  border-left: 4px solid transparent; /* overridden by type class */
   border-radius: 12px;
-  box-shadow: var(--shadow-md, 0 8px 32px rgba(0,0,0,0.3));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+
   color: var(--text-primary, #F0EDE6);
   font-family: var(--font-body, inherit);
   font-size: 14px;
   line-height: 1.5;
   overflow: hidden;
-  animation: toastSlideIn 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  transition: transform 200ms ease, opacity 200ms ease;
+  will-change: transform, opacity;
 }
 
 .toastItem:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-gold, 0 8px 32px rgba(212,168,67,0.15));
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
 }
+
+/* ─── Phase Animations ─────────────────────────────────── */
+
+.entering {
+  animation: toastEnter 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.exiting {
+  animation: toastExit 250ms ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastExit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+}
+
+/* ─── Icon ─────────────────────────────────────────────── */
 
 .toastIcon {
   font-size: 18px;
@@ -42,81 +91,111 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
 }
 
+/* ─── Content ──────────────────────────────────────────── */
+
 .toastContent {
-  flex-grow: 1;
+  flex: 1;
   font-weight: 500;
+  min-width: 0;
+  word-break: break-word;
 }
+
+/* ─── Close Button ─────────────────────────────────────── */
 
 .toastCloseBtn {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #8B8680);
   font-size: 20px;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 6px;
   opacity: 0.6;
-  transition: opacity 150ms ease, color 150ms ease;
+  transition:
+    opacity 150ms ease,
+    color 150ms ease,
+    background 150ms ease;
 }
 
 .toastCloseBtn:hover {
   opacity: 1;
-  color: var(--text-primary);
+  color: var(--text-primary, #F0EDE6);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* Color overrides */
+.toastCloseBtn:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--sky, #4A9EE8);
+  outline-offset: 2px;
+}
+
+/* ─── Type Color Variants ──────────────────────────────── */
+
 .success {
-  border-left: 4px solid var(--teal, #00C9A7);
+  border-left-color: var(--teal, #00C9A7);
 }
 
 .error {
-  border-left: 4px solid var(--coral, #E8604A);
+  border-left-color: var(--coral, #E8604A);
 }
 
 .info {
-  border-left: 4px solid var(--sky, #4A9EE8);
+  border-left-color: var(--sky, #4A9EE8);
 }
 
 .premium {
-  border-left: 4px solid var(--gold, #D4A843);
+  border-left-color: var(--gold, #D4A843);
 }
 
-/* Progress bar inside toasts */
+.warning {
+  border-left-color: var(--gold, #D4A843);
+}
+
+/* ─── Progress Bar ─────────────────────────────────────── */
+
 .progressBarWrapper {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 0 0 12px 0;
+  overflow: hidden;
 }
 
 .progressBar {
   height: 100%;
   width: 100%;
-  background: var(--text-secondary);
-  animation: toastProgress linear forwards;
   transform-origin: left;
+  animation: toastProgress linear forwards;
+  background: var(--text-secondary, #8B8680);
 }
 
-.success .progressBar { background: var(--teal); }
-.error .progressBar { background: var(--coral); }
-.info .progressBar { background: var(--sky); }
-.premium .progressBar { background: var(--gold); }
-
-@keyframes toastSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(120%) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
+/* Progress bar colors matched to type */
+.success .progressBar {
+  background: var(--teal, #00C9A7);
+}
+.error .progressBar {
+  background: var(--coral, #E8604A);
+}
+.info .progressBar {
+  background: var(--sky, #4A9EE8);
+}
+.premium .progressBar {
+  background: var(--gold, #D4A843);
+}
+.warning .progressBar {
+  background: var(--gold, #D4A843);
 }
 
 @keyframes toastProgress {
@@ -128,11 +207,46 @@
   }
 }
 
-/* Mobile responsive target positioning */
-@media (max-width: 480px) {
+/* ─── Mobile Responsive ────────────────────────────────── */
+
+@media (max-width: 600px) {
   .toastContainer {
-    bottom: 16px;
+    top: 16px;
     right: 16px;
-    width: calc(100% - 32px);
+    left: 16px;
+    width: calc(100vw - 32px);
+    align-items: center;
+  }
+
+  .toastItem {
+    width: 100%;
+  }
+
+  .toastCloseBtn {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+    margin: -10px -8px -10px 0; /* negative margin to keep visual alignment despite larger tap area */
+  }
+}
+
+/* ─── Reduced Motion ───────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .entering {
+    animation: none;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .exiting {
+    animation: none;
+    opacity: 0;
+    transform: translateX(110%);
+  }
+
+  .progressBar {
+    animation: none;
+    transform: scaleX(0);
   }
 }

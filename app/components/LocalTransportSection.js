@@ -100,7 +100,11 @@ export default function LocalTransportSection({ localTransport }) {
           <h3 className={styles.sectionTitle}>Meios de Transporte</h3>
           <div className={styles.modesList}>
             {localTransport.modes.map((mode, idx) => (
-              <div key={idx} className={styles.modeTag}>{mode}</div>
+              <div key={idx} className={styles.modeTag}>
+                {typeof mode === 'object' && mode !== null
+                  ? `${mode.type} (${mode.best} · ${mode.cost})`
+                  : mode}
+              </div>
             ))}
           </div>
         </div>

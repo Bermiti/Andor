@@ -33,7 +33,7 @@ export default function SplashScreen() {
   return (
     <div className={`${styles.splashContainer} ${fadingOut ? styles.fadeOut : ''}`}>
       <div className={styles.content}>
-        <h1 className={styles.brand}>✦ ANDOR</h1>
+        <div className={styles.brand}>✦ ANDOR</div>
         <p className={styles.tagline}>O mundo está à tua espera</p>
       </div>
       <div className={styles.airplaneWrapper}>

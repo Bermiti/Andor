@@ -22,7 +22,6 @@ import SkeletonLoader from '../../components/SkeletonLoader';
 import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import styles from './itinerary.module.css';
-import html2pdf from 'html2pdf.js';
 import { trackEvent } from '../../lib/analytics';
 
 const getStopIcon = (stop) => {
@@ -217,9 +216,17 @@ export default function ItineraryPage() {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (typeof window === 'undefined' || !itinerary) return;
     showToast('📄 A gerar PDF...', 'info');
+    
+    let html2pdf;
+    try {
+      html2pdf = (await import('html2pdf.js')).default;
+    } catch (e) {
+      showToast('❌ Erro ao inicializar gerador de PDF.', 'error');
+      return;
+    }
     
     const content = document.createElement('div');
     content.innerHTML = `

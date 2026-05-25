@@ -8,7 +8,14 @@ export function enrichItinerary(rawItinerary) {
     return createMinimalItinerary('Unknown Destination');
   }
 
-  const dest = rawItinerary.destination || {};
+  let dest = rawItinerary.destination || {};
+  if (typeof dest === 'string') {
+    dest = { 
+      name: dest, 
+      city: dest.split(',')[0].trim(), 
+      country: dest.split(',')[1]?.trim() || 'Unknown' 
+    };
+  }
   const trip = rawItinerary.trip || {};
   const days = rawItinerary.days || [];
 

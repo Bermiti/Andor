@@ -1222,28 +1222,290 @@
   80%, 100% { transform: translateY(0); opacity: 1; }
 }
 
-/* Mobile Viewports (fullscreen slide-in overlay) */
-@media (max-width: 480px) {
+/* ══════════════════════════════════════════
+   MOBILE CHAT — Complete Redesign
+   ══════════════════════════════════════════ */
+
+/* Tablet breakpoint */
+@media (max-width: 768px) {
   .chatWindow {
     width: 100vw !important;
     right: 0 !important;
     height: 100dvh !important;
+    border-radius: 0 !important;
   }
+
   .container {
-    bottom: 20px;
-    right: 20px;
+    bottom: 16px;
+    right: 16px;
   }
+
+  .toggle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .toggleIcon {
+    font-size: 22px;
+  }
+
+  .chatHeader {
+    padding: 16px 16px;
+  }
+
+  .chatHeaderTitle {
+    font-size: 18px;
+    letter-spacing: 1.5px;
+  }
+
+  .chatHeaderSubtitle {
+    font-size: 11px;
+  }
+
+  .headerActions {
+    gap: 6px;
+  }
+
+  .closeBtn,
+  .collabBtn,
+  .therapyToggle {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  /* Messages area with room for fixed input */
+  .messages {
+    padding: 16px 16px 100px 16px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Message bubbles wider on mobile */
+  .message {
+    max-width: 88%;
+  }
+
+  .bubble {
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 16px;
+  }
+
+  .messageUser .bubble {
+    border-bottom-right-radius: 2px;
+  }
+
+  .messageAssistant .bubble {
+    border-bottom-left-radius: 2px;
+  }
+
+  /* Context suggestions horizontal scroll */
+  .contextSuggestions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100%;
+    padding-bottom: 4px;
+  }
+  .contextSuggestions::-webkit-scrollbar { display: none; }
+
+  .contextChip {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 8px 14px;
+    min-height: 36px;
+    font-size: 12.5px;
+  }
+
+  /* Quick actions horizontal scroll */
+  .quickActionsRow {
+    padding: 10px 16px;
+  }
+
+  .quickActionBtn {
+    padding: 8px 14px;
+    min-height: 36px;
+    font-size: 12px;
+  }
+
+  /* Input fixed at bottom */
   .inputArea {
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
     width: 100% !important;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+    padding: 12px 16px !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
     box-sizing: border-box !important;
+    background: rgba(13, 17, 23, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
   }
+
+  /* Textarea font-size 16px prevents iOS zoom on focus */
+  .textareaWrapper textarea {
+    font-size: 16px !important;
+    min-height: 22px;
+    line-height: 1.4;
+  }
+
+  .textareaWrapper {
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+
+  /* Send button touch-friendly */
+  .sendButton {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  /* Memory banner compact */
+  .memoryBanner {
+    padding: 8px 16px;
+    font-size: 11px;
+  }
+
+  /* Onboarding fits screen */
+  .onboarding {
+    padding: 20px 16px;
+  }
+
+  .onboardingGreeting {
+    font-size: 22px;
+  }
+
+  .onboardingDesc {
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .suggestionChip {
+    padding: 12px 16px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  /* Inline cards full width */
+  .inlineCard,
+  .inlineFlightCard,
+  .itineraryCard {
+    max-width: 100%;
+  }
+
+  /* Surprise wizard fit mobile */
+  .surpriseWizardContainer {
+    padding: 16px;
+  }
+
+  .wizardForm input,
+  .wizardForm select {
+    padding: 12px;
+    font-size: 16px; /* prevents iOS zoom */
+    min-height: 44px;
+  }
+
+  .wizardBtns {
+    flex-direction: column;
+  }
+
+  .wizardSubmit,
+  .wizardCancel {
+    min-height: 48px;
+    font-size: 14px;
+  }
+
+  /* Reveal screen */
+  .revealScreen {
+    padding: 30px 16px;
+  }
+
+  .revealDestination {
+    font-size: 24px;
+  }
+
+  .revealResultBtns {
+    gap: 10px;
+  }
+
+  .revealAccept,
+  .revealDecline {
+    min-height: 48px;
+    font-size: 14px;
+  }
+
+  /* Modal bottom sheet on mobile */
+  .modalOverlay {
+    align-items: flex-end;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    animation: slideUpSheet 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideUpSheet {
+    from { transform: translateY(100%); opacity: 0.5; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modalBtns {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modalCancelBtn,
+  .modalConfirmBtn {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  /* Restore banner compact */
+  .restorePromptBanner {
+    padding: 10px 16px;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 380px) {
+  .chatHeader {
+    padding: 12px 12px;
+  }
+
+  .chatHeaderTitle {
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  .logoMark {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
   .messages {
-    padding-bottom: 90px !important;
+    padding: 12px 12px 100px 12px;
+    gap: 14px;
+  }
+
+  .bubble {
+    padding: 10px 14px;
+    font-size: 13.5px;
+  }
+
+  .inputArea {
+    padding: 10px 12px !important;
   }
 }
 

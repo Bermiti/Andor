@@ -1,45 +1,95 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  memo,
+} from 'react';
 import styles from './ToastProvider.module.css';
 
 const ToastContext = createContext(null);
 
+const MAX_VISIBLE = 3;
+const AUTO_DISMISS_MS = 4000;
+
+const ICON_MAP = {
+  success: '✅',
+  error: '❌',
+  info: '💡',
+  premium: '⭐',
+  warning: '⚠️',
+};
+
+const TYPE_CLASS_MAP = {
+  success: styles.success,
+  error: styles.error,
+  info: styles.info,
+  premium: styles.premium,
+  warning: styles.warning,
+};
+
+/* ─── Provider ─────────────────────────────────────────── */
+
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const idCounter = useRef(0);
 
-  const addToast = useCallback((message, type = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type, isPaused: false }]);
+  const showToast = useCallback((message, type = 'info') => {
+    const id = `toast-${++idCounter.current}-${Date.now()}`;
+    setToasts((prev) => {
+      const next = [...prev, { id, message, type, phase: 'entering' }];
+      // If exceeding max, start exiting the oldest visible ones
+      const visible = next.filter((t) => t.phase !== 'exiting');
+      if (visible.length > MAX_VISIBLE) {
+        const excess = visible.length - MAX_VISIBLE;
+        let marked = 0;
+        return next.map((t) => {
+          if (marked < excess && t.phase !== 'exiting') {
+            marked++;
+            return { ...t, phase: 'exiting' };
+          }
+          return t;
+        });
+      }
+      return next;
+    });
   }, []);
 
-  const removeToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const pauseToast = useCallback((id) => {
+  const dismiss = useCallback((id) => {
     setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isPaused: true } : t))
+      prev.map((t) => (t.id === id ? { ...t, phase: 'exiting' } : t))
     );
   }, []);
 
-  const resumeToast = useCallback((id) => {
+  const remove = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const markVisible = useCallback((id) => {
     setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isPaused: false } : t))
+      prev.map((t) => (t.id === id && t.phase === 'entering' ? { ...t, phase: 'visible' } : t))
     );
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast: addToast }}>
+    <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className={styles.toastContainer}>
+      <div
+        className={styles.toastContainer}
+        aria-live="polite"
+        aria-label="Notifications"
+      >
         {toasts.map((toast) => (
           <ToastItem
             key={toast.id}
             toast={toast}
-            onClose={() => removeToast(toast.id)}
-            onPause={() => pauseToast(toast.id)}
-            onResume={() => resumeToast(toast.id)}
+            onDismiss={dismiss}
+            onRemove={remove}
+            onEntered={markVisible}
           />
         ))}
       </div>
@@ -47,18 +97,52 @@ export function ToastProvider({ children }) {
   );
 }
 
-function ToastItem({ toast, onClose, onPause, onResume }) {
-  const { id, message, type, isPaused } = toast;
-  const timerRef = useRef(null);
-  const timeLeftRef = useRef(4000);
-  const startTimeRef = useRef(Date.now());
+/* ─── Toast Item ───────────────────────────────────────── */
 
+const ToastItem = memo(function ToastItem({ toast, onDismiss, onRemove, onEntered }) {
+  const { id, message, type, phase } = toast;
+  const timerRef = useRef(null);
+  const timeLeftRef = useRef(AUTO_DISMISS_MS);
+  const startTimeRef = useRef(null);
+  const itemRef = useRef(null);
+
+  // Mark as visible after enter animation completes
+  useEffect(() => {
+    if (phase === 'entering') {
+      const el = itemRef.current;
+      if (!el) return;
+      const handler = () => onEntered(id);
+      el.addEventListener('animationend', handler, { once: true });
+      return () => el.removeEventListener('animationend', handler);
+    }
+  }, [phase, id, onEntered]);
+
+  // Remove from DOM after exit animation completes
+  useEffect(() => {
+    if (phase === 'exiting') {
+      const el = itemRef.current;
+      if (!el) {
+        onRemove(id);
+        return;
+      }
+      const handler = () => onRemove(id);
+      el.addEventListener('animationend', handler, { once: true });
+      // Fallback in case animationend doesn't fire
+      const fallback = setTimeout(handler, 300);
+      return () => {
+        el.removeEventListener('animationend', handler);
+        clearTimeout(fallback);
+      };
+    }
+  }, [phase, id, onRemove]);
+
+  // Auto-dismiss timer — only runs while phase === 'visible'
   const startTimer = useCallback(() => {
     startTimeRef.current = Date.now();
     timerRef.current = setTimeout(() => {
-      onClose();
+      onDismiss(id);
     }, timeLeftRef.current);
-  }, [onClose]);
+  }, [onDismiss, id]);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -68,79 +152,83 @@ function ToastItem({ toast, onClose, onPause, onResume }) {
   }, []);
 
   useEffect(() => {
-    startTimer();
-    return clearTimer;
-  }, [startTimer, clearTimer]);
+    if (phase === 'visible') {
+      startTimer();
+      return clearTimer;
+    }
+  }, [phase, startTimer, clearTimer]);
+
+  // Cleanup on unmount
+  useEffect(() => clearTimer, [clearTimer]);
 
   const handleMouseEnter = () => {
-    onPause();
     clearTimer();
-    const elapsed = Date.now() - startTimeRef.current;
-    timeLeftRef.current = Math.max(0, timeLeftRef.current - elapsed);
+    if (startTimeRef.current !== null) {
+      const elapsed = Date.now() - startTimeRef.current;
+      timeLeftRef.current = Math.max(0, timeLeftRef.current - elapsed);
+    }
   };
 
   const handleMouseLeave = () => {
-    onResume();
-    if (timeLeftRef.current > 0) {
+    if (phase === 'visible' && timeLeftRef.current > 0) {
       startTimer();
     }
   };
 
-  // Icon chooser
-  const getIcon = () => {
-    switch (type) {
-      case 'success':
-        return <span className={styles.toastIcon}>✅</span>;
-      case 'error':
-        return <span className={styles.toastIcon}>❌</span>;
-      case 'info':
-        return <span className={styles.toastIcon}>💡</span>;
-      case 'premium':
-        return <span className={styles.toastIcon}>⭐</span>;
-      default:
-        return <span className={styles.toastIcon}>🔔</span>;
-    }
+  const handleClose = () => {
+    clearTimer();
+    onDismiss(id);
   };
 
-  const getTypeClass = () => {
-    switch (type) {
-      case 'success':
-        return styles.success;
-      case 'error':
-        return styles.error;
-      case 'info':
-        return styles.info;
-      case 'premium':
-        return styles.premium;
-      default:
-        return '';
-    }
-  };
+  const icon = ICON_MAP[type] || ICON_MAP.info;
+  const typeClass = TYPE_CLASS_MAP[type] || '';
+
+  const phaseClass =
+    phase === 'entering'
+      ? styles.entering
+      : phase === 'exiting'
+        ? styles.exiting
+        : '';
+
+  const isPaused = phase !== 'visible';
 
   return (
     <div
-      className={`${styles.toastItem} ${getTypeClass()}`}
+      ref={itemRef}
+      className={`${styles.toastItem} ${typeClass} ${phaseClass}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleMouseEnter}
+      onTouchEnd={handleMouseLeave}
       role="alert"
+      aria-atomic="true"
     >
-      {getIcon()}
+      <span className={styles.toastIcon} aria-hidden="true">
+        {icon}
+      </span>
       <div className={styles.toastContent}>{message}</div>
-      <button className={styles.toastCloseBtn} onClick={onClose} aria-label="Fechar">
+      <button
+        className={styles.toastCloseBtn}
+        onClick={handleClose}
+        aria-label="Dismiss notification"
+        type="button"
+      >
         &times;
       </button>
-      <div className={styles.progressBarWrapper}>
-        <div 
-          className={styles.progressBar} 
-          style={{ 
-            animationDuration: '4000ms',
-            animationPlayState: isPaused ? 'paused' : 'running'
+      <div className={styles.progressBarWrapper} aria-hidden="true">
+        <div
+          className={styles.progressBar}
+          style={{
+            animationDuration: `${AUTO_DISMISS_MS}ms`,
+            animationPlayState: isPaused ? 'paused' : 'running',
           }}
         />
       </div>
     </div>
   );
-}
+});
+
+/* ─── Hook ─────────────────────────────────────────────── */
 
 export function useToast() {
   const context = useContext(ToastContext);
