@@ -1,0 +1,30 @@
+# robots.txt for Andor Travels
+# Generated May 26, 2026
+
+User-agent: *
+Allow: /
+Disallow: /_next/
+Disallow: /api/
+Allow: /api/public/
+
+# Specific crawlers
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemap
+Sitemap: https://andor.travels/sitemap.xml
