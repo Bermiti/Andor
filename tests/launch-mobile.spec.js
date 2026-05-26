@@ -104,7 +104,9 @@ test.describe('Launch mobile regression suite', () => {
 
   test('chat opens fullscreen-like on mobile and keeps input usable', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
-    await page.getByTestId('floating-ai-toggle').click();
+    const toggle = page.getByTestId('floating-ai-toggle');
+    await toggle.waitFor({ state: 'visible', timeout: 15000 });
+    await toggle.click();
     await expect(page.getByTestId('floating-ai-chat')).toBeVisible();
     await expect(page.getByTestId('floating-ai-input')).toBeVisible();
     await expect(page.getByTestId('floating-ai-send')).toBeVisible();
