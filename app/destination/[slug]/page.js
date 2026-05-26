@@ -19,6 +19,10 @@ const DESTINATIONS = {
     bestMonths: ['Mar', 'Apr', 'Nov'],
     tripLength: '6-8 days',
     budget: { tier: 'Premium value', daily: '€145-€260', note: 'Rail, casual lunches, and one splurge dinner give the best balance.' },
+    weather: {
+      May: { label: 'May in Tokyo', icon: '🌤️', stats: '22°C average · 9 rainy days · fresh evenings', tip: 'Bring a light layer and shoes that stay comfortable in sudden showers.' },
+      Sep: { label: 'September in Tokyo', icon: '🌦️', stats: '26°C average · 10 rainy days · high humidity', tip: 'Pack breathable clothes, a compact umbrella, and leave indoor swaps for stormy afternoons.' },
+    },
     months: {
       Mar: ['96', 'Cherry blossom openings, cool evenings', 'High', 'Book hotels early'],
       Apr: ['94', 'Sakura into fresh spring greens', 'High', 'Pay more, walk more'],
@@ -57,6 +61,10 @@ const DESTINATIONS = {
     bestMonths: ['Apr', 'May', 'Sep', 'Oct'],
     tripLength: '4-6 days',
     budget: { tier: 'Comfortably premium', daily: '€170-€310', note: 'Lunch menus and metro passes protect the budget for one exceptional dinner.' },
+    weather: {
+      May: { label: 'May in Paris', icon: '🌿', stats: '18°C average · 8 rainy days · long evenings', tip: 'Carry a compact trench or light jacket; terraces are best after 18:00.' },
+      Sep: { label: 'September in Paris', icon: '☀️', stats: '20°C average · 6 rainy days · golden light', tip: 'Perfect walking weather. Book dinners early because locals return from holidays.' },
+    },
     months: {
       Apr: ['92', 'Spring terraces, soft light', 'Medium', 'Strong hotel value'],
       May: ['94', 'Long evenings and gardens', 'High', 'Book dinners early'],
@@ -95,6 +103,10 @@ const DESTINATIONS = {
     bestMonths: ['May', 'Jun', 'Sep'],
     tripLength: '7-10 days',
     budget: { tier: 'Flexible luxury', daily: '€95-€230', note: 'Drivers and villas are good value; beach clubs quietly inflate the trip.' },
+    weather: {
+      May: { label: 'May in Bali', icon: '🌤️', stats: '28°C average · 7 rainy days · dry season starts', tip: 'Light clothes, reef-safe sunscreen, and one modest temple layer cover most days.' },
+      Sep: { label: 'September in Bali', icon: '☀️', stats: '27°C average · 4 rainy days · lower humidity', tip: 'One of the easiest months: split beach and inland days before traffic builds.' },
+    },
     months: {
       May: ['94', 'Dry season begins', 'Medium', 'Excellent value'],
       Jun: ['95', 'Clearer days, calmer roads', 'Medium', 'Best balance'],
@@ -149,6 +161,13 @@ export default function DestinationPage() {
   const slug = String(params?.slug || 'paris').toLowerCase();
   const currentMonth = MONTHS[new Date().getMonth()];
   const data = useMemo(() => DESTINATIONS[slug] || fallbackDestination(slug), [slug]);
+  const scorePercent = Math.round(Number(data.score || 0) * 10);
+  const monthWeather = data.weather?.[currentMonth] || data.weather?.May || {
+    label: `${currentMonth} in ${data.name}`,
+    icon: '🌤️',
+    stats: 'Mild conditions · variable rain · easy walking pace',
+    tip: 'Check the forecast one week out and keep one flexible indoor swap in the plan.',
+  };
   const [heroFailed, setHeroFailed] = useState(false);
 
   return (
@@ -168,9 +187,22 @@ export default function DestinationPage() {
         )}
         <div className={styles.heroOverlay}>
           <div className={styles.heroContent}>
-            <div className={styles.scoreBadge}>
+            <div className={styles.scoreBadge} tabIndex={0}>
               <span className={styles.scoreValue}>{data.score}</span>
               <span className={styles.scoreLabel}>Andor Score</span>
+              <div className={styles.scorePopover} role="tooltip">
+                <strong>Andor Score: {scorePercent}/100 for {currentMonth}</strong>
+                <div className={styles.scoreComponents}>
+                  <span>☀️ Weather</span><b>{Math.min(99, scorePercent + 1)}/100</b>
+                  <small>Comfortable timing for long days outside.</small>
+                  <span>👥 Crowds</span><b>{Math.max(78, scorePercent - 8)}/100</b>
+                  <small>Manageable with early starts and smart booking.</small>
+                  <span>💰 Value</span><b>{Math.max(80, scorePercent - 5)}/100</b>
+                  <small>Good balance between flights, hotels, and meals.</small>
+                  <span>🎭 Culture</span><b>{Math.min(99, scorePercent + 2)}/100</b>
+                  <small>Strong local rhythm, events, and neighborhood depth.</small>
+                </div>
+              </div>
             </div>
             <p className={styles.kicker}>{data.flag} {data.country} · suggested {data.tripLength}</p>
             <h1 className={styles.title}>{data.name}</h1>
@@ -201,6 +233,14 @@ export default function DestinationPage() {
                 </button>
               );
             })}
+          </div>
+          <div className={styles.weatherWidget}>
+            <span className={styles.weatherIcon}>{monthWeather.icon}</span>
+            <div>
+              <p className={styles.weatherTitle}>{monthWeather.label}</p>
+              <p className={styles.weatherStats}>{monthWeather.stats}</p>
+              <p>{monthWeather.tip}</p>
+            </div>
           </div>
         </section>
 

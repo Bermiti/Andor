@@ -1,0 +1,1939 @@
+{
+  "destination": {
+    "city": "Tokyo",
+    "country": "Japan",
+    "countryCode": "JP",
+    "flag": "JP",
+    "coordinates": [
+      35.6762,
+      139.6503
+    ],
+    "timezone": "Asia/Tokyo",
+    "currency": {
+      "code": "JPY",
+      "symbol": "JPY",
+      "euroRate": 0.0061
+    }
+  },
+  "trip": {
+    "totalDays": 7,
+    "travelStyle": "culture + food",
+    "groupType": "solo traveller",
+    "budgetTier": "mid-range",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-18",
+    "budgetBreakdown": {
+      "flights": {
+        "min": 690,
+        "max": 920
+      },
+      "accommodation": {
+        "total": 910
+      },
+      "food": {
+        "total": 390
+      },
+      "activities": {
+        "total": 270
+      },
+      "transport": {
+        "total": 92
+      },
+      "grandTotal": {
+        "min": 2352,
+        "max": 2582
+      },
+      "perPersonEstimate": {
+        "min": 2352,
+        "max": 2582
+      },
+      "currency": "EUR"
+    },
+    "topTips": [
+      "Book the highest-demand activity before flights if dates are fixed.",
+      "Keep one late afternoon unplanned every two days.",
+      "Use the first morning for the busiest landmark."
+    ]
+  },
+  "summary": {
+    "title": "Tokyo launch-readiness fixture",
+    "andorVerdict": "A realistic, logistics-aware 7-day plan for Tokyo."
+  },
+  "budgetBreakdown": {
+    "flights": [
+      690,
+      920
+    ],
+    "accommodation": 910,
+    "food": 390,
+    "activities": 270,
+    "transport": 92,
+    "total": [
+      2352,
+      2582
+    ],
+    "perPerson": [
+      2352,
+      2582
+    ]
+  },
+  "flightOptions": [
+    {
+      "airline": "ANA / Lufthansa",
+      "route": "Europe to Haneda via Frankfurt",
+      "estimate": 790,
+      "bookingWindow": "Book 10-14 weeks ahead for spring/autumn."
+    }
+  ],
+  "accommodation": {
+    "name": "Nohga Hotel Ueno Tokyo",
+    "area": "Ueno",
+    "nightlyEstimate": 130
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "First Light in Asakusa: Senso-ji Smoke & Sumida Calm",
+      "emoji": "temple",
+      "theme": "Asakusa and Ueno",
+      "moodDescription": "Soft landing, early lanterns, and a first taste of old Tokyo before the city fully wakes.",
+      "budgetEstimate": 67,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d1-a1",
+              "name": "Senso-ji Temple at Dawn",
+              "type": "culture",
+              "emoji": "culture",
+              "address": "2 Chome-3-1 Asakusa, Taito City",
+              "coordinates": [
+                35.7148,
+                139.7967
+              ],
+              "startTime": "07:30",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Enter through Kaminarimon before 8:00, then step one lane east for quieter photos.",
+              "photoKeyword": "Senso-ji Temple at Dawn travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d1-a2",
+              "name": "Tokyo National Museum Highlights",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "13-9 Uenokoen, Taito City",
+              "coordinates": [
+                35.7188,
+                139.7765
+              ],
+              "startTime": "10:15",
+              "duration": "2h",
+              "cost": 12,
+              "rating": 4.6,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Use the Honkan second floor first; it tells the clearest Japan story in under two hours.",
+              "photoKeyword": "Tokyo National Museum Highlights travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Tokyo National Museum Highlights without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "tokyo-7-days-d1-a1",
+          "name": "Senso-ji Temple at Dawn",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "2 Chome-3-1 Asakusa, Taito City",
+          "coordinates": [
+            35.7148,
+            139.7967
+          ],
+          "startTime": "07:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Enter through Kaminarimon before 8:00, then step one lane east for quieter photos.",
+          "photoKeyword": "Senso-ji Temple at Dawn travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d1-a2",
+          "name": "Tokyo National Museum Highlights",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "13-9 Uenokoen, Taito City",
+          "coordinates": [
+            35.7188,
+            139.7765
+          ],
+          "startTime": "10:15",
+          "duration": "2h",
+          "cost": 12,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Use the Honkan second floor first; it tells the clearest Japan story in under two hours.",
+          "photoKeyword": "Tokyo National Museum Highlights travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Tokyo National Museum Highlights without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "tokyo-7-days-d1-a1",
+          "name": "Senso-ji Temple at Dawn",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "2 Chome-3-1 Asakusa, Taito City",
+          "coordinates": [
+            35.7148,
+            139.7967
+          ],
+          "startTime": "07:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Enter through Kaminarimon before 8:00, then step one lane east for quieter photos.",
+          "photoKeyword": "Senso-ji Temple at Dawn travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d1-a2",
+          "name": "Tokyo National Museum Highlights",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "13-9 Uenokoen, Taito City",
+          "coordinates": [
+            35.7188,
+            139.7765
+          ],
+          "startTime": "10:15",
+          "duration": "2h",
+          "cost": 12,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Use the Honkan second floor first; it tells the clearest Japan story in under two hours.",
+          "photoKeyword": "Tokyo National Museum Highlights travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Tokyo National Museum Highlights without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "FEBRUARY KITCHEN",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "FEBRUARY KITCHEN, Tokyo",
+          "coordinates": [
+            35.7148,
+            139.7967
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at FEBRUARY KITCHEN; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Asakusa Mugitoro",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Asakusa Mugitoro, Tokyo",
+          "coordinates": [
+            35.7188,
+            139.7765
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Asakusa Mugitoro; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Kamiya Bar",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Kamiya Bar, Tokyo",
+          "coordinates": [
+            35.7188,
+            139.7765
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Kamiya Bar; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "After Senso-ji, walk behind the temple to Senzoku-dori where older residents buy snacks; the rice cracker shops there feel more everyday than Nakamise.",
+      "culturalNote": "In Asakusa and Ueno, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Senso-ji Temple at Dawn",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "title": "Neon Crossings: Shibuya Rooftops & Harajuku Side Streets",
+      "emoji": "neon",
+      "theme": "Shibuya and Harajuku",
+      "moodDescription": "A controlled dive into Tokyo pop culture, with the loud bits balanced by pocket gardens and back lanes.",
+      "budgetEstimate": 73,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d2-a1",
+              "name": "Meiji Jingu Forest Walk",
+              "type": "culture",
+              "emoji": "culture",
+              "address": "1-1 Yoyogikamizonocho, Shibuya City",
+              "coordinates": [
+                35.6764,
+                139.6993
+              ],
+              "startTime": "09:00",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Take the north path after the main shrine; it is calmer and smells of cedar after rain.",
+              "photoKeyword": "Meiji Jingu Forest Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d2-a2",
+              "name": "Shibuya Sky Sunset Slot",
+              "type": "viewpoint",
+              "emoji": "viewpoint",
+              "address": "2 Chome-24-12 Shibuya, Shibuya City",
+              "coordinates": [
+                35.6584,
+                139.7016
+              ],
+              "startTime": "16:30",
+              "duration": "90 min",
+              "cost": 18,
+              "rating": 4.8,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Book the 45 minutes before sunset; arrive 20 minutes early for locker queues.",
+              "photoKeyword": "Shibuya Sky Sunset Slot travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Shibuya Sky Sunset Slot without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "tokyo-7-days-d2-a1",
+          "name": "Meiji Jingu Forest Walk",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "1-1 Yoyogikamizonocho, Shibuya City",
+          "coordinates": [
+            35.6764,
+            139.6993
+          ],
+          "startTime": "09:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Take the north path after the main shrine; it is calmer and smells of cedar after rain.",
+          "photoKeyword": "Meiji Jingu Forest Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d2-a2",
+          "name": "Shibuya Sky Sunset Slot",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "2 Chome-24-12 Shibuya, Shibuya City",
+          "coordinates": [
+            35.6584,
+            139.7016
+          ],
+          "startTime": "16:30",
+          "duration": "90 min",
+          "cost": 18,
+          "rating": 4.8,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Book the 45 minutes before sunset; arrive 20 minutes early for locker queues.",
+          "photoKeyword": "Shibuya Sky Sunset Slot travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Shibuya Sky Sunset Slot without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "tokyo-7-days-d2-a1",
+          "name": "Meiji Jingu Forest Walk",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "1-1 Yoyogikamizonocho, Shibuya City",
+          "coordinates": [
+            35.6764,
+            139.6993
+          ],
+          "startTime": "09:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Take the north path after the main shrine; it is calmer and smells of cedar after rain.",
+          "photoKeyword": "Meiji Jingu Forest Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d2-a2",
+          "name": "Shibuya Sky Sunset Slot",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "2 Chome-24-12 Shibuya, Shibuya City",
+          "coordinates": [
+            35.6584,
+            139.7016
+          ],
+          "startTime": "16:30",
+          "duration": "90 min",
+          "cost": 18,
+          "rating": 4.8,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Book the 45 minutes before sunset; arrive 20 minutes early for locker queues.",
+          "photoKeyword": "Shibuya Sky Sunset Slot travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Shibuya Sky Sunset Slot without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Bread, Espresso &",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Bread, Espresso &, Tokyo",
+          "coordinates": [
+            35.6764,
+            139.6993
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Bread, Espresso &; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Uobei Shibuya Dogenzaka",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Uobei Shibuya Dogenzaka, Tokyo",
+          "coordinates": [
+            35.6584,
+            139.7016
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Uobei Shibuya Dogenzaka; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Uogashi Nihon-Ichi Standing Sushi",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Uogashi Nihon-Ichi Standing Sushi, Tokyo",
+          "coordinates": [
+            35.6584,
+            139.7016
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Uogashi Nihon-Ichi Standing Sushi; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Cat Street is best before 11:00 or after 17:00; in the middle of the day, detour into the Design Festa Gallery lanes for quieter shops.",
+      "culturalNote": "In Shibuya and Harajuku, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Meiji Jingu Forest Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 3,
+      "title": "Market Knives & Ginza Glass: Tsukiji Breakfast to Art Houses",
+      "emoji": "food",
+      "theme": "Tsukiji and Ginza",
+      "moodDescription": "A food-first day that keeps everything walkable between market counters, polished avenues, and small galleries.",
+      "budgetEstimate": 79,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d3-a1",
+              "name": "Tsukiji Outer Market Breakfast Loop",
+              "type": "food",
+              "emoji": "food",
+              "address": "4 Chome-16-2 Tsukiji, Chuo City",
+              "coordinates": [
+                35.6655,
+                139.7702
+              ],
+              "startTime": "08:00",
+              "duration": "2h",
+              "cost": 24,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Skip the longest tuna skewer queues; the grilled scallop counters turn faster and are usually better value.",
+              "photoKeyword": "Tsukiji Outer Market Breakfast Loop travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d3-a2",
+              "name": "Ginza Graphic Gallery",
+              "type": "design",
+              "emoji": "design",
+              "address": "7 Chome-7-2 Ginza, Chuo City",
+              "coordinates": [
+                35.6682,
+                139.762
+              ],
+              "startTime": "13:30",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.4,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Check the basement first; the smaller poster shows are often the most memorable.",
+              "photoKeyword": "Ginza Graphic Gallery travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Ginza Graphic Gallery without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "tokyo-7-days-d3-a1",
+          "name": "Tsukiji Outer Market Breakfast Loop",
+          "type": "food",
+          "emoji": "food",
+          "address": "4 Chome-16-2 Tsukiji, Chuo City",
+          "coordinates": [
+            35.6655,
+            139.7702
+          ],
+          "startTime": "08:00",
+          "duration": "2h",
+          "cost": 24,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Skip the longest tuna skewer queues; the grilled scallop counters turn faster and are usually better value.",
+          "photoKeyword": "Tsukiji Outer Market Breakfast Loop travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d3-a2",
+          "name": "Ginza Graphic Gallery",
+          "type": "design",
+          "emoji": "design",
+          "address": "7 Chome-7-2 Ginza, Chuo City",
+          "coordinates": [
+            35.6682,
+            139.762
+          ],
+          "startTime": "13:30",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Check the basement first; the smaller poster shows are often the most memorable.",
+          "photoKeyword": "Ginza Graphic Gallery travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Ginza Graphic Gallery without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "tokyo-7-days-d3-a1",
+          "name": "Tsukiji Outer Market Breakfast Loop",
+          "type": "food",
+          "emoji": "food",
+          "address": "4 Chome-16-2 Tsukiji, Chuo City",
+          "coordinates": [
+            35.6655,
+            139.7702
+          ],
+          "startTime": "08:00",
+          "duration": "2h",
+          "cost": 24,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Skip the longest tuna skewer queues; the grilled scallop counters turn faster and are usually better value.",
+          "photoKeyword": "Tsukiji Outer Market Breakfast Loop travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d3-a2",
+          "name": "Ginza Graphic Gallery",
+          "type": "design",
+          "emoji": "design",
+          "address": "7 Chome-7-2 Ginza, Chuo City",
+          "coordinates": [
+            35.6682,
+            139.762
+          ],
+          "startTime": "13:30",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Check the basement first; the smaller poster shows are often the most memorable.",
+          "photoKeyword": "Ginza Graphic Gallery travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Ginza Graphic Gallery without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Turret Coffee",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Turret Coffee, Tokyo",
+          "coordinates": [
+            35.6655,
+            139.7702
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Turret Coffee; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Tsukiji Itadori Bekkan",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Tsukiji Itadori Bekkan, Tokyo",
+          "coordinates": [
+            35.6682,
+            139.762
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Tsukiji Itadori Bekkan; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Ginza Kagari Honten",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Ginza Kagari Honten, Tokyo",
+          "coordinates": [
+            35.6682,
+            139.762
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Ginza Kagari Honten; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "The rooftop garden above Ginza Six is free and rarely packed; take a convenience-store tea there between lunch and galleries.",
+      "culturalNote": "In Tsukiji and Ginza, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Tsukiji Outer Market Breakfast Loop",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 4,
+      "title": "Old Edo Backstreets: Yanaka Cats & Ueno Afterglow",
+      "emoji": "walk",
+      "theme": "Yanaka and Nezu",
+      "moodDescription": "Slow wooden houses, cemetery paths, and the feeling that Tokyo still has small-town pockets.",
+      "budgetEstimate": 55,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d4-a1",
+              "name": "Yanaka Cemetery Morning Walk",
+              "type": "history",
+              "emoji": "history",
+              "address": "7 Chome-5 Yanaka, Taito City",
+              "coordinates": [
+                35.725,
+                139.7702
+              ],
+              "startTime": "09:00",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Follow the side paths behind Tennoji; the older stone markers are shaded and peaceful.",
+              "photoKeyword": "Yanaka Cemetery Morning Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d4-a2",
+              "name": "Nezu Shrine Vermilion Gates",
+              "type": "shrine",
+              "emoji": "shrine",
+              "address": "1 Chome-28-9 Nezu, Bunkyo City",
+              "coordinates": [
+                35.7202,
+                139.7601
+              ],
+              "startTime": "11:00",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.6,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Go before lunch and use the smaller west entrance to avoid the photo queue at the torii tunnel.",
+              "photoKeyword": "Nezu Shrine Vermilion Gates travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Nezu Shrine Vermilion Gates without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "tokyo-7-days-d4-a1",
+          "name": "Yanaka Cemetery Morning Walk",
+          "type": "history",
+          "emoji": "history",
+          "address": "7 Chome-5 Yanaka, Taito City",
+          "coordinates": [
+            35.725,
+            139.7702
+          ],
+          "startTime": "09:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Follow the side paths behind Tennoji; the older stone markers are shaded and peaceful.",
+          "photoKeyword": "Yanaka Cemetery Morning Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d4-a2",
+          "name": "Nezu Shrine Vermilion Gates",
+          "type": "shrine",
+          "emoji": "shrine",
+          "address": "1 Chome-28-9 Nezu, Bunkyo City",
+          "coordinates": [
+            35.7202,
+            139.7601
+          ],
+          "startTime": "11:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Go before lunch and use the smaller west entrance to avoid the photo queue at the torii tunnel.",
+          "photoKeyword": "Nezu Shrine Vermilion Gates travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nezu Shrine Vermilion Gates without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "tokyo-7-days-d4-a1",
+          "name": "Yanaka Cemetery Morning Walk",
+          "type": "history",
+          "emoji": "history",
+          "address": "7 Chome-5 Yanaka, Taito City",
+          "coordinates": [
+            35.725,
+            139.7702
+          ],
+          "startTime": "09:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Follow the side paths behind Tennoji; the older stone markers are shaded and peaceful.",
+          "photoKeyword": "Yanaka Cemetery Morning Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d4-a2",
+          "name": "Nezu Shrine Vermilion Gates",
+          "type": "shrine",
+          "emoji": "shrine",
+          "address": "1 Chome-28-9 Nezu, Bunkyo City",
+          "coordinates": [
+            35.7202,
+            139.7601
+          ],
+          "startTime": "11:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Go before lunch and use the smaller west entrance to avoid the photo queue at the torii tunnel.",
+          "photoKeyword": "Nezu Shrine Vermilion Gates travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nezu Shrine Vermilion Gates without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Kayaba Coffee",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Kayaba Coffee, Tokyo",
+          "coordinates": [
+            35.725,
+            139.7702
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Kayaba Coffee; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Hantei Nezu",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Hantei Nezu, Tokyo",
+          "coordinates": [
+            35.7202,
+            139.7601
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Hantei Nezu; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Tayori Yanaka",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Tayori Yanaka, Tokyo",
+          "coordinates": [
+            35.7202,
+            139.7601
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Tayori Yanaka; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Yanaka Ginza is best from the staircase at Yuyake Dandan around 16:30, when shop shutters glow and locals buy croquettes for dinner.",
+      "culturalNote": "In Yanaka and Nezu, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Yanaka Cemetery Morning Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 5,
+      "title": "Art Islands in the City: Roppongi Quiet Rooms & Aoyama Jazz",
+      "emoji": "art",
+      "theme": "Roppongi and Aoyama",
+      "moodDescription": "A polished, grown-up Tokyo day with museums, architecture, and a slower evening soundtrack.",
+      "budgetEstimate": 80,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d5-a1",
+              "name": "Mori Art Museum",
+              "type": "art",
+              "emoji": "art",
+              "address": "6 Chome-10-1 Roppongi, Minato City",
+              "coordinates": [
+                35.6605,
+                139.7292
+              ],
+              "startTime": "10:30",
+              "duration": "2h",
+              "cost": 14,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Pair the exhibition with the city view only if visibility is clear; otherwise spend longer in the show.",
+              "photoKeyword": "Mori Art Museum travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d5-a2",
+              "name": "Nezu Museum Garden",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "6 Chome-5-1 Minamiaoyama, Minato City",
+              "coordinates": [
+                35.6621,
+                139.7176
+              ],
+              "startTime": "14:30",
+              "duration": "90 min",
+              "cost": 11,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "The garden path behind the cafe is the reason to come; leave time after the collection rooms.",
+              "photoKeyword": "Nezu Museum Garden travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Nezu Museum Garden without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "tokyo-7-days-d5-a1",
+          "name": "Mori Art Museum",
+          "type": "art",
+          "emoji": "art",
+          "address": "6 Chome-10-1 Roppongi, Minato City",
+          "coordinates": [
+            35.6605,
+            139.7292
+          ],
+          "startTime": "10:30",
+          "duration": "2h",
+          "cost": 14,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Pair the exhibition with the city view only if visibility is clear; otherwise spend longer in the show.",
+          "photoKeyword": "Mori Art Museum travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d5-a2",
+          "name": "Nezu Museum Garden",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "6 Chome-5-1 Minamiaoyama, Minato City",
+          "coordinates": [
+            35.6621,
+            139.7176
+          ],
+          "startTime": "14:30",
+          "duration": "90 min",
+          "cost": 11,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "The garden path behind the cafe is the reason to come; leave time after the collection rooms.",
+          "photoKeyword": "Nezu Museum Garden travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nezu Museum Garden without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "tokyo-7-days-d5-a1",
+          "name": "Mori Art Museum",
+          "type": "art",
+          "emoji": "art",
+          "address": "6 Chome-10-1 Roppongi, Minato City",
+          "coordinates": [
+            35.6605,
+            139.7292
+          ],
+          "startTime": "10:30",
+          "duration": "2h",
+          "cost": 14,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Pair the exhibition with the city view only if visibility is clear; otherwise spend longer in the show.",
+          "photoKeyword": "Mori Art Museum travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d5-a2",
+          "name": "Nezu Museum Garden",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "6 Chome-5-1 Minamiaoyama, Minato City",
+          "coordinates": [
+            35.6621,
+            139.7176
+          ],
+          "startTime": "14:30",
+          "duration": "90 min",
+          "cost": 11,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "The garden path behind the cafe is the reason to come; leave time after the collection rooms.",
+          "photoKeyword": "Nezu Museum Garden travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nezu Museum Garden without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Blue Bottle Aoyama",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Blue Bottle Aoyama, Tokyo",
+          "coordinates": [
+            35.6605,
+            139.7292
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Blue Bottle Aoyama; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Maisen Aoyama Honten",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Maisen Aoyama Honten, Tokyo",
+          "coordinates": [
+            35.6621,
+            139.7176
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Maisen Aoyama Honten; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Body & Soul Aoyama",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Body & Soul Aoyama, Tokyo",
+          "coordinates": [
+            35.6621,
+            139.7176
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Body & Soul Aoyama; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "If Roppongi feels too corporate, slip into Nogi Shrine before the museum; it is five minutes away and resets the pace instantly.",
+      "culturalNote": "In Roppongi and Aoyama, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Mori Art Museum",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 6,
+      "title": "River Wind & Electric Towns: Kiyosumi Tea to Akihabara Glow",
+      "emoji": "river",
+      "theme": "Kiyosumi and Akihabara",
+      "moodDescription": "Gardens, coffee, and the strange joy of letting Tokyo shift from quiet water to electric signs.",
+      "budgetEstimate": 57,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d6-a1",
+              "name": "Kiyosumi Garden",
+              "type": "garden",
+              "emoji": "garden",
+              "address": "3 Chome-3-9 Kiyosumi, Koto City",
+              "coordinates": [
+                35.6812,
+                139.7977
+              ],
+              "startTime": "09:30",
+              "duration": "75 min",
+              "cost": 2,
+              "rating": 4.6,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Sit by the stepping stones for ten minutes; it is a rare central Tokyo pause.",
+              "photoKeyword": "Kiyosumi Garden travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d6-a2",
+              "name": "Akihabara Radio Kaikan",
+              "type": "culture",
+              "emoji": "culture",
+              "address": "1 Chome-15-16 Sotokanda, Chiyoda City",
+              "coordinates": [
+                35.6984,
+                139.7712
+              ],
+              "startTime": "15:00",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.4,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Start upstairs and work down; the lower floors are louder and easier once you know the layout.",
+              "photoKeyword": "Akihabara Radio Kaikan travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Akihabara Radio Kaikan without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "tokyo-7-days-d6-a1",
+          "name": "Kiyosumi Garden",
+          "type": "garden",
+          "emoji": "garden",
+          "address": "3 Chome-3-9 Kiyosumi, Koto City",
+          "coordinates": [
+            35.6812,
+            139.7977
+          ],
+          "startTime": "09:30",
+          "duration": "75 min",
+          "cost": 2,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Sit by the stepping stones for ten minutes; it is a rare central Tokyo pause.",
+          "photoKeyword": "Kiyosumi Garden travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d6-a2",
+          "name": "Akihabara Radio Kaikan",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "1 Chome-15-16 Sotokanda, Chiyoda City",
+          "coordinates": [
+            35.6984,
+            139.7712
+          ],
+          "startTime": "15:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Start upstairs and work down; the lower floors are louder and easier once you know the layout.",
+          "photoKeyword": "Akihabara Radio Kaikan travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Akihabara Radio Kaikan without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "tokyo-7-days-d6-a1",
+          "name": "Kiyosumi Garden",
+          "type": "garden",
+          "emoji": "garden",
+          "address": "3 Chome-3-9 Kiyosumi, Koto City",
+          "coordinates": [
+            35.6812,
+            139.7977
+          ],
+          "startTime": "09:30",
+          "duration": "75 min",
+          "cost": 2,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Sit by the stepping stones for ten minutes; it is a rare central Tokyo pause.",
+          "photoKeyword": "Kiyosumi Garden travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d6-a2",
+          "name": "Akihabara Radio Kaikan",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "1 Chome-15-16 Sotokanda, Chiyoda City",
+          "coordinates": [
+            35.6984,
+            139.7712
+          ],
+          "startTime": "15:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Start upstairs and work down; the lower floors are louder and easier once you know the layout.",
+          "photoKeyword": "Akihabara Radio Kaikan travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Akihabara Radio Kaikan without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Arise Coffee Roasters",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Arise Coffee Roasters, Tokyo",
+          "coordinates": [
+            35.6812,
+            139.7977
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Arise Coffee Roasters; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Fukagawa Kamasho",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Fukagawa Kamasho, Tokyo",
+          "coordinates": [
+            35.6984,
+            139.7712
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Fukagawa Kamasho; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Kikanbo Kanda Honten",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Kikanbo Kanda Honten, Tokyo",
+          "coordinates": [
+            35.6984,
+            139.7712
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Kikanbo Kanda Honten; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Use the Sumida River paths between Kiyosumi and Ryogoku if weather is clear; it is flatter, prettier, and calmer than the metro hop.",
+      "culturalNote": "In Kiyosumi and Akihabara, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Kiyosumi Garden",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 7,
+      "title": "Last Bow in Shinjuku: Garden Stillness & Golden Gai Doors",
+      "emoji": "night",
+      "theme": "Shinjuku",
+      "moodDescription": "A final day built for souvenirs, a beautiful garden pause, and one last Tokyo night without rushing.",
+      "budgetEstimate": 94,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d7-a1",
+              "name": "Shinjuku Gyoen National Garden",
+              "type": "garden",
+              "emoji": "garden",
+              "address": "11 Naitomachi, Shinjuku City",
+              "coordinates": [
+                35.6852,
+                139.7101
+              ],
+              "startTime": "10:00",
+              "duration": "2h",
+              "cost": 4,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Use the Sendagaya gate if the main entrance queue is long; it drops you near the quieter lawns.",
+              "photoKeyword": "Shinjuku Gyoen National Garden travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "tokyo-7-days-d7-a2",
+              "name": "Golden Gai Intro Walk",
+              "type": "nightlife",
+              "emoji": "nightlife",
+              "address": "1 Chome-1-6 Kabukicho, Shinjuku City",
+              "coordinates": [
+                35.6938,
+                139.7042
+              ],
+              "startTime": "20:00",
+              "duration": "90 min",
+              "cost": 35,
+              "rating": 4.4,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Choose bars with English menu boards outside; cover charges are clearer and the welcome is warmer.",
+              "photoKeyword": "Golden Gai Intro Walk travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Golden Gai Intro Walk without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "tokyo-7-days-d7-a1",
+          "name": "Shinjuku Gyoen National Garden",
+          "type": "garden",
+          "emoji": "garden",
+          "address": "11 Naitomachi, Shinjuku City",
+          "coordinates": [
+            35.6852,
+            139.7101
+          ],
+          "startTime": "10:00",
+          "duration": "2h",
+          "cost": 4,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Use the Sendagaya gate if the main entrance queue is long; it drops you near the quieter lawns.",
+          "photoKeyword": "Shinjuku Gyoen National Garden travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d7-a2",
+          "name": "Golden Gai Intro Walk",
+          "type": "nightlife",
+          "emoji": "nightlife",
+          "address": "1 Chome-1-6 Kabukicho, Shinjuku City",
+          "coordinates": [
+            35.6938,
+            139.7042
+          ],
+          "startTime": "20:00",
+          "duration": "90 min",
+          "cost": 35,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Choose bars with English menu boards outside; cover charges are clearer and the welcome is warmer.",
+          "photoKeyword": "Golden Gai Intro Walk travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Golden Gai Intro Walk without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "tokyo-7-days-d7-a1",
+          "name": "Shinjuku Gyoen National Garden",
+          "type": "garden",
+          "emoji": "garden",
+          "address": "11 Naitomachi, Shinjuku City",
+          "coordinates": [
+            35.6852,
+            139.7101
+          ],
+          "startTime": "10:00",
+          "duration": "2h",
+          "cost": 4,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Use the Sendagaya gate if the main entrance queue is long; it drops you near the quieter lawns.",
+          "photoKeyword": "Shinjuku Gyoen National Garden travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "tokyo-7-days-d7-a2",
+          "name": "Golden Gai Intro Walk",
+          "type": "nightlife",
+          "emoji": "nightlife",
+          "address": "1 Chome-1-6 Kabukicho, Shinjuku City",
+          "coordinates": [
+            35.6938,
+            139.7042
+          ],
+          "startTime": "20:00",
+          "duration": "90 min",
+          "cost": 35,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Choose bars with English menu boards outside; cover charges are clearer and the welcome is warmer.",
+          "photoKeyword": "Golden Gai Intro Walk travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Golden Gai Intro Walk without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Verve Coffee Shinjuku",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Verve Coffee Shinjuku, Tokyo",
+          "coordinates": [
+            35.6852,
+            139.7101
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Verve Coffee Shinjuku; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Fuunji",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Fuunji, Tokyo",
+          "coordinates": [
+            35.6938,
+            139.7042
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Fuunji; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Omoide Yokocho Yakitori Stand",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Omoide Yokocho Yakitori Stand, Tokyo",
+          "coordinates": [
+            35.6938,
+            139.7042
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Omoide Yokocho Yakitori Stand; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "For last-minute gifts, skip department-store ground floors and use Isetan B1 depachika after 18:30 when seasonal sweets are easy to compare.",
+      "culturalNote": "In Shinjuku, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Shinjuku Gyoen National Garden",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    }
+  ],
+  "weather": {
+    "season": "shoulder season",
+    "practicalTip": "Pack layers and verify weather 48 hours before departure."
+  },
+  "transport": {
+    "overview": "Area-grouped days with direct routes between adjacent stops."
+  },
+  "packingList": {
+    "essential": [
+      "passport",
+      "insurance",
+      "portable charger"
+    ],
+    "weatherSpecific": [
+      "light rain shell"
+    ],
+    "appsMustHave": [
+      "Google Maps",
+      "local transit app"
+    ],
+    "doNotBring": [
+      "oversized luggage"
+    ]
+  },
+  "nearbyEscapes": [
+    {
+      "name": "Kamakura",
+      "distance": "58 km",
+      "transportCost": 12,
+      "idealFor": "temples and coast",
+      "daysToAdd": 1,
+      "tip": "Go on a weekday and start at Kita-Kamakura."
+    },
+    {
+      "name": "Nikko",
+      "distance": "150 km",
+      "transportCost": 38,
+      "idealFor": "shrines and cedar forest",
+      "daysToAdd": 2,
+      "tip": "Sleep overnight if you want the lakes without rushing."
+    }
+  ],
+  "andorInsights": [
+    "This route protects mornings for high-demand places.",
+    "Meal choices stay near the day route.",
+    "The plan avoids repeated cross-city transfers."
+  ],
+  "suggestions": [
+    "Swap one neon night for jazz in Aoyama",
+    "Add a Kamakura day trip",
+    "Make this more food-led"
+  ]
+}

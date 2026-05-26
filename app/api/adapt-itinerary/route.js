@@ -1,12 +1,26 @@
 import { generateFallbackAdaptedDay } from '../../lib/fallback-adapt';
+import { apiError, cleanInteger, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
+import { logger } from '../../lib/logger';
 
 export async function POST(req) {
   try {
-    const { itinerary, activeDayIndex, context } = await req.json();
+    const body = await readJsonBody(req, 'adapt_itinerary');
+    if (!body || typeof body !== 'object') {
+      return apiError('MALFORMED_JSON', 'Pedido inválido. Tenta novamente.', 400, false);
+    }
+    const itinerary = body.itinerary && typeof body.itinerary === 'object' ? body.itinerary : null;
+    const activeDayIndex = cleanInteger(body.activeDayIndex, 0, 0, 13);
+    const context = cleanString(body.context, '', 500);
+    if (!itinerary || !Array.isArray(itinerary.days) || !itinerary.days[activeDayIndex]) {
+      return apiError('INVALID_ITINERARY', 'Não encontrei este dia no itinerário.', 400, false);
+    }
+    if (!context) {
+      return apiError('ADAPT_CONTEXT_REQUIRED', 'Diz o que mudou para adaptarmos o dia.', 400, false);
+    }
 
     const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
-    if (geminiKey && geminiKey !== 'cola_aqui_a_tua_chave_gemini') {
+    if (hasProviderKey(geminiKey)) {
       try {
         const { google } = await import('@ai-sdk/google');
         const { generateText } = await import('ai');
@@ -58,7 +72,7 @@ export async function POST(req) {
         const newDay = JSON.parse(jsonMatch[0]);
         return Response.json(newDay);
       } catch (e) {
-        // Fallback used
+        logger.warn('adapt_itinerary:gemini_provider_failed', e, { activeDayIndex });
       }
     }
 
@@ -67,8 +81,7 @@ export async function POST(req) {
     return Response.json(newDay);
 
   } catch (error) {
-    // adaptation failed, return error response
-    return Response.json({ error: "Failed to adapt itinerary" }, { status: 500 });
+    const errorId = logger.error('adapt_itinerary:unhandled', error);
+    return apiError('ITINERARY_ADAPTATION_FAILED', 'Não foi possível adaptar o itinerário. Tenta novamente.', 500, true, { errorId });
   }
 }
-

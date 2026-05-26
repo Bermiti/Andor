@@ -1,0 +1,1427 @@
+{
+  "destination": {
+    "city": "Paris",
+    "country": "France",
+    "countryCode": "FR",
+    "flag": "FR",
+    "coordinates": [
+      48.8566,
+      2.3522
+    ],
+    "timezone": "Europe/Paris",
+    "currency": {
+      "code": "EUR",
+      "symbol": "EUR",
+      "euroRate": 1
+    }
+  },
+  "trip": {
+    "totalDays": 5,
+    "travelStyle": "romance + museums + food",
+    "groupType": "couple",
+    "budgetTier": "mid-range",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-18",
+    "budgetBreakdown": {
+      "flights": {
+        "min": 180,
+        "max": 340
+      },
+      "accommodation": {
+        "total": 980
+      },
+      "food": {
+        "total": 520
+      },
+      "activities": {
+        "total": 310
+      },
+      "transport": {
+        "total": 58
+      },
+      "grandTotal": {
+        "min": 2048,
+        "max": 2208
+      },
+      "perPersonEstimate": {
+        "min": 1024,
+        "max": 1104
+      },
+      "currency": "EUR"
+    },
+    "topTips": [
+      "Book the highest-demand activity before flights if dates are fixed.",
+      "Keep one late afternoon unplanned every two days.",
+      "Use the first morning for the busiest landmark."
+    ]
+  },
+  "summary": {
+    "title": "Paris launch-readiness fixture",
+    "andorVerdict": "A realistic, logistics-aware 5-day plan for Paris."
+  },
+  "budgetBreakdown": {
+    "flights": [
+      180,
+      340
+    ],
+    "accommodation": 980,
+    "food": 520,
+    "activities": 310,
+    "transport": 58,
+    "total": [
+      2048,
+      2208
+    ],
+    "perPerson": [
+      1024,
+      1104
+    ]
+  },
+  "flightOptions": [
+    {
+      "airline": "Air France / easyJet",
+      "route": "Major European hubs to CDG or ORY",
+      "estimate": 260,
+      "bookingWindow": "Book 6-9 weeks out outside holidays."
+    }
+  ],
+  "accommodation": {
+    "name": "Hotel des Grands Boulevards",
+    "area": "2nd arrondissement",
+    "nightlyEstimate": 196
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Left Bank Promises: Saint-Germain Cafes & Orsay Gold",
+      "emoji": "art",
+      "theme": "Saint-Germain",
+      "moodDescription": "A gentle Paris arrival with classic rooms, river light, and just enough romance.",
+      "budgetEstimate": 71,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d1-a1",
+              "name": "Musee d Orsay",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "1 Rue de la Legion d Honneur",
+              "coordinates": [
+                48.8599,
+                2.3266
+              ],
+              "startTime": "10:00",
+              "duration": "2h",
+              "cost": 16,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Start on the top floor with the clocks, then descend chronologically.",
+              "photoKeyword": "Musee d Orsay travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d1-a2",
+              "name": "Pont des Arts Sunset Walk",
+              "type": "walk",
+              "emoji": "walk",
+              "address": "Pont des Arts",
+              "coordinates": [
+                48.8584,
+                2.3376
+              ],
+              "startTime": "17:45",
+              "duration": "45 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Arrive from the Louvre side so the Institut de France frames the crossing.",
+              "photoKeyword": "Pont des Arts Sunset Walk travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Pont des Arts Sunset Walk without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "paris-5-days-d1-a1",
+          "name": "Musee d Orsay",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "1 Rue de la Legion d Honneur",
+          "coordinates": [
+            48.8599,
+            2.3266
+          ],
+          "startTime": "10:00",
+          "duration": "2h",
+          "cost": 16,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Start on the top floor with the clocks, then descend chronologically.",
+          "photoKeyword": "Musee d Orsay travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d1-a2",
+          "name": "Pont des Arts Sunset Walk",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Pont des Arts",
+          "coordinates": [
+            48.8584,
+            2.3376
+          ],
+          "startTime": "17:45",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Arrive from the Louvre side so the Institut de France frames the crossing.",
+          "photoKeyword": "Pont des Arts Sunset Walk travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Pont des Arts Sunset Walk without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "paris-5-days-d1-a1",
+          "name": "Musee d Orsay",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "1 Rue de la Legion d Honneur",
+          "coordinates": [
+            48.8599,
+            2.3266
+          ],
+          "startTime": "10:00",
+          "duration": "2h",
+          "cost": 16,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Start on the top floor with the clocks, then descend chronologically.",
+          "photoKeyword": "Musee d Orsay travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d1-a2",
+          "name": "Pont des Arts Sunset Walk",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Pont des Arts",
+          "coordinates": [
+            48.8584,
+            2.3376
+          ],
+          "startTime": "17:45",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Arrive from the Louvre side so the Institut de France frames the crossing.",
+          "photoKeyword": "Pont des Arts Sunset Walk travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Pont des Arts Sunset Walk without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Cafe de Flore",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Cafe de Flore, Paris",
+          "coordinates": [
+            48.8599,
+            2.3266
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Cafe de Flore; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Le Comptoir du Relais",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Le Comptoir du Relais, Paris",
+          "coordinates": [
+            48.8584,
+            2.3376
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Le Comptoir du Relais; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Semilla",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Semilla, Paris",
+          "coordinates": [
+            48.8584,
+            2.3376
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Semilla; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Rue de Seine has small galleries that stay lively before dinner; duck into whichever has people holding plastic wine cups at the opening.",
+      "culturalNote": "In Saint-Germain, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Musee d Orsay",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "title": "Marais After Rain: Courtyards, Falafel & Picasso Rooms",
+      "emoji": "courtyard",
+      "theme": "Le Marais",
+      "moodDescription": "Narrow lanes, hidden hotels particuliers, and a food crawl that never feels staged.",
+      "budgetEstimate": 69,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d2-a1",
+              "name": "Musee Picasso Paris",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "5 Rue de Thorigny",
+              "coordinates": [
+                48.8599,
+                2.3623
+              ],
+              "startTime": "10:30",
+              "duration": "90 min",
+              "cost": 14,
+              "rating": 4.4,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Use the attic-level rooms to understand the building before the collection.",
+              "photoKeyword": "Musee Picasso Paris travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d2-a2",
+              "name": "Place des Vosges Arcades",
+              "type": "history",
+              "emoji": "history",
+              "address": "Place des Vosges",
+              "coordinates": [
+                48.8556,
+                2.3655
+              ],
+              "startTime": "15:00",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "The Victor Hugo corner is quieter; sit under the northeast arcade if it rains.",
+              "photoKeyword": "Place des Vosges Arcades travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Place des Vosges Arcades without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "paris-5-days-d2-a1",
+          "name": "Musee Picasso Paris",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "5 Rue de Thorigny",
+          "coordinates": [
+            48.8599,
+            2.3623
+          ],
+          "startTime": "10:30",
+          "duration": "90 min",
+          "cost": 14,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Use the attic-level rooms to understand the building before the collection.",
+          "photoKeyword": "Musee Picasso Paris travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d2-a2",
+          "name": "Place des Vosges Arcades",
+          "type": "history",
+          "emoji": "history",
+          "address": "Place des Vosges",
+          "coordinates": [
+            48.8556,
+            2.3655
+          ],
+          "startTime": "15:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "The Victor Hugo corner is quieter; sit under the northeast arcade if it rains.",
+          "photoKeyword": "Place des Vosges Arcades travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Place des Vosges Arcades without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "paris-5-days-d2-a1",
+          "name": "Musee Picasso Paris",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "5 Rue de Thorigny",
+          "coordinates": [
+            48.8599,
+            2.3623
+          ],
+          "startTime": "10:30",
+          "duration": "90 min",
+          "cost": 14,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Use the attic-level rooms to understand the building before the collection.",
+          "photoKeyword": "Musee Picasso Paris travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d2-a2",
+          "name": "Place des Vosges Arcades",
+          "type": "history",
+          "emoji": "history",
+          "address": "Place des Vosges",
+          "coordinates": [
+            48.8556,
+            2.3655
+          ],
+          "startTime": "15:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "The Victor Hugo corner is quieter; sit under the northeast arcade if it rains.",
+          "photoKeyword": "Place des Vosges Arcades travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Place des Vosges Arcades without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Fragments",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Fragments, Paris",
+          "coordinates": [
+            48.8599,
+            2.3623
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Fragments; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Miznon Marais",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Miznon Marais, Paris",
+          "coordinates": [
+            48.8556,
+            2.3655
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Miznon Marais; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Chez Janou",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Chez Janou, Paris",
+          "coordinates": [
+            48.8556,
+            2.3655
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Chez Janou; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "The garden of Hotel de Sully is free to cross and makes the prettiest quiet shortcut from Rue Saint-Antoine to Place des Vosges.",
+      "culturalNote": "In Le Marais, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Musee Picasso Paris",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 3,
+      "title": "Montmartre Before Applause: Abbesses Stairs & Pink Corners",
+      "emoji": "hill",
+      "theme": "Montmartre",
+      "moodDescription": "A hilltop morning before tour groups, then a softer afternoon of small streets and wine bars.",
+      "budgetEstimate": 64,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d3-a1",
+              "name": "Sacre-Coeur Basilica",
+              "type": "landmark",
+              "emoji": "landmark",
+              "address": "35 Rue du Chevalier de la Barre",
+              "coordinates": [
+                48.8867,
+                2.3431
+              ],
+              "startTime": "08:30",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Use the side stairs from Rue Lamarck for a calmer ascent.",
+              "photoKeyword": "Sacre-Coeur Basilica travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d3-a2",
+              "name": "Musee de la Vie Romantique",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "16 Rue Chaptal",
+              "coordinates": [
+                48.8813,
+                2.3331
+              ],
+              "startTime": "14:00",
+              "duration": "75 min",
+              "cost": 9,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "The courtyard tea pause is the point; avoid rushing it.",
+              "photoKeyword": "Musee de la Vie Romantique travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Musee de la Vie Romantique without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "paris-5-days-d3-a1",
+          "name": "Sacre-Coeur Basilica",
+          "type": "landmark",
+          "emoji": "landmark",
+          "address": "35 Rue du Chevalier de la Barre",
+          "coordinates": [
+            48.8867,
+            2.3431
+          ],
+          "startTime": "08:30",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Use the side stairs from Rue Lamarck for a calmer ascent.",
+          "photoKeyword": "Sacre-Coeur Basilica travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d3-a2",
+          "name": "Musee de la Vie Romantique",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "16 Rue Chaptal",
+          "coordinates": [
+            48.8813,
+            2.3331
+          ],
+          "startTime": "14:00",
+          "duration": "75 min",
+          "cost": 9,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "The courtyard tea pause is the point; avoid rushing it.",
+          "photoKeyword": "Musee de la Vie Romantique travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Musee de la Vie Romantique without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "paris-5-days-d3-a1",
+          "name": "Sacre-Coeur Basilica",
+          "type": "landmark",
+          "emoji": "landmark",
+          "address": "35 Rue du Chevalier de la Barre",
+          "coordinates": [
+            48.8867,
+            2.3431
+          ],
+          "startTime": "08:30",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Use the side stairs from Rue Lamarck for a calmer ascent.",
+          "photoKeyword": "Sacre-Coeur Basilica travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d3-a2",
+          "name": "Musee de la Vie Romantique",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "16 Rue Chaptal",
+          "coordinates": [
+            48.8813,
+            2.3331
+          ],
+          "startTime": "14:00",
+          "duration": "75 min",
+          "cost": 9,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "The courtyard tea pause is the point; avoid rushing it.",
+          "photoKeyword": "Musee de la Vie Romantique travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Musee de la Vie Romantique without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Hardware Societe Paris",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Hardware Societe Paris, Paris",
+          "coordinates": [
+            48.8867,
+            2.3431
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Hardware Societe Paris; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Bouillon Pigalle",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Bouillon Pigalle, Paris",
+          "coordinates": [
+            48.8813,
+            2.3331
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Bouillon Pigalle; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Le Bon Georges",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Le Bon Georges, Paris",
+          "coordinates": [
+            48.8813,
+            2.3331
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Le Bon Georges; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Skip portrait pitches on Place du Tertre; the better living Montmartre is Rue des Trois Freres before lunch.",
+      "culturalNote": "In Montmartre, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Sacre-Coeur Basilica",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 4,
+      "title": "Grand Axes, Small Tables: Louvre Edges & Palais Royal Shade",
+      "emoji": "palace",
+      "theme": "Louvre and Palais Royal",
+      "moodDescription": "A high-culture day routed to avoid museum fatigue and keep meals close.",
+      "budgetEstimate": 77,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d4-a1",
+              "name": "Louvre Denon Wing Focus",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "Rue de Rivoli",
+              "coordinates": [
+                48.8606,
+                2.3376
+              ],
+              "startTime": "09:00",
+              "duration": "2h 30 min",
+              "cost": 22,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Pick three targets and leave; the win is not pretending to see everything.",
+              "photoKeyword": "Louvre Denon Wing Focus travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d4-a2",
+              "name": "Palais Royal Garden",
+              "type": "garden",
+              "emoji": "garden",
+              "address": "8 Rue de Montpensier",
+              "coordinates": [
+                48.8649,
+                2.3376
+              ],
+              "startTime": "15:00",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Use the covered galleries if weather turns; the benches under lime trees are ideal after the Louvre.",
+              "photoKeyword": "Palais Royal Garden travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Palais Royal Garden without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "paris-5-days-d4-a1",
+          "name": "Louvre Denon Wing Focus",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "Rue de Rivoli",
+          "coordinates": [
+            48.8606,
+            2.3376
+          ],
+          "startTime": "09:00",
+          "duration": "2h 30 min",
+          "cost": 22,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Pick three targets and leave; the win is not pretending to see everything.",
+          "photoKeyword": "Louvre Denon Wing Focus travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d4-a2",
+          "name": "Palais Royal Garden",
+          "type": "garden",
+          "emoji": "garden",
+          "address": "8 Rue de Montpensier",
+          "coordinates": [
+            48.8649,
+            2.3376
+          ],
+          "startTime": "15:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the covered galleries if weather turns; the benches under lime trees are ideal after the Louvre.",
+          "photoKeyword": "Palais Royal Garden travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Palais Royal Garden without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "paris-5-days-d4-a1",
+          "name": "Louvre Denon Wing Focus",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "Rue de Rivoli",
+          "coordinates": [
+            48.8606,
+            2.3376
+          ],
+          "startTime": "09:00",
+          "duration": "2h 30 min",
+          "cost": 22,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Pick three targets and leave; the win is not pretending to see everything.",
+          "photoKeyword": "Louvre Denon Wing Focus travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d4-a2",
+          "name": "Palais Royal Garden",
+          "type": "garden",
+          "emoji": "garden",
+          "address": "8 Rue de Montpensier",
+          "coordinates": [
+            48.8649,
+            2.3376
+          ],
+          "startTime": "15:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the covered galleries if weather turns; the benches under lime trees are ideal after the Louvre.",
+          "photoKeyword": "Palais Royal Garden travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Palais Royal Garden without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Cafe Kitsune Palais Royal",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Cafe Kitsune Palais Royal, Paris",
+          "coordinates": [
+            48.8606,
+            2.3376
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Cafe Kitsune Palais Royal; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Juveniles",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Juveniles, Paris",
+          "coordinates": [
+            48.8649,
+            2.3376
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Juveniles; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Ellsworth",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Ellsworth, Paris",
+          "coordinates": [
+            48.8649,
+            2.3376
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Ellsworth; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Galerie Vivienne is prettiest around 10:00 before lunch crowds; it is also a refined rainy-day detour two minutes away.",
+      "culturalNote": "In Louvre and Palais Royal, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Louvre Denon Wing Focus",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 5,
+      "title": "Seine Finale: Islands, Booksellers & Eiffel Blue Hour",
+      "emoji": "river",
+      "theme": "Ile de la Cite and Eiffel Tower",
+      "moodDescription": "The iconic finale, done slowly enough to feel like Paris rather than a checklist.",
+      "budgetEstimate": 68,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d5-a1",
+              "name": "Sainte-Chapelle Morning Slot",
+              "type": "chapel",
+              "emoji": "chapel",
+              "address": "10 Boulevard du Palais",
+              "coordinates": [
+                48.8554,
+                2.345
+              ],
+              "startTime": "09:00",
+              "duration": "60 min",
+              "cost": 13,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Book the first slot; stained glass is magical before the room fills.",
+              "photoKeyword": "Sainte-Chapelle Morning Slot travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "paris-5-days-d5-a2",
+              "name": "Trocadero Blue Hour View",
+              "type": "viewpoint",
+              "emoji": "viewpoint",
+              "address": "Place du Trocadero",
+              "coordinates": [
+                48.8629,
+                2.287
+              ],
+              "startTime": "19:30",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.6,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Stand on Avenue de Camoens first for a quieter view before Trocadero.",
+              "photoKeyword": "Trocadero Blue Hour View travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Trocadero Blue Hour View without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "paris-5-days-d5-a1",
+          "name": "Sainte-Chapelle Morning Slot",
+          "type": "chapel",
+          "emoji": "chapel",
+          "address": "10 Boulevard du Palais",
+          "coordinates": [
+            48.8554,
+            2.345
+          ],
+          "startTime": "09:00",
+          "duration": "60 min",
+          "cost": 13,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Book the first slot; stained glass is magical before the room fills.",
+          "photoKeyword": "Sainte-Chapelle Morning Slot travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d5-a2",
+          "name": "Trocadero Blue Hour View",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "Place du Trocadero",
+          "coordinates": [
+            48.8629,
+            2.287
+          ],
+          "startTime": "19:30",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Stand on Avenue de Camoens first for a quieter view before Trocadero.",
+          "photoKeyword": "Trocadero Blue Hour View travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Trocadero Blue Hour View without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "paris-5-days-d5-a1",
+          "name": "Sainte-Chapelle Morning Slot",
+          "type": "chapel",
+          "emoji": "chapel",
+          "address": "10 Boulevard du Palais",
+          "coordinates": [
+            48.8554,
+            2.345
+          ],
+          "startTime": "09:00",
+          "duration": "60 min",
+          "cost": 13,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Book the first slot; stained glass is magical before the room fills.",
+          "photoKeyword": "Sainte-Chapelle Morning Slot travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "paris-5-days-d5-a2",
+          "name": "Trocadero Blue Hour View",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "Place du Trocadero",
+          "coordinates": [
+            48.8629,
+            2.287
+          ],
+          "startTime": "19:30",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Stand on Avenue de Camoens first for a quieter view before Trocadero.",
+          "photoKeyword": "Trocadero Blue Hour View travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Trocadero Blue Hour View without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Shakespeare and Company Cafe",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Shakespeare and Company Cafe, Paris",
+          "coordinates": [
+            48.8554,
+            2.345
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Shakespeare and Company Cafe; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Clamato",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Clamato, Paris",
+          "coordinates": [
+            48.8629,
+            2.287
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Clamato; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Les Ombres",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Les Ombres, Paris",
+          "coordinates": [
+            48.8629,
+            2.287
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Les Ombres; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "For bouquinistes, browse the left-bank side near Quai de Montebello; sellers there are often more book-focused than souvenir-heavy.",
+      "culturalNote": "In Ile de la Cite and Eiffel Tower, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Sainte-Chapelle Morning Slot",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    }
+  ],
+  "weather": {
+    "season": "shoulder season",
+    "practicalTip": "Pack layers and verify weather 48 hours before departure."
+  },
+  "transport": {
+    "overview": "Area-grouped days with direct routes between adjacent stops."
+  },
+  "packingList": {
+    "essential": [
+      "passport",
+      "insurance",
+      "portable charger"
+    ],
+    "weatherSpecific": [
+      "light rain shell"
+    ],
+    "appsMustHave": [
+      "Google Maps",
+      "local transit app"
+    ],
+    "doNotBring": [
+      "oversized luggage"
+    ]
+  },
+  "nearbyEscapes": [
+    {
+      "name": "Versailles",
+      "distance": "23 km",
+      "transportCost": 8,
+      "idealFor": "gardens and royal history",
+      "daysToAdd": 1,
+      "tip": "Go on a fountain-show day only if you book early."
+    },
+    {
+      "name": "Giverny",
+      "distance": "75 km",
+      "transportCost": 28,
+      "idealFor": "Monet gardens",
+      "daysToAdd": 1,
+      "tip": "Best from late April to June; take the earliest train."
+    }
+  ],
+  "andorInsights": [
+    "This route protects mornings for high-demand places.",
+    "Meal choices stay near the day route.",
+    "The plan avoids repeated cross-city transfers."
+  ],
+  "suggestions": [
+    "Make it more romantic",
+    "Add a Versailles day",
+    "Swap museums for food markets"
+  ]
+}

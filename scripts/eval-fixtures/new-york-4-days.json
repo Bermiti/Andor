@@ -1,0 +1,1171 @@
+{
+  "destination": {
+    "city": "New York",
+    "country": "United States",
+    "countryCode": "US",
+    "flag": "US",
+    "coordinates": [
+      40.7128,
+      -74.006
+    ],
+    "timezone": "America/New_York",
+    "currency": {
+      "code": "USD",
+      "symbol": "USD",
+      "euroRate": 0.92
+    }
+  },
+  "trip": {
+    "totalDays": 4,
+    "travelStyle": "architecture + food + nightlife",
+    "groupType": "couple",
+    "budgetTier": "premium",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-18",
+    "budgetBreakdown": {
+      "flights": {
+        "min": 420,
+        "max": 720
+      },
+      "accommodation": {
+        "total": 1480
+      },
+      "food": {
+        "total": 760
+      },
+      "activities": {
+        "total": 540
+      },
+      "transport": {
+        "total": 136
+      },
+      "grandTotal": {
+        "min": 3336,
+        "max": 3636
+      },
+      "perPersonEstimate": {
+        "min": 1668,
+        "max": 1818
+      },
+      "currency": "EUR"
+    },
+    "topTips": [
+      "Book the highest-demand activity before flights if dates are fixed.",
+      "Keep one late afternoon unplanned every two days.",
+      "Use the first morning for the busiest landmark."
+    ]
+  },
+  "summary": {
+    "title": "New York launch-readiness fixture",
+    "andorVerdict": "A realistic, logistics-aware 4-day plan for New York."
+  },
+  "budgetBreakdown": {
+    "flights": [
+      420,
+      720
+    ],
+    "accommodation": 1480,
+    "food": 760,
+    "activities": 540,
+    "transport": 136,
+    "total": [
+      3336,
+      3636
+    ],
+    "perPerson": [
+      1668,
+      1818
+    ]
+  },
+  "flightOptions": [
+    {
+      "airline": "Delta / United / TAP",
+      "route": "Europe to JFK or EWR",
+      "estimate": 560,
+      "bookingWindow": "Book 8-12 weeks ahead; avoid Thanksgiving week."
+    }
+  ],
+  "accommodation": {
+    "name": "The Marlton Hotel",
+    "area": "Greenwich Village",
+    "nightlyEstimate": 370
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Stone and Skyline: Village Corners & One World Blue Hour",
+      "emoji": "skyline",
+      "theme": "Village and Lower Manhattan",
+      "moodDescription": "Architectural New York from brownstones to glass, with meals that justify the premium spend.",
+      "budgetEstimate": 99,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d1-a1",
+              "name": "West Village Architecture Walk",
+              "type": "architecture",
+              "emoji": "architecture",
+              "address": "75 1/2 Bedford St, New York",
+              "coordinates": [
+                40.7322,
+                -74.0051
+              ],
+              "startTime": "09:30",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.6,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Start on Grove Street before brunch crowds; the narrowest house is just a marker, not the whole point.",
+              "photoKeyword": "West Village Architecture Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d1-a2",
+              "name": "One World Observatory",
+              "type": "viewpoint",
+              "emoji": "viewpoint",
+              "address": "117 West St, New York",
+              "coordinates": [
+                40.713,
+                -74.0132
+              ],
+              "startTime": "17:30",
+              "duration": "90 min",
+              "cost": 44,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Book blue hour, not midday; the harbor and bridges read better.",
+              "photoKeyword": "One World Observatory travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to One World Observatory without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "new-york-4-days-d1-a1",
+          "name": "West Village Architecture Walk",
+          "type": "architecture",
+          "emoji": "architecture",
+          "address": "75 1/2 Bedford St, New York",
+          "coordinates": [
+            40.7322,
+            -74.0051
+          ],
+          "startTime": "09:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Start on Grove Street before brunch crowds; the narrowest house is just a marker, not the whole point.",
+          "photoKeyword": "West Village Architecture Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d1-a2",
+          "name": "One World Observatory",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "117 West St, New York",
+          "coordinates": [
+            40.713,
+            -74.0132
+          ],
+          "startTime": "17:30",
+          "duration": "90 min",
+          "cost": 44,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Book blue hour, not midday; the harbor and bridges read better.",
+          "photoKeyword": "One World Observatory travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to One World Observatory without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "new-york-4-days-d1-a1",
+          "name": "West Village Architecture Walk",
+          "type": "architecture",
+          "emoji": "architecture",
+          "address": "75 1/2 Bedford St, New York",
+          "coordinates": [
+            40.7322,
+            -74.0051
+          ],
+          "startTime": "09:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Start on Grove Street before brunch crowds; the narrowest house is just a marker, not the whole point.",
+          "photoKeyword": "West Village Architecture Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d1-a2",
+          "name": "One World Observatory",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "117 West St, New York",
+          "coordinates": [
+            40.713,
+            -74.0132
+          ],
+          "startTime": "17:30",
+          "duration": "90 min",
+          "cost": 44,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Book blue hour, not midday; the harbor and bridges read better.",
+          "photoKeyword": "One World Observatory travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to One World Observatory without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Daily Provisions",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Daily Provisions, New York",
+          "coordinates": [
+            40.7322,
+            -74.0051
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Daily Provisions; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Loring Place",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Loring Place, New York",
+          "coordinates": [
+            40.713,
+            -74.0132
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Loring Place; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Manhatta",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Manhatta, New York",
+          "coordinates": [
+            40.713,
+            -74.0132
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Manhatta; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "For a free skyline reset, walk the Irish Hunger Memorial just before One World; it is quiet and strangely moving.",
+      "culturalNote": "In Village and Lower Manhattan, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "West Village Architecture Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "title": "Museum Mile Precision: Met Rooms & Central Park Shadows",
+      "emoji": "museum",
+      "theme": "Upper East Side",
+      "moodDescription": "A polished culture day with a strict museum edit and one slow park section.",
+      "budgetEstimate": 85,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d2-a1",
+              "name": "Metropolitan Museum of Art Focus Route",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "1000 5th Ave, New York",
+              "coordinates": [
+                40.7794,
+                -73.9632
+              ],
+              "startTime": "10:00",
+              "duration": "2h 30 min",
+              "cost": 30,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Pick Greek court, Temple of Dendur, and European paintings; leave before fatigue wins.",
+              "photoKeyword": "Metropolitan Museum of Art Focus Route travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d2-a2",
+              "name": "Central Park Ramble",
+              "type": "park",
+              "emoji": "park",
+              "address": "Ramble, Central Park",
+              "coordinates": [
+                40.7772,
+                -73.9694
+              ],
+              "startTime": "15:00",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Enter near Belvedere Castle and let yourself get slightly lost.",
+              "photoKeyword": "Central Park Ramble travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Central Park Ramble without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "new-york-4-days-d2-a1",
+          "name": "Metropolitan Museum of Art Focus Route",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "1000 5th Ave, New York",
+          "coordinates": [
+            40.7794,
+            -73.9632
+          ],
+          "startTime": "10:00",
+          "duration": "2h 30 min",
+          "cost": 30,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Pick Greek court, Temple of Dendur, and European paintings; leave before fatigue wins.",
+          "photoKeyword": "Metropolitan Museum of Art Focus Route travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d2-a2",
+          "name": "Central Park Ramble",
+          "type": "park",
+          "emoji": "park",
+          "address": "Ramble, Central Park",
+          "coordinates": [
+            40.7772,
+            -73.9694
+          ],
+          "startTime": "15:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Enter near Belvedere Castle and let yourself get slightly lost.",
+          "photoKeyword": "Central Park Ramble travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Central Park Ramble without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "new-york-4-days-d2-a1",
+          "name": "Metropolitan Museum of Art Focus Route",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "1000 5th Ave, New York",
+          "coordinates": [
+            40.7794,
+            -73.9632
+          ],
+          "startTime": "10:00",
+          "duration": "2h 30 min",
+          "cost": 30,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Pick Greek court, Temple of Dendur, and European paintings; leave before fatigue wins.",
+          "photoKeyword": "Metropolitan Museum of Art Focus Route travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d2-a2",
+          "name": "Central Park Ramble",
+          "type": "park",
+          "emoji": "park",
+          "address": "Ramble, Central Park",
+          "coordinates": [
+            40.7772,
+            -73.9694
+          ],
+          "startTime": "15:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Enter near Belvedere Castle and let yourself get slightly lost.",
+          "photoKeyword": "Central Park Ramble travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Central Park Ramble without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Sant Ambroeus Madison",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Sant Ambroeus Madison, New York",
+          "coordinates": [
+            40.7794,
+            -73.9632
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Sant Ambroeus Madison; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Cafe Sabarsky",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Cafe Sabarsky, New York",
+          "coordinates": [
+            40.7772,
+            -73.9694
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Cafe Sabarsky; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Bemelmans Bar",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Bemelmans Bar, New York",
+          "coordinates": [
+            40.7772,
+            -73.9694
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Bemelmans Bar; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "The Met balcony bar is seasonal but worth checking; it gives a calmer pause than the crowded front steps.",
+      "culturalNote": "In Upper East Side, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Metropolitan Museum of Art Focus Route",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 3,
+      "title": "Bridges and Brick: DUMBO Angles & Brooklyn Tables",
+      "emoji": "bridge",
+      "theme": "Brooklyn",
+      "moodDescription": "A Brooklyn day that earns its postcard views with good walking and better food.",
+      "budgetEstimate": 55,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d3-a1",
+              "name": "Brooklyn Bridge Sunrise Walk",
+              "type": "walk",
+              "emoji": "walk",
+              "address": "Brooklyn Bridge Promenade",
+              "coordinates": [
+                40.7061,
+                -73.9969
+              ],
+              "startTime": "08:00",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Walk from Brooklyn toward Manhattan for the better skyline reveal.",
+              "photoKeyword": "Brooklyn Bridge Sunrise Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d3-a2",
+              "name": "Brooklyn Heights Promenade",
+              "type": "architecture",
+              "emoji": "architecture",
+              "address": "Montague St & Pierrepont Pl, Brooklyn",
+              "coordinates": [
+                40.6983,
+                -73.9967
+              ],
+              "startTime": "11:00",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Use the fruit streets for brownstones before the promenade view.",
+              "photoKeyword": "Brooklyn Heights Promenade travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Brooklyn Heights Promenade without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "new-york-4-days-d3-a1",
+          "name": "Brooklyn Bridge Sunrise Walk",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Brooklyn Bridge Promenade",
+          "coordinates": [
+            40.7061,
+            -73.9969
+          ],
+          "startTime": "08:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Walk from Brooklyn toward Manhattan for the better skyline reveal.",
+          "photoKeyword": "Brooklyn Bridge Sunrise Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d3-a2",
+          "name": "Brooklyn Heights Promenade",
+          "type": "architecture",
+          "emoji": "architecture",
+          "address": "Montague St & Pierrepont Pl, Brooklyn",
+          "coordinates": [
+            40.6983,
+            -73.9967
+          ],
+          "startTime": "11:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the fruit streets for brownstones before the promenade view.",
+          "photoKeyword": "Brooklyn Heights Promenade travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Brooklyn Heights Promenade without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "new-york-4-days-d3-a1",
+          "name": "Brooklyn Bridge Sunrise Walk",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Brooklyn Bridge Promenade",
+          "coordinates": [
+            40.7061,
+            -73.9969
+          ],
+          "startTime": "08:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Walk from Brooklyn toward Manhattan for the better skyline reveal.",
+          "photoKeyword": "Brooklyn Bridge Sunrise Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d3-a2",
+          "name": "Brooklyn Heights Promenade",
+          "type": "architecture",
+          "emoji": "architecture",
+          "address": "Montague St & Pierrepont Pl, Brooklyn",
+          "coordinates": [
+            40.6983,
+            -73.9967
+          ],
+          "startTime": "11:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the fruit streets for brownstones before the promenade view.",
+          "photoKeyword": "Brooklyn Heights Promenade travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Brooklyn Heights Promenade without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Butler DUMBO",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Butler DUMBO, New York",
+          "coordinates": [
+            40.7061,
+            -73.9969
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Butler DUMBO; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Juliana Pizza",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Juliana Pizza, New York",
+          "coordinates": [
+            40.6983,
+            -73.9967
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Juliana Pizza; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "The River Cafe",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "The River Cafe, New York",
+          "coordinates": [
+            40.6983,
+            -73.9967
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at The River Cafe; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Skip the crowded Washington Street photo scrum after one quick look; Plymouth Street gives better bridge texture and fewer elbows.",
+      "culturalNote": "In Brooklyn, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Brooklyn Bridge Sunrise Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 4,
+      "title": "After-Dark Manhattan: High Line Steel & Jazz Below Street Level",
+      "emoji": "jazz",
+      "theme": "Chelsea and Midtown",
+      "moodDescription": "A final day of design, food halls, and nightlife that feels grown-up rather than frantic.",
+      "budgetEstimate": 100,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d4-a1",
+              "name": "High Line North-to-South Walk",
+              "type": "design",
+              "emoji": "design",
+              "address": "The High Line, New York",
+              "coordinates": [
+                40.748,
+                -74.0048
+              ],
+              "startTime": "10:00",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.6,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Start at Hudson Yards and walk south so Chelsea Market lands at lunch.",
+              "photoKeyword": "High Line North-to-South Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "new-york-4-days-d4-a2",
+              "name": "Village Vanguard Jazz Set",
+              "type": "nightlife",
+              "emoji": "nightlife",
+              "address": "178 7th Ave S, New York",
+              "coordinates": [
+                40.736,
+                -74.0017
+              ],
+              "startTime": "20:30",
+              "duration": "2h",
+              "cost": 45,
+              "rating": 4.8,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Reserve ahead and arrive early; sightlines matter in the basement room.",
+              "photoKeyword": "Village Vanguard Jazz Set travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Village Vanguard Jazz Set without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "new-york-4-days-d4-a1",
+          "name": "High Line North-to-South Walk",
+          "type": "design",
+          "emoji": "design",
+          "address": "The High Line, New York",
+          "coordinates": [
+            40.748,
+            -74.0048
+          ],
+          "startTime": "10:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Start at Hudson Yards and walk south so Chelsea Market lands at lunch.",
+          "photoKeyword": "High Line North-to-South Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d4-a2",
+          "name": "Village Vanguard Jazz Set",
+          "type": "nightlife",
+          "emoji": "nightlife",
+          "address": "178 7th Ave S, New York",
+          "coordinates": [
+            40.736,
+            -74.0017
+          ],
+          "startTime": "20:30",
+          "duration": "2h",
+          "cost": 45,
+          "rating": 4.8,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Reserve ahead and arrive early; sightlines matter in the basement room.",
+          "photoKeyword": "Village Vanguard Jazz Set travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Village Vanguard Jazz Set without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "new-york-4-days-d4-a1",
+          "name": "High Line North-to-South Walk",
+          "type": "design",
+          "emoji": "design",
+          "address": "The High Line, New York",
+          "coordinates": [
+            40.748,
+            -74.0048
+          ],
+          "startTime": "10:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Start at Hudson Yards and walk south so Chelsea Market lands at lunch.",
+          "photoKeyword": "High Line North-to-South Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "new-york-4-days-d4-a2",
+          "name": "Village Vanguard Jazz Set",
+          "type": "nightlife",
+          "emoji": "nightlife",
+          "address": "178 7th Ave S, New York",
+          "coordinates": [
+            40.736,
+            -74.0017
+          ],
+          "startTime": "20:30",
+          "duration": "2h",
+          "cost": 45,
+          "rating": 4.8,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Reserve ahead and arrive early; sightlines matter in the basement room.",
+          "photoKeyword": "Village Vanguard Jazz Set travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Village Vanguard Jazz Set without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "La Cabra NYC",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "La Cabra NYC, New York",
+          "coordinates": [
+            40.748,
+            -74.0048
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at La Cabra NYC; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Los Tacos No.1 Chelsea Market",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Los Tacos No.1 Chelsea Market, New York",
+          "coordinates": [
+            40.736,
+            -74.0017
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Los Tacos No.1 Chelsea Market; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Via Carota",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Via Carota, New York",
+          "coordinates": [
+            40.736,
+            -74.0017
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Via Carota; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "If Chelsea Market is packed, exit to 15th Street and use the smaller Los Tacos line near the side entrance.",
+      "culturalNote": "In Chelsea and Midtown, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "High Line North-to-South Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    }
+  ],
+  "weather": {
+    "season": "shoulder season",
+    "practicalTip": "Pack layers and verify weather 48 hours before departure."
+  },
+  "transport": {
+    "overview": "Area-grouped days with direct routes between adjacent stops."
+  },
+  "packingList": {
+    "essential": [
+      "passport",
+      "insurance",
+      "portable charger"
+    ],
+    "weatherSpecific": [
+      "light rain shell"
+    ],
+    "appsMustHave": [
+      "Google Maps",
+      "local transit app"
+    ],
+    "doNotBring": [
+      "oversized luggage"
+    ]
+  },
+  "nearbyEscapes": [
+    {
+      "name": "Hudson Valley",
+      "distance": "90 min train",
+      "transportCost": 32,
+      "idealFor": "river towns and galleries",
+      "daysToAdd": 1,
+      "tip": "Beacon is easiest without a car."
+    },
+    {
+      "name": "Philadelphia",
+      "distance": "95 min train",
+      "transportCost": 44,
+      "idealFor": "architecture and museums",
+      "daysToAdd": 1,
+      "tip": "Use Amtrak early fares or bus if budget matters."
+    }
+  ],
+  "andorInsights": [
+    "This route protects mornings for high-demand places.",
+    "Meal choices stay near the day route.",
+    "The plan avoids repeated cross-city transfers."
+  ],
+  "suggestions": [
+    "Add jazz clubs",
+    "Make this less expensive",
+    "Add Brooklyn architecture"
+  ]
+}

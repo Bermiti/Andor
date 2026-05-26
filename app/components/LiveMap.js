@@ -255,9 +255,9 @@ export default function LiveMap({ stops = [], destination = {} }) {
       // Drawing Animated Polyline (using SVG dash array offset styling via className)
       if (latlngs.length > 1) {
         polylineRef.current = L.polyline(latlngs, {
-          color: 'var(--ocean)',
-          weight: 4,
-          opacity: 0.85,
+          color: '#D4A843',
+          weight: 2,
+          opacity: 0.5,
           dashArray: '6, 8',
           className: styles.animatedPolyline,
           lineCap: 'round',
@@ -293,24 +293,26 @@ export default function LiveMap({ stops = [], destination = {} }) {
   }, []);
 
   return (
-    <div className={`${styles.mapContainer} ${isFading ? styles.fading : ''}`}>
+    <div className={`${styles.mapContainer} ${isFading ? styles.fading : ''}`} data-testid="live-map">
       {/* Satellite / Standard Map Control */}
       <div className={styles.mapToggleContainer}>
         <button
           className={`${styles.toggleBtn} ${mapType === 'map' ? styles.active : ''}`}
           onClick={() => toggleMapType('map')}
+          aria-label="Ver mapa padrão"
         >
           🗺️ Map
         </button>
         <button
           className={`${styles.toggleBtn} ${mapType === 'satellite' ? styles.active : ''}`}
           onClick={() => toggleMapType('satellite')}
+          aria-label="Ver mapa satélite"
         >
           🛰️ Satellite
         </button>
       </div>
 
-      <div ref={mapContainerRef} className={styles.leafletMapElement} />
+      <div ref={mapContainerRef} className={styles.leafletMapElement} data-testid="leaflet-map-surface" />
     </div>
   );
 }

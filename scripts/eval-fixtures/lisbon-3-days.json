@@ -1,0 +1,915 @@
+{
+  "destination": {
+    "city": "Lisbon",
+    "country": "Portugal",
+    "countryCode": "PT",
+    "flag": "PT",
+    "coordinates": [
+      38.7223,
+      -9.1393
+    ],
+    "timezone": "Europe/Lisbon",
+    "currency": {
+      "code": "EUR",
+      "symbol": "EUR",
+      "euroRate": 1
+    }
+  },
+  "trip": {
+    "totalDays": 3,
+    "travelStyle": "food + viewpoints + history",
+    "groupType": "solo traveller",
+    "budgetTier": "budget",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-18",
+    "budgetBreakdown": {
+      "flights": {
+        "min": 90,
+        "max": 180
+      },
+      "accommodation": {
+        "total": 210
+      },
+      "food": {
+        "total": 115
+      },
+      "activities": {
+        "total": 52
+      },
+      "transport": {
+        "total": 24
+      },
+      "grandTotal": {
+        "min": 491,
+        "max": 581
+      },
+      "perPersonEstimate": {
+        "min": 491,
+        "max": 581
+      },
+      "currency": "EUR"
+    },
+    "topTips": [
+      "Book the highest-demand activity before flights if dates are fixed.",
+      "Keep one late afternoon unplanned every two days.",
+      "Use the first morning for the busiest landmark."
+    ]
+  },
+  "summary": {
+    "title": "Lisbon launch-readiness fixture",
+    "andorVerdict": "A realistic, logistics-aware 3-day plan for Lisbon."
+  },
+  "budgetBreakdown": {
+    "flights": [
+      90,
+      180
+    ],
+    "accommodation": 210,
+    "food": 115,
+    "activities": 52,
+    "transport": 24,
+    "total": [
+      491,
+      581
+    ],
+    "perPerson": [
+      491,
+      581
+    ]
+  },
+  "flightOptions": [
+    {
+      "airline": "TAP / Ryanair / easyJet",
+      "route": "Europe to Lisbon",
+      "estimate": 130,
+      "bookingWindow": "Book 4-7 weeks ahead for shoulder season."
+    }
+  ],
+  "accommodation": {
+    "name": "This Is Lisbon Hostel",
+    "area": "Alfama",
+    "nightlyEstimate": 70
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Alfama First Notes: Tiles, Fado Lanes & Miradouro Light",
+      "emoji": "tiles",
+      "theme": "Alfama",
+      "moodDescription": "A walkable arrival through Lisbon layers, with viewpoints placed before the steepest fatigue.",
+      "budgetEstimate": 55,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "lisbon-3-days-d1-a1",
+              "name": "Se Cathedral and Alfama Lanes",
+              "type": "history",
+              "emoji": "history",
+              "address": "Largo da Se, Lisboa",
+              "coordinates": [
+                38.7098,
+                -9.1334
+              ],
+              "startTime": "09:30",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Start downhill from the cathedral so the climb is not punishing.",
+              "photoKeyword": "Se Cathedral and Alfama Lanes travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "lisbon-3-days-d1-a2",
+              "name": "Miradouro da Graca",
+              "type": "viewpoint",
+              "emoji": "viewpoint",
+              "address": "Calcada da Graca, Lisboa",
+              "coordinates": [
+                38.7162,
+                -9.1315
+              ],
+              "startTime": "16:30",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Buy a drink from the kiosk and sit on the wall before sunset crowds.",
+              "photoKeyword": "Miradouro da Graca travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Miradouro da Graca without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "lisbon-3-days-d1-a1",
+          "name": "Se Cathedral and Alfama Lanes",
+          "type": "history",
+          "emoji": "history",
+          "address": "Largo da Se, Lisboa",
+          "coordinates": [
+            38.7098,
+            -9.1334
+          ],
+          "startTime": "09:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Start downhill from the cathedral so the climb is not punishing.",
+          "photoKeyword": "Se Cathedral and Alfama Lanes travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "lisbon-3-days-d1-a2",
+          "name": "Miradouro da Graca",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "Calcada da Graca, Lisboa",
+          "coordinates": [
+            38.7162,
+            -9.1315
+          ],
+          "startTime": "16:30",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Buy a drink from the kiosk and sit on the wall before sunset crowds.",
+          "photoKeyword": "Miradouro da Graca travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Miradouro da Graca without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "lisbon-3-days-d1-a1",
+          "name": "Se Cathedral and Alfama Lanes",
+          "type": "history",
+          "emoji": "history",
+          "address": "Largo da Se, Lisboa",
+          "coordinates": [
+            38.7098,
+            -9.1334
+          ],
+          "startTime": "09:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Start downhill from the cathedral so the climb is not punishing.",
+          "photoKeyword": "Se Cathedral and Alfama Lanes travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "lisbon-3-days-d1-a2",
+          "name": "Miradouro da Graca",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "Calcada da Graca, Lisboa",
+          "coordinates": [
+            38.7162,
+            -9.1315
+          ],
+          "startTime": "16:30",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Buy a drink from the kiosk and sit on the wall before sunset crowds.",
+          "photoKeyword": "Miradouro da Graca travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Miradouro da Graca without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Copenhagen Coffee Lab Alfama",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Copenhagen Coffee Lab Alfama, Lisbon",
+          "coordinates": [
+            38.7098,
+            -9.1334
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Copenhagen Coffee Lab Alfama; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "O Velho Eurico",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "O Velho Eurico, Lisbon",
+          "coordinates": [
+            38.7162,
+            -9.1315
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at O Velho Eurico; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Tasca do Chico",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Tasca do Chico, Lisbon",
+          "coordinates": [
+            38.7162,
+            -9.1315
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Tasca do Chico; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Use the public elevator inside Pingo Doce Chao do Loureiro to save your legs between Baixa and the castle hill.",
+      "culturalNote": "In Alfama, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Se Cathedral and Alfama Lanes",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "title": "River Machines: Belem Monuments & Alcantara Warehouses",
+      "emoji": "river",
+      "theme": "Belem and Alcantara",
+      "moodDescription": "A low-cost riverside day that pairs maritime history with creative Lisbon.",
+      "budgetEstimate": 55,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "lisbon-3-days-d2-a1",
+              "name": "Jeronimos Monastery Exterior and Church",
+              "type": "history",
+              "emoji": "history",
+              "address": "Praca do Imperio, Lisboa",
+              "coordinates": [
+                38.6979,
+                -9.2068
+              ],
+              "startTime": "09:00",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "The church is free and often enough if the cloister queue is huge.",
+              "photoKeyword": "Jeronimos Monastery Exterior and Church travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "lisbon-3-days-d2-a2",
+              "name": "LX Factory Bookstore and Street Art",
+              "type": "design",
+              "emoji": "design",
+              "address": "Rua Rodrigues de Faria 103, Lisboa",
+              "coordinates": [
+                38.703,
+                -9.1782
+              ],
+              "startTime": "14:30",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.4,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Climb to the Rio Maravilha terrace even if you do not drink there.",
+              "photoKeyword": "LX Factory Bookstore and Street Art travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to LX Factory Bookstore and Street Art without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "lisbon-3-days-d2-a1",
+          "name": "Jeronimos Monastery Exterior and Church",
+          "type": "history",
+          "emoji": "history",
+          "address": "Praca do Imperio, Lisboa",
+          "coordinates": [
+            38.6979,
+            -9.2068
+          ],
+          "startTime": "09:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "The church is free and often enough if the cloister queue is huge.",
+          "photoKeyword": "Jeronimos Monastery Exterior and Church travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "lisbon-3-days-d2-a2",
+          "name": "LX Factory Bookstore and Street Art",
+          "type": "design",
+          "emoji": "design",
+          "address": "Rua Rodrigues de Faria 103, Lisboa",
+          "coordinates": [
+            38.703,
+            -9.1782
+          ],
+          "startTime": "14:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Climb to the Rio Maravilha terrace even if you do not drink there.",
+          "photoKeyword": "LX Factory Bookstore and Street Art travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to LX Factory Bookstore and Street Art without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "lisbon-3-days-d2-a1",
+          "name": "Jeronimos Monastery Exterior and Church",
+          "type": "history",
+          "emoji": "history",
+          "address": "Praca do Imperio, Lisboa",
+          "coordinates": [
+            38.6979,
+            -9.2068
+          ],
+          "startTime": "09:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "The church is free and often enough if the cloister queue is huge.",
+          "photoKeyword": "Jeronimos Monastery Exterior and Church travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "lisbon-3-days-d2-a2",
+          "name": "LX Factory Bookstore and Street Art",
+          "type": "design",
+          "emoji": "design",
+          "address": "Rua Rodrigues de Faria 103, Lisboa",
+          "coordinates": [
+            38.703,
+            -9.1782
+          ],
+          "startTime": "14:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Climb to the Rio Maravilha terrace even if you do not drink there.",
+          "photoKeyword": "LX Factory Bookstore and Street Art travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to LX Factory Bookstore and Street Art without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Manteigaria Belem",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Manteigaria Belem, Lisbon",
+          "coordinates": [
+            38.6979,
+            -9.2068
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Manteigaria Belem; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Pao Pao Queijo Queijo",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Pao Pao Queijo Queijo, Lisbon",
+          "coordinates": [
+            38.703,
+            -9.1782
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Pao Pao Queijo Queijo; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Taberna da Rua das Flores",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Taberna da Rua das Flores, Lisbon",
+          "coordinates": [
+            38.703,
+            -9.1782
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Taberna da Rua das Flores; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Walk from MAAT to Belem Tower along the river only in the morning; afternoon sun and wind make it feel twice as long.",
+      "culturalNote": "In Belem and Alcantara, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Jeronimos Monastery Exterior and Church",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 3,
+      "title": "Final Blue Tiles: Mouraria Breakfast & Bairro Alto Goodbyes",
+      "emoji": "view",
+      "theme": "Mouraria and Chiado",
+      "moodDescription": "A final loop through working neighborhoods, azulejos, and a last golden-hour lookout.",
+      "budgetEstimate": 63,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "lisbon-3-days-d3-a1",
+              "name": "Mouraria Street Walk",
+              "type": "culture",
+              "emoji": "culture",
+              "address": "Largo da Severa, Lisboa",
+              "coordinates": [
+                38.7164,
+                -9.135
+              ],
+              "startTime": "09:30",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Look for the fado portraits on Rua do Capelao and keep your camera discreet.",
+              "photoKeyword": "Mouraria Street Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "lisbon-3-days-d3-a2",
+              "name": "National Tile Museum",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "Rua Madre de Deus 4, Lisboa",
+              "coordinates": [
+                38.7242,
+                -9.1139
+              ],
+              "startTime": "14:00",
+              "duration": "90 min",
+              "cost": 8,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Do not miss the panoramic pre-earthquake Lisbon tile upstairs.",
+              "photoKeyword": "National Tile Museum travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to National Tile Museum without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "lisbon-3-days-d3-a1",
+          "name": "Mouraria Street Walk",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "Largo da Severa, Lisboa",
+          "coordinates": [
+            38.7164,
+            -9.135
+          ],
+          "startTime": "09:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Look for the fado portraits on Rua do Capelao and keep your camera discreet.",
+          "photoKeyword": "Mouraria Street Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "lisbon-3-days-d3-a2",
+          "name": "National Tile Museum",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "Rua Madre de Deus 4, Lisboa",
+          "coordinates": [
+            38.7242,
+            -9.1139
+          ],
+          "startTime": "14:00",
+          "duration": "90 min",
+          "cost": 8,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Do not miss the panoramic pre-earthquake Lisbon tile upstairs.",
+          "photoKeyword": "National Tile Museum travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to National Tile Museum without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "lisbon-3-days-d3-a1",
+          "name": "Mouraria Street Walk",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "Largo da Severa, Lisboa",
+          "coordinates": [
+            38.7164,
+            -9.135
+          ],
+          "startTime": "09:30",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Look for the fado portraits on Rua do Capelao and keep your camera discreet.",
+          "photoKeyword": "Mouraria Street Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "lisbon-3-days-d3-a2",
+          "name": "National Tile Museum",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "Rua Madre de Deus 4, Lisboa",
+          "coordinates": [
+            38.7242,
+            -9.1139
+          ],
+          "startTime": "14:00",
+          "duration": "90 min",
+          "cost": 8,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Do not miss the panoramic pre-earthquake Lisbon tile upstairs.",
+          "photoKeyword": "National Tile Museum travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to National Tile Museum without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Dear Breakfast Chiado",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Dear Breakfast Chiado, Lisbon",
+          "coordinates": [
+            38.7164,
+            -9.135
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Dear Breakfast Chiado; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Zezinho da Mouraria",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Zezinho da Mouraria, Lisbon",
+          "coordinates": [
+            38.7242,
+            -9.1139
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Zezinho da Mouraria; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Jesus e Goes",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Jesus e Goes, Lisbon",
+          "coordinates": [
+            38.7242,
+            -9.1139
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Jesus e Goes; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "For a cheap final viewpoint, use the top floor of Armazens do Chiado at dusk; it is less romantic but very practical.",
+      "culturalNote": "In Mouraria and Chiado, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Mouraria Street Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    }
+  ],
+  "weather": {
+    "season": "shoulder season",
+    "practicalTip": "Pack layers and verify weather 48 hours before departure."
+  },
+  "transport": {
+    "overview": "Area-grouped days with direct routes between adjacent stops."
+  },
+  "packingList": {
+    "essential": [
+      "passport",
+      "insurance",
+      "portable charger"
+    ],
+    "weatherSpecific": [
+      "light rain shell"
+    ],
+    "appsMustHave": [
+      "Google Maps",
+      "local transit app"
+    ],
+    "doNotBring": [
+      "oversized luggage"
+    ]
+  },
+  "nearbyEscapes": [
+    {
+      "name": "Sintra",
+      "distance": "30 km",
+      "transportCost": 6,
+      "idealFor": "palaces and misty forest",
+      "daysToAdd": 1,
+      "tip": "Start at Pena before 9:00."
+    },
+    {
+      "name": "Cascais",
+      "distance": "35 km",
+      "transportCost": 5,
+      "idealFor": "coast and seafood",
+      "daysToAdd": 1,
+      "tip": "Sit on the left side of the train for river views."
+    }
+  ],
+  "andorInsights": [
+    "This route protects mornings for high-demand places.",
+    "Meal choices stay near the day route.",
+    "The plan avoids repeated cross-city transfers."
+  ],
+  "suggestions": [
+    "Add Sintra",
+    "Make it cheaper",
+    "Add more viewpoints"
+  ]
+}

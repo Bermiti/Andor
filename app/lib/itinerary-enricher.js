@@ -3,6 +3,47 @@
  * Ensures all components have data even when AI response is incomplete
  */
 
+const DESTINATION_COORDINATES = {
+  tokyo: [35.6762, 139.6503],
+  paris: [48.8566, 2.3522],
+  bali: [-8.4095, 115.1889],
+  lisbon: [38.7223, -9.1393],
+  lisboa: [38.7223, -9.1393],
+  london: [51.5074, -0.1278],
+  nyc: [40.7128, -74.006],
+  'new york': [40.7128, -74.006],
+  barcelona: [41.3874, 2.1686],
+  rome: [41.9028, 12.4964],
+  roma: [41.9028, 12.4964],
+  amsterdam: [52.3676, 4.9041],
+  marrakech: [31.6295, -7.9811],
+  marrakesh: [31.6295, -7.9811],
+  kyoto: [35.0116, 135.7681],
+  osaka: [34.6937, 135.5023],
+  porto: [41.1579, -8.6291],
+  madrid: [40.4168, -3.7038],
+  berlin: [52.52, 13.405],
+};
+
+function fallbackCoordinates(destination = '') {
+  const value = String(destination || '').toLowerCase();
+  const match = Object.entries(DESTINATION_COORDINATES).find(([name]) => value.includes(name));
+  return match ? [...match[1]] : [38.7223, -9.1393];
+}
+
+function safeCoordinates(value, destination = '', offset = 0) {
+  if (Array.isArray(value) && value.length >= 2) {
+    const lat = Number(value[0]);
+    const lng = Number(value[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)) {
+      return [lat, lng];
+    }
+  }
+
+  const [lat, lng] = fallbackCoordinates(destination);
+  return [Number((lat + offset * 0.004).toFixed(6)), Number((lng + offset * 0.004).toFixed(6))];
+}
+
 export function enrichItinerary(rawItinerary) {
   if (!rawItinerary || typeof rawItinerary !== 'object') {
     return createMinimalItinerary('Unknown Destination');
@@ -18,17 +59,20 @@ export function enrichItinerary(rawItinerary) {
   }
   const trip = rawItinerary.trip || {};
   const days = rawItinerary.days || [];
+  const destinationName = dest.city || dest.name || 'Unknown';
+  const destinationCoordinates = safeCoordinates(dest.coordinates, destinationName);
 
   // Core data
   const enriched = {
     destination: {
       name: dest.name || dest.city || 'Unknown',
-      city: dest.city || dest.name || 'Unknown',
+      city: destinationName,
       country: dest.country || 'Unknown',
-      coordinates: dest.coordinates || [0, 0],
+      coordinates: destinationCoordinates,
       timezone: dest.timezone || 'UTC',
       currency: dest.currency || { code: 'EUR', symbol: '€' },
       ...dest,
+      coordinates: destinationCoordinates,
     },
     trip: {
       startDate: trip.startDate || new Date().toISOString().split('T')[0],
@@ -39,7 +83,7 @@ export function enrichItinerary(rawItinerary) {
       travelers: trip.travelers || 1,
       ...trip,
     },
-    days: enrichDays(days, trip.totalDays || days.length || 1),
+    days: enrichDays(days, trip.totalDays || days.length || 1, destinationName, destinationCoordinates),
     
     // Structured components for UI
     flights: enrichFlights(rawItinerary.flights),
@@ -62,24 +106,24 @@ export function enrichItinerary(rawItinerary) {
   return enriched;
 }
 
-function enrichDays(days, totalDays) {
+function enrichDays(days, totalDays, destinationName, destinationCoordinates) {
   if (!Array.isArray(days) || days.length === 0) {
-    return generatePlaceholderDays(totalDays);
+    return generateFallbackDays(totalDays, destinationName, destinationCoordinates);
   }
 
   return days.map((day, idx) => ({
     dayNumber: day.dayNumber || idx + 1,
-    title: day.title || `Dia ${idx + 1}`,
-    theme: day.theme || 'Exploration',
+    title: day.title || [`First Light Route`, `Markets and Memory`, `Waterfront Pause`, `Last Local Notes`][idx % 4],
+    theme: day.theme || 'Local route',
     emoji: day.emoji || '📍',
-    stops: (day.stops || day.activities || []).map(stop => ({
+    stops: (day.stops || day.activities || []).map((stop, stopIdx) => ({
       name: stop.name || 'Unnamed Stop',
       type: stop.type || 'attraction',
       description: stop.description || '',
       time: stop.time || '10:00',
       duration: stop.duration || '2h',
       cost: stop.cost || 0,
-      coordinates: stop.coordinates || [0, 0],
+      coordinates: safeCoordinates(stop.coordinates, destinationName, stopIdx + idx),
       bookingRequired: stop.bookingRequired || false,
       emoji: stop.emoji || '📍',
     })),
@@ -87,7 +131,7 @@ function enrichDays(days, totalDays) {
     transport: day.transport || { type: 'walk', duration: '30min', cost: 0 },
     budgetEstimate: calculateDayBudget(day),
     highlights: day.highlights || [],
-    localSecret: day.localSecret || day.localTip || '',
+    localSecret: day.localSecret || day.localTip || `Keep one unscheduled hour near the last stop in ${destinationName}; ask a cafe owner where they would eat after work.`,
     culturalNote: day.culturalNote || '',
   }));
 }
@@ -463,10 +507,11 @@ function enrichWarnings(warnings) {
   ];
 }
 
-function generatePlaceholderDays(totalDays) {
+function generateFallbackDays(totalDays, destinationName = 'the destination', destinationCoordinates) {
+  const base = safeCoordinates(destinationCoordinates, destinationName);
   return Array.from({ length: totalDays }, (_, i) => ({
     dayNumber: i + 1,
-    title: `Dia ${i + 1}`,
+    title: [`First Light Arrival`, `Markets and Side Streets`, `Slow Views and Local Tables`, `Last Morning Favourites`][i % 4],
     theme: 'Exploração',
     emoji: '📍',
     stops: [
@@ -477,7 +522,7 @@ function generatePlaceholderDays(totalDays) {
         time: '09:00',
         duration: '3h',
         cost: 0,
-        coordinates: [0, 0],
+        coordinates: safeCoordinates(base, destinationName, i),
         bookingRequired: false,
         emoji: '🌅',
       },
@@ -488,7 +533,7 @@ function generatePlaceholderDays(totalDays) {
         time: '13:00',
         duration: '1.5h',
         cost: 15,
-        coordinates: [0, 0],
+        coordinates: safeCoordinates(base, destinationName, i + 0.4),
         bookingRequired: false,
         emoji: '🍽️',
       },
@@ -499,7 +544,7 @@ function generatePlaceholderDays(totalDays) {
         time: '15:00',
         duration: '3h',
         cost: 20,
-        coordinates: [0, 0],
+        coordinates: safeCoordinates(base, destinationName, i + 0.8),
         bookingRequired: false,
         emoji: '🎭',
       },
@@ -510,7 +555,7 @@ function generatePlaceholderDays(totalDays) {
         time: '19:30',
         duration: '2h',
         cost: 25,
-        coordinates: [0, 0],
+        coordinates: safeCoordinates(base, destinationName, i + 1.2),
         bookingRequired: false,
         emoji: '🍷',
       },
@@ -518,19 +563,20 @@ function generatePlaceholderDays(totalDays) {
     meals: enrichMeals({}),
     transport: { type: 'walk', duration: '30min', cost: 0 },
     budgetEstimate: 60,
-    highlights: ['A descobrir'],
-    localSecret: 'Pergunta aos locais sobre os seus segredos favoritos',
+    highlights: [`Stay within one compact area of ${destinationName}`],
+    localSecret: `Ask at a small cafe near the final stop where staff eat after service; it is usually more reliable than a viral list.`,
     culturalNote: 'Respeita as tradições e costumes locais',
   }));
 }
 
 function createMinimalItinerary(destination) {
+  const coordinates = safeCoordinates(null, destination);
   return {
     destination: {
       name: destination,
       city: destination,
       country: 'Unknown',
-      coordinates: [0, 0],
+      coordinates,
       timezone: 'UTC',
       currency: { code: 'EUR', symbol: '€' },
     },
@@ -542,7 +588,7 @@ function createMinimalItinerary(destination) {
       budget: { min: 500, max: 2000, estimated: 1200, currency: 'EUR' },
       travelers: 1,
     },
-    days: generatePlaceholderDays(1),
+    days: generateFallbackDays(1, destination, coordinates),
     flights: enrichFlights(null),
     accommodation: enrichAccommodation(null),
     airportTransfer: enrichAirportTransfer(null),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './BudgetVisualization.module.css';
 
 /**
@@ -10,6 +10,23 @@ import styles from './BudgetVisualization.module.css';
 
 export default function BudgetVisualization({ budget }) {
   const [activeScenario, setActiveScenario] = useState(0);
+  const [barsVisible, setBarsVisible] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const node = sectionRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        window.setTimeout(() => setBarsVisible(true), 100);
+        observer.disconnect();
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   if (!budget || !budget.scenarios) {
     return (
@@ -34,7 +51,7 @@ export default function BudgetVisualization({ budget }) {
   const getPercentage = (value) => ((value / total) * 100).toFixed(0);
 
   return (
-    <div className={styles.section}>
+    <div className={styles.section} ref={sectionRef}>
       {/* Header */}
       <div className={styles.header}>
         <h2 className={styles.title}>
@@ -106,7 +123,7 @@ export default function BudgetVisualization({ budget }) {
               <div className={styles.breakdownBar}>
                 <div
                   className={`${styles.breakdownFill} ${styles[`fill_${key}`]}`}
-                  style={{ width: `${percentage}%` }}
+                  style={{ width: barsVisible ? `${percentage}%` : '0%' }}
                 />
               </div>
             </div>

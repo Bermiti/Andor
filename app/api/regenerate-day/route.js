@@ -1,11 +1,21 @@
 import { generateFallbackAdaptedDay } from '../../lib/fallback-adapt';
+import { apiError, cleanInteger, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
+import { logger } from '../../lib/logger';
 
 export async function POST(req) {
   try {
-    const { destination, dayNumber, currentDay, feedback, allDays } = await req.json();
+    const body = await readJsonBody(req, 'regenerate_day');
+    if (!body || typeof body !== 'object') {
+      return apiError('MALFORMED_JSON', 'Pedido inválido. Tenta novamente.', 400, false);
+    }
+    const destination = cleanString(body.destination, 'Lisbon', 90);
+    const dayNumber = cleanInteger(body.dayNumber, 1, 1, 14);
+    const currentDay = body.currentDay && typeof body.currentDay === 'object' ? body.currentDay : {};
+    const feedback = cleanString(body.feedback, '', 600);
+    const tripContext = body.tripContext && typeof body.tripContext === 'object' ? body.tripContext : {};
 
     if (!feedback) {
-      return Response.json({ error: 'Feedback is required' }, { status: 400 });
+      return apiError('FEEDBACK_REQUIRED', 'Escolhe ou escreve o que queres mudar neste dia.', 400, false);
     }
 
     const systemPrompt = `You are ANDOR — an elite AI travel agent.
@@ -15,7 +25,15 @@ Destination: ${destination}
 Day Number: ${dayNumber}
 Current Day Data: ${JSON.stringify(currentDay)}
 User Feedback on what to change: "${feedback}"
-Total Itinerary Days Context: ${JSON.stringify(allDays.map(d => ({ dayNumber: d.dayNumber, title: d.title })))}
+Trip Context: ${JSON.stringify({
+  totalDays: cleanInteger(tripContext.totalDays, dayNumber, 1, 14),
+  travelStyle: cleanString(tripContext.travelStyle, '', 80),
+  groupType: cleanString(tripContext.groupType, '', 80),
+  budget: cleanString(tripContext.budget, '', 120),
+  existingDayTitles: Array.isArray(tripContext.existingDayTitles)
+    ? tripContext.existingDayTitles.map((title) => cleanString(title, '', 120)).slice(0, 14)
+    : [],
+})}
 
 CRITICAL INSTRUCTION:
 - Regenerate ONLY this day. DO NOT return the full itinerary. DO NOT modify other days.
@@ -136,7 +154,7 @@ Use this exact structure for the day object:
     const groqKey = process.env.GROQ_API_KEY;
     const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
-    if (groqKey && groqKey !== 'cola_aqui_a_tua_chave') {
+    if (hasProviderKey(groqKey)) {
       try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -175,15 +193,15 @@ Use this exact structure for the day object:
             }
             return Response.json({ day: parsed });
           } catch (e) {
-            // parse error fallback
+            logger.warn('regenerate_day:groq_parse_failed', e, { destination, dayNumber });
           }
         }
       } catch (e) {
-        // groq failed
+        logger.warn('regenerate_day:groq_provider_failed', e, { destination, dayNumber });
       }
     }
 
-    if (geminiKey && geminiKey !== 'cola_aqui_a_tua_chave_gemini') {
+    if (hasProviderKey(geminiKey)) {
       try {
         const { google } = await import('@ai-sdk/google');
         const { generateObject } = await import('ai');
@@ -235,17 +253,23 @@ Use this exact structure for the day object:
 
         return Response.json({ day: object });
       } catch (e) {
-        // gemini failed
+        logger.warn('regenerate_day:gemini_provider_failed', e, { destination, dayNumber });
       }
     }
 
     // Offline fallback
-    const itineraryMock = { days: allDays };
+    const totalDays = cleanInteger(tripContext.totalDays, dayNumber, 1, 14);
+    const itineraryMock = {
+      days: Array.from({ length: totalDays }, (_, index) => (
+        index === dayNumber - 1 ? currentDay : { dayNumber: index + 1, title: `Day ${index + 1}`, stops: [] }
+      )),
+    };
     const activeDayIndex = dayNumber - 1;
     const fallbackDay = generateFallbackAdaptedDay(itineraryMock, activeDayIndex, feedback);
     return Response.json({ day: fallbackDay });
 
   } catch (error) {
-    return Response.json({ error: 'Failed to regenerate day' }, { status: 500 });
+    const errorId = logger.error('regenerate_day:unhandled', error);
+    return apiError('DAY_REGENERATION_FAILED', 'Não foi possível regenerar o dia. Tenta novamente.', 500, true, { errorId });
   }
 }

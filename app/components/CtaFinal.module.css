@@ -1,6 +1,6 @@
 .section {
-  background: #0A0E1A;
-  padding: 120px 0;
+  background: var(--bg-0);
+  padding: var(--space-9) 0;
   width: 100%;
   position: relative;
   overflow: hidden;
@@ -27,11 +27,11 @@
 .card {
   background: linear-gradient(135deg, rgba(13, 17, 23, 0.7) 0%, rgba(10, 14, 26, 0.7) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 32px;
+  border-radius: var(--r-xl);
   padding: var(--space-12) var(--space-8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--s-4);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -39,14 +39,14 @@
 }
 
 .title {
-  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-family: var(--font-heading);
   font-size: clamp(32px, 5vw, 48px);
   font-weight: 600;
-  color: #ffffff;
+  color: var(--t-1);
   margin-bottom: var(--space-4);
   max-width: 720px;
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .subtitle {
@@ -68,35 +68,35 @@
 }
 
 .primaryBtn {
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-size: var(--text-base);
   font-weight: 700;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--gold, #D4A843) 0%, var(--coral, #FF6B6B) 100%);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--coral) 100%);
   border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 14px var(--space-8);
-  border-radius: var(--radius-xl);
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: all var(--transition-base);
-  box-shadow: 0 4px 20px rgba(212, 168, 83, 0.25);
+  box-shadow: var(--s-coral);
   min-width: 180px;
 }
 
 .primaryBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(212, 168, 83, 0.35);
-  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: var(--s-coral);
+  filter: brightness(1.1);
 }
 
 .secondaryBtn {
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-size: var(--text-base);
   font-weight: 700;
   color: #ffffff;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 14px var(--space-8);
-  border-radius: var(--radius-xl);
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: all var(--transition-base);
   min-width: 180px;
@@ -105,48 +105,32 @@
 .secondaryBtn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  color: var(--gold);
 }
 
-.badgesWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.cardsRow {
+.trustSignals {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--space-3);
-  opacity: 0.6;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.92rem;
 }
 
-.cardBadge {
-  font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 700;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  letter-spacing: 0.05em;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.noCardText {
-  font-family: var(--font-body);
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+.trustSignals span {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Responsive configurations */
 @media (max-width: 600px) {
   .card {
     padding: var(--space-8) var(--space-4);
-    border-radius: 24px;
+    border-radius: var(--r-xl);
   }
 
   .buttons {

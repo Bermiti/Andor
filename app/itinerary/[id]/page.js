@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getItinerary, saveGeneratedItinerary } from '../../lib/itinerary-store';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
+import { getJson, setJson } from '../../lib/storage';
 import { enrichItinerary } from '../../lib/itinerary-enricher';
 import { validateAndFixCoordinates } from '../../lib/coordinate-validator';
 import { safeParse } from '../../lib/safe-json';
@@ -19,6 +20,7 @@ import AirportTransferSection from '../../components/AirportTransferSection';
 import AlertsSection from '../../components/AlertsSection';
 import LocalTransportSection from '../../components/LocalTransportSection';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import FavoriteButton from '../../components/FavoriteButton';
 import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { Modal, Drawer } from '../../components/ui/Modal';
@@ -114,18 +116,14 @@ export default function ItineraryPage() {
   const [adaptFeedback, setAdaptFeedback] = useState('');
   const [adaptChecks, setAdaptChecks] = useState({});
   const [favorites, setFavorites] = useState([]);
+  const [versions, setVersions] = useState([]);
+  const [showVersionsModal, setShowVersionsModal] = useState(false);
+  const [packingList, setPackingList] = useState(null);
+  const [checkedPacking, setCheckedPacking] = useState({});
+  const [isPackingGenerating, setIsPackingGenerating] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('andor_favorites');
-      if (stored) {
-        try {
-          setFavorites(JSON.parse(stored) || []);
-        } catch (e) {
-          setFavorites([]);
-        }
-      }
-    }
+    setFavorites(getJson('andor_favorites', [], 'local') || []);
   }, []);
 
   const isStopSaved = (stopName) => {
@@ -140,6 +138,7 @@ export default function ItineraryPage() {
   const printRef = useRef();
   const timelineRef = useRef();
   const dayTabRefs = useRef([]);
+  const versionsLoadedRef = useRef(false);
 
   useEffect(() => {
     let data = null;
@@ -160,15 +159,13 @@ export default function ItineraryPage() {
       } else {
         const urlId = urlParams.get('id');
         if (urlId) {
-          const stored = localStorage.getItem(`andor_shared_${urlId}`);
-          if (stored) data = safeParse(stored, null);
+          data = getJson(`andor_shared_${urlId}`, null, 'local');
         }
       }
     } else {
       data = getItinerary(params.id);
       if (!data && typeof window !== 'undefined') {
-        const stored = localStorage.getItem(`andor_shared_${params.id}`);
-        if (stored) data = safeParse(stored, null);
+        data = getJson(`andor_shared_${params.id}`, null, 'local');
       }
     }
 
@@ -213,11 +210,118 @@ export default function ItineraryPage() {
     });
   }, [activeDay]);
 
+  useEffect(() => {
+    if (!itinerary || !id || versionsLoadedRef.current) return;
+    versionsLoadedRef.current = true;
+    const versionKey = `andor_itinerary_versions_${id}`;
+    const storedVersions = getJson(versionKey, [], 'local') || [];
+    if (storedVersions.length > 0) {
+      setVersions(storedVersions);
+    } else {
+      const original = {
+        id: `v-${Date.now()}`,
+        label: 'Versão 1 — Original',
+        createdAt: new Date().toISOString(),
+        itinerary,
+      };
+      setVersions([original]);
+      setJson(versionKey, [original], 'local');
+    }
+
+    const storedPacking = getJson(`andor_packing_${id}`, null, 'local');
+    if (storedPacking) setPackingList(storedPacking);
+    setCheckedPacking(getJson(`andor_packing_checked_${id}`, {}, 'local') || {});
+  }, [id, itinerary]);
+
+  const saveItinerarySnapshot = (nextItinerary) => {
+    if (!id) return;
+    setJson(`andor_itinerary_${id}`, nextItinerary, 'session');
+    setJson(`andor_shared_${id}`, nextItinerary, 'local');
+  };
+
+  const saveVersion = (label, nextItinerary) => {
+    if (!id) return;
+    const versionKey = `andor_itinerary_versions_${id}`;
+    const currentVersions = getJson(versionKey, [], 'local') || versions;
+    const nextVersion = {
+      id: `v-${Date.now()}`,
+      label: `Versão ${currentVersions.length + 1} — ${label}`,
+      createdAt: new Date().toISOString(),
+      itinerary: nextItinerary,
+    };
+    const updated = [...currentVersions, nextVersion].slice(-10);
+    setVersions(updated);
+    setJson(versionKey, updated, 'local');
+  };
+
+  const restoreVersion = (version) => {
+    setItinerary(version.itinerary);
+    saveItinerarySnapshot(version.itinerary);
+    setShowVersionsModal(false);
+    showToast(`📋 ${version.label} restaurada.`, 'success');
+  };
+
+  const buildPackingList = () => {
+    const city = (dest.city || dest.name || '').toLowerCase();
+    const isJapan = city.includes('tokyo') || city.includes('tóquio') || city.includes('kyoto');
+    const isWarm = ['bali', 'marrakech'].some((place) => city.includes(place));
+    const hasTemples = (itinerary.days || []).some((day) =>
+      JSON.stringify(day).toLowerCase().includes('temple') ||
+      JSON.stringify(day).toLowerCase().includes('shrine') ||
+      JSON.stringify(day).toLowerCase().includes('templo')
+    );
+
+    return {
+      essential: [
+        isJapan ? 'Adaptador tipo A/B (100V)' : 'Adaptador universal compacto',
+        isJapan ? 'Cartão Suica/PASMO no telemóvel' : 'Cartão bancário sem taxas internacionais',
+        'Cópia offline do passaporte e seguro',
+        'Carteira pequena para dinheiro local',
+      ],
+      clothes: [
+        isWarm ? 'Roupa leve e respirável' : 'Camada leve para noites frescas',
+        'Calçado confortável para 10.000+ passos/dia',
+        hasTemples ? 'Roupa modesta para templos e santuários' : 'Uma peça mais arranjada para jantar',
+        'Capa fina para chuva imprevisível',
+      ],
+      apps: [
+        'Google Maps com áreas offline',
+        'Google Translate em modo câmara',
+        isJapan ? 'Tabelog para restaurantes locais' : 'TheFork ou app local de reservas',
+        'Wallet com cartões e bilhetes guardados',
+      ],
+      avoid: [
+        'Mala de cabine demasiado rígida para transportes cheios',
+        'Sapatos novos por estrear',
+        'Dinheiro em excesso no mesmo bolso',
+      ],
+    };
+  };
+
+  const handleGeneratePackingList = async () => {
+    setIsPackingGenerating(true);
+    window.setTimeout(() => {
+      const nextList = buildPackingList();
+      setPackingList(nextList);
+      setJson(`andor_packing_${id}`, nextList, 'local');
+      setIsPackingGenerating(false);
+      showToast('📦 Lista de bagagem criada.', 'success');
+    }, 650);
+  };
+
+  const togglePackingItem = (category, item) => {
+    const key = `${category}:${item}`;
+    const next = { ...checkedPacking, [key]: !checkedPacking[key] };
+    setCheckedPacking(next);
+    setJson(`andor_packing_checked_${id}`, next, 'local');
+  };
+
   const createShareUrl = () => {
     const uuid = crypto.randomUUID();
-    try {
-      localStorage.setItem(`andor_shared_${uuid}`, JSON.stringify(itinerary));
-    } catch (storageErr) {}
+    const stored = setJson(`andor_shared_${uuid}`, itinerary, 'local');
+    if (!stored) {
+      showToast('Não foi possível guardar o link neste navegador.', 'warning');
+    }
     return `${window.location.origin}/itinerary/share/${uuid}`;
   };
 
@@ -438,7 +542,13 @@ export default function ItineraryPage() {
           dayNumber: activeDay + 1,
           currentDay: currentDay,
           feedback: combined,
-          allDays: itinerary.days
+          tripContext: {
+            totalDays: itinerary.days?.length || trip.totalDays || activeDay + 1,
+            travelStyle: trip.travelStyle,
+            groupType: trip.groupType,
+            budget: budgetDisplay,
+            existingDayTitles: (itinerary.days || []).map((day) => day.title),
+          }
         })
       });
 
@@ -459,9 +569,12 @@ export default function ItineraryPage() {
       const val = validateAndNormalize(mockItinerary);
       const normalizedDay = val.normalized?.days?.[activeDay] || newDay;
 
-      const newItinerary = { ...itinerary };
-      newItinerary.days[activeDay] = normalizedDay;
+      const newDays = [...(itinerary.days || [])];
+      newDays[activeDay] = normalizedDay;
+      const newItinerary = { ...itinerary, days: newDays, updatedAt: new Date().toISOString() };
       setItinerary(newItinerary);
+      saveItinerarySnapshot(newItinerary);
+      saveVersion(`Dia ${activeDay + 1} regenerado`, newItinerary);
       showToast(`✅ Dia ${activeDay + 1} regenerado com sucesso!`, 'success');
     } catch (error) {
       showToast('❌ Ocorreu um erro inesperado.', 'error');
@@ -502,19 +615,11 @@ export default function ItineraryPage() {
     }
     
     setFavorites(nextFavorites);
-    // Safely write to localStorage with fallback
-    try {
-      localStorage.setItem('andor_favorites', JSON.stringify(nextFavorites));
-    } catch (err1) {
-      // silent fail
+    if (!setJson('andor_favorites', nextFavorites, 'local')) {
+      showToast('Não foi possível guardar favoritos neste navegador.', 'warning');
     }
 
-    // Also update andor_favorite_activities for the favorites page with error handling
-    const storedActs = localStorage.getItem('andor_favorite_activities');
-    let favActivities = [];
-    if (storedActs) {
-      try { favActivities = JSON.parse(storedActs) || []; } catch (e) {}
-    }
+    let favActivities = getJson('andor_favorite_activities', [], 'local') || [];
     if (exists) {
       favActivities = favActivities.filter(a => a.name !== stopName);
     } else {
@@ -530,11 +635,7 @@ export default function ItineraryPage() {
         dateSaved: new Date().toLocaleDateString('pt-PT')
       });
     }
-    try {
-      localStorage.setItem('andor_favorite_activities', JSON.stringify(favActivities));
-    } catch (err2) {
-      // silent fail
-    }
+    setJson('andor_favorite_activities', favActivities, 'local');
     
     trackEvent(exists ? 'favorite_removed' : 'favorite_added', {
       type: 'activity',
@@ -664,6 +765,8 @@ export default function ItineraryPage() {
               <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title="Editar este dia">✏️ <span>Editar</span></button>
               <button className={styles.btnSecondary} onClick={handleShare} aria-label="Partilhar itinerário" title="Partilhar itinerário">🔗 <span>Partilhar</span></button>
               <button className={styles.btnSecondary} onClick={handleExportPDF} aria-label="Exportar PDF" title="Exportar PDF">📄 <span>PDF</span></button>
+              <button className={styles.btnSecondary} onClick={() => setShowVersionsModal(true)} aria-label="Ver versões" title="Ver versões">📋 <span>Versões</span></button>
+              <button className={styles.btnSecondary} onClick={handleGeneratePackingList} aria-label="Gerar lista de bagagem" title="Gerar lista de bagagem">📦 <span>Bagagem</span></button>
               <button className={styles.btnSecondary} onClick={copyCurrentDayPlan} aria-label="Copiar plano do dia" title="Copiar plano do dia">📋 <span>Copiar</span></button>
               <button className={styles.btnPrimary} onClick={openAIChat} aria-label="Pedir ajuda ao Andor" title="Pedir ajuda ao Andor">💬 <span>Andor</span></button>
             </div>
@@ -672,7 +775,7 @@ export default function ItineraryPage() {
 
         {/* TABS DOS DIAS */}
         <div className={styles.dayTabsWrapper}>
-          <div className={styles.dayTabs}>
+          <div className={styles.dayTabs} data-testid="day-tabs">
             {itinerary.days?.map((day, i) => {
               const dayBudget = getDayBudget(day);
               return (
@@ -681,6 +784,7 @@ export default function ItineraryPage() {
                   ref={(node) => { dayTabRefs.current[i] = node; }}
                   className={`${styles.dayTab} ${activeDay === i ? styles.dayTabActive : ''}`}
                   onClick={() => handleDayChange(i)}
+                  data-testid={`day-tab-${i + 1}`}
                 >
                   <div className={styles.dayTabEmoji}>
                     {isAdapting && activeDay === i ? '⏳' : getDayEmoji(day)}
@@ -716,7 +820,7 @@ export default function ItineraryPage() {
           <div className={styles.leftPanel}>
             
             {/* MAPA INTERACTIVO */}
-            <div className={styles.mapContainer}>
+            <div className={styles.mapContainer} data-testid="itinerary-map-container">
               <ErrorBoundary>
                 <LiveMap stops={currentDay.stops || []} destination={dest} />
               </ErrorBoundary>
@@ -804,7 +908,7 @@ export default function ItineraryPage() {
                         const crowd = getCrowdLabel(stop.crowdLevel);
                         
                         return (
-                          <div key={idx} id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`}>
+                          <div key={idx} id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`} data-testid="activity-card">
                             
                             {/* Collapsed State */}
                             <button
@@ -903,18 +1007,19 @@ export default function ItineraryPage() {
                                   <button
                                     className={styles.btnOutline}
                                     onClick={() => setBookingStop(stop)}
+                                    data-testid="booking-button"
                                   >
                                     🎟️ Reservar
                                   </button>
-                                  <button
+                                  <FavoriteButton
+                                    itemId={`${dest.city || dest.name || 'trip'}-${stop.name}`}
+                                    itemType="activity"
                                     className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleSaved(stop);
-                                    }}
-                                  >
-                                    {isSaved ? '❤️ Guardado' : '🤍 Guardar'}
-                                  </button>
+                                    initialActive={isSaved}
+                                    label="Guardar"
+                                    activeLabel="Guardado"
+                                    onToggle={() => toggleSaved(stop)}
+                                  />
                                 </div>
                               </div>
                             )}
@@ -986,6 +1091,7 @@ export default function ItineraryPage() {
               className={styles.mobileBudgetToggle}
               onClick={() => setShowMobileBudget((value) => !value)}
               aria-expanded={showMobileBudget}
+              data-testid="mobile-budget-toggle"
             >
               💰 Ver Orçamento Completo {showMobileBudget ? '▲' : '▼'}
             </button>
@@ -1057,6 +1163,44 @@ export default function ItineraryPage() {
                 </ul>
               </div>
             )}
+
+            <div className={styles.sidebarCard}>
+              <div className={styles.packingHeader}>
+                <h3 className={styles.tipsHeading}>📦 Lista de Bagagem</h3>
+                <button className={styles.btnSecondary} onClick={handleGeneratePackingList} disabled={isPackingGenerating}>
+                  {isPackingGenerating ? 'A gerar...' : packingList ? 'Atualizar' : 'Gerar'}
+                </button>
+              </div>
+              {packingList ? (
+                <div className={styles.packingList}>
+                  {Object.entries({
+                    essential: '✈️ Essencial',
+                    clothes: '👕 Roupa',
+                    apps: '📱 Apps',
+                    avoid: '❌ Não levar',
+                  }).map(([category, label]) => (
+                    <div key={category} className={styles.packingGroup}>
+                      <h4>{label}</h4>
+                      {(packingList[category] || []).map((item) => {
+                        const checkedKey = `${category}:${item}`;
+                        return (
+                          <label key={item} className={styles.packingItem}>
+                            <input
+                              type="checkbox"
+                              checked={!!checkedPacking[checkedKey]}
+                              onChange={() => togglePackingItem(category, item)}
+                            />
+                            <span>{item}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.sidebarHint}>Gera uma checklist adaptada ao destino, estação e ritmo do teu roteiro.</p>
+              )}
+            </div>
 
             {/* ACTIONS */}
             <div className={styles.sidebarActionsCol}>
@@ -1132,11 +1276,32 @@ export default function ItineraryPage() {
         <div className={styles.sharePreview}>
           <span>URL privada deste roteiro</span>
           <input value={shareUrl} readOnly aria-label="URL de partilha" />
+          <span>Este link usa armazenamento local deste navegador. Para partilha garantida, exporta também o PDF.</span>
         </div>
         <div className={styles.shareActions}>
           <button className={styles.btnPrimary} onClick={copyShareUrl}>Copiar link</button>
           <a className={styles.btnOutline} href={`https://wa.me/?text=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
           <a className={styles.btnOutline} href={`mailto:?subject=${encodeURIComponent('O meu roteiro Andor')}&body=${encodeURIComponent(shareUrl)}`}>Email</a>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showVersionsModal}
+        onClose={() => setShowVersionsModal(false)}
+        title="📋 Versões do Itinerário"
+      >
+        <div className={styles.versionList}>
+          {versions.map((version) => (
+            <button
+              key={version.id}
+              type="button"
+              className={styles.versionItem}
+              onClick={() => restoreVersion(version)}
+            >
+              <strong>{version.label}</strong>
+              <span>{new Date(version.createdAt).toLocaleString('pt-PT')}</span>
+            </button>
+          ))}
         </div>
       </Modal>
 

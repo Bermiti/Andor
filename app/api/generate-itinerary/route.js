@@ -3,6 +3,8 @@ import { validateAndNormalize } from '../../lib/itinerary-validate';
 import PHASE11_ENHANCED_SYSTEM_PROMPT from '../../lib/phase11-2-enhanced-prompt';
 import { validateAndFixCoordinates, getDestinationCenter } from '../../lib/coordinate-validator';
 import { validateAllDayTitles, isBannedDayTitle, suggestDayTitle } from '../../lib/day-title-validator';
+import { apiError, cleanInteger, cleanList, cleanLocale, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
+import { logger } from '../../lib/logger';
 
 function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedDays) {
   if (!itinerary || typeof itinerary !== 'object') {
@@ -111,11 +113,25 @@ function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedD
 
 export async function POST(req) {
   try {
-    const { destination, days, budget, travelers, interests, locale, style } = await req.json();
-    const activeLocale = locale || 'pt';
+    const body = await readJsonBody(req, 'generate_itinerary');
+    if (!body || typeof body !== 'object') {
+      return apiError('MALFORMED_JSON', 'Pedido inválido. Verifica os dados e tenta novamente.', 400, false);
+    }
 
-    if (!destination) {
-      return Response.json({ error: 'Destination is required' }, { status: 400 });
+    const destination = cleanString(body.destination, '', 90);
+    const days = cleanInteger(body.days, 5, 1, 14);
+    const budget = cleanString(body.budget || body.budgetTier, 'comfort', 40);
+    const travelers = cleanInteger(body.travelers ?? body.travellerCount ?? body.people, 2, 1, 12);
+    const interests = cleanList(body.interests || body.travelStyle, 8, 60);
+    const style = cleanString(body.style || interests.join(', '), 'culture', 120);
+    const activeLocale = cleanLocale(body.locale);
+
+    if (destination.length < 2) {
+      return apiError('DESTINATION_REQUIRED', 'Indica um destino para criar o itinerário.', 400, false);
+    }
+
+    if (/https?:\/\/|<script|ignore previous/i.test(destination)) {
+      return apiError('INVALID_DESTINATION', 'O destino parece inválido. Usa apenas o nome da cidade ou região.', 400, false);
     }
 
     const systemPrompt = `You are ANDOR — an elite AI travel agent with the combined
@@ -207,7 +223,7 @@ Rome: lat 41.8-42.0, lng 12.4-12.6
 Amsterdam: lat 52.3-52.4, lng 4.8-5.0
 Bangkok: lat 13.6-13.9, lng 100.4-100.7
 
-NEVER return [0,0] or coordinates from wrong city.
+NEVER return zero-zero coordinates or coordinates from wrong city.
 If unsure of exact coords: use city center as fallback.
 
 FLIGHT KNOWLEDGE:
@@ -608,7 +624,7 @@ Lisbon: lat 38.7-38.8, lng -9.2 to -9.0
 Rome: lat 41.8-42.0, lng 12.4-12.6
 Amsterdam: lat 52.3-52.4, lng 4.8-5.0
 Bangkok: lat 13.6-13.9, lng 100.4-100.7
-NEVER return [0,0] or coordinates from a different city.
+NEVER return zero-zero coordinates or coordinates from a different city.
 If unsure of exact coords: use city center as fallback.
 
 2. UNIQUE DAY TITLES (MANDATORY):
@@ -650,7 +666,7 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
     const groqKey = process.env.GROQ_API_KEY;
     const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
-    if (groqKey && groqKey !== 'cola_aqui_a_tua_chave') {
+    if (hasProviderKey(groqKey)) {
       try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -677,15 +693,15 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
             const result = normalizeGeneratedItinerary(parsed, destination, days);
             return Response.json(result);
           } catch (e) {
-            // parse error, try other models
+            logger.warn('generate_itinerary:groq_parse_failed', e, { destination, days });
           }
         }
       } catch (e) {
-        // Groq API fallback
+        logger.warn('generate_itinerary:groq_provider_failed', e, { destination, days });
       }
     }
 
-    if (geminiKey && geminiKey !== 'cola_aqui_a_tua_chave_gemini') {
+    if (hasProviderKey(geminiKey)) {
       try {
         const { google } = await import('@ai-sdk/google');
         const { generateObject } = await import('ai');
@@ -955,17 +971,23 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
         
         return Response.json(result);
       } catch (e) {
-        // Gemini fallback
+        logger.warn('generate_itinerary:gemini_provider_failed', e, { destination, days });
       }
     }
 
     // Fallback — always works
     const itinerary = generateFallbackItinerary(destination, days, budget);
-    return Response.json(itinerary);
+    const validation = validateAndNormalize(itinerary);
+    return Response.json(validation.normalized || itinerary);
 
   } catch (error) {
-    // generation failed, use fallback
-    const fallback = generateFallbackItinerary('Lisbon', 2);
-    return Response.json(fallback);
+    const errorId = logger.error('generate_itinerary:unhandled', error);
+    return apiError(
+      'ITINERARY_GENERATION_FAILED',
+      'Não foi possível gerar o itinerário. Tenta novamente.',
+      500,
+      true,
+      { errorId }
+    );
   }
 }

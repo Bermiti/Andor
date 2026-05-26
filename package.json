@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "eval:itineraries": "node scripts/eval-itineraries.js",
+    "check:launch": "node scripts/predeploy-check.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.73",

@@ -10,9 +10,14 @@ export default function OnboardingModal() {
   const [budget, setBudget] = useState('');
 
   useEffect(() => {
-    const hasOnboarded = localStorage.getItem('andor_onboarded');
-    if (!hasOnboarded) {
-      setIsOpen(true);
+    try {
+      const hasOnboarded = localStorage.getItem('andor_onboarded');
+      const requested = new URLSearchParams(window.location.search).get('onboarding') === 'true';
+      if (!hasOnboarded && requested) {
+        setIsOpen(true);
+      }
+    } catch (error) {
+      setIsOpen(false);
     }
   }, []);
 
@@ -24,8 +29,10 @@ export default function OnboardingModal() {
   };
 
   const handleComplete = () => {
-    localStorage.setItem('andor_user', JSON.stringify({ name, persona, budget }));
-    localStorage.setItem('andor_onboarded', 'true');
+    try {
+      localStorage.setItem('andor_user', JSON.stringify({ name, persona, budget }));
+      localStorage.setItem('andor_onboarded', 'true');
+    } catch (error) {}
     setIsOpen(false);
   };
 

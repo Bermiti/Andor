@@ -254,7 +254,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
   );
 
   return (
-    <div className={styles.wizardOverlay}>
+    <div className={styles.wizardOverlay} data-testid="creation-wizard">
       {bgImage && <div className={styles.wizardBg} style={{ backgroundImage: `url(${bgImage})` }}></div>}
       <div className={styles.wizardBgMask}></div>
 
@@ -299,6 +299,8 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                       value={destination}
                       onChange={(e) => { setDestination(e.target.value); setShowDropdown(true); }}
                       onFocus={() => setShowDropdown(true)}
+                      aria-label="Destino da viagem"
+                      data-testid="wizard-destination-input"
                     />
                     {showDropdown && destination && filteredDestinations.length > 0 && (
                       <div className={styles.autocomplete}>
@@ -392,10 +394,13 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                   ].map(s => {
                     const isSelected = stylesList.includes(s.id);
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={s.id}
                         className={`${styles.styleCard} ${isSelected ? styles.selected : ''}`}
                         onClick={() => handleStyleToggle(s.id)}
+                        aria-pressed={isSelected}
+                        data-testid={`wizard-style-${s.id}`}
                       >
                         <div className={styles.styleCardBg} style={{ backgroundImage: `url(${s.bg})` }}></div>
                         <div className={`${styles.styleCardMask} ${isSelected ? styles.selectedMask : ''}`}></div>
@@ -405,7 +410,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                           <span className={styles.styleLabel}>{s.label}</span>
                           <span className={styles.styleDesc}>{s.desc}</span>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -425,10 +430,13 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                   ].map(t => {
                     const isSelected = budgetTier === t.id;
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={t.id}
                         className={`${styles.budgetCard} ${isSelected ? styles.selected : ''}`}
                         onClick={() => setBudgetTier(t.id)}
+                        aria-pressed={isSelected}
+                        data-testid={`wizard-budget-${t.id}`}
                       >
                         {isSelected && <div className={styles.checkmark}>✓</div>}
                         <div className={styles.budgetTop}>
@@ -436,7 +444,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                           <span className={styles.budgetRange}>{t.range}</span>
                         </div>
                         <div className={styles.budgetDesc}>{t.desc}</div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -451,6 +459,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                   className={styles.nextBtn}
                   onClick={handleNext}
                   disabled={step === 1 && !isSurprise && !destination}
+                  data-testid="wizard-next"
                 >
                   Próximo &rarr;
                 </button>
@@ -460,13 +469,14 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                   className={styles.submitBtn}
                   onClick={handleSubmit}
                   disabled={!budgetTier}
+                  data-testid="wizard-submit"
                 >
                   ✨ Criar o Meu Itinerário
                 </button>
               )}
 
               {step > 1 && (
-                <button type="button" className={styles.backBtn} onClick={handleBack}>
+                <button type="button" className={styles.backBtn} onClick={handleBack} data-testid="wizard-back">
                   &larr; Anterior
                 </button>
               )}

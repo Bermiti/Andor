@@ -6,7 +6,7 @@
   gap: 2rem;
   padding: 2rem;
   background: linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(234, 179, 8, 0) 100%);
-  border-radius: 1.5rem;
+  border-radius: var(--r-xl);
   border: 1px solid rgba(234, 179, 8, 0.1);
   backdrop-filter: blur(10px);
   animation: fadeIn 0.6s ease-out 0.2s both;
@@ -96,6 +96,7 @@
 }
 
 .scenarioPrice {
+  font-family: var(--font-mono);
   font-size: 1.25rem;
   font-weight: 700;
   color: #fde047;
@@ -116,6 +117,7 @@
 }
 
 .totalValue {
+  font-family: var(--font-mono);
   font-size: 3rem;
   font-weight: 900;
   background: linear-gradient(135deg, #fde047, #eab308);
@@ -165,6 +167,7 @@
 }
 
 .breakdownValue {
+  font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 700;
   color: #fde047;
@@ -180,7 +183,7 @@
 .breakdownFill {
   height: 100%;
   border-radius: 4px;
-  transition: width 0.4s ease;
+  transition: width 800ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fill_flights {

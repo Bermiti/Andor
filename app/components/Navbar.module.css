@@ -97,6 +97,17 @@
   gap: var(--space-4);
 }
 
+.mobileDivider,
+.mobileSectionTitle,
+.mobileLangList,
+.mobileThemeToggle,
+.mobileActions,
+.loginBtnMobile,
+.ctaBtnMobile,
+.userMenuItemMobile {
+  display: none;
+}
+
 .loginBtn {
   font-family: var(--font-heading);
   font-size: var(--text-sm);
@@ -603,3 +614,15 @@
   border-color: var(--border-gold);
 }
 
+@media (min-width: 769px) {
+  .mobileDivider,
+  .mobileSectionTitle,
+  .mobileLangList,
+  .mobileThemeToggle,
+  .mobileActions,
+  .loginBtnMobile,
+  .ctaBtnMobile,
+  .userMenuItemMobile {
+    display: none !important;
+  }
+}

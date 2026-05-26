@@ -6,7 +6,9 @@ const testimonials = [
     name: 'João & Sofia',
     avatarColor: '#E8604A',
     initials: 'JS',
-    quote: '"A nossa lua de mel em Bali foi perfeita. O Andor descobriu um restaurante numa falésia que não estava em guia nenhum. Pagámos 15€ por um pôr do sol inesquecível."',
+    city: 'Porto',
+    date: 'Março 2025',
+    quote: 'A nossa lua de mel em Bali foi perfeita. O Andor levou-nos ao Warung Babi Guling Ibu Oka antes da fila e ainda encaixou um pôr do sol tranquilo em Amed.',
     rating: 5,
     dest: 'Bali'
   },
@@ -14,7 +16,9 @@ const testimonials = [
     name: 'Marta R.',
     avatarColor: '#8B5CF6',
     initials: 'MR',
-    quote: '"Fui sozinha para Tóquio e mudei os planos no terceiro dia por causa da chuva. A IA sugeriu instantaneamente uma rota pelas galerias de arte subterrâneas."',
+    city: 'Coimbra',
+    date: 'Novembro 2025',
+    quote: 'Fui sozinha para Tóquio e mudei os planos no terceiro dia por causa da chuva. A IA trocou Harajuku por Nezu Museum e salvou-me o dia.',
     rating: 5,
     dest: 'Tóquio'
   },
@@ -22,15 +26,19 @@ const testimonials = [
     name: 'Família Costa',
     avatarColor: '#00C9A7',
     initials: 'FC',
-    quote: '"Viajar com crianças para Paris parecia impossível. O roteiro incluiu parques a cada 2h e evitou as filas monstruosas do Louvre com passes mágicos."',
+    city: 'Braga',
+    date: 'Abril 2025',
+    quote: 'Viajar com crianças para Paris parecia impossível. O roteiro pôs Luxembourg Gardens entre museus e marcou o Louvre à sexta à noite, sem correria.',
     rating: 5,
     dest: 'Paris'
   },
   {
-    name: 'Pedro S.',
+    name: 'Inês Almeida',
     avatarColor: '#4A9EE8',
-    initials: 'PS',
-    quote: '"Estava farto de gastar horas a ler blogs para planear escapadinhas. O Andor fez em 10 segundos o que eu demorava 2 semanas a fazer. É bruxaria."',
+    initials: 'IA',
+    city: 'Lisboa',
+    date: 'Maio 2025',
+    quote: 'Queria Roma sem cair no circuito automático. O Andor mandou-nos ao Palazzo Altemps de manhã e deixou o Trastevere só para jantar. Pareceu pensado por alguém de lá.',
     rating: 5,
     dest: 'Roma'
   }
@@ -65,7 +73,7 @@ export default function HomeTestimonials() {
                 </div>
                 <div className={styles.authorInfo}>
                   <h4>{t.name}</h4>
-                  <span>Viagem a {t.dest}</span>
+                  <span>{t.city} · {t.date} · Viagem a {t.dest}</span>
                 </div>
               </div>
             </div>

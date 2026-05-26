@@ -1,0 +1,1171 @@
+{
+  "destination": {
+    "city": "Rome",
+    "country": "Italy",
+    "countryCode": "IT",
+    "flag": "IT",
+    "coordinates": [
+      41.9028,
+      12.4964
+    ],
+    "timezone": "Europe/Rome",
+    "currency": {
+      "code": "EUR",
+      "symbol": "EUR",
+      "euroRate": 1
+    }
+  },
+  "trip": {
+    "totalDays": 4,
+    "travelStyle": "history + food",
+    "groupType": "family",
+    "budgetTier": "mid-range",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-18",
+    "budgetBreakdown": {
+      "flights": {
+        "min": 160,
+        "max": 320
+      },
+      "accommodation": {
+        "total": 620
+      },
+      "food": {
+        "total": 360
+      },
+      "activities": {
+        "total": 260
+      },
+      "transport": {
+        "total": 42
+      },
+      "grandTotal": {
+        "min": 1442,
+        "max": 1602
+      },
+      "perPersonEstimate": {
+        "min": 481,
+        "max": 534
+      },
+      "currency": "EUR"
+    },
+    "topTips": [
+      "Book the highest-demand activity before flights if dates are fixed.",
+      "Keep one late afternoon unplanned every two days.",
+      "Use the first morning for the busiest landmark."
+    ]
+  },
+  "summary": {
+    "title": "Rome launch-readiness fixture",
+    "andorVerdict": "A realistic, logistics-aware 4-day plan for Rome."
+  },
+  "budgetBreakdown": {
+    "flights": [
+      160,
+      320
+    ],
+    "accommodation": 620,
+    "food": 360,
+    "activities": 260,
+    "transport": 42,
+    "total": [
+      1442,
+      1602
+    ],
+    "perPerson": [
+      481,
+      534
+    ]
+  },
+  "flightOptions": [
+    {
+      "airline": "ITA / Vueling / Ryanair",
+      "route": "Europe to Fiumicino or Ciampino",
+      "estimate": 220,
+      "bookingWindow": "Book 6-8 weeks ahead; school breaks fill quickly."
+    }
+  ],
+  "accommodation": {
+    "name": "Hotel Santa Maria",
+    "area": "Trastevere",
+    "nightlyEstimate": 155
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Ancient Stones, Small Steps: Colosseum Morning & Monti Pasta",
+      "emoji": "ancient",
+      "theme": "Colosseum and Monti",
+      "moodDescription": "A family-paced first day through Rome icons, with shade, snacks, and no forced marathon.",
+      "budgetEstimate": 73,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d1-a1",
+              "name": "Colosseum Arena Timed Entry",
+              "type": "history",
+              "emoji": "history",
+              "address": "Piazza del Colosseo 1, Roma",
+              "coordinates": [
+                41.8902,
+                12.4922
+              ],
+              "startTime": "09:00",
+              "duration": "2h",
+              "cost": 18,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Use a timed arena ticket and explain gladiator logistics before entering; kids engage faster.",
+              "photoKeyword": "Colosseum Arena Timed Entry travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d1-a2",
+              "name": "Roman Forum View from Campidoglio",
+              "type": "viewpoint",
+              "emoji": "viewpoint",
+              "address": "Piazza del Campidoglio, Roma",
+              "coordinates": [
+                41.8933,
+                12.4829
+              ],
+              "startTime": "12:00",
+              "duration": "45 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "The terrace behind the museums gives a free Forum overview without another ticket queue.",
+              "photoKeyword": "Roman Forum View from Campidoglio travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Roman Forum View from Campidoglio without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "rome-4-days-d1-a1",
+          "name": "Colosseum Arena Timed Entry",
+          "type": "history",
+          "emoji": "history",
+          "address": "Piazza del Colosseo 1, Roma",
+          "coordinates": [
+            41.8902,
+            12.4922
+          ],
+          "startTime": "09:00",
+          "duration": "2h",
+          "cost": 18,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Use a timed arena ticket and explain gladiator logistics before entering; kids engage faster.",
+          "photoKeyword": "Colosseum Arena Timed Entry travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d1-a2",
+          "name": "Roman Forum View from Campidoglio",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "Piazza del Campidoglio, Roma",
+          "coordinates": [
+            41.8933,
+            12.4829
+          ],
+          "startTime": "12:00",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "The terrace behind the museums gives a free Forum overview without another ticket queue.",
+          "photoKeyword": "Roman Forum View from Campidoglio travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Roman Forum View from Campidoglio without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "rome-4-days-d1-a1",
+          "name": "Colosseum Arena Timed Entry",
+          "type": "history",
+          "emoji": "history",
+          "address": "Piazza del Colosseo 1, Roma",
+          "coordinates": [
+            41.8902,
+            12.4922
+          ],
+          "startTime": "09:00",
+          "duration": "2h",
+          "cost": 18,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Use a timed arena ticket and explain gladiator logistics before entering; kids engage faster.",
+          "photoKeyword": "Colosseum Arena Timed Entry travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d1-a2",
+          "name": "Roman Forum View from Campidoglio",
+          "type": "viewpoint",
+          "emoji": "viewpoint",
+          "address": "Piazza del Campidoglio, Roma",
+          "coordinates": [
+            41.8933,
+            12.4829
+          ],
+          "startTime": "12:00",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "The terrace behind the museums gives a free Forum overview without another ticket queue.",
+          "photoKeyword": "Roman Forum View from Campidoglio travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Roman Forum View from Campidoglio without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Barnum Cafe",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Barnum Cafe, Rome",
+          "coordinates": [
+            41.8902,
+            12.4922
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Barnum Cafe; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "La Taverna dei Fori Imperiali",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "La Taverna dei Fori Imperiali, Rome",
+          "coordinates": [
+            41.8933,
+            12.4829
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at La Taverna dei Fori Imperiali; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Urbana 47",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Urbana 47, Rome",
+          "coordinates": [
+            41.8933,
+            12.4829
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Urbana 47; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "The small playground at Parco del Colle Oppio is a useful reset after the Colosseum and before lunch in Monti.",
+      "culturalNote": "In Colosseum and Monti, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Colosseum Arena Timed Entry",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "title": "Fountains and Caravaggio: Centro Storico Without the Crush",
+      "emoji": "fountain",
+      "theme": "Centro Storico",
+      "moodDescription": "Rome postcard sights routed early, then cooler churches and gelato breaks.",
+      "budgetEstimate": 60,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d2-a1",
+              "name": "Pantheon Early Visit",
+              "type": "history",
+              "emoji": "history",
+              "address": "Piazza della Rotonda, Roma",
+              "coordinates": [
+                41.8986,
+                12.4769
+              ],
+              "startTime": "09:00",
+              "duration": "60 min",
+              "cost": 5,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Book online and enter early; the oculus is best before crowds heat the square.",
+              "photoKeyword": "Pantheon Early Visit travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d2-a2",
+              "name": "San Luigi dei Francesi Caravaggios",
+              "type": "art",
+              "emoji": "art",
+              "address": "Piazza di S. Luigi de Francesi, Roma",
+              "coordinates": [
+                41.8993,
+                12.4747
+              ],
+              "startTime": "11:00",
+              "duration": "45 min",
+              "cost": 0,
+              "rating": 4.7,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Bring a one-euro coin for the light box if needed; the chapel is small but unforgettable.",
+              "photoKeyword": "San Luigi dei Francesi Caravaggios travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to San Luigi dei Francesi Caravaggios without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "rome-4-days-d2-a1",
+          "name": "Pantheon Early Visit",
+          "type": "history",
+          "emoji": "history",
+          "address": "Piazza della Rotonda, Roma",
+          "coordinates": [
+            41.8986,
+            12.4769
+          ],
+          "startTime": "09:00",
+          "duration": "60 min",
+          "cost": 5,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Book online and enter early; the oculus is best before crowds heat the square.",
+          "photoKeyword": "Pantheon Early Visit travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d2-a2",
+          "name": "San Luigi dei Francesi Caravaggios",
+          "type": "art",
+          "emoji": "art",
+          "address": "Piazza di S. Luigi de Francesi, Roma",
+          "coordinates": [
+            41.8993,
+            12.4747
+          ],
+          "startTime": "11:00",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Bring a one-euro coin for the light box if needed; the chapel is small but unforgettable.",
+          "photoKeyword": "San Luigi dei Francesi Caravaggios travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to San Luigi dei Francesi Caravaggios without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "rome-4-days-d2-a1",
+          "name": "Pantheon Early Visit",
+          "type": "history",
+          "emoji": "history",
+          "address": "Piazza della Rotonda, Roma",
+          "coordinates": [
+            41.8986,
+            12.4769
+          ],
+          "startTime": "09:00",
+          "duration": "60 min",
+          "cost": 5,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Book online and enter early; the oculus is best before crowds heat the square.",
+          "photoKeyword": "Pantheon Early Visit travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d2-a2",
+          "name": "San Luigi dei Francesi Caravaggios",
+          "type": "art",
+          "emoji": "art",
+          "address": "Piazza di S. Luigi de Francesi, Roma",
+          "coordinates": [
+            41.8993,
+            12.4747
+          ],
+          "startTime": "11:00",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.7,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Bring a one-euro coin for the light box if needed; the chapel is small but unforgettable.",
+          "photoKeyword": "San Luigi dei Francesi Caravaggios travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to San Luigi dei Francesi Caravaggios without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Sant Eustachio Il Caffe",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Sant Eustachio Il Caffe, Rome",
+          "coordinates": [
+            41.8986,
+            12.4769
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Sant Eustachio Il Caffe; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Armando al Pantheon",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Armando al Pantheon, Rome",
+          "coordinates": [
+            41.8993,
+            12.4747
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Armando al Pantheon; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Emma Pizzeria",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Emma Pizzeria, Rome",
+          "coordinates": [
+            41.8993,
+            12.4747
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Emma Pizzeria; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Trevi Fountain is calmer before 08:00 or after 22:30; with family, go late only if everyone has had a proper rest.",
+      "culturalNote": "In Centro Storico, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Pantheon Early Visit",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 3,
+      "title": "Vatican Blue and Borgo Calm: Museums, Dome Views & Prati Supper",
+      "emoji": "vatican",
+      "theme": "Vatican and Prati",
+      "moodDescription": "A high-demand day made humane with early entry, a focused route, and nearby meals.",
+      "budgetEstimate": 80,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d3-a1",
+              "name": "Vatican Museums Family Route",
+              "type": "museum",
+              "emoji": "museum",
+              "address": "Viale Vaticano, Roma",
+              "coordinates": [
+                41.9065,
+                12.4536
+              ],
+              "startTime": "08:30",
+              "duration": "2h 30 min",
+              "cost": 25,
+              "rating": 4.7,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Do maps room, Raphael rooms, Sistine Chapel; skip trying to see every corridor.",
+              "photoKeyword": "Vatican Museums Family Route travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d3-a2",
+              "name": "St Peters Square and Basilica",
+              "type": "landmark",
+              "emoji": "landmark",
+              "address": "Piazza San Pietro, Vatican City",
+              "coordinates": [
+                41.9022,
+                12.4539
+              ],
+              "startTime": "12:00",
+              "duration": "90 min",
+              "cost": 0,
+              "rating": 4.8,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Dress code is enforced; shoulders and knees covered keeps the day smooth.",
+              "photoKeyword": "St Peters Square and Basilica travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to St Peters Square and Basilica without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "rome-4-days-d3-a1",
+          "name": "Vatican Museums Family Route",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "Viale Vaticano, Roma",
+          "coordinates": [
+            41.9065,
+            12.4536
+          ],
+          "startTime": "08:30",
+          "duration": "2h 30 min",
+          "cost": 25,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Do maps room, Raphael rooms, Sistine Chapel; skip trying to see every corridor.",
+          "photoKeyword": "Vatican Museums Family Route travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d3-a2",
+          "name": "St Peters Square and Basilica",
+          "type": "landmark",
+          "emoji": "landmark",
+          "address": "Piazza San Pietro, Vatican City",
+          "coordinates": [
+            41.9022,
+            12.4539
+          ],
+          "startTime": "12:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.8,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Dress code is enforced; shoulders and knees covered keeps the day smooth.",
+          "photoKeyword": "St Peters Square and Basilica travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to St Peters Square and Basilica without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "rome-4-days-d3-a1",
+          "name": "Vatican Museums Family Route",
+          "type": "museum",
+          "emoji": "museum",
+          "address": "Viale Vaticano, Roma",
+          "coordinates": [
+            41.9065,
+            12.4536
+          ],
+          "startTime": "08:30",
+          "duration": "2h 30 min",
+          "cost": 25,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Do maps room, Raphael rooms, Sistine Chapel; skip trying to see every corridor.",
+          "photoKeyword": "Vatican Museums Family Route travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d3-a2",
+          "name": "St Peters Square and Basilica",
+          "type": "landmark",
+          "emoji": "landmark",
+          "address": "Piazza San Pietro, Vatican City",
+          "coordinates": [
+            41.9022,
+            12.4539
+          ],
+          "startTime": "12:00",
+          "duration": "90 min",
+          "cost": 0,
+          "rating": 4.8,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Dress code is enforced; shoulders and knees covered keeps the day smooth.",
+          "photoKeyword": "St Peters Square and Basilica travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to St Peters Square and Basilica without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Sciascia Caffe 1919",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Sciascia Caffe 1919, Rome",
+          "coordinates": [
+            41.9065,
+            12.4536
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Sciascia Caffe 1919; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Pizzarium Bonci",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Pizzarium Bonci, Rome",
+          "coordinates": [
+            41.9022,
+            12.4539
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Pizzarium Bonci; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Il Sorpasso",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Il Sorpasso, Rome",
+          "coordinates": [
+            41.9022,
+            12.4539
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Il Sorpasso; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "If the basilica security line is brutal, take the kids for shade under Berninis colonnade and try again after lunch.",
+      "culturalNote": "In Vatican and Prati, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Vatican Museums Family Route",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 4,
+      "title": "Trastevere Golden Hour: Markets, Islands & Family Table Wine",
+      "emoji": "trastevere",
+      "theme": "Testaccio and Trastevere",
+      "moodDescription": "A slower finale through food markets, river crossings, and a neighborhood dinner.",
+      "budgetEstimate": 73,
+      "weather": {
+        "avgTemp": "19C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d4-a1",
+              "name": "Testaccio Market Tasting Loop",
+              "type": "food",
+              "emoji": "food",
+              "address": "Via Aldo Manuzio 66b, Roma",
+              "coordinates": [
+                41.8777,
+                12.4743
+              ],
+              "startTime": "10:00",
+              "duration": "90 min",
+              "cost": 18,
+              "rating": 4.6,
+              "crowd": "low early",
+              "bookingRequired": true,
+              "insiderTip": "Share supplì, trapizzino, and fresh fruit instead of committing to one big lunch.",
+              "photoKeyword": "Testaccio Market Tasting Loop travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "rome-4-days-d4-a2",
+              "name": "Tiber Island Crossing",
+              "type": "walk",
+              "emoji": "walk",
+              "address": "Isola Tiberina, Roma",
+              "coordinates": [
+                41.8903,
+                12.477
+              ],
+              "startTime": "16:30",
+              "duration": "45 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Use the island as a scenic pause before Trastevere gets busy.",
+              "photoKeyword": "Tiber Island Crossing travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Tiber Island Crossing without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "rome-4-days-d4-a1",
+          "name": "Testaccio Market Tasting Loop",
+          "type": "food",
+          "emoji": "food",
+          "address": "Via Aldo Manuzio 66b, Roma",
+          "coordinates": [
+            41.8777,
+            12.4743
+          ],
+          "startTime": "10:00",
+          "duration": "90 min",
+          "cost": 18,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Share supplì, trapizzino, and fresh fruit instead of committing to one big lunch.",
+          "photoKeyword": "Testaccio Market Tasting Loop travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d4-a2",
+          "name": "Tiber Island Crossing",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Isola Tiberina, Roma",
+          "coordinates": [
+            41.8903,
+            12.477
+          ],
+          "startTime": "16:30",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the island as a scenic pause before Trastevere gets busy.",
+          "photoKeyword": "Tiber Island Crossing travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Tiber Island Crossing without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "rome-4-days-d4-a1",
+          "name": "Testaccio Market Tasting Loop",
+          "type": "food",
+          "emoji": "food",
+          "address": "Via Aldo Manuzio 66b, Roma",
+          "coordinates": [
+            41.8777,
+            12.4743
+          ],
+          "startTime": "10:00",
+          "duration": "90 min",
+          "cost": 18,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": true,
+          "insiderTip": "Share supplì, trapizzino, and fresh fruit instead of committing to one big lunch.",
+          "photoKeyword": "Testaccio Market Tasting Loop travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "rome-4-days-d4-a2",
+          "name": "Tiber Island Crossing",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Isola Tiberina, Roma",
+          "coordinates": [
+            41.8903,
+            12.477
+          ],
+          "startTime": "16:30",
+          "duration": "45 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the island as a scenic pause before Trastevere gets busy.",
+          "photoKeyword": "Tiber Island Crossing travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Tiber Island Crossing without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Tram Depot Testaccio",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Tram Depot Testaccio, Rome",
+          "coordinates": [
+            41.8777,
+            12.4743
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Tram Depot Testaccio; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Mordi e Vai",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Mordi e Vai, Rome",
+          "coordinates": [
+            41.8903,
+            12.477
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Mordi e Vai; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Da Enzo al 29",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Da Enzo al 29, Rome",
+          "coordinates": [
+            41.8903,
+            12.477
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Da Enzo al 29; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "For a calmer Trastevere photo, use Vicolo dell Atleta before dinner; the main lanes near Santa Maria fill fast.",
+      "culturalNote": "In Testaccio and Trastevere, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Testaccio Market Tasting Loop",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    }
+  ],
+  "weather": {
+    "season": "shoulder season",
+    "practicalTip": "Pack layers and verify weather 48 hours before departure."
+  },
+  "transport": {
+    "overview": "Area-grouped days with direct routes between adjacent stops."
+  },
+  "packingList": {
+    "essential": [
+      "passport",
+      "insurance",
+      "portable charger"
+    ],
+    "weatherSpecific": [
+      "light rain shell"
+    ],
+    "appsMustHave": [
+      "Google Maps",
+      "local transit app"
+    ],
+    "doNotBring": [
+      "oversized luggage"
+    ]
+  },
+  "nearbyEscapes": [
+    {
+      "name": "Ostia Antica",
+      "distance": "45 min train",
+      "transportCost": 3,
+      "idealFor": "ancient ruins with space",
+      "daysToAdd": 1,
+      "tip": "Bring water; shade is limited."
+    },
+    {
+      "name": "Tivoli",
+      "distance": "1 h train",
+      "transportCost": 7,
+      "idealFor": "Villa d Este fountains",
+      "daysToAdd": 1,
+      "tip": "Pair with Hadrians Villa only if kids have stamina."
+    }
+  ],
+  "andorInsights": [
+    "This route protects mornings for high-demand places.",
+    "Meal choices stay near the day route.",
+    "The plan avoids repeated cross-city transfers."
+  ],
+  "suggestions": [
+    "Add a Vatican early-entry plan",
+    "Make it easier with children",
+    "Add more gelato stops"
+  ]
+}

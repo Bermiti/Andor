@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { reportClientError } from '../lib/logger';
 
 export function ElegantErrorCard({ error, resetErrorBoundary }) {
   return (
@@ -67,7 +68,9 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // silently catch
+    reportClientError('react_error_boundary', error, {
+      componentStack: errorInfo?.componentStack,
+    });
   }
 
   resetError = () => {

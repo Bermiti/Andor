@@ -1,0 +1,2707 @@
+{
+  "destination": {
+    "city": "Bali",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "flag": "ID",
+    "coordinates": [
+      -8.3405,
+      115.092
+    ],
+    "timezone": "Asia/Makassar",
+    "currency": {
+      "code": "IDR",
+      "symbol": "IDR",
+      "euroRate": 0.000057
+    }
+  },
+  "trip": {
+    "totalDays": 10,
+    "travelStyle": "beaches + temples + nature",
+    "groupType": "friends",
+    "budgetTier": "balanced budget",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-18",
+    "budgetBreakdown": {
+      "flights": {
+        "min": 720,
+        "max": 1040
+      },
+      "accommodation": {
+        "total": 760
+      },
+      "food": {
+        "total": 330
+      },
+      "activities": {
+        "total": 420
+      },
+      "transport": {
+        "total": 210
+      },
+      "grandTotal": {
+        "min": 2440,
+        "max": 2760
+      },
+      "perPersonEstimate": {
+        "min": 815,
+        "max": 920
+      },
+      "currency": "EUR"
+    },
+    "topTips": [
+      "Book the highest-demand activity before flights if dates are fixed.",
+      "Keep one late afternoon unplanned every two days.",
+      "Use the first morning for the busiest landmark."
+    ]
+  },
+  "summary": {
+    "title": "Bali launch-readiness fixture",
+    "andorVerdict": "A realistic, logistics-aware 10-day plan for Bali."
+  },
+  "budgetBreakdown": {
+    "flights": [
+      720,
+      1040
+    ],
+    "accommodation": 760,
+    "food": 330,
+    "activities": 420,
+    "transport": 210,
+    "total": [
+      2440,
+      2760
+    ],
+    "perPerson": [
+      815,
+      920
+    ]
+  },
+  "flightOptions": [
+    {
+      "airline": "Qatar / Turkish / Singapore Airlines",
+      "route": "Europe to Denpasar via Doha/Istanbul/Singapore",
+      "estimate": 880,
+      "bookingWindow": "Book 3-5 months ahead for July-August."
+    }
+  ],
+  "accommodation": {
+    "name": "Adiwana Bisma Ubud plus Canggu guesthouse split",
+    "area": "Ubud and Canggu",
+    "nightlyEstimate": 76
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Canggu Soft Landing: Batu Bolong Surf & Warung Smoke",
+      "emoji": "surf",
+      "theme": "Canggu",
+      "moodDescription": "Beach rhythm, easy food, and a first sunset without forcing too much after arrival.",
+      "budgetEstimate": 63,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d1-a1",
+              "name": "Batu Bolong Beach Surf Check",
+              "type": "beach",
+              "emoji": "beach",
+              "address": "Pantai Batu Bolong, Canggu",
+              "coordinates": [
+                -8.6595,
+                115.1301
+              ],
+              "startTime": "08:30",
+              "duration": "90 min",
+              "cost": 8,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Rent boards from the middle stalls, not the first beach entrance.",
+              "photoKeyword": "Batu Bolong Beach Surf Check travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d1-a2",
+              "name": "Samadi Sunday Market",
+              "type": "market",
+              "emoji": "market",
+              "address": "Jl. Padang Linjong No.39, Canggu",
+              "coordinates": [
+                -8.6475,
+                115.1392
+              ],
+              "startTime": "11:00",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.4,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Go before 11:30 for the best fruit and fewer scooter jams.",
+              "photoKeyword": "Samadi Sunday Market travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Samadi Sunday Market without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d1-a1",
+          "name": "Batu Bolong Beach Surf Check",
+          "type": "beach",
+          "emoji": "beach",
+          "address": "Pantai Batu Bolong, Canggu",
+          "coordinates": [
+            -8.6595,
+            115.1301
+          ],
+          "startTime": "08:30",
+          "duration": "90 min",
+          "cost": 8,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Rent boards from the middle stalls, not the first beach entrance.",
+          "photoKeyword": "Batu Bolong Beach Surf Check travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d1-a2",
+          "name": "Samadi Sunday Market",
+          "type": "market",
+          "emoji": "market",
+          "address": "Jl. Padang Linjong No.39, Canggu",
+          "coordinates": [
+            -8.6475,
+            115.1392
+          ],
+          "startTime": "11:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Go before 11:30 for the best fruit and fewer scooter jams.",
+          "photoKeyword": "Samadi Sunday Market travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Samadi Sunday Market without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d1-a1",
+          "name": "Batu Bolong Beach Surf Check",
+          "type": "beach",
+          "emoji": "beach",
+          "address": "Pantai Batu Bolong, Canggu",
+          "coordinates": [
+            -8.6595,
+            115.1301
+          ],
+          "startTime": "08:30",
+          "duration": "90 min",
+          "cost": 8,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Rent boards from the middle stalls, not the first beach entrance.",
+          "photoKeyword": "Batu Bolong Beach Surf Check travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d1-a2",
+          "name": "Samadi Sunday Market",
+          "type": "market",
+          "emoji": "market",
+          "address": "Jl. Padang Linjong No.39, Canggu",
+          "coordinates": [
+            -8.6475,
+            115.1392
+          ],
+          "startTime": "11:00",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Go before 11:30 for the best fruit and fewer scooter jams.",
+          "photoKeyword": "Samadi Sunday Market travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Samadi Sunday Market without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Crate Cafe",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Crate Cafe, Bali",
+          "coordinates": [
+            -8.6595,
+            115.1301
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Crate Cafe; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Warung Bu Mi",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Warung Bu Mi, Bali",
+          "coordinates": [
+            -8.6475,
+            115.1392
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Warung Bu Mi; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Mason Canggu",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Mason Canggu, Bali",
+          "coordinates": [
+            -8.6475,
+            115.1392
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Mason Canggu; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Use the small lane behind Deus to cross Canggu on foot; it avoids the loudest scooter bottleneck around Batu Bolong.",
+      "culturalNote": "In Canggu, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Batu Bolong Beach Surf Check",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "title": "Ubud Green Hours: Rice Terraces & Sacred Springs",
+      "emoji": "rice",
+      "theme": "Ubud north",
+      "moodDescription": "A cooler inland day of water, terraces, and temple etiquette with breathing room.",
+      "budgetEstimate": 61,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d2-a1",
+              "name": "Tegallalang Rice Terrace",
+              "type": "nature",
+              "emoji": "nature",
+              "address": "Jalan Raya Tegallalang, Gianyar",
+              "coordinates": [
+                -8.4357,
+                115.2793
+              ],
+              "startTime": "08:00",
+              "duration": "90 min",
+              "cost": 2,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Enter from a side cafe path and tip the farmers if you walk through working fields.",
+              "photoKeyword": "Tegallalang Rice Terrace travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d2-a2",
+              "name": "Tirta Empul Temple",
+              "type": "temple",
+              "emoji": "temple",
+              "address": "Jl. Tirta, Tampaksiring",
+              "coordinates": [
+                -8.4264,
+                115.315
+              ],
+              "startTime": "11:00",
+              "duration": "90 min",
+              "cost": 4,
+              "rating": 4.6,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Bring a change of clothes if doing purification; sarongs are required even for photos.",
+              "photoKeyword": "Tirta Empul Temple travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Tirta Empul Temple without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d2-a1",
+          "name": "Tegallalang Rice Terrace",
+          "type": "nature",
+          "emoji": "nature",
+          "address": "Jalan Raya Tegallalang, Gianyar",
+          "coordinates": [
+            -8.4357,
+            115.2793
+          ],
+          "startTime": "08:00",
+          "duration": "90 min",
+          "cost": 2,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Enter from a side cafe path and tip the farmers if you walk through working fields.",
+          "photoKeyword": "Tegallalang Rice Terrace travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d2-a2",
+          "name": "Tirta Empul Temple",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Jl. Tirta, Tampaksiring",
+          "coordinates": [
+            -8.4264,
+            115.315
+          ],
+          "startTime": "11:00",
+          "duration": "90 min",
+          "cost": 4,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Bring a change of clothes if doing purification; sarongs are required even for photos.",
+          "photoKeyword": "Tirta Empul Temple travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Tirta Empul Temple without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d2-a1",
+          "name": "Tegallalang Rice Terrace",
+          "type": "nature",
+          "emoji": "nature",
+          "address": "Jalan Raya Tegallalang, Gianyar",
+          "coordinates": [
+            -8.4357,
+            115.2793
+          ],
+          "startTime": "08:00",
+          "duration": "90 min",
+          "cost": 2,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Enter from a side cafe path and tip the farmers if you walk through working fields.",
+          "photoKeyword": "Tegallalang Rice Terrace travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d2-a2",
+          "name": "Tirta Empul Temple",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Jl. Tirta, Tampaksiring",
+          "coordinates": [
+            -8.4264,
+            115.315
+          ],
+          "startTime": "11:00",
+          "duration": "90 min",
+          "cost": 4,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Bring a change of clothes if doing purification; sarongs are required even for photos.",
+          "photoKeyword": "Tirta Empul Temple travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Tirta Empul Temple without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Seniman Coffee",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Seniman Coffee, Bali",
+          "coordinates": [
+            -8.4357,
+            115.2793
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Seniman Coffee; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Hujan Locale",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Hujan Locale, Bali",
+          "coordinates": [
+            -8.4264,
+            115.315
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Hujan Locale; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Locavore NXT",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Locavore NXT, Bali",
+          "coordinates": [
+            -8.4264,
+            115.315
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Locavore NXT; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Ask your driver to stop at Gunung Kawi Sebatu instead if Tirta Empul is packed; it is gentler and often more spiritual.",
+      "culturalNote": "In Ubud north, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Tegallalang Rice Terrace",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 3,
+      "title": "Clifftop Fire: Uluwatu Temple & Padang Padang Tide Pools",
+      "emoji": "cliff",
+      "theme": "Uluwatu",
+      "moodDescription": "Limestone edges, monkeys, and a dramatic sunset that still needs practical timing.",
+      "budgetEstimate": 66,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d3-a1",
+              "name": "Padang Padang Beach",
+              "type": "beach",
+              "emoji": "beach",
+              "address": "Jl. Labuan Sait, Pecatu",
+              "coordinates": [
+                -8.8111,
+                115.1026
+              ],
+              "startTime": "09:00",
+              "duration": "2h",
+              "cost": 1,
+              "rating": 4.4,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Check tide first; at high tide the beach shrinks and feels crowded.",
+              "photoKeyword": "Padang Padang Beach travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d3-a2",
+              "name": "Uluwatu Temple Kecak",
+              "type": "temple",
+              "emoji": "temple",
+              "address": "Pecatu, South Kuta",
+              "coordinates": [
+                -8.8291,
+                115.0849
+              ],
+              "startTime": "16:30",
+              "duration": "2h",
+              "cost": 10,
+              "rating": 4.6,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Keep sunglasses and phones zipped; monkeys target loose items near the cliff path.",
+              "photoKeyword": "Uluwatu Temple Kecak travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Uluwatu Temple Kecak without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d3-a1",
+          "name": "Padang Padang Beach",
+          "type": "beach",
+          "emoji": "beach",
+          "address": "Jl. Labuan Sait, Pecatu",
+          "coordinates": [
+            -8.8111,
+            115.1026
+          ],
+          "startTime": "09:00",
+          "duration": "2h",
+          "cost": 1,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Check tide first; at high tide the beach shrinks and feels crowded.",
+          "photoKeyword": "Padang Padang Beach travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d3-a2",
+          "name": "Uluwatu Temple Kecak",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Pecatu, South Kuta",
+          "coordinates": [
+            -8.8291,
+            115.0849
+          ],
+          "startTime": "16:30",
+          "duration": "2h",
+          "cost": 10,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Keep sunglasses and phones zipped; monkeys target loose items near the cliff path.",
+          "photoKeyword": "Uluwatu Temple Kecak travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Uluwatu Temple Kecak without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d3-a1",
+          "name": "Padang Padang Beach",
+          "type": "beach",
+          "emoji": "beach",
+          "address": "Jl. Labuan Sait, Pecatu",
+          "coordinates": [
+            -8.8111,
+            115.1026
+          ],
+          "startTime": "09:00",
+          "duration": "2h",
+          "cost": 1,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Check tide first; at high tide the beach shrinks and feels crowded.",
+          "photoKeyword": "Padang Padang Beach travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d3-a2",
+          "name": "Uluwatu Temple Kecak",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Pecatu, South Kuta",
+          "coordinates": [
+            -8.8291,
+            115.0849
+          ],
+          "startTime": "16:30",
+          "duration": "2h",
+          "cost": 10,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Keep sunglasses and phones zipped; monkeys target loose items near the cliff path.",
+          "photoKeyword": "Uluwatu Temple Kecak travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Uluwatu Temple Kecak without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Suka Espresso Uluwatu",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Suka Espresso Uluwatu, Bali",
+          "coordinates": [
+            -8.8111,
+            115.1026
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Suka Espresso Uluwatu; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Warung Bejana",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Warung Bejana, Bali",
+          "coordinates": [
+            -8.8291,
+            115.0849
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Warung Bejana; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Mana Uluwatu",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Mana Uluwatu, Bali",
+          "coordinates": [
+            -8.8291,
+            115.0849
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Mana Uluwatu; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "For sunset, the cliff path north of the amphitheater is quieter than the main Kecak queue and gives a cleaner horizon.",
+      "culturalNote": "In Uluwatu, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Padang Padang Beach",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 4,
+      "title": "Blue Water Reset: Sanur Dawn & Lembongan Mangroves",
+      "emoji": "boat",
+      "theme": "Sanur and Nusa Lembongan",
+      "moodDescription": "A marine day designed around calmer morning seas and an early return.",
+      "budgetEstimate": 73,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d4-a1",
+              "name": "Sanur Sunrise Promenade",
+              "type": "walk",
+              "emoji": "walk",
+              "address": "Pantai Sanur, Denpasar",
+              "coordinates": [
+                -8.6871,
+                115.2632
+              ],
+              "startTime": "06:15",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Walk north before breakfast; the local fishing boats are active before tour groups arrive.",
+              "photoKeyword": "Sanur Sunrise Promenade travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d4-a2",
+              "name": "Nusa Lembongan Mangrove Boat",
+              "type": "nature",
+              "emoji": "nature",
+              "address": "Jungutbatu, Nusa Lembongan",
+              "coordinates": [
+                -8.6788,
+                115.4556
+              ],
+              "startTime": "10:30",
+              "duration": "2h",
+              "cost": 18,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Take the smaller paddle boat if water is calm; it is quieter than the engine boats.",
+              "photoKeyword": "Nusa Lembongan Mangrove Boat travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Nusa Lembongan Mangrove Boat without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d4-a1",
+          "name": "Sanur Sunrise Promenade",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Pantai Sanur, Denpasar",
+          "coordinates": [
+            -8.6871,
+            115.2632
+          ],
+          "startTime": "06:15",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Walk north before breakfast; the local fishing boats are active before tour groups arrive.",
+          "photoKeyword": "Sanur Sunrise Promenade travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d4-a2",
+          "name": "Nusa Lembongan Mangrove Boat",
+          "type": "nature",
+          "emoji": "nature",
+          "address": "Jungutbatu, Nusa Lembongan",
+          "coordinates": [
+            -8.6788,
+            115.4556
+          ],
+          "startTime": "10:30",
+          "duration": "2h",
+          "cost": 18,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Take the smaller paddle boat if water is calm; it is quieter than the engine boats.",
+          "photoKeyword": "Nusa Lembongan Mangrove Boat travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nusa Lembongan Mangrove Boat without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d4-a1",
+          "name": "Sanur Sunrise Promenade",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Pantai Sanur, Denpasar",
+          "coordinates": [
+            -8.6871,
+            115.2632
+          ],
+          "startTime": "06:15",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Walk north before breakfast; the local fishing boats are active before tour groups arrive.",
+          "photoKeyword": "Sanur Sunrise Promenade travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d4-a2",
+          "name": "Nusa Lembongan Mangrove Boat",
+          "type": "nature",
+          "emoji": "nature",
+          "address": "Jungutbatu, Nusa Lembongan",
+          "coordinates": [
+            -8.6788,
+            115.4556
+          ],
+          "startTime": "10:30",
+          "duration": "2h",
+          "cost": 18,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Take the smaller paddle boat if water is calm; it is quieter than the engine boats.",
+          "photoKeyword": "Nusa Lembongan Mangrove Boat travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nusa Lembongan Mangrove Boat without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Soul on the Beach",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Soul on the Beach, Bali",
+          "coordinates": [
+            -8.6871,
+            115.2632
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Soul on the Beach; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Ginger & Jamu",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Ginger & Jamu, Bali",
+          "coordinates": [
+            -8.6788,
+            115.4556
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Ginger & Jamu; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Massimo Sanur",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Massimo Sanur, Bali",
+          "coordinates": [
+            -8.6788,
+            115.4556
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Massimo Sanur; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Book the return fast boat before leaving Sanur; afternoon seats sell out when day-trippers all return at once.",
+      "culturalNote": "In Sanur and Nusa Lembongan, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Sanur Sunrise Promenade",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 5,
+      "title": "Sidemen Slow Roads: Weaving Villages & Besakih Shadows",
+      "emoji": "valley",
+      "theme": "Sidemen and Besakih",
+      "moodDescription": "Bali without the rush: rice valleys, craft stops, and a temple that rewards patience.",
+      "budgetEstimate": 72,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d5-a1",
+              "name": "Sidemen Rice Valley Walk",
+              "type": "nature",
+              "emoji": "nature",
+              "address": "Sidemen, Karangasem",
+              "coordinates": [
+                -8.4678,
+                115.4436
+              ],
+              "startTime": "08:30",
+              "duration": "2h",
+              "cost": 8,
+              "rating": 4.7,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Hire a local guide through your guesthouse so the path supports the village directly.",
+              "photoKeyword": "Sidemen Rice Valley Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d5-a2",
+              "name": "Besakih Mother Temple",
+              "type": "temple",
+              "emoji": "temple",
+              "address": "Besakih, Rendang",
+              "coordinates": [
+                -8.3739,
+                115.4515
+              ],
+              "startTime": "13:00",
+              "duration": "2h",
+              "cost": 9,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Use the official ticket office and ignore unofficial guide pressure in the parking area.",
+              "photoKeyword": "Besakih Mother Temple travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Besakih Mother Temple without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d5-a1",
+          "name": "Sidemen Rice Valley Walk",
+          "type": "nature",
+          "emoji": "nature",
+          "address": "Sidemen, Karangasem",
+          "coordinates": [
+            -8.4678,
+            115.4436
+          ],
+          "startTime": "08:30",
+          "duration": "2h",
+          "cost": 8,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Hire a local guide through your guesthouse so the path supports the village directly.",
+          "photoKeyword": "Sidemen Rice Valley Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d5-a2",
+          "name": "Besakih Mother Temple",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Besakih, Rendang",
+          "coordinates": [
+            -8.3739,
+            115.4515
+          ],
+          "startTime": "13:00",
+          "duration": "2h",
+          "cost": 9,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the official ticket office and ignore unofficial guide pressure in the parking area.",
+          "photoKeyword": "Besakih Mother Temple travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Besakih Mother Temple without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d5-a1",
+          "name": "Sidemen Rice Valley Walk",
+          "type": "nature",
+          "emoji": "nature",
+          "address": "Sidemen, Karangasem",
+          "coordinates": [
+            -8.4678,
+            115.4436
+          ],
+          "startTime": "08:30",
+          "duration": "2h",
+          "cost": 8,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Hire a local guide through your guesthouse so the path supports the village directly.",
+          "photoKeyword": "Sidemen Rice Valley Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d5-a2",
+          "name": "Besakih Mother Temple",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Besakih, Rendang",
+          "coordinates": [
+            -8.3739,
+            115.4515
+          ],
+          "startTime": "13:00",
+          "duration": "2h",
+          "cost": 9,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Use the official ticket office and ignore unofficial guide pressure in the parking area.",
+          "photoKeyword": "Besakih Mother Temple travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Besakih Mother Temple without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Samanvaya Rice Barn",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Samanvaya Rice Barn, Bali",
+          "coordinates": [
+            -8.4678,
+            115.4436
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Samanvaya Rice Barn; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Warung Tirta Unda",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Warung Tirta Unda, Bali",
+          "coordinates": [
+            -8.3739,
+            115.4515
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Warung Tirta Unda; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Asri Dining",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Asri Dining, Bali",
+          "coordinates": [
+            -8.3739,
+            115.4515
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Asri Dining; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "The road between Sidemen and Iseh has the best Agung views; ask to stop at a warung terrace rather than a marked viewpoint.",
+      "culturalNote": "In Sidemen and Besakih, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Sidemen Rice Valley Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 6,
+      "title": "Munduk Mist: Waterfalls, Lake Temples & Mountain Coffee",
+      "emoji": "mist",
+      "theme": "Munduk and Bedugul",
+      "moodDescription": "A cooler north-Bali day with mist, cloves, and less beach-club noise.",
+      "budgetEstimate": 63,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d6-a1",
+              "name": "Banyumala Twin Waterfalls",
+              "type": "waterfall",
+              "emoji": "waterfall",
+              "address": "Wanagiri, Buleleng",
+              "coordinates": [
+                -8.2242,
+                115.1072
+              ],
+              "startTime": "08:00",
+              "duration": "2h",
+              "cost": 3,
+              "rating": 4.8,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Wear shoes with grip; the lower path is slippery after rain.",
+              "photoKeyword": "Banyumala Twin Waterfalls travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d6-a2",
+              "name": "Ulun Danu Beratan Temple",
+              "type": "temple",
+              "emoji": "temple",
+              "address": "Lake Beratan, Bedugul",
+              "coordinates": [
+                -8.2751,
+                115.1668
+              ],
+              "startTime": "12:30",
+              "duration": "75 min",
+              "cost": 5,
+              "rating": 4.6,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "If tour buses arrive, walk left around the gardens for cleaner lake views.",
+              "photoKeyword": "Ulun Danu Beratan Temple travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Ulun Danu Beratan Temple without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d6-a1",
+          "name": "Banyumala Twin Waterfalls",
+          "type": "waterfall",
+          "emoji": "waterfall",
+          "address": "Wanagiri, Buleleng",
+          "coordinates": [
+            -8.2242,
+            115.1072
+          ],
+          "startTime": "08:00",
+          "duration": "2h",
+          "cost": 3,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Wear shoes with grip; the lower path is slippery after rain.",
+          "photoKeyword": "Banyumala Twin Waterfalls travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d6-a2",
+          "name": "Ulun Danu Beratan Temple",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Lake Beratan, Bedugul",
+          "coordinates": [
+            -8.2751,
+            115.1668
+          ],
+          "startTime": "12:30",
+          "duration": "75 min",
+          "cost": 5,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "If tour buses arrive, walk left around the gardens for cleaner lake views.",
+          "photoKeyword": "Ulun Danu Beratan Temple travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Ulun Danu Beratan Temple without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d6-a1",
+          "name": "Banyumala Twin Waterfalls",
+          "type": "waterfall",
+          "emoji": "waterfall",
+          "address": "Wanagiri, Buleleng",
+          "coordinates": [
+            -8.2242,
+            115.1072
+          ],
+          "startTime": "08:00",
+          "duration": "2h",
+          "cost": 3,
+          "rating": 4.8,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Wear shoes with grip; the lower path is slippery after rain.",
+          "photoKeyword": "Banyumala Twin Waterfalls travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d6-a2",
+          "name": "Ulun Danu Beratan Temple",
+          "type": "temple",
+          "emoji": "temple",
+          "address": "Lake Beratan, Bedugul",
+          "coordinates": [
+            -8.2751,
+            115.1668
+          ],
+          "startTime": "12:30",
+          "duration": "75 min",
+          "cost": 5,
+          "rating": 4.6,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "If tour buses arrive, walk left around the gardens for cleaner lake views.",
+          "photoKeyword": "Ulun Danu Beratan Temple travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Ulun Danu Beratan Temple without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Munduk Coffee Roastery",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Munduk Coffee Roastery, Bali",
+          "coordinates": [
+            -8.2242,
+            115.1072
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Munduk Coffee Roastery; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Warung Classic",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Warung Classic, Bali",
+          "coordinates": [
+            -8.2751,
+            115.1668
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Warung Classic; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Ngiring Ngewedang",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Ngiring Ngewedang, Bali",
+          "coordinates": [
+            -8.2751,
+            115.1668
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Ngiring Ngewedang; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Buy cloves or coffee at a family stall on the Munduk ridge; prices are fairer than tourist shops near Bedugul.",
+      "culturalNote": "In Munduk and Bedugul, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Banyumala Twin Waterfalls",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 7,
+      "title": "Seminyak Polished Night: Petitenget Sand & Design Stores",
+      "emoji": "sunset",
+      "theme": "Seminyak",
+      "moodDescription": "A stylish reset with shopping, a beach walk, and one indulgent dinner.",
+      "budgetEstimate": 55,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d7-a1",
+              "name": "Petitenget Beach Walk",
+              "type": "beach",
+              "emoji": "beach",
+              "address": "Petitenget Beach, Seminyak",
+              "coordinates": [
+                -8.6793,
+                115.1533
+              ],
+              "startTime": "08:30",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.4,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Walk north toward Batu Belig for fewer vendors and wider sand.",
+              "photoKeyword": "Petitenget Beach Walk travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d7-a2",
+              "name": "Nyaman Gallery",
+              "type": "art",
+              "emoji": "art",
+              "address": "Jl. Basangkasa No.88, Seminyak",
+              "coordinates": [
+                -8.6857,
+                115.1636
+              ],
+              "startTime": "15:00",
+              "duration": "60 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Ask staff about Balinese artists in the back room; the strongest pieces are not always at the entrance.",
+              "photoKeyword": "Nyaman Gallery travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Nyaman Gallery without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d7-a1",
+          "name": "Petitenget Beach Walk",
+          "type": "beach",
+          "emoji": "beach",
+          "address": "Petitenget Beach, Seminyak",
+          "coordinates": [
+            -8.6793,
+            115.1533
+          ],
+          "startTime": "08:30",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Walk north toward Batu Belig for fewer vendors and wider sand.",
+          "photoKeyword": "Petitenget Beach Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d7-a2",
+          "name": "Nyaman Gallery",
+          "type": "art",
+          "emoji": "art",
+          "address": "Jl. Basangkasa No.88, Seminyak",
+          "coordinates": [
+            -8.6857,
+            115.1636
+          ],
+          "startTime": "15:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Ask staff about Balinese artists in the back room; the strongest pieces are not always at the entrance.",
+          "photoKeyword": "Nyaman Gallery travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nyaman Gallery without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d7-a1",
+          "name": "Petitenget Beach Walk",
+          "type": "beach",
+          "emoji": "beach",
+          "address": "Petitenget Beach, Seminyak",
+          "coordinates": [
+            -8.6793,
+            115.1533
+          ],
+          "startTime": "08:30",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Walk north toward Batu Belig for fewer vendors and wider sand.",
+          "photoKeyword": "Petitenget Beach Walk travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d7-a2",
+          "name": "Nyaman Gallery",
+          "type": "art",
+          "emoji": "art",
+          "address": "Jl. Basangkasa No.88, Seminyak",
+          "coordinates": [
+            -8.6857,
+            115.1636
+          ],
+          "startTime": "15:00",
+          "duration": "60 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Ask staff about Balinese artists in the back room; the strongest pieces are not always at the entrance.",
+          "photoKeyword": "Nyaman Gallery travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Nyaman Gallery without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Revolver Espresso",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Revolver Espresso, Bali",
+          "coordinates": [
+            -8.6793,
+            115.1533
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Revolver Espresso; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Sisterfields",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Sisterfields, Bali",
+          "coordinates": [
+            -8.6857,
+            115.1636
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Sisterfields; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Merah Putih",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Merah Putih, Bali",
+          "coordinates": [
+            -8.6857,
+            115.1636
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Merah Putih; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Sunset drinks are calmer one lane back from the beach; you pay less for a better conversation and can walk to the sand after.",
+      "culturalNote": "In Seminyak, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Petitenget Beach Walk",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 8,
+      "title": "Ubud Hands-On: Mask Carvers, Campuhan Ridge & Night Market Bites",
+      "emoji": "craft",
+      "theme": "Central Ubud",
+      "moodDescription": "A tactile day of crafts and ridgelines, with a light-footed evening food crawl.",
+      "budgetEstimate": 59,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d8-a1",
+              "name": "Setia Darma House of Masks",
+              "type": "culture",
+              "emoji": "culture",
+              "address": "Kemenuh, Sukawati",
+              "coordinates": [
+                -8.5617,
+                115.2837
+              ],
+              "startTime": "10:00",
+              "duration": "90 min",
+              "cost": 4,
+              "rating": 4.7,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Call ahead through your driver; opening hours can flex around ceremonies.",
+              "photoKeyword": "Setia Darma House of Masks travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d8-a2",
+              "name": "Campuhan Ridge Walk",
+              "type": "walk",
+              "emoji": "walk",
+              "address": "Jl. Bangkiang Sidem, Ubud",
+              "coordinates": [
+                -8.5036,
+                115.2547
+              ],
+              "startTime": "16:45",
+              "duration": "75 min",
+              "cost": 0,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Start late enough for shade but before the path is dark; bring water.",
+              "photoKeyword": "Campuhan Ridge Walk travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Campuhan Ridge Walk without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d8-a1",
+          "name": "Setia Darma House of Masks",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "Kemenuh, Sukawati",
+          "coordinates": [
+            -8.5617,
+            115.2837
+          ],
+          "startTime": "10:00",
+          "duration": "90 min",
+          "cost": 4,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Call ahead through your driver; opening hours can flex around ceremonies.",
+          "photoKeyword": "Setia Darma House of Masks travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d8-a2",
+          "name": "Campuhan Ridge Walk",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Jl. Bangkiang Sidem, Ubud",
+          "coordinates": [
+            -8.5036,
+            115.2547
+          ],
+          "startTime": "16:45",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Start late enough for shade but before the path is dark; bring water.",
+          "photoKeyword": "Campuhan Ridge Walk travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Campuhan Ridge Walk without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d8-a1",
+          "name": "Setia Darma House of Masks",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "Kemenuh, Sukawati",
+          "coordinates": [
+            -8.5617,
+            115.2837
+          ],
+          "startTime": "10:00",
+          "duration": "90 min",
+          "cost": 4,
+          "rating": 4.7,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Call ahead through your driver; opening hours can flex around ceremonies.",
+          "photoKeyword": "Setia Darma House of Masks travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d8-a2",
+          "name": "Campuhan Ridge Walk",
+          "type": "walk",
+          "emoji": "walk",
+          "address": "Jl. Bangkiang Sidem, Ubud",
+          "coordinates": [
+            -8.5036,
+            115.2547
+          ],
+          "startTime": "16:45",
+          "duration": "75 min",
+          "cost": 0,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Start late enough for shade but before the path is dark; bring water.",
+          "photoKeyword": "Campuhan Ridge Walk travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Campuhan Ridge Walk without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Pison Ubud",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Pison Ubud, Bali",
+          "coordinates": [
+            -8.5617,
+            115.2837
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Pison Ubud; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Warung Mendez",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Warung Mendez, Bali",
+          "coordinates": [
+            -8.5036,
+            115.2547
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Warung Mendez; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Siboghana Waroeng",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Siboghana Waroeng, Bali",
+          "coordinates": [
+            -8.5036,
+            115.2547
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Siboghana Waroeng; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "For simple souvenirs, use the fixed-price shop behind Ubud Palace first; it calibrates you before bargaining in the market.",
+      "culturalNote": "In Central Ubud, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Setia Darma House of Masks",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 9,
+      "title": "East Bali Mirrors: Tirta Gangga Pools & Ujung Sea Wind",
+      "emoji": "palace",
+      "theme": "Karangasem",
+      "moodDescription": "A long but beautiful eastward day, kept focused on water palaces rather than too many stops.",
+      "budgetEstimate": 64,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d9-a1",
+              "name": "Tirta Gangga Water Palace",
+              "type": "palace",
+              "emoji": "palace",
+              "address": "Ababi, Karangasem",
+              "coordinates": [
+                -8.4116,
+                115.5873
+              ],
+              "startTime": "09:00",
+              "duration": "90 min",
+              "cost": 4,
+              "rating": 4.6,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Arrive before wedding-photo groups and carry small notes for fish food if you want the classic stepping-stone shot.",
+              "photoKeyword": "Tirta Gangga Water Palace travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d9-a2",
+              "name": "Taman Ujung Water Palace",
+              "type": "palace",
+              "emoji": "palace",
+              "address": "Tumbu, Karangasem",
+              "coordinates": [
+                -8.4636,
+                115.6312
+              ],
+              "startTime": "12:00",
+              "duration": "90 min",
+              "cost": 5,
+              "rating": 4.5,
+              "crowd": "moderate",
+              "bookingRequired": false,
+              "insiderTip": "Climb the far pavilion for sea and mountain views in one frame.",
+              "photoKeyword": "Taman Ujung Water Palace travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Taman Ujung Water Palace without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d9-a1",
+          "name": "Tirta Gangga Water Palace",
+          "type": "palace",
+          "emoji": "palace",
+          "address": "Ababi, Karangasem",
+          "coordinates": [
+            -8.4116,
+            115.5873
+          ],
+          "startTime": "09:00",
+          "duration": "90 min",
+          "cost": 4,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Arrive before wedding-photo groups and carry small notes for fish food if you want the classic stepping-stone shot.",
+          "photoKeyword": "Tirta Gangga Water Palace travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d9-a2",
+          "name": "Taman Ujung Water Palace",
+          "type": "palace",
+          "emoji": "palace",
+          "address": "Tumbu, Karangasem",
+          "coordinates": [
+            -8.4636,
+            115.6312
+          ],
+          "startTime": "12:00",
+          "duration": "90 min",
+          "cost": 5,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Climb the far pavilion for sea and mountain views in one frame.",
+          "photoKeyword": "Taman Ujung Water Palace travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Taman Ujung Water Palace without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d9-a1",
+          "name": "Tirta Gangga Water Palace",
+          "type": "palace",
+          "emoji": "palace",
+          "address": "Ababi, Karangasem",
+          "coordinates": [
+            -8.4116,
+            115.5873
+          ],
+          "startTime": "09:00",
+          "duration": "90 min",
+          "cost": 4,
+          "rating": 4.6,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Arrive before wedding-photo groups and carry small notes for fish food if you want the classic stepping-stone shot.",
+          "photoKeyword": "Tirta Gangga Water Palace travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d9-a2",
+          "name": "Taman Ujung Water Palace",
+          "type": "palace",
+          "emoji": "palace",
+          "address": "Tumbu, Karangasem",
+          "coordinates": [
+            -8.4636,
+            115.6312
+          ],
+          "startTime": "12:00",
+          "duration": "90 min",
+          "cost": 5,
+          "rating": 4.5,
+          "crowd": "moderate",
+          "bookingRequired": false,
+          "insiderTip": "Climb the far pavilion for sea and mountain views in one frame.",
+          "photoKeyword": "Taman Ujung Water Palace travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Taman Ujung Water Palace without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Galanga Garden",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Galanga Garden, Bali",
+          "coordinates": [
+            -8.4116,
+            115.5873
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Galanga Garden; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Warung Lesehan Mina Carik",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Warung Lesehan Mina Carik, Bali",
+          "coordinates": [
+            -8.4636,
+            115.6312
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Warung Lesehan Mina Carik; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Vincent Nigita",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Vincent Nigita, Bali",
+          "coordinates": [
+            -8.4636,
+            115.6312
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Vincent Nigita; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "Ask your driver to return via the coast road if time allows; the villages feel more local than the faster inland route.",
+      "culturalNote": "In Karangasem, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Tirta Gangga Water Palace",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    },
+    {
+      "dayNumber": 10,
+      "title": "Jimbaran Farewell: Garuda Views & Smoke on the Sand",
+      "emoji": "farewell",
+      "theme": "Jimbaran",
+      "moodDescription": "A clean final day near the airport, with culture, beach, and no risky long transfers.",
+      "budgetEstimate": 92,
+      "weather": {
+        "avgTemp": "28C",
+        "condition": "Seasonally comfortable",
+        "emoji": "clear",
+        "practicalTip": "Carry water and keep one flexible indoor option."
+      },
+      "transport": {
+        "mainRecommendation": "Use public transport plus short walks",
+        "dayPassRecommendation": "Buy a day pass only if making 3+ rides",
+        "approximateDailyCost": 8,
+        "cost": 8,
+        "details": "Activities are grouped by area to avoid backtracking."
+      },
+      "periods": {
+        "morning": {
+          "timeRange": "08:00-12:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d10-a1",
+              "name": "Garuda Wisnu Kencana Cultural Park",
+              "type": "culture",
+              "emoji": "culture",
+              "address": "Jl. Raya Uluwatu, Ungasan",
+              "coordinates": [
+                -8.8105,
+                115.1676
+              ],
+              "startTime": "10:00",
+              "duration": "2h",
+              "cost": 9,
+              "rating": 4.4,
+              "crowd": "low early",
+              "bookingRequired": false,
+              "insiderTip": "Use the shuttle inside the park; the scale is bigger than it looks on maps.",
+              "photoKeyword": "Garuda Wisnu Kencana Cultural Park travel",
+              "transportFromPrevious": {
+                "mode": "walk",
+                "line": "hotel start",
+                "duration": "12 min",
+                "cost": 0,
+                "directions": "Start from the recommended base area and keep the first leg simple."
+              }
+            }
+          ]
+        },
+        "afternoon": {
+          "timeRange": "13:00-17:00",
+          "activities": [
+            {
+              "id": "bali-10-days-d10-a2",
+              "name": "Jimbaran Beach Seafood Stalls",
+              "type": "food",
+              "emoji": "food",
+              "address": "Jimbaran Beach, Badung",
+              "coordinates": [
+                -8.779,
+                115.1667
+              ],
+              "startTime": "17:30",
+              "duration": "90 min",
+              "cost": 28,
+              "rating": 4.4,
+              "crowd": "moderate",
+              "bookingRequired": true,
+              "insiderTip": "Pick a stall by seeing the fish first, then agree weight and price before sitting.",
+              "photoKeyword": "Jimbaran Beach Seafood Stalls travel",
+              "transportFromPrevious": {
+                "mode": "metro or taxi",
+                "line": "direct local route",
+                "duration": "18 min",
+                "cost": 3,
+                "directions": "Travel directly to Jimbaran Beach Seafood Stalls without crossing back through the hotel area."
+              }
+            }
+          ]
+        },
+        "evening": {
+          "timeRange": "18:00-22:00",
+          "activities": []
+        }
+      },
+      "activities": [
+        {
+          "id": "bali-10-days-d10-a1",
+          "name": "Garuda Wisnu Kencana Cultural Park",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "Jl. Raya Uluwatu, Ungasan",
+          "coordinates": [
+            -8.8105,
+            115.1676
+          ],
+          "startTime": "10:00",
+          "duration": "2h",
+          "cost": 9,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Use the shuttle inside the park; the scale is bigger than it looks on maps.",
+          "photoKeyword": "Garuda Wisnu Kencana Cultural Park travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d10-a2",
+          "name": "Jimbaran Beach Seafood Stalls",
+          "type": "food",
+          "emoji": "food",
+          "address": "Jimbaran Beach, Badung",
+          "coordinates": [
+            -8.779,
+            115.1667
+          ],
+          "startTime": "17:30",
+          "duration": "90 min",
+          "cost": 28,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Pick a stall by seeing the fish first, then agree weight and price before sitting.",
+          "photoKeyword": "Jimbaran Beach Seafood Stalls travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Jimbaran Beach Seafood Stalls without crossing back through the hotel area."
+          }
+        }
+      ],
+      "stops": [
+        {
+          "id": "bali-10-days-d10-a1",
+          "name": "Garuda Wisnu Kencana Cultural Park",
+          "type": "culture",
+          "emoji": "culture",
+          "address": "Jl. Raya Uluwatu, Ungasan",
+          "coordinates": [
+            -8.8105,
+            115.1676
+          ],
+          "startTime": "10:00",
+          "duration": "2h",
+          "cost": 9,
+          "rating": 4.4,
+          "crowd": "low early",
+          "bookingRequired": false,
+          "insiderTip": "Use the shuttle inside the park; the scale is bigger than it looks on maps.",
+          "photoKeyword": "Garuda Wisnu Kencana Cultural Park travel",
+          "transportFromPrevious": {
+            "mode": "walk",
+            "line": "hotel start",
+            "duration": "12 min",
+            "cost": 0,
+            "directions": "Start from the recommended base area and keep the first leg simple."
+          }
+        },
+        {
+          "id": "bali-10-days-d10-a2",
+          "name": "Jimbaran Beach Seafood Stalls",
+          "type": "food",
+          "emoji": "food",
+          "address": "Jimbaran Beach, Badung",
+          "coordinates": [
+            -8.779,
+            115.1667
+          ],
+          "startTime": "17:30",
+          "duration": "90 min",
+          "cost": 28,
+          "rating": 4.4,
+          "crowd": "moderate",
+          "bookingRequired": true,
+          "insiderTip": "Pick a stall by seeing the fish first, then agree weight and price before sitting.",
+          "photoKeyword": "Jimbaran Beach Seafood Stalls travel",
+          "transportFromPrevious": {
+            "mode": "metro or taxi",
+            "line": "direct local route",
+            "duration": "18 min",
+            "cost": 3,
+            "directions": "Travel directly to Jimbaran Beach Seafood Stalls without crossing back through the hotel area."
+          }
+        }
+      ],
+      "meals": {
+        "breakfast": {
+          "name": "Cuca Bali",
+          "cuisine": "Cafe and bakery",
+          "type": "breakfast",
+          "priceRange": "$",
+          "cost": 9,
+          "address": "Cuca Bali, Bali",
+          "coordinates": [
+            -8.8105,
+            115.1676
+          ],
+          "mustOrder": "house coffee and signature pastry",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Cuca Bali; staff usually steer regulars there first."
+        },
+        "lunch": {
+          "name": "Menega Cafe",
+          "cuisine": "Local restaurant",
+          "type": "lunch",
+          "priceRange": "$$",
+          "cost": 18,
+          "address": "Menega Cafe, Bali",
+          "coordinates": [
+            -8.779,
+            115.1667
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "08:00-15:00",
+          "bookingRequired": false,
+          "insiderNote": "Ask for the counter or window seat at Menega Cafe; staff usually steer regulars there first."
+        },
+        "dinner": {
+          "name": "Kisik Bar and Grill",
+          "cuisine": "Local restaurant",
+          "type": "dinner",
+          "priceRange": "$$$",
+          "cost": 36,
+          "address": "Kisik Bar and Grill, Bali",
+          "coordinates": [
+            -8.779,
+            115.1667
+          ],
+          "mustOrder": "signature seasonal plate",
+          "openingHours": "18:30-22:30",
+          "bookingRequired": true,
+          "insiderNote": "Ask for the counter or window seat at Kisik Bar and Grill; staff usually steer regulars there first."
+        }
+      },
+      "localSecret": "If flying late, leave luggage with the restaurant or a nearby spa; it is more pleasant than killing time at DPS airport.",
+      "culturalNote": "In Jimbaran, move quietly around residential lanes and check opening hours on the morning of the visit.",
+      "dayHighlight": "Garuda Wisnu Kencana Cultural Park",
+      "estimatedSteps": 11000,
+      "packingForDay": [
+        "comfortable shoes",
+        "portable battery",
+        "light layer"
+      ]
+    }
+  ],
+  "weather": {
+    "season": "shoulder season",
+    "practicalTip": "Pack layers and verify weather 48 hours before departure."
+  },
+  "transport": {
+    "overview": "Area-grouped days with direct routes between adjacent stops."
+  },
+  "packingList": {
+    "essential": [
+      "passport",
+      "insurance",
+      "portable charger"
+    ],
+    "weatherSpecific": [
+      "light rain shell"
+    ],
+    "appsMustHave": [
+      "Google Maps",
+      "local transit app"
+    ],
+    "doNotBring": [
+      "oversized luggage"
+    ]
+  },
+  "nearbyEscapes": [
+    {
+      "name": "Nusa Lembongan",
+      "distance": "30 min fast boat",
+      "transportCost": 32,
+      "idealFor": "clear water and slower beaches",
+      "daysToAdd": 2,
+      "tip": "Stay overnight instead of doing a rushed day trip."
+    },
+    {
+      "name": "Gili Air",
+      "distance": "2.5 h fast boat",
+      "transportCost": 48,
+      "idealFor": "snorkeling and car-free evenings",
+      "daysToAdd": 3,
+      "tip": "Avoid if seas are rough; boats can be uncomfortable."
+    }
+  ],
+  "andorInsights": [
+    "This route protects mornings for high-demand places.",
+    "Meal choices stay near the day route.",
+    "The plan avoids repeated cross-city transfers."
+  ],
+  "suggestions": [
+    "Add a Nusa Lembongan overnight",
+    "Make this surf-focused",
+    "Lower the private-driver costs"
+  ]
+}

@@ -67,8 +67,8 @@
 }
 
 .markerDotInner {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   background: var(--navy);
   color: var(--white);
   border-radius: 50%;
@@ -79,15 +79,13 @@
   font-size: var(--text-xs);
   font-weight: 700;
   border: 2px solid var(--white);
-  box-shadow: var(--shadow-md), 0 0 10px rgba(0, 102, 204, 0.3);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
 }
 
 .leafletMarkerWrapper:hover .markerDotInner {
-  background: var(--ocean-light);
-  transform: scale(1.15);
-  box-shadow: var(--shadow-lg), 0 0 20px rgba(46, 139, 255, 0.6);
-  border-color: var(--navy);
+  transform: scale(1.2);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.48);
 }
 
 /* Cluster Marker style */
@@ -119,13 +117,14 @@
 
 /* Animated Route Drawing */
 .animatedPolyline {
-  stroke-dasharray: 8, 12;
-  animation: drawRoute 30s linear infinite;
+  stroke-dasharray: 800;
+  stroke-dashoffset: 800;
+  animation: drawRoute 1.5s ease forwards;
 }
 
 @keyframes drawRoute {
   to {
-    stroke-dashoffset: -1000;
+    stroke-dashoffset: 0;
   }
 }
 

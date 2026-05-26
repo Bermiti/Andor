@@ -70,7 +70,7 @@ export default function CtaFinal() {
   };
 
   const handleOpenConcierge = () => {
-    window.dispatchEvent(new Event('open-ai-chat'));
+    window.location.href = '/itinerary/tokyo-food';
   };
 
   return (
@@ -81,10 +81,10 @@ export default function CtaFinal() {
       <div className={styles.container}>
         <div className={styles.card}>
           <h2 className={styles.title}>
-            A tua próxima aventura está a uma pergunta de distância
+            A tua próxima aventura está a uma mensagem de distância
           </h2>
           <p className={styles.subtitle}>
-            Junta-te a mais de 50.000 viajantes que já descobriram a nova era de planeamento com o Andor.
+          Sem cartão de crédito. Sem compromissos. Cancelamento livre.
           </p>
 
           <div className={styles.buttons}>
@@ -93,27 +93,21 @@ export default function CtaFinal() {
               className={styles.primaryBtn}
               onClick={handleOpenAuth}
             >
-              Começar Grátis
+              Começar Grátis →
             </button>
             <button 
               type="button" 
               className={styles.secondaryBtn}
               onClick={handleOpenConcierge}
             >
-              Ver Demo ✦
+              Ver Demo
             </button>
           </div>
 
-          <div className={styles.badgesWrapper}>
-            <div className={styles.cardsRow}>
-              {/* Payment Mock Badges */}
-              <span className={styles.cardBadge}>VISA</span>
-              <span className={styles.cardBadge}>Mastercard</span>
-              <span className={styles.cardBadge}>Apple Pay</span>
-              <span className={styles.cardBadge}>Google Pay</span>
-              <span className={styles.cardBadge}>AMEX</span>
-            </div>
-            <p className={styles.noCardText}>Sem cartão de crédito necessário para começar</p>
+          <div className={styles.trustSignals}>
+            <span>🔒 Dados seguros</span>
+            <span>⭐ 4.9/5 de 2.400+ utilizadores</span>
+            <span>🌍 120+ países</span>
           </div>
         </div>
       </div>

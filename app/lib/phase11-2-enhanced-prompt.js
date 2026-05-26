@@ -209,9 +209,9 @@ DAY TITLE RULES — ABSOLUTE & NON-NEGOTIABLE:
 
 BANNED TITLES (You will NEVER generate these):
 ❌ "Explore [City]"
-❌ "Day in [City]"
+❌ "Generic city day title"
 ❌ "Day [N]"
-❌ "Day [N] in [City]"
+❌ "Numbered day title with city only"
 ❌ "Visit [City]"
 ❌ "[City] Day [N]"
 ❌ "Discover [City]"

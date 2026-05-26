@@ -4,28 +4,58 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
 import OnboardingModal from '../components/OnboardingModal';
+import AnimatedCounter from '../components/AnimatedCounter';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('itineraries');
   const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({ countries: 0, cities: 0, itineraries: 0 });
 
   useEffect(() => {
+    document.title = 'O Meu Perfil · Andor';
     const savedUser = localStorage.getItem('andor_user');
+    let parsedUser = null;
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        parsedUser = JSON.parse(savedUser);
+      } catch (error) {
+        parsedUser = null;
+      }
+      setUser(parsedUser);
     } else {
-      setUser({ name: 'Traveler', persona: 'adventurer', budget: 'Moderate' });
+      parsedUser = { name: 'Viajante', persona: 'adventurer', budget: 'Moderado' };
+      setUser(parsedUser);
     }
+
+    const savedTrips = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('andor_saved_trips') || '[]');
+      } catch (error) {
+        return [];
+      }
+    })();
+    const userTrips = parsedUser?.trips || [];
+    const trips = [...userTrips, ...savedTrips];
+    const destinations = trips
+      .map((trip) => trip.destination || trip.city || trip.name)
+      .filter(Boolean);
+    const cities = new Set(destinations.map((destination) => String(destination).split(',')[0].trim()).filter(Boolean));
+    const countries = new Set(destinations.map((destination) => String(destination).split(',')[1]?.trim()).filter(Boolean));
+    setStats({
+      countries: countries.size,
+      cities: cities.size,
+      itineraries: trips.length,
+    });
   }, []);
 
   const getPersonaLabel = (id) => {
     const map = {
-      'adventurer': 'The Adventurer',
-      'culture': 'Culture Vulture',
-      'relaxer': 'The Relaxer',
-      'foodie': 'The Foodie'
+      'adventurer': 'Explorador Intuitivo',
+      'culture': 'Curador Cultural',
+      'relaxer': 'Ritmo Lento',
+      'foodie': 'Foodie Local'
     };
-    return map[id] || 'Explorer';
+    return map[id] || 'Explorador';
   };
 
   return (
@@ -39,10 +69,12 @@ export default function ProfilePage() {
             {user?.name?.charAt(0).toUpperCase() || 'T'}
           </div>
           <div className={styles.userInfo}>
-            <h1 className={styles.name}>{user?.name || 'Traveler'}</h1>
+            <p className={styles.kicker}>Painel pessoal</p>
+            <h1 className={styles.name}>O Meu Perfil</h1>
+            <p className={styles.displayName}>{user?.name || 'Viajante'}</p>
             <div className={styles.badges}>
               <span className={styles.badge}>{getPersonaLabel(user?.persona)}</span>
-              <span className={styles.badge}>{user?.budget || 'Moderate'}</span>
+              <span className={styles.badge}>{user?.budget || 'Moderado'}</span>
             </div>
           </div>
         </div>
@@ -67,7 +99,7 @@ export default function ProfilePage() {
             className={`${styles.tab} ${activeTab === 'stats' ? styles.tabActive : ''}`}
             onClick={() => setActiveTab('stats')}
           >
-            Stats & Map
+            Stats & Mapa
           </button>
         </div>
 
@@ -83,8 +115,8 @@ export default function ProfilePage() {
                 <path d="M50 150C70 140 130 140 150 150" stroke="rgba(255,255,255,0.2)" strokeWidth="4" strokeLinecap="round"/>
               </svg>
               <h2>No itineraries yet</h2>
-              <p>Your journey begins with a single step (and a quick search).</p>
-              <Link href="/" className={styles.primaryBtn}>Plan a Trip</Link>
+              <p>A tua próxima viagem começa com uma pesquisa rápida e um plano bem desenhado.</p>
+              <Link href="/" className={styles.primaryBtn}>Planear Viagem</Link>
             </div>
           )}
 
@@ -95,9 +127,9 @@ export default function ProfilePage() {
                 <path d="M100 130C100 130 65 100 65 75C65 60 75 50 90 50C97 50 100 55 100 55C100 55 103 50 110 50C125 50 135 60 135 75C135 100 100 130 100 130Z" stroke="var(--accent, #00ff88)" strokeWidth="4" fill="rgba(0,255,136,0.1)"/>
                 <path d="M115 65C120 65 125 70 125 75" stroke="var(--accent, #00ff88)" strokeWidth="4" strokeLinecap="round"/>
               </svg>
-              <h2>Your heart is empty</h2>
-              <p>Save your favorite destinations here and start dreaming.</p>
-              <Link href="/" className={styles.primaryBtn}>Explore Destinations</Link>
+              <h2>Ainda sem favoritos</h2>
+              <p>Guarda destinos e experiências para voltares a eles quando a viagem ganhar forma.</p>
+              <Link href="/" className={styles.primaryBtn}>Explorar Destinos</Link>
             </div>
           )}
 
@@ -105,21 +137,21 @@ export default function ProfilePage() {
             <div className={styles.statsLayout}>
               <div className={styles.statsCards}>
                 <div className={styles.statCard}>
-                  <div className={styles.statValue}>0</div>
-                  <div className={styles.statLabel}>Countries Visited</div>
+                  <div className={styles.statValue}><AnimatedCounter target={stats.countries} /></div>
+                  <div className={styles.statLabel}>Países Planeados</div>
                 </div>
                 <div className={styles.statCard}>
-                  <div className={styles.statValue}>0</div>
-                  <div className={styles.statLabel}>Cities Explored</div>
+                  <div className={styles.statValue}><AnimatedCounter target={stats.cities} /></div>
+                  <div className={styles.statLabel}>Cidades Guardadas</div>
                 </div>
                 <div className={styles.statCard}>
-                  <div className={styles.statValue}>0</div>
-                  <div className={styles.statLabel}>Itineraries Planned</div>
+                  <div className={styles.statValue}><AnimatedCounter target={stats.itineraries} /></div>
+                  <div className={styles.statLabel}>Itinerários</div>
                 </div>
               </div>
               
               <div className={styles.mapContainer}>
-                <h3>Your World Map</h3>
+                <h3>O Teu Mapa</h3>
                 <div className={styles.mapWrapper}>
                   <svg viewBox="0 0 800 400" className={styles.worldMap}>
                     {/* Simplified decorative world map paths */}
@@ -129,7 +161,7 @@ export default function ProfilePage() {
                     <path d="M100 100 Q 150 120 180 80" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="15" strokeLinecap="round"/>
                     <path d="M300 180 Q 350 220 400 150" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="20" strokeLinecap="round"/>
                     <path d="M500 120 Q 550 160 580 100" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="15" strokeLinecap="round"/>
-                    <text x="400" y="250" fill="rgba(255,255,255,0.3)" textAnchor="middle" fontSize="14">No travels logged yet</text>
+                    <text x="400" y="250" fill="rgba(255,255,255,0.3)" textAnchor="middle" fontSize="14">As tuas viagens guardadas aparecem aqui</text>
                   </svg>
                 </div>
               </div>

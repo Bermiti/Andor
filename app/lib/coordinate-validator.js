@@ -1,6 +1,6 @@
 /**
  * CRITICAL: City coordinates validator and fixer
- * Ensures map ALWAYS shows correct city, never [0,0] or out-of-bounds
+ * Ensures map ALWAYS shows correct city, never zero-zero or out-of-bounds
  */
 
 export const CITY_BOUNDS = {
@@ -26,6 +26,9 @@ export const CITY_BOUNDS = {
   prague: { lat: [50.0, 50.2], lng: [14.2, 14.6], center: [50.0755, 14.4378] },
   istanbul: { lat: [40.8, 41.3], lng: [28.7, 29.3], center: [41.0082, 28.9784] },
   kyoto: { lat: [34.8, 35.2], lng: [135.5, 135.9], center: [35.0116, 135.7681] },
+  osaka: { lat: [34.45, 34.9], lng: [135.25, 135.75], center: [34.6937, 135.5023] },
+  porto: { lat: [41.0, 41.3], lng: [-8.8, -8.45], center: [41.1579, -8.6291] },
+  madrid: { lat: [40.25, 40.6], lng: [-3.9, -3.45], center: [40.4168, -3.7038] },
   seul: { lat: [37.4, 37.7], lng: [126.7, 127.2], center: [37.5665, 126.9780] },
   "buenos aires": { lat: [-34.7, -34.5], lng: [-58.6, -58.3], center: [-34.6037, -58.3816] },
   "rio de janeiro": { lat: [-23.1, -22.8], lng: [-43.5, -43.1], center: [-22.9068, -43.1729] },

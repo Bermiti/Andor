@@ -3,6 +3,7 @@
 // pre-built community itineraries by slug.
 
 import { safeParse } from './safe-json';
+import { getJson, setJson } from './storage';
 
 export function enrichItineraryData(itinerary) {
   if (!itinerary) return null;
@@ -171,7 +172,14 @@ export function enrichItineraryData(itinerary) {
   };
 
   let baseCoords = { lat: 38.7223, lng: -9.1393 };
-  const destLower = enriched.destination ? enriched.destination.toLowerCase() : '';
+  const destinationLabel = typeof enriched.destination === 'string'
+    ? enriched.destination
+    : [
+        enriched.destination?.city,
+        enriched.destination?.name,
+        enriched.destination?.country,
+      ].filter(Boolean).join(', ');
+  const destLower = destinationLabel.toLowerCase();
   for (const [region, coords] of Object.entries(regionDefaults)) {
     if (destLower.includes(region)) {
       baseCoords = coords;
@@ -239,7 +247,7 @@ export function enrichItineraryData(itinerary) {
         };
       }
 
-      // "Se coordinates são [0,0] ou null → usa geocoding da cidade como fallback"
+      // Se coordinates são zero-zero ou null, usa geocoding da cidade como fallback.
       if (
         !currentCoords ||
         currentCoords.lat === null ||
@@ -314,22 +322,17 @@ export function enrichItineraryData(itinerary) {
 export function saveGeneratedItinerary(itinerary) {
   const id = 'gen-' + Date.now();
   const stored = { ...itinerary, id, createdAt: new Date().toISOString() };
-  if (typeof window !== 'undefined') {
-    sessionStorage.setItem(`andor_itinerary_${id}`, JSON.stringify(stored));
-  }
+  setJson(`andor_itinerary_${id}`, stored, 'session');
   return id;
 }
 
 export function getItinerary(id) {
-  // Check community itineraries first
+  // Session edits win so regenerated community trips survive refreshes.
+  const stored = getJson(`andor_itinerary_${id}`, null, 'session');
+  if (stored) return enrichItineraryData(stored);
+
   const community = communityItineraries[id];
   if (community) return enrichItineraryData(community);
-
-  // Check sessionStorage for generated itineraries
-  if (typeof window !== 'undefined') {
-    const stored = sessionStorage.getItem(`andor_itinerary_${id}`);
-    if (stored) return enrichItineraryData(safeParse(stored, null));
-  }
 
   return null;
 }

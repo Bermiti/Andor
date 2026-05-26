@@ -368,8 +368,8 @@ export function createMinimalItinerary(destination, days = 3) {
     tripPace: 'balanced',
     budget: 'comfortable',
     summary: {
-      title: `${destination} Trip`,
-      description: `${days}-day trip to ${destination}`,
+      title: `${destination} Planning Brief`,
+      description: `${days}-day practical planning brief for ${destination}`,
       highlights: [],
     },
     travelerProfile: {
@@ -378,13 +378,13 @@ export function createMinimalItinerary(destination, days = 3) {
       pace: 'balanced',
     },
     flights: {
-      overview: 'Flights info coming soon',
+      overview: 'Compare direct and one-stop routes before booking; prices vary sharply by season and weekday.',
       options: [],
       externalLinks: {},
       disclaimer: 'Prices are estimates. Confirm on booking sites.',
     },
     accommodation: {
-      overview: 'Accommodation options coming soon',
+      overview: 'Choose a well-connected base close to transit, meals, and the first morning route.',
       recommendedArea: destination,
       alternativeAreas: [],
       hotels: [],
@@ -392,19 +392,19 @@ export function createMinimalItinerary(destination, days = 3) {
       disclaimer: 'Verify prices and availability on booking sites.',
     },
     airportTransfer: {
-      overview: 'Transfer options coming soon',
+      overview: 'Use the official airport rail, shuttle, or taxi queue unless a hotel transfer is already confirmed.',
       options: [],
       warnings: [],
     },
     localTransport: {
-      overview: 'Transport options coming soon',
+      overview: 'Plan each day by neighborhood and buy the local transit pass only if it beats single fares.',
       recommendations: [],
       usefulApps: [],
     },
     dailyPlan: Array.from({ length: days }, (_, i) => ({
       dayNumber: i + 1,
-      title: `Day ${i + 1}`,
-      objective: `Explore ${destination}`,
+      title: [`First Light Arrival`, `Old Streets and New Tables`, `Slow Morning, Sharp Views`, `Last Call for Local Favourites`][i % 4],
+      objective: `Keep the route compact, useful, and easy to follow around ${destination}.`,
       energyLevel: 'moderate',
       periods: {
         morning: { title: 'Morning', activities: [] },

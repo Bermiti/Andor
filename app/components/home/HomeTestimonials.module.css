@@ -1,17 +1,32 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
+  gap: var(--space-6);
 }
 
 .card {
+  position: relative;
   background: var(--bg-2);
   border: 1px solid var(--b-1);
-  border-radius: 24px;
-  padding: 40px;
+  border-radius: var(--r-md);
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-height: auto;
+  overflow: hidden;
+  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease), border-color 200ms var(--ease);
+}
+
+.card::before {
+  content: '"';
+  position: absolute;
+  top: -18px;
+  left: var(--space-5);
+  color: rgba(212, 168, 67, 0.18);
+  font-family: var(--font-heading);
+  font-size: 8rem;
+  line-height: 1;
+  pointer-events: none;
 }
 
 [data-theme="light"] .card {
@@ -21,8 +36,9 @@
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  transform: translateY(-3px);
+  box-shadow: var(--s-gold);
+  border-color: var(--b-gold);
 }
 
 .stars {
@@ -36,13 +52,14 @@
 }
 
 .quote {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
   line-height: 1.5;
   color: var(--t-1);
-  margin-bottom: 32px;
+  margin-bottom: var(--space-6);
   flex: 1;
-  font-style: italic;
 }
 
 [data-theme="light"] .quote {
@@ -82,6 +99,7 @@
 .authorInfo span {
   font-size: 0.875rem;
   color: var(--t-3);
+  line-height: 1.4;
 }
 
 @media (max-width: 768px) {

@@ -1,18 +1,26 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 32px;
-  margin-top: 48px;
+  gap: var(--space-6);
+  margin-top: var(--space-7);
 }
 
 .card {
   background: var(--bg-2);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--b-1);
   display: flex;
   flex-direction: column;
   min-width: 0;
+  box-shadow: var(--s-1);
+  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease), border-color 200ms var(--ease);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--s-gold);
+  border-color: var(--b-gold);
 }
 
 [data-theme="light"] .card {
@@ -40,24 +48,45 @@
 
 .scoreBadge {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: var(--space-4);
+  right: var(--space-4);
   background: rgba(8, 12, 20, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--gold);
+  font-family: var(--font-mono);
   font-weight: 700;
   font-size: 0.9rem;
-  padding: 6px 12px;
-  border-radius: 100px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-full);
   display: flex;
   align-items: center;
   gap: 4px;
   border: 1px solid rgba(212, 168, 67, 0.3);
 }
 
+.scoreBadge small {
+  color: var(--t-2);
+  font-size: 0.7rem;
+}
+
+.seasonBadge {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  max-width: calc(100% - 32px);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-full);
+  background: rgba(8, 12, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--t-1);
+  font-size: 0.78rem;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
+}
+
 .cardBody {
-  padding: 24px;
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -65,8 +94,9 @@
 
 .tags {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .tag {
@@ -76,15 +106,21 @@
   font-weight: 600;
   color: var(--sky);
   background: rgba(74, 158, 232, 0.1);
-  padding: 4px 10px;
-  border-radius: 100px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-full);
 }
 
 .cardTitle {
   font-size: 1.5rem;
   color: var(--t-1);
-  margin-bottom: 24px;
+  margin-bottom: var(--space-2);
   font-family: var(--font-display);
+}
+
+.cardMeta {
+  color: var(--t-2);
+  font-size: 0.95rem;
+  margin: 0 0 var(--space-5);
 }
 
 [data-theme="light"] .cardTitle {
@@ -95,9 +131,15 @@
   margin-top: auto;
   width: 100%;
   justify-content: space-between;
-  border-radius: 12px;
-  padding: 12px 20px;
+  border-radius: var(--r-sm);
+  padding: var(--space-3) var(--space-4);
   font-size: 1rem;
+  opacity: 0.9;
+}
+
+.card:hover .exploreBtn {
+  opacity: 1;
+  border-color: var(--b-gold);
 }
 
 .exploreBtn svg {
@@ -125,7 +167,7 @@
   .card {
     position: relative;
     min-height: 0;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
   }
 
   .imgWrapper {
@@ -146,6 +188,15 @@
     right: 10px;
     padding: 5px 9px;
     font-size: 0.78rem;
+  }
+
+  .seasonBadge {
+    left: 10px;
+    bottom: auto;
+    top: 42px;
+    right: 10px;
+    font-size: 0.64rem;
+    padding: 3px 7px;
   }
 
   .cardBody {
@@ -181,7 +232,11 @@
   .exploreBtn {
     min-height: 44px;
     padding: 8px 10px;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
     font-size: 0.78rem;
+  }
+
+  .cardMeta {
+    display: none;
   }
 }

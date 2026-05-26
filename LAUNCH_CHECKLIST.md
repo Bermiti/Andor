@@ -1,125 +1,47 @@
-# Checklist de Lançamento — Andor Travels 🚀
+# Andor Launch Checklist
 
-Este guia serve como a lista final de validação técnica e comercial antes e depois de implantar o **Andor Travels** em produção (ex: Vercel).
+Run these before every production deploy:
 
----
-
-## 🔑 Variáveis de Ambiente Necessárias
-
-Certifica-te de configurar as seguintes variáveis no teu painel do provedor de alojamento (ex: Vercel Dashboard):
-
-| Variável | Descrição | Valor Sugerido / Exemplo | Requerido |
-| :--- | :--- | :--- | :--- |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Chave de API do Google Gemini para planeamento de itinerários e conversas de IA. | `AIzaSy...` | **Sim** |
-| `GROQ_API_KEY` | Chave de API Groq (utilizada como fallback em algumas rotas). | `gsk_...` | Não (opcional) |
-| `NEXT_PUBLIC_SITE_URL` | URL público de produção para canónicos de SEO, sitemaps e partilhas. | `https://andor-travels.vercel.app` | Não (opcional) |
-
----
-
-## 🛠️ Comandos de Build e Deploy
-
-### 1. Validação Local
-Executar a validação local completa para verificar lints, compilador e empacotamento:
 ```bash
-npm run build
+npm install
+npm.cmd run build
+npm.cmd run test:e2e
+npm.cmd run eval:itineraries -- --fixtures
+npm.cmd run check:launch
 ```
 
-### 2. Comando de Início (Self-hosted)
-Se não estiveres a usar Vercel/Netlify, podes iniciar o servidor de produção localmente com:
+Run live itinerary eval only when the app is running and provider env vars are available:
+
 ```bash
-npm run start
+set ANDOR_EVAL_BASE_URL=http://localhost:3000
+npm.cmd run eval:itineraries -- --live
 ```
 
----
+Required and optional environment variables:
 
-## 📋 Checklist Pré-Deploy
+- `GROQ_API_KEY`: itinerary generation provider.
+- `GOOGLE_GENERATIVE_AI_API_KEY`: itinerary generation fallback provider.
+- `ANTHROPIC_API_KEY`: concierge chat provider.
+- `ANDOR_EVAL_BASE_URL` or `EVAL_BASE_URL`: local/prod base URL for live evals.
 
-- [ ] **Build sem erros**: Correr `npm run build` e confirmar compilação com zero erros.
-- [ ] **Console Logs Limpos**: Garantir que não existem `console.log` na pasta `app` (auditado com sucesso).
-- [ ] **Metadados Sociais**: Verificar que as tags de Open Graph e Twitter Cards apontam para imagens e caminhos relativos corretos em `app/layout.js`.
-- [ ] **Configuração Robots & Sitemap**: Validar que os ficheiros `app/sitemap.js` e `app/robots.js` estão criados para geração dinâmica.
+Manual iPhone Safari QA:
 
----
+- Homepage: hero visible, search stacked, no horizontal scroll, autocomplete usable.
+- Wizard: keyboard open on destination input, all steps reachable, buttons above safe area.
+- Tokyo itinerary: day tabs scroll, map is 240px high, activity expands, budget opens.
+- Modals: share, booking, regenerate, and budget close on Escape/backdrop/close button.
+- Chat: opens over the app, textarea stays above keyboard, suggestions remain tappable.
+- PDF: generating state appears and failure toast is understandable if Safari blocks download.
+- Offline: generation/chat explain what is unavailable and do not crash.
 
-## 📋 Checklist Pós-Deploy (Smoke Testing)
+Known limitations:
 
-Executar os seguintes testes manuais após o deploy em produção estar concluído:
+- Local-only share URLs rely on browser storage. Export PDF for durable external sharing.
+- Live AI quality depends on provider behavior, so fixture eval is required and live eval is recommended before deploy.
+- Leaflet may create internal offscreen tile elements; launch tests assert page scroll width stays correct.
 
-### 1. Rotas Estáticas Principais
-- [ ] Aceder a `/` (Homepage) e verificar se o Onboarding Modal aparece na primeira visita.
-- [ ] Aceder a `/pricing` e alternar o switch de faturação anual/mensal para confirmar que a interface e preços mudam instantaneamente.
-- [ ] Aceder a `/favorites` e verificar os cartões demo criados por padrão.
-- [ ] Aceder a `/profile` e ver se a Travel Persona é exibida corretamente.
-- [ ] Testar uma URL inexistente (ex: `/rota-que-nao-existe`) e validar se a página de erro 404 personalizada aparece com a bússola animada.
+Rollback:
 
-### 2. Recursos Dinâmicos
-- [ ] Testar `/destination/tokyo` e confirmar que o gráfico climático, o veredito e o botão sticky funcionam.
-- [ ] Tentar clicar em "Favoritar" (botão do coração) e verificar a elástica micro-animação do coração e partículas rosa.
-- [ ] Pesquisar no Autocomplete do Hero e selecionar um destino para confirmar que avança para o Wizard.
-
-### 3. Integração com IA e Geração
-- [ ] Criar uma viagem usando o Wizard e validar o ecrã de carregamento animado com o avião SVG.
-- [ ] Confirmar se o itinerário gerado é renderizado no ecrã com mapa interativo e se os botões laterais (PDF, Chat, Partilhar) respondem.
-- [ ] Testar o chat flutuante (AI Concierge) enviando uma mensagem rápida (ex: "olá") para confirmar que o streaming funciona.
-
-### 4. Telemetria e Validação de SEO
-- [ ] Abrir as ferramentas de desenvolvedor (F12) na consola após interações e escrever `window.andor_events`. Confirmar se os eventos disparados (ex: `pricing_toggle`, `destination_viewed`) estão registados no array.
-- [ ] Validar a presença do sitemap digitando `/sitemap.xml` no browser.
-- [ ] Validar orobots txt digitando `/robots.txt` no browser.
-
----
-
-## 🔍 Performance & Lighthouse
-
-Depois de deploy em produção, valida a pontuação Lighthouse em `https://seu-dominio.com`:
-
-### Como Correr Lighthouse
-
-1. **Via Chrome DevTools** (Local):
-   - Abre DevTools (F12)
-   - Vai à aba **Lighthouse**
-   - Clica **Analyze page load**
-   - Aguarda resultado
-
-2. **Via PageSpeed Insights** (Produção):
-   - Vai a [pagespeed.web.dev](https://pagespeed.web.dev)
-   - Digita a URL de produção
-   - Clica **Analyze**
-   - Recebe relatório detalhado
-
-3. **Via Vercel Analytics** (Integrado):
-   - Vai a Vercel Dashboard → **Analytics**
-   - Vê Core Web Vitals automáticos
-
-### Métricas-Alvo
-
-| Métrica | Alvo |
-| :--- | :--- |
-| **Performance** | > 70 |
-| **Accessibility** | > 90 |
-| **Best Practices** | > 90 |
-| **SEO** | > 90 |
-
-### Otimizações Recomendadas
-
-- **Imagens**: Compress e lazy-load — usa Next.js `<Image>` component
-- **Fonts**: Google Fonts já estão otimizadas
-- **CSS**: Vanilla CSS modules já são bem-otimizados
-- **JavaScript**: Evita grandes bundles — tree-shaking automático
-- **Core Web Vitals**:
-  - **LCP** (Largest Contentful Paint): Deve ser < 2.5s
-  - **FID** (First Input Delay): Deve ser < 100ms
-  - **CLS** (Cumulative Layout Shift): Deve ser < 0.1
-
-### Checklist Lighthouse
-
-- [ ] Performance > 70
-- [ ] Accessibility > 90
-- [ ] Best Practices > 90
-- [ ] SEO > 90
-- [ ] Sem erros críticos no relatório
-- [ ] LCP < 2.5s
-- [ ] FID < 100ms
-- [ ] CLS < 0.1
-
----
+1. Revert the deploy in the hosting provider.
+2. Revert or cherry-pick the last safe Git commit.
+3. Re-run `npm.cmd run build`, `npm.cmd run test:e2e`, and fixture eval before redeploying.

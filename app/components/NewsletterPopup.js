@@ -11,19 +11,25 @@ export default function NewsletterPopup() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if user already dismissed or subscribed
-    const hasSeen = localStorage.getItem('andor_newsletter_dismissed');
-    if (!hasSeen) {
-      const timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 5000); // 5 seconds delay
-      return () => clearTimeout(timer);
+    try {
+      const hasSeen = localStorage.getItem('andor_newsletter_dismissed');
+      const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+      if (!hasSeen && !isSmallScreen) {
+        const timer = setTimeout(() => {
+          setIsOpen(true);
+        }, 30000);
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      setIsOpen(false);
     }
   }, []);
 
   const handleDismiss = () => {
     setIsOpen(false);
-    localStorage.setItem('andor_newsletter_dismissed', 'true');
+    try {
+      localStorage.setItem('andor_newsletter_dismissed', 'true');
+    } catch (error) {}
   };
 
   const handleSubmit = (e) => {
@@ -34,7 +40,9 @@ export default function NewsletterPopup() {
     setTimeout(() => {
       setLoading(false);
       setIsSubscribed(true);
-      localStorage.setItem('andor_newsletter_dismissed', 'true');
+      try {
+        localStorage.setItem('andor_newsletter_dismissed', 'true');
+      } catch (error) {}
     }, 1000);
   };
 

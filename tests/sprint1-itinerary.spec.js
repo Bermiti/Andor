@@ -6,8 +6,8 @@ function makeTokyoItinerary() {
   return {
     destination: 'Tokyo, Japan',
     days: [
-      { title: 'Arrival', stops: [{ name: 'Sensoji', coordinates: { lat: 35.7148, lng: 139.7967 } }] },
-      { title: 'Sightseeing', stops: [{ name: 'Shibuya Crossing', coordinates: { lat: 35.6595, lng: 139.7005 } }] }
+      { title: 'Asakusa Arrival: Sensoji Smoke & Sumida First Light', stops: [{ name: 'Sensoji', coordinates: { lat: 35.7148, lng: 139.7967 } }] },
+      { title: 'Shibuya Pulse: Crossing Lights & Hachiko Corners', stops: [{ name: 'Shibuya Crossing', coordinates: { lat: 35.6595, lng: 139.7005 } }] }
     ]
   };
 }
@@ -48,10 +48,10 @@ test.describe('Sprint 1 itinerary acceptance', () => {
     await expect(day1Btn).toBeVisible();
     await expect(day2Btn).toBeVisible();
 
-    // Click day 2 and verify heading changes from 'Arrival' to 'Sightseeing'
-    await expect(page.locator('h2', { hasText: 'Arrival' })).toBeVisible();
+    // Click day 2 and verify heading changes.
+    await expect(page.locator('h2', { hasText: 'Asakusa Arrival' })).toBeVisible();
     await day2Btn.click();
-    await expect(page.locator('h2', { hasText: 'Sightseeing' })).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'Shibuya Pulse' })).toBeVisible();
 
     // Verify activity cards render (look for an action button present in stop cards)
     await expect(page.locator('text=Ver no Mapa').first()).toBeVisible();

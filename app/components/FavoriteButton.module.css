@@ -1,0 +1,95 @@
+.favoriteButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--b-2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--t-1);
+  font-family: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.favoriteButton:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: var(--s-coral);
+}
+
+.heartWrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.heart {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  transition: transform 150ms var(--ease), fill 150ms var(--ease), color 150ms var(--ease);
+}
+
+.filled {
+  border-color: rgba(232, 96, 74, 0.42);
+  color: var(--coral);
+  background: rgba(232, 96, 74, 0.1);
+}
+
+.filled .heart {
+  fill: currentColor;
+}
+
+.burst .heart {
+  animation: heartBurst 600ms ease forwards;
+}
+
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.particles span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--r-full);
+  background: var(--coral);
+  opacity: 0;
+  animation: particleFly 600ms ease forwards;
+}
+
+.p1 { --x: -22px; --y: -18px; }
+.p2 { --x: 0; --y: -25px; }
+.p3 { --x: 22px; --y: -18px; }
+.p4 { --x: 24px; --y: 8px; }
+.p5 { --x: 0; --y: 24px; }
+.p6 { --x: -24px; --y: 8px; }
+
+@keyframes heartBurst {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.4); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+@keyframes particleFly {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(0.2);
+  }
+}

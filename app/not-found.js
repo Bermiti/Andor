@@ -37,7 +37,7 @@ export default function NotFound() {
           </svg>
         </div>
 
-        <h1 className={styles.title}>404 — Parece que te perdeste</h1>
+        <div className={styles.title} aria-hidden="true">404</div>
         <p className={styles.subtitle}>Acontece até aos melhores exploradores.</p>
 
         <div className={styles.buttonGroup}>

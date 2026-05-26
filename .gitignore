@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/reports/*
+!/reports/README.md
 
 # next.js
 /.next/

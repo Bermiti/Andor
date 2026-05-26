@@ -1,6 +1,8 @@
 import { generateChatResponse } from '../../lib/fallback-ai';
 import { buildChatSystemPrompt } from '../../lib/phase11-2-chat-prompt';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { cleanLocale, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
+import { logger } from '../../lib/logger';
 
 const SYSTEM_PROMPT = `You are ANDOR — an elite AI travel agent with the combined
 expertise of a luxury travel consultant, a local guide who
@@ -92,7 +94,7 @@ Rome: lat 41.8-42.0, lng 12.4-12.6
 Amsterdam: lat 52.3-52.4, lng 4.8-5.0
 Bangkok: lat 13.6-13.9, lng 100.4-100.7
 
-NEVER return [0,0] or coordinates from wrong city.
+NEVER return zero-zero coordinates or coordinates from wrong city.
 If unsure of exact coords: use city center as fallback.
 
 FLIGHT KNOWLEDGE:
@@ -143,9 +145,23 @@ WHAT YOU NEVER DO:
 
 export async function POST(req) {
   try {
-    const { messages, locale, destination, itinerary } = await req.json();
+    const body = await readJsonBody(req, 'chat');
+    if (!body || typeof body !== 'object') {
+      return streamFallbackText('O concierge está indisponível — tenta novamente.');
+    }
+    const messages = Array.isArray(body.messages)
+      ? body.messages.slice(-14).map((message) => ({
+          role: message?.role === 'assistant' ? 'assistant' : 'user',
+          content: cleanString(message?.content, '', 4000),
+        })).filter((message) => message.content)
+      : [];
+    if (messages.length === 0) {
+      return streamFallbackText('Escreve uma pergunta de viagem e eu ajudo já.');
+    }
+    const destination = cleanString(body.destination, '', 120);
+    const itinerary = body.itinerary && typeof body.itinerary === 'object' ? body.itinerary : null;
     const lastMessage = messages[messages.length - 1]?.content || '';
-    const userLocale = locale || 'pt';
+    const userLocale = cleanLocale(body.locale);
     
     // PHASE 11.2: Build context-aware prompt
     let activeSystemPrompt;
@@ -154,11 +170,12 @@ export async function POST(req) {
     } else {
       activeSystemPrompt = `${SYSTEM_PROMPT}\n\nAlways respond in: ${userLocale === 'pt-BR' ? 'Brazilian Portuguese' : 'European Portuguese'}.`;
     }
+    activeSystemPrompt += `\n\nAFTER EVERY RESPONSE, on a new final line add exactly:\nSUGGESTIONS: [chip1] | [chip2] | [chip3]\nThe 3 suggestions must be the most natural follow-up to exactly what you just said. Keep each chip under 30 characters.`;
 
     const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (anthropicKey && anthropicKey !== 'cola_aqui_a_tua_chave') {
+    if (hasProviderKey(anthropicKey)) {
       try {
         const anthropic = new Anthropic({ apiKey: anthropicKey });
         const stream = await anthropic.messages.stream({
@@ -193,13 +210,13 @@ export async function POST(req) {
           }
         });
       } catch (e) {
-        // Fallback
+        logger.warn('chat:anthropic_provider_failed', e, { destination });
       }
     }
 
     // Try Groq Llama first
     const groqKey = process.env.GROQ_API_KEY;
-    if (groqKey && groqKey !== 'cola_aqui_a_tua_chave') {
+    if (hasProviderKey(groqKey)) {
       try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -239,7 +256,9 @@ export async function POST(req) {
                     if (text) {
                       controller.enqueue(encoder.encode(`data: ${JSON.stringify({text})}\n\n`));
                     }
-                  } catch {}
+                  } catch (error) {
+                    logger.warn('chat:groq_stream_parse_failed', error);
+                  }
                 }
               }
               controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -254,7 +273,9 @@ export async function POST(req) {
             }
           });
         }
-      } catch (e) {}
+      } catch (e) {
+        logger.warn('chat:groq_provider_failed', e, { destination });
+      }
     }
 
     // Fallback — smart pre-built responses
@@ -286,10 +307,11 @@ export async function POST(req) {
     });
 
   } catch (error) {
+    logger.error('chat:unhandled', error);
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({text: "Sorry, something went wrong. Please try again!"})}\n\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({text: "O concierge está indisponível — tenta novamente."})}\n\n`));
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();
       },
@@ -301,4 +323,32 @@ export async function POST(req) {
       }
     });
   }
+}
+
+function streamFallbackText(reply) {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      const words = String(reply || '').split(' ');
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= words.length) {
+          clearInterval(interval);
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+          return;
+        }
+        const word = (i === 0 ? '' : ' ') + words[i];
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: word })}\n\n`));
+        i++;
+      }, 30);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    },
+  });
 }

@@ -14,6 +14,7 @@ export default function FavoritesPage() {
   const [loaded, setLoaded] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmDeleteType, setConfirmDeleteType] = useState(null); // 'dest', 'act', 'itinerary'
+  const [showCompare, setShowCompare] = useState(false);
 
   useEffect(() => {
     document.title = "Os Meus Favoritos · Andor";
@@ -108,7 +109,19 @@ export default function FavoritesPage() {
             daysCount: 5,
             style: 'Cultural',
             createdDate: new Date().toLocaleDateString('pt-PT'),
-            totalCost: '€1.480'
+            totalCost: '€1.480',
+            score: 94,
+            season: 'Setembro'
+          },
+          {
+            id: 'demo-paris-5d',
+            destination: 'Paris, França',
+            daysCount: 5,
+            style: 'Romance/Cultura',
+            createdDate: new Date().toLocaleDateString('pt-PT'),
+            totalCost: '€1.800',
+            score: 96,
+            season: 'Abril'
           }
         ];
         setFavItineraries(demoItins);
@@ -179,6 +192,29 @@ export default function FavoritesPage() {
       } catch (e) {}
     }
     trackEvent('itinerary_duplicated', { destination: itinerary.destination });
+  };
+
+  const compareTrips = favItineraries.slice(0, 2);
+
+  const getTripCity = (trip) => String(trip.destination || 'Destino').split(',')[0].trim();
+
+  const getTripCountryFlag = (trip) => {
+    const destination = String(trip.destination || '').toLowerCase();
+    if (destination.includes('tokyo') || destination.includes('jap')) return '🇯🇵';
+    if (destination.includes('paris') || destination.includes('fran')) return '🇫🇷';
+    if (destination.includes('bali') || destination.includes('indon')) return '🇮🇩';
+    return '✦';
+  };
+
+  const getTripNotes = (trip) => {
+    const destination = String(trip.destination || '').toLowerCase();
+    if (destination.includes('tokyo') || destination.includes('jap')) {
+      return ['✅ Visa-free', '✅ Very safe', '⚠️ Cash still useful', '🔌 Adaptor req.'];
+    }
+    if (destination.includes('paris') || destination.includes('fran')) {
+      return ['✅ Visa-free', '✅ Card friendly', '⚠️ Book museums', '🔌 Same plug EU'];
+    }
+    return ['✅ Easy entry', '✅ Good value', '⚠️ Check season', '🔌 Confirm plug'];
   };
 
   // Group activities by destination city
@@ -394,6 +430,18 @@ export default function FavoritesPage() {
           {/* TABS: ITINERARIOS */}
           {activeTab === 'itinerarios' && (
             favItineraries.length > 0 ? (
+              <>
+              {favItineraries.length >= 2 && (
+                <div className={styles.compareBanner}>
+                  <div>
+                    <h2>Comparar Viagens</h2>
+                    <p>Vê custo, época, score e detalhes práticos lado a lado antes de escolher.</p>
+                  </div>
+                  <button className={styles.compareBtn} onClick={() => setShowCompare(true)}>
+                    Comparar Viagens
+                  </button>
+                </div>
+              )}
               <div className={styles.itinGrid}>
                 {favItineraries.map((itin) => (
                   <div key={itin.id} className={styles.itinCard}>
@@ -447,6 +495,7 @@ export default function FavoritesPage() {
                   </div>
                 ))}
               </div>
+              </>
             ) : (
               <div className={styles.emptyState}>
                 <svg className={styles.emptySvg} viewBox="0 0 100 100" width="80" height="80">
@@ -464,6 +513,31 @@ export default function FavoritesPage() {
           )}
         </div>
       </main>
+      {showCompare && compareTrips.length >= 2 && (
+        <div className={styles.compareOverlay} role="dialog" aria-modal="true" aria-label="Comparar viagens">
+          <div className={styles.compareModal}>
+            <button className={styles.compareClose} onClick={() => setShowCompare(false)} aria-label="Fechar comparação">×</button>
+            <h2>Comparar Viagens</h2>
+            <div className={styles.compareTable}>
+              {compareTrips.map((trip) => (
+                <article key={trip.id} className={styles.compareColumn}>
+                  <h3>{getTripCountryFlag(trip)} {getTripCity(trip)} <span>{trip.daysCount || trip.days?.length || 5} dias</span></h3>
+                  <p className={styles.comparePrice}>{trip.totalCost || '€1.480'}<small>/pessoa</small></p>
+                  <p>{trip.season || 'Melhor época'}</p>
+                  <p>Andor Score: <strong>{trip.score || 94}</strong></p>
+                  <p>{trip.style || 'Cultura/Food'}</p>
+                  <ul>
+                    {getTripNotes(trip).map((note) => <li key={note}>{note}</li>)}
+                  </ul>
+                  <a href={`/?wizard=true&dest=${encodeURIComponent(getTripCity(trip))}`} className={styles.primaryBtn}>
+                    Criar Itinerário {getTripCity(trip)}
+                  </a>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <Footer />
     </>
   );

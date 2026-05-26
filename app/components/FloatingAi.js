@@ -239,6 +239,7 @@ export default function FloatingAi() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [responseSuggestions, setResponseSuggestions] = useState([]);
   
   // Custom states
   const [taglineIdx, setTaglineIdx] = useState(0);
@@ -296,6 +297,10 @@ export default function FloatingAi() {
   };
 
   const getLastDestination = () => {
+    if (typeof window !== 'undefined') {
+      const storedDestination = localStorage.getItem('andor_last_destination');
+      if (storedDestination) return storedDestination;
+    }
     for (let i = messages.length - 1; i >= 0; i--) {
       const content = messages[i].content;
       if (content.includes('{') && content.includes('}')) {
@@ -312,10 +317,34 @@ export default function FloatingAi() {
     return 'Tóquio';
   };
 
+  const inferDestinationFromText = (text) => {
+    const value = String(text || '').toLowerCase();
+    if (value.includes('tokyo') || value.includes('tóquio')) return 'Tokyo';
+    if (value.includes('paris')) return 'Paris';
+    if (value.includes('bali')) return 'Bali';
+    if (value.includes('lisboa') || value.includes('lisbon')) return 'Lisboa';
+    if (value.includes('roma') || value.includes('rome')) return 'Roma';
+    return '';
+  };
+
+  const extractSuggestions = (fullText) => {
+    const suggestionMatch = String(fullText || '').match(/\n?SUGGESTIONS:\s*(.+)$/m);
+    if (!suggestionMatch) return { displayText: fullText, chips: [] };
+    const chips = suggestionMatch[1]
+      .split('|')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    return {
+      displayText: String(fullText).replace(/\n?SUGGESTIONS:.+$/m, '').trim(),
+      chips,
+    };
+  };
+
   // Load localStorage history
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('andor_concierge_messages');
+      const stored = localStorage.getItem('andor_chat_history') || localStorage.getItem('andor_concierge_messages');
       if (stored) {
         try {
           const parsed = safeParse(stored, []);
@@ -337,6 +366,11 @@ export default function FloatingAi() {
     setMessages(newMsgs);
     if (typeof window !== 'undefined') {
       localStorage.setItem('andor_concierge_messages', JSON.stringify(newMsgs.slice(-20)));
+      localStorage.setItem('andor_chat_history', JSON.stringify(newMsgs.slice(-20)));
+      const lastDestination = [...newMsgs].reverse().map((message) => inferDestinationFromText(message.content)).find(Boolean);
+      if (lastDestination) {
+        localStorage.setItem('andor_last_destination', lastDestination);
+      }
     }
   };
 
@@ -427,6 +461,42 @@ export default function FloatingAi() {
     }
   };
 
+  const persistGeneratedItinerary = (text) => {
+    if (typeof window === 'undefined' || !text) return null;
+    const jsonMatch = String(text).match(/\{[\s\S]*?"destination"[\s\S]*?\}/);
+    if (!jsonMatch) return null;
+
+    const andorItinerary = safeParse(jsonMatch[0], null);
+    if (!andorItinerary?.destination || !Array.isArray(andorItinerary.days)) return null;
+
+    const legacy = convertAndorToLegacy(andorItinerary);
+    const id = `gen-${Date.now()}`;
+    const destinationName = andorItinerary.destination?.city || legacy.destination || 'Destino';
+    const savedTrip = {
+      ...legacy,
+      id,
+      destination: legacy.destination || destinationName,
+      daysCount: legacy.days?.length || andorItinerary.days.length,
+      totalCost: legacy.totalCost,
+      style: legacy.style,
+      savedAt: new Date().toISOString(),
+    };
+
+    sessionStorage.setItem(`andor_itinerary_${id}`, JSON.stringify(legacy));
+    localStorage.setItem(`andor_shared_${id}`, JSON.stringify(legacy));
+    localStorage.setItem(`andor_itinerary_${id}`, JSON.stringify(legacy));
+
+    const savedTrips = safeParse(localStorage.getItem('andor_saved_trips'), []);
+    if (!savedTrips.some((trip) => trip.id === id || (trip.destination === savedTrip.destination && trip.savedAt === savedTrip.savedAt))) {
+      localStorage.setItem('andor_saved_trips', JSON.stringify([savedTrip, ...savedTrips].slice(0, 20)));
+    }
+
+    if (destinationName) {
+      localStorage.setItem('andor_last_destination', destinationName);
+    }
+    return id;
+  };
+
   const showToast = (msg, type = 'info') => {
     showGlobalToast(msg, type);
   };
@@ -441,6 +511,7 @@ export default function FloatingAi() {
 
     const userMessage = { role: 'user', content: textToSend, timestamp: new Date().toISOString() };
     const newMessages = [...messages, userMessage];
+    setResponseSuggestions([]);
     saveMessages(newMessages);
     setIsLoading(true);
 
@@ -453,6 +524,8 @@ export default function FloatingAi() {
         body: JSON.stringify({
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
           locale,
+          destination: currentDestination || inferDestinationFromText(textToSend) || '',
+          itinerary: currentItinerary ? { id: currentItinerary } : null,
         }),
       });
 
@@ -497,16 +570,23 @@ export default function FloatingAi() {
         } catch(e) {}
       }
 
+      const parsedResponse = extractSuggestions(assistantMessage);
+      setResponseSuggestions(parsedResponse.chips);
+      persistGeneratedItinerary(parsedResponse.displayText);
+
       setMessages(prev => {
         const updated = [...prev];
-        updated[targetMsgIndex] = { role: 'assistant', content: assistantMessage, isStreaming: false };
+        updated[targetMsgIndex] = { role: 'assistant', content: parsedResponse.displayText, isStreaming: false };
         if (typeof window !== 'undefined') {
           localStorage.setItem('andor_concierge_messages', JSON.stringify(updated.slice(-20)));
+          localStorage.setItem('andor_chat_history', JSON.stringify(updated.slice(-20)));
+          const lastDestination = inferDestinationFromText(parsedResponse.displayText) || inferDestinationFromText(textToSend);
+          if (lastDestination) localStorage.setItem('andor_last_destination', lastDestination);
         }
         return updated;
       });
 
-      checkAndExecuteActions(assistantMessage);
+      checkAndExecuteActions(parsedResponse.displayText);
 
     } catch (error) {
       // silent error, show UI fallback instead
@@ -668,6 +748,7 @@ export default function FloatingAi() {
     setIsTherapyMode(false);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('andor_concierge_messages');
+      localStorage.removeItem('andor_chat_history');
     }
     setShowNewChatConfirm(false);
     showToast('🧹 Nova conversa iniciada.');
@@ -766,6 +847,7 @@ export default function FloatingAi() {
 
   // Get contextual suggestion questions based on last message keywords
   const getContextSuggestions = () => {
+    if (responseSuggestions.length > 0) return responseSuggestions;
     if (messages.length === 0) return [];
     const lastMsg = messages[messages.length - 1];
     if (lastMsg.role !== 'assistant') return [];
@@ -1196,6 +1278,7 @@ export default function FloatingAi() {
         className={`${styles.toggle} ${isOpen ? styles.toggleOpen : ''}`} 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Ask Andor Concierge"
+        data-testid="floating-ai-toggle"
       >
         <div className={styles.particleWrapper}>
           <div className={styles.particleRing1}></div>
@@ -1212,7 +1295,7 @@ export default function FloatingAi() {
       </button>
 
       {/* Slide-in Chat Panel */}
-      <div className={`${styles.chatWindow} ${isTherapyMode ? styles.therapyTheme : ''}`}>
+      <div className={`${styles.chatWindow} ${isTherapyMode ? styles.therapyTheme : ''}`} data-testid="floating-ai-chat">
         
         {/* Grain/Noise Overlay */}
         <div className={styles.grainOverlay}></div>
@@ -1248,7 +1331,7 @@ export default function FloatingAi() {
             >
               👥
             </button>
-            <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
+            <button className={styles.closeBtn} onClick={() => setIsOpen(false)} aria-label="Fechar Andor AI">✕</button>
           </div>
         </div>
 
@@ -1265,11 +1348,21 @@ export default function FloatingAi() {
           <div className={styles.restorePromptBanner}>
             <span>💭 Continuamos a planear {getLastDestination()}?</span>
             <div className={styles.restoreBannerActions}>
-              <button onClick={() => setShowRestorePrompt(false)} className={styles.restoreYesBtn}>Sim</button>
+              <button
+                onClick={() => {
+                  const destination = getLastDestination();
+                  setShowRestorePrompt(false);
+                  handleSend(`Vamos continuar a planear ${destination}. Retoma a conversa com o contexto anterior.`);
+                }}
+                className={styles.restoreYesBtn}
+              >
+                Sim
+              </button>
               <button onClick={() => {
                 setMessages([]);
                 if (typeof window !== 'undefined') {
                   localStorage.removeItem('andor_concierge_messages');
+                  localStorage.removeItem('andor_chat_history');
                 }
                 setShowRestorePrompt(false);
                 showToast('🧹 Nova conversa iniciada.');
@@ -1514,6 +1607,8 @@ export default function FloatingAi() {
               onChange={handleInputResize}
               onKeyDown={handleKeyDown}
               disabled={isLoading || surpriseWizard}
+              aria-label="Mensagem para Andor AI"
+              data-testid="floating-ai-input"
             />
             {input.length > 300 && (
               <span className={styles.charCounter}>
@@ -1527,6 +1622,8 @@ export default function FloatingAi() {
             onClick={() => handleSend()} 
             disabled={isLoading || !input.trim() || surpriseWizard}
             title="Enviar mensagem"
+            aria-label="Enviar mensagem"
+            data-testid="floating-ai-send"
           >
             <svg 
               className={styles.sendIcon} 
