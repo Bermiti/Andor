@@ -1,0 +1,440 @@
+/* ================================================
+   ENHANCED ACTIVITY CARD STYLES
+   Premium, rich activity presentation
+   ================================================ */
+
+.activityCard {
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.activityCard:hover {
+  border-color: var(--b-gold);
+  box-shadow: 0 8px 24px rgba(212, 168, 67, 0.12);
+}
+
+.activityCard.expanded {
+  box-shadow: var(--s-2);
+}
+
+.activityCard.highlight {
+  border: 2px solid var(--gold);
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.05) 0%, var(--bg-2) 100%);
+}
+
+/* ── COLLAPSED STATE ── */
+.activityCollapsed {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.sequenceBadge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.activityThumb {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--bg-1);
+}
+
+.shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--bg-1) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerAnim 2s infinite;
+}
+
+@keyframes shimmerAnim {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.activityInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.activityName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.activityMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.metaPill {
+  font-size: 11px;
+  color: var(--t-3);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.expandBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--t-2);
+  cursor: pointer;
+  transition: all 200ms;
+  flex-shrink: 0;
+}
+
+.expandBtn:hover {
+  color: var(--t-1);
+  background: var(--bg-elevated);
+  border-radius: 6px;
+}
+
+/* ── EXPANDED STATE ── */
+.activityExpandedContent {
+  padding: 0;
+  border-top: 1px solid var(--b-1);
+  max-height: 1000px;
+  animation: expandIn 300ms ease-out;
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.activityFullPhoto {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+}
+
+.photoGradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+}
+
+.highlightBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(212, 168, 67, 0.9);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+.expandedHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--b-1);
+}
+
+.activityHeading {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--t-1);
+  margin: 0;
+  flex: 1;
+}
+
+.typeTag {
+  background: var(--bg-elevated);
+  color: var(--t-2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── WHY MATTERS SECTION ── */
+.whyMatters {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-bottom: 1px solid var(--b-1);
+}
+
+.whyMatterTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--t-2);
+  margin-bottom: 6px;
+}
+
+.whyMatterText {
+  font-size: 13px;
+  color: var(--t-1);
+  margin: 0;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* ── ADDRESS ── */
+.activityAddress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--t-2);
+  padding: 12px 16px;
+  margin: 0;
+  border-bottom: 1px solid var(--b-1);
+}
+
+/* ── INFO PILLS ── */
+.infoPills {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--b-1);
+}
+
+.infoPill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--t-1);
+  background: var(--bg-elevated);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--b-1);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── CARDS (Transport, Secret, Crowd, Weather) ── */
+.transportCard,
+.secretCard,
+.crowdCard,
+.warningCard,
+.alternativeCard {
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--b-1);
+  border-left: 3px solid var(--gold);
+}
+
+.secretCard {
+  border-left-color: var(--gold);
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.08) 0%, var(--bg-elevated) 100%);
+}
+
+.crowdCard {
+  border-left-color: #F59E0B;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, var(--bg-elevated) 100%);
+}
+
+.warningCard {
+  border-left-color: #EF4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, var(--bg-elevated) 100%);
+}
+
+.alternativeCard {
+  border-left-color: #3B82F6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, var(--bg-elevated) 100%);
+}
+
+.transportCardTitle,
+.secretTitle,
+.crowdTitle,
+.warningTitle,
+.alternativeTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--t-2);
+  margin-bottom: 8px;
+}
+
+.transportCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transportMode {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t-1);
+}
+
+.transportMeta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--t-2);
+}
+
+.transportDirections {
+  font-size: 12px;
+  color: var(--t-2);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--b-1);
+  font-style: italic;
+}
+
+.secretContent,
+.crowdContent,
+.warningContent {
+  font-size: 13px;
+  color: var(--t-1);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.alternativeContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.altName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t-1);
+}
+
+.altMeta {
+  font-size: 12px;
+  color: var(--t-2);
+}
+
+/* ── ACTION BUTTONS ── */
+.activityActions {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--b-1);
+}
+
+.btnSecondary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--b-1);
+  border-radius: 8px;
+  color: var(--t-1);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms;
+  white-space: nowrap;
+}
+
+.btnSecondary:hover {
+  background: var(--bg-1);
+  border-color: var(--b-gold);
+  color: var(--gold);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .activityCollapsed {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .activityThumb {
+    width: 48px;
+    height: 48px;
+  }
+
+  .activityFullPhoto {
+    height: 160px;
+  }
+
+  .infoPills {
+    padding: 10px 12px;
+  }
+
+  .activityActions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .btnSecondary {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}

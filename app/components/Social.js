@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './Social.module.css';
 import { safeParse } from '../lib/safe-json';
 import { useDebounce } from '../lib/useDebounce';
@@ -507,15 +508,16 @@ export default function Social() {
             <div className={styles.compareFloatingInfo}>
               <div className={styles.compareThumbnails}>
                 {compareList.map((item, idx) => (
-                  <img 
+                  <Image 
                     key={idx} 
                     src={item.image} 
                     alt={item.title} 
-                    className={styles.compareThumb} 
-                    width="56"
-                    height="56"
+                    className={styles.compareThumb}
+                    width={56}
+                    height={56}
                     loading="lazy"
-                    decoding="async"
+                    sizes="56px"
+                    quality={75}
                   />
                 ))}
               </div>
@@ -559,14 +561,14 @@ export default function Social() {
                     <th className={styles.compareFeatureLabel}>Package</th>
                     <th>
                       <div className={styles.compareHeaderCard}>
-                        <img src={compareList[0].image} alt={compareList[0].title} className={styles.compareHeaderImg} width="220" height="140" loading="lazy" decoding="async" />
+                        <Image src={compareList[0].image} alt={compareList[0].title} className={styles.compareHeaderImg} width={220} height={140} loading="lazy" sizes="220px" quality={85} />
                         <h4 className={styles.compareHeaderTitle}>{compareList[0].title}</h4>
                         <span className={styles.compareHeaderBadge}>{compareList[0].badge}</span>
                       </div>
                     </th>
                     <th>
                       <div className={styles.compareHeaderCard}>
-                        <img src={compareList[1].image} alt={compareList[1].title} className={styles.compareHeaderImg} width="220" height="140" loading="lazy" decoding="async" />
+                        <Image src={compareList[1].image} alt={compareList[1].title} className={styles.compareHeaderImg} width={220} height={140} loading="lazy" sizes="220px" quality={85} />
                         <h4 className={styles.compareHeaderTitle}>{compareList[1].title}</h4>
                         <span className={styles.compareHeaderBadge}>{compareList[1].badge}</span>
                       </div>

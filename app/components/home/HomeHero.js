@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useRef, useState, useEffect } from 'react';
+import Image from 'next/image';
 import styles from './HomeHero.module.css';
 
 const destinations = ['Tóquio', 'Paris', 'Nova Iorque', 'Roma', 'Lisboa', 'Bali'];
@@ -73,11 +74,18 @@ export default function HomeHero({ onOpenWizard }) {
       .slice(0, 5);
   }, [query]);
 
-  // Rotate destination text
+  // Rotate destination text with smooth animation
+  const [animState, setAnimState] = useState('visible');
+  
   useEffect(() => {
     const interval = setInterval(() => {
-      setDestIndex((prev) => (prev + 1) % destinations.length);
-    }, 3000);
+      setAnimState('exit');
+      setTimeout(() => {
+        setDestIndex((prev) => (prev + 1) % destinations.length);
+        setAnimState('enter');
+        setTimeout(() => setAnimState('visible'), 400);
+      }, 400);
+    }, 2500);
     return () => clearInterval(interval);
   }, []);
 
@@ -126,15 +134,16 @@ export default function HomeHero({ onOpenWizard }) {
       <div className={styles.bgGrid}>
         {bgImages.map((src, i) => (
           <div key={i} className={styles.gridImgWrapper}>
-            <img
+            <Image
               src={src}
               alt="Destino"
+              width={800}
+              height={600}
               className={styles.gridImg}
               style={{ animationDelay: `-${i * 2}s` }}
-              width="800"
-              height="600"
               loading={i < 3 ? 'eager' : 'lazy'}
-              decoding="async"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              quality={75}
             />
           </div>
         ))}
@@ -151,7 +160,18 @@ export default function HomeHero({ onOpenWizard }) {
           <div className="animate-fade-in-up">
             <h1 className={styles.title}>
               Descobre <br/>
-              <span className={styles.goldText} key={destIndex}>{destinations[destIndex]}</span>
+              <span 
+                className={styles.goldText}
+                style={{
+                  opacity: animState === 'visible' ? 1 : 0,
+                  transform: animState === 'exit' ? 'translateY(-20px)' : 
+                            animState === 'enter' ? 'translateY(20px)' : 'translateY(0)',
+                  transition: 'opacity 400ms, transform 400ms',
+                  display: 'inline-block',
+                }}
+              >
+                {destinations[destIndex]}
+              </span>
             </h1>
             <p className={styles.subtitle}>
               Bem-vindo à Andor, onde te ajudamos a planear viagens à tua maneira. Desde os voos e hotéis até à descoberta dos melhores restaurantes e roteiros. Diz-nos para onde queres ir, e nós planeamos a viagem de acordo com as tuas preferências!

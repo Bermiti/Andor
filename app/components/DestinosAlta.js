@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import styles from './DestinosAlta.module.css';
 
 const SEASONAL_DESTINATIONS_MAP = {
@@ -77,7 +78,14 @@ export default function DestinosAlta({ onOpenWizard }) {
             {destinations.map((dest, i) => (
               <div key={i} className={styles.card} onClick={() => handleSelectCard(dest)}>
                 <div className={styles.imgWrapper}>
-                  <img src={dest.img} alt={`${dest.city}, ${dest.country}`} loading="lazy" width="300" height="400" />
+                  <Image 
+                    src={dest.img} 
+                    alt={`${dest.city}, ${dest.country}`} 
+                    width={300}
+                    height={400}
+                    loading="lazy"
+                    sizes="(max-width: 640px) 100vw, 300px"
+                  />
                   <div className={styles.bottomOverlay}></div>
                   <div className={styles.badge}>{dest.badge}</div>
                   

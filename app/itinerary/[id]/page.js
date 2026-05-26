@@ -884,6 +884,11 @@ export default function ItineraryPage() {
                   {isAdapting ? '⏳ A processar...' : '🔄 Regenerar este dia'}
                 </button>
               </div>
+              {currentDay.moodDescription && (
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                  {currentDay.moodDescription}
+                </p>
+              )}
 
               {isAdapting ? (
                 <div style={{ padding: '20px 0' }}>
@@ -901,128 +906,146 @@ export default function ItineraryPage() {
                     <div key={periodKey} className={styles.periodSection}>
                     <h3 className={styles.periodHeading}>{periodNames[periodKey]}</h3>
                     <div className={styles.periodStops}>
-                      {stops.map((stop) => {
+                      {stops.map((stop, stopIdx) => {
                         const idx = globalStopCounter++;
                         const isExpanded = !!expandedStops[idx];
                         const isSaved = isStopSaved(stop.name);
                         const crowd = getCrowdLabel(stop.crowdLevel);
                         
                         return (
-                          <div key={idx} id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`} data-testid="activity-card">
+                          <div key={idx}>
+                            {/* Transport bridge from previous activity */}
+                            {stopIdx > 0 && stop.transportFromPrevious && (
+                              <div className={styles.transportBridge}>
+                                <span className={styles.transportBridgeIcon}>
+                                  {stop.transportFromPrevious.mode?.includes('metro') || stop.transportFromPrevious.mode?.includes('Metro') ? '🚇' :
+                                   stop.transportFromPrevious.mode?.includes('walk') || stop.transportFromPrevious.mode?.includes('pé') ? '🚶' :
+                                   stop.transportFromPrevious.mode?.includes('taxi') || stop.transportFromPrevious.mode?.includes('Uber') ? '🚕' :
+                                   stop.transportFromPrevious.mode?.includes('bus') || stop.transportFromPrevious.mode?.includes('autocarro') ? '🚌' : '🚶'}
+                                </span>
+                                <span className={styles.transportBridgeText}>
+                                  {stop.transportFromPrevious.mode} · {stop.transportFromPrevious.duration}
+                                  {stop.transportFromPrevious.cost && ` · €${stop.transportFromPrevious.cost}`}
+                                </span>
+                              </div>
+                            )}
                             
-                            {/* Collapsed State */}
-                            <button
-                              type="button"
-                              className={styles.activityHeader}
-                              onClick={() => toggleStop(idx)}
-                              onKeyDown={(event) => handleActivityKeyDown(event, idx)}
-                              aria-expanded={isExpanded}
-                              data-activity-index={idx}
-                            >
-                              <div className={styles.activityHeaderLeft}>
-                                <span className={styles.activitySequence}>{idx + 1}</span>
-                                {stop.photoKeyword && (
-                                  <img
-                                    src={`https://source.unsplash.com/128x128/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`}
-                                    alt={stop.name}
-                                    className={styles.activityThumb}
-                                    width="56"
-                                    height="56"
-                                    loading="lazy"
-                                    decoding="async"
-                                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                                  />
-                                )}
-                                <div className={styles.activityIcon}>{getStopIcon(stop)}</div>
-                                <div className={styles.activityName}>{stop.name}</div>
-                              </div>
-                              <div className={styles.activityHeaderRight}>
-                                <span className={styles.activityMeta}>⏱️ {stop.duration || (stop.durationMinutes ? stop.durationMinutes + 'm' : '2h')}</span>
-                                <span className={styles.activityMeta}>💰 {stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis'}</span>
-                                {crowd && (
-                                  <span className={`${styles.activityCrowd} ${styles[crowd.cls]}`}>
-                                    👥 {crowd.label}
-                                  </span>
-                                )}
-                                <span className={styles.chevron}>{isExpanded ? '▲' : '▼'}</span>
-                              </div>
-                            </button>
-
-                            {/* Expanded State */}
-                            {isExpanded && (
-                              <div className={styles.activityBody}>
-                                {stop.photoKeyword && (
-                                  <div className={styles.activityPhotoWrapper}>
-                                    <img 
-                                      src={`https://source.unsplash.com/800x400/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`} 
+                            <div id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`} data-testid="activity-card">
+                            
+                              {/* Collapsed State */}
+                              <button
+                                type="button"
+                                className={styles.activityHeader}
+                                onClick={() => toggleStop(idx)}
+                                onKeyDown={(event) => handleActivityKeyDown(event, idx)}
+                                aria-expanded={isExpanded}
+                                data-activity-index={idx}
+                              >
+                                <div className={styles.activityHeaderLeft}>
+                                  <span className={styles.activitySequence}>{idx + 1}</span>
+                                  {stop.photoKeyword && (
+                                    <img
+                                      src={`https://source.unsplash.com/128x128/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`}
                                       alt={stop.name}
-                                      className={styles.activityPhoto}
-                                      width="800"
-                                      height="400"
+                                      className={styles.activityThumb}
+                                      width="56"
+                                      height="56"
                                       loading="lazy"
                                       decoding="async"
                                       onError={(event) => { event.currentTarget.style.display = 'none'; }}
                                     />
-                                  </div>
-                                )}
-                                <div className={styles.activityDetails}>
-                                  <div className={styles.activityDetailRow}>
-                                    <strong>📍 Endereço:</strong> {stop.address || dest.city}
-                                  </div>
-                                  {stop.transportFromPrevious && (
+                                  )}
+                                  <div className={styles.activityIcon}>{getStopIcon(stop)}</div>
+                                  <div className={styles.activityName}>{stop.name}</div>
+                                </div>
+                                <div className={styles.activityHeaderRight}>
+                                  <span className={styles.activityMeta}>⏱️ {stop.duration || (stop.durationMinutes ? stop.durationMinutes + 'm' : '2h')}</span>
+                                  <span className={styles.activityMeta}>💰 {stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis'}</span>
+                                  {crowd && (
+                                    <span className={`${styles.activityCrowd} ${styles[crowd.cls]}`}>
+                                      👥 {crowd.label}
+                                    </span>
+                                  )}
+                                  <span className={styles.chevron}>{isExpanded ? '▲' : '▼'}</span>
+                                </div>
+                              </button>
+
+                              {/* Expanded State */}
+                              {isExpanded && (
+                                <div className={styles.activityBody}>
+                                  {stop.photoKeyword && (
+                                    <div className={styles.activityPhotoWrapper}>
+                                      <img 
+                                        src={`https://source.unsplash.com/800x400/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`} 
+                                        alt={stop.name}
+                                        className={styles.activityPhoto}
+                                        width="800"
+                                        height="400"
+                                        loading="lazy"
+                                        decoding="async"
+                                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                      />
+                                    </div>
+                                  )}
+                                  <div className={styles.activityDetails}>
                                     <div className={styles.activityDetailRow}>
-                                      <strong>🚇 Como chegar:</strong> {stop.transportFromPrevious.mode} ({stop.transportFromPrevious.duration})
-                                      {stop.transportFromPrevious.directions && (
-                                        <span className={styles.transportDirections}> — {stop.transportFromPrevious.directions}</span>
-                                      )}
+                                      <strong>📍 Endereço:</strong> {stop.address || dest.city}
                                     </div>
-                                  )}
-                                  {stop.insiderTip && (
-                                    <div className={styles.insiderTipBox}>
-                                      <span className={styles.insiderTipIcon}>💡</span>
-                                      <div>
-                                        <strong>Segredo do Andor:</strong>
-                                        <p className={styles.insiderTipText}>&ldquo;{stop.insiderTip}&rdquo;</p>
+                                    {stop.transportFromPrevious && (
+                                      <div className={styles.activityDetailRow}>
+                                        <strong>🚇 Como chegar:</strong> {stop.transportFromPrevious.mode} ({stop.transportFromPrevious.duration})
+                                        {stop.transportFromPrevious.directions && (
+                                          <span className={styles.transportDirections}> — {stop.transportFromPrevious.directions}</span>
+                                        )}
                                       </div>
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    className={styles.copyActivityBtn}
-                                    onClick={() => copyActivityDetails(stop)}
-                                    aria-label={`Copiar detalhes de ${stop.name}`}
-                                  >
-                                    📋 Copiar detalhes
-                                  </button>
+                                    )}
+                                    {stop.insiderTip && (
+                                      <div className={styles.insiderTipBox}>
+                                        <span className={styles.insiderTipIcon}>💡</span>
+                                        <div>
+                                          <strong>Segredo do Andor:</strong>
+                                          <p className={styles.insiderTipText}>&ldquo;{stop.insiderTip}&rdquo;</p>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className={styles.copyActivityBtn}
+                                      onClick={() => copyActivityDetails(stop)}
+                                      aria-label={`Copiar detalhes de ${stop.name}`}
+                                    >
+                                      📋 Copiar detalhes
+                                    </button>
+                                  </div>
+                                  <div className={styles.activityActions}>
+                                    <a 
+                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + (stop.address || dest.city))}`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className={styles.btnOutline}
+                                    >
+                                      🗺️ Ver no Mapa
+                                    </a>
+                                    <button
+                                      className={styles.btnOutline}
+                                      onClick={() => setBookingStop(stop)}
+                                      data-testid="booking-button"
+                                    >
+                                      🎟️ Reservar
+                                    </button>
+                                    <FavoriteButton
+                                      itemId={`${dest.city || dest.name || 'trip'}-${stop.name}`}
+                                      itemType="activity"
+                                      className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
+                                      initialActive={isSaved}
+                                      label="Guardar"
+                                      activeLabel="Guardado"
+                                      onToggle={() => toggleSaved(stop)}
+                                    />
+                                  </div>
                                 </div>
-                                <div className={styles.activityActions}>
-                                  <a 
-                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + (stop.address || dest.city))}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className={styles.btnOutline}
-                                  >
-                                    🗺️ Ver no Mapa
-                                  </a>
-                                  <button
-                                    className={styles.btnOutline}
-                                    onClick={() => setBookingStop(stop)}
-                                    data-testid="booking-button"
-                                  >
-                                    🎟️ Reservar
-                                  </button>
-                                  <FavoriteButton
-                                    itemId={`${dest.city || dest.name || 'trip'}-${stop.name}`}
-                                    itemType="activity"
-                                    className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
-                                    initialActive={isSaved}
-                                    label="Guardar"
-                                    activeLabel="Guardado"
-                                    onToggle={() => toggleSaved(stop)}
-                                  />
-                                </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         );
                       })}
