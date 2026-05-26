@@ -121,6 +121,7 @@ export default function ItineraryPage() {
   const [packingList, setPackingList] = useState(null);
   const [checkedPacking, setCheckedPacking] = useState({});
   const [isPackingGenerating, setIsPackingGenerating] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
 
   useEffect(() => {
     setFavorites(getJson('andor_favorites', [], 'local') || []);
@@ -880,14 +881,51 @@ export default function ItineraryPage() {
             <div className={`${styles.timeline} ${isAdapting ? styles.loading : ''} ${dayTransitioning ? styles.transitioning : ''}`} ref={timelineRef}>
               <div className={styles.timelineHeader}>
                 <h2 className={styles.dayHeading}>{currentDay.title}</h2>
-                <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting}>
-                  {isAdapting ? '⏳ A processar...' : '🔄 Regenerar este dia'}
-                </button>
+                <div className={styles.timelineHeaderActions}>
+                  <button 
+                    type="button"
+                    className={`${styles.viewToggleBtn} ${compactMode ? styles.viewToggleBtnActive : ''}`} 
+                    onClick={() => setCompactMode(!compactMode)}
+                    aria-label={compactMode ? "Mudar para vista detalhada" : "Mudar para vista compacta"}
+                  >
+                    {compactMode ? '≡ Vista Compacta' : '📄 Vista Detalhada'}
+                  </button>
+                  <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting}>
+                    {isAdapting ? '⏳ A processar...' : '🔄 Regenerar este dia'}
+                  </button>
+                </div>
               </div>
-              {currentDay.moodDescription && (
-                <p style={{ margin: 0, color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                  {currentDay.moodDescription}
-                </p>
+
+              {/* Daily Synopsis / Day Overview */}
+              {!isAdapting && (
+                <div className={styles.daySynopsisCard}>
+                  {currentDay.moodDescription && (
+                    <div className={styles.synopsisMood}>
+                      <span className={styles.quoteIcon}>“</span>
+                      <p className={styles.moodText}>{currentDay.moodDescription}</p>
+                    </div>
+                  )}
+                  <div className={styles.synopsisStats}>
+                    <div className={`${styles.synopsisStatBadge} ${
+                      String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? styles.energyRelaxed :
+                      String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? styles.energyIntense :
+                      styles.energyModerate
+                    }`}>
+                      {String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? '🧘 Ritmo Leve' :
+                       String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? '⚡ Ritmo Intenso' :
+                       '🚶 Ritmo Moderado'}
+                    </div>
+                    <div className={styles.synopsisStatBadge}>
+                      🏃 {currentDay.estimatedDistance || (activeDay === 0 ? '4 km' : activeDay % 2 === 0 ? '8 km' : '6 km')} a pé
+                    </div>
+                    <div className={styles.synopsisStatBadge}>
+                      💰 ~€{getDayBudget(currentDay)} est.
+                    </div>
+                    <div className={styles.synopsisStatBadge}>
+                      🎯 {currentDay.stops?.length || 0} locais
+                    </div>
+                  </div>
+                </div>
               )}
 
               {isAdapting ? (
@@ -908,7 +946,7 @@ export default function ItineraryPage() {
                     <div className={styles.periodStops}>
                       {stops.map((stop, stopIdx) => {
                         const idx = globalStopCounter++;
-                        const isExpanded = !!expandedStops[idx];
+                        const isExpanded = compactMode ? false : !!expandedStops[idx];
                         const isSaved = isStopSaved(stop.name);
                         const crowd = getCrowdLabel(stop.crowdLevel);
                         
@@ -1053,6 +1091,33 @@ export default function ItineraryPage() {
                   </div>
                 );
               })}
+
+              {/* Contingency plans for rain/fatigue/alternatives */}
+              {!isAdapting && (
+                <div className={styles.contingencyCard}>
+                  <h4 className={styles.contingencyTitle}>📋 Alternativas & Plano de Contingência</h4>
+                  <div className={styles.contingencyGrid}>
+                    <div className={styles.contingencyItem}>
+                      <span className={styles.contingencyIcon}>🌧️ Plano para Chuva</span>
+                      <p className={styles.contingencyText}>
+                        {currentDay.alternativePlans?.rainy || `Em caso de chuva, visite museus cobertos, mercados gastronómicos locais, ou desfrute de pastelarias tradicionais em ${dest.city || dest.name || 'a cidade'}.`}
+                      </p>
+                    </div>
+                    <div className={styles.contingencyItem}>
+                      <span className={styles.contingencyIcon}>💤 Ritmo Lento (Fadiga)</span>
+                      <p className={styles.contingencyText}>
+                        {currentDay.alternativePlans?.relaxed || `Se preferir encurtar o dia, salte a atividade da tarde e descanse no hotel ou faça um passeio leve pelas redondezas.`}
+                      </p>
+                    </div>
+                    <div className={styles.contingencyItem}>
+                      <span className={styles.contingencyIcon}>⚡ Mais Ação (Intenso)</span>
+                      <p className={styles.contingencyText}>
+                        {currentDay.alternativePlans?.intense || `Se ainda tiver energia de sobra, explore miradouros adicionais, feiras locais ao pôr do sol ou ruelas escondidas a pé.`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* REFEIÇÕES DO DIA */}
