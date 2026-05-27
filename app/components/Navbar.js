@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage, useTranslations } from '../context/LanguageContext';
 import styles from './Navbar.module.css';
@@ -16,6 +17,7 @@ const languages = [
 ];
 
 export default function Navbar() {
+  const pathname = usePathname();
   const { user, logout } = useAuth();
   const { locale, setLocale, theme, toggleTheme, mounted } = useLanguage();
   const t = useTranslations('nav');
@@ -25,6 +27,10 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  
+  const isMyTrips = pathname === '/my-trips';
+  const forceDarkText = isMyTrips && !scrolled;
+  const linkClass = forceDarkText ? `${styles.link} ${styles.linkDark}` : styles.link;
   
   const langDropdownRef = useRef(null);
 
@@ -84,7 +90,7 @@ export default function Navbar() {
       <nav className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
         <div className={styles.inner}>
           {/* Logo "✦ Andor" */}
-          <a href="/" className={styles.logo}>
+          <a href="/" className={`${styles.logo} ${forceDarkText ? styles.logoDark : ''}`}>
             <span className={styles.logoIcon}>
               <AndorLogo size={32} />
             </span>
@@ -93,15 +99,15 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
-            <a href="/#como-funciona" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>
+            <a href="/features" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
               {t('features')}
             </a>
-            <a href="/#destinos" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>
+            <a href="/destinations" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
               {t('destinations')}
             </a>
             <a 
               href="/#concierge" 
-              className={styles.link} 
+              className={linkClass} 
               onClick={(e) => {
                 setIsMobileMenuOpen(false);
                 // Open AI drawer directly
@@ -110,7 +116,10 @@ export default function Navbar() {
             >
               {t('itineraries')}
             </a>
-            <a href="/#pricing" className={styles.link} onClick={() => setIsMobileMenuOpen(false)}>
+            <a href="/my-trips" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
+              {t('myJourney')}
+            </a>
+            <a href="/pricing" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
               {t('pricing')}
             </a>
             
@@ -164,19 +173,6 @@ export default function Navbar() {
 
           {/* Right Actions */}
           <div className={styles.actions}>
-            {/* Theme Toggle Button (Pill Slider) */}
-            {mounted && (
-              <button 
-                onClick={toggleTheme} 
-                className={styles.themeTogglePill} 
-                aria-label="Toggle theme"
-                title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
-              >
-                <div className={`${styles.themeToggleSlider} ${theme === 'light' ? styles.themeToggleSliderLight : ''}`} />
-                <span className={styles.themeToggleIcon}>☀️</span>
-                <span className={styles.themeToggleIcon}>🌙</span>
-              </button>
-            )}
 
             {/* Language Selector Dropdown */}
             <div className={styles.langDropdownWrapper} ref={langDropdownRef}>
@@ -234,10 +230,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <>
-                <button className={styles.loginBtn} onClick={() => setIsLoginOpen(true)}>{t('login')}</button>
-                <button className={styles.ctaBtn} onClick={() => setIsLoginOpen(true)}>{t('cta')} →</button>
-              </>
+              <button className={`${styles.loginBtn} ${forceDarkText ? styles.linkDark : ''}`} onClick={() => setIsLoginOpen(true)}>{t('login')}</button>
             )}
             
             {/* Hamburger Toggle */}

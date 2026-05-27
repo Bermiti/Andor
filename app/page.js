@@ -3,9 +3,6 @@
 import { useEffect, useState } from 'react';
 import Navbar from './components/Navbar';
 import HomeHero from './components/home/HomeHero';
-import HomeTrending from './components/home/HomeTrending';
-import HomeHowItWorks from './components/home/HomeHowItWorks';
-import HomeTestimonials from './components/home/HomeTestimonials';
 import CtaFinal from './components/CtaFinal';
 import Footer from './components/Footer';
 import OnboardingModal from './components/OnboardingModal';
@@ -66,9 +63,6 @@ export default function Home() {
       <Navbar />
       <main className="overflow-hidden" style={{ width: '100%', maxWidth: '100vw' }}>
         <HomeHero onOpenWizard={openWizard} />
-        <HomeTrending onOpenWizard={openWizard} />
-        <HomeHowItWorks />
-        <HomeTestimonials />
         <CtaFinal />
       </main>
       <Footer />

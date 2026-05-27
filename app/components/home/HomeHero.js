@@ -1,8 +1,6 @@
 'use client';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import styles from './HomeHero.module.css';
-import ActiveTravelers from '../ActiveTravelers';
-import AnimatedCounter from '../AnimatedCounter';
 
 const destinations = ['Tóquio', 'Paris', 'Nova Iorque', 'Roma', 'Lisboa', 'Bali'];
 
@@ -156,15 +154,8 @@ export default function HomeHero({ onOpenWizard }) {
               <span className={styles.goldText} key={destIndex}>{destinations[destIndex]}</span>
             </h1>
             <p className={styles.subtitle}>
-              Planeador de viagens com IA que transforma uma ideia num itinerário completo: voos, hotéis, rotas, restaurantes e segredos locais.
+              Bem-vindo à Andor, onde te ajudamos a planear viagens à tua maneira. Desde os voos e hotéis até à descoberta dos melhores restaurantes e roteiros. Diz-nos para onde queres ir, e nós planeamos a viagem de acordo com as tuas preferências!
             </p>
-            
-            <ActiveTravelers embedded={true} />
-            <div className={styles.statsBar} aria-label="Confiança Andor">
-              <span><AnimatedCounter target={50} suffix="K+" /> viagens</span>
-              <span><AnimatedCounter target={4.9} suffix="★" decimals={1} /> média</span>
-              <span><AnimatedCounter target={120} suffix="+" /> países</span>
-            </div>
 
             <form onSubmit={handleSearch} className={`${styles.searchForm} ${isFocused ? styles.focused : ''}`} data-testid="home-search-form">
               <div className={styles.searchField}>
@@ -207,7 +198,7 @@ export default function HomeHero({ onOpenWizard }) {
                 <option value="5">5+ viajantes</option>
               </select>
               <button type="submit" className={styles.searchButton} data-testid="home-explore-button">
-                Desenhar a viagem
+                Planear a viagem
               </button>
 
               {isFocused && filteredDestinations.length > 0 && (

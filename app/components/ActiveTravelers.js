@@ -8,13 +8,14 @@ function getRandomInitial() {
 }
 
 export default function ActiveTravelers({ embedded = false }) {
-  const [count, setCount] = useState(getRandomInitial);
+  const [count, setCount] = useState(200); // Fixed value for SSR to prevent hydration mismatch
   const [visible, setVisible] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
   const intervalRef = useRef(null);
 
-  // Check sessionStorage on mount
+  // Check sessionStorage and initialize random count on mount
   useEffect(() => {
+    setCount(getRandomInitial());
     try {
       if (sessionStorage.getItem('andor_travelers_dismissed') === '1') {
         setVisible(false);

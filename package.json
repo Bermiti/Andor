@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.73",
-    "@anthropic-ai/sdk": "^0.98.0",
+    "@anthropic-ai/sdk": "^0.98.1",
     "ai": "^6.0.180",
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",

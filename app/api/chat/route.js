@@ -1,6 +1,6 @@
 import { generateChatResponse } from '../../lib/fallback-ai';
 import { buildChatSystemPrompt } from '../../lib/phase11-2-chat-prompt';
-import { Anthropic } from '@anthropic-ai/sdk';
+// Anthropic SDK is loaded dynamically below to avoid Turbopack resolution issues
 import { cleanLocale, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
 
@@ -177,6 +177,7 @@ export async function POST(req) {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (hasProviderKey(anthropicKey)) {
       try {
+        const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const anthropic = new Anthropic({ apiKey: anthropicKey });
         const stream = await anthropic.messages.stream({
           model: 'claude-sonnet-4-20250514',

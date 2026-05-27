@@ -7,10 +7,10 @@ import CommandCenter from './components/CommandCenter';
 import FloatingAi from './components/FloatingAi';
 import CustomRequestModal from './components/CustomRequestModal';
 import NewsletterPopup from './components/NewsletterPopup';
-import SocialProofToast from './components/SocialProofToast';
 import EasterEgg from './components/EasterEgg';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import SplashScreen from './components/SplashScreen';
+import Script from 'next/script';
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://andor.travels'),
@@ -69,7 +69,7 @@ const jsonLdData = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt">
+    <html lang="pt" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0A1628" />
@@ -80,7 +80,7 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
         />
-        <script dangerouslySetInnerHTML={{__html: `
+        <Script id="theme-script" strategy="beforeInteractive" dangerouslySetInnerHTML={{__html: `
           (function() {
             try {
               const theme = localStorage.getItem('andor_theme') || 'dark';
@@ -102,7 +102,6 @@ export default function RootLayout({ children }) {
                 </ErrorBoundary>
                 <CustomRequestModal />
                 <NewsletterPopup />
-                <SocialProofToast />
                 {children}
               </ChatContextProvider>
             </ToastProvider>

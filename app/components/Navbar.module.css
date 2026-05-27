@@ -58,12 +58,12 @@
 .links {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: var(--space-12); /* Increased gap to spread items out */
 }
 
 .link {
   font-family: var(--font-heading);
-  font-size: var(--text-sm);
+  font-size: var(--text-base); /* Increased from text-sm */
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
   transition: color var(--transition-fast);
@@ -91,6 +91,18 @@
   width: 100%;
 }
 
+.linkDark {
+  color: var(--navy);
+}
+
+.linkDark:hover {
+  color: var(--gold);
+}
+
+.logoDark {
+  color: var(--navy);
+}
+
 .actions {
   display: flex;
   align-items: center;
@@ -110,7 +122,7 @@
 
 .loginBtn {
   font-family: var(--font-heading);
-  font-size: var(--text-sm);
+  font-size: var(--text-base); /* Increased from text-sm */
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
   padding: var(--space-2) var(--space-4);
