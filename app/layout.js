@@ -44,6 +44,7 @@ export const metadata = {
   },
   description: 'Andor é um concierge de viagens inteligente com inteligência artificial. Planeia, adapta e guia a tua aventura em tempo real com itinerários premium e recomendações locais.',
   keywords: 'viagens, roteiro de viagem, planear viagem, inteligência artificial, itinerários personalizados, turismo de luxo',
+  manifest: '/manifest.json',
   alternates: {
     canonical: '/',
   },
@@ -78,7 +79,6 @@ const jsonLdData = {
   "name": "Andor Travels",
   "description": "Concierge de viagens inteligente com inteligência artificial. Planeia itinerários de luxo personalizados em segundos.",
   "url": "https://andor.travels",
-  "telephone": "+351900000000",
   "priceRange": "$$",
   "address": {
     "@type": "PostalAddress",

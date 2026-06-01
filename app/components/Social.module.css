@@ -9,7 +9,7 @@
   text-align: center;
   margin-bottom: var(--space-12);
   position: relative;
-  z-index: 1;
+  z-index: var(--z-content);
 }
 
 .content {
@@ -17,7 +17,7 @@
   margin: 0 auto;
   padding: 0 var(--space-6);
   position: relative;
-  z-index: 1;
+  z-index: var(--z-content);
 }
 
 .tabs {
@@ -382,7 +382,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
   animation: pulseCardUrgency 1.5s infinite;
 }
 
@@ -396,7 +396,7 @@
   position: absolute;
   bottom: var(--space-3);
   right: var(--space-3);
-  z-index: 3;
+  z-index: calc(var(--z-content) + 2);
 }
 
 .compareButton {
@@ -435,7 +435,7 @@
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: var(--space-4) 0;
-  z-index: 99;
+  z-index: var(--z-sticky);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
   animation: slideUpCompare 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -538,7 +538,7 @@
 .compareModalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  z-index: var(--z-modal);
   background: rgba(10, 22, 40, 0.85);
   backdrop-filter: blur(8px);
   display: flex;
@@ -686,7 +686,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 3;
+  z-index: calc(var(--z-content) + 2);
   transition: all var(--transition-fast);
 }
 
@@ -728,7 +728,7 @@
   font-weight: 700;
   font-size: var(--text-sm);
   box-shadow: var(--shadow-sm);
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -790,7 +790,7 @@
   background: radial-gradient(circle, rgba(220, 167, 62, 0.06) 0%, transparent 70%);
   border-radius: 50%;
   filter: blur(50px);
-  z-index: 0;
+  z-index: var(--z-base);
   pointer-events: none;
 }
 
@@ -803,7 +803,7 @@
   background: radial-gradient(circle, rgba(30, 111, 217, 0.06) 0%, transparent 70%);
   border-radius: 50%;
   filter: blur(50px);
-  z-index: 0;
+  z-index: var(--z-base);
   pointer-events: none;
 }
 

@@ -119,12 +119,11 @@ export default function MealsSection({ meals, day }) {
               {/* Right: Photo */}
               {meal.photo && (
                 <div className={styles.mealPhoto}>
-                  <img
+                  <Image
                     src={meal.photo}
                     alt={meal.name}
                     width={160}
                     height={120}
-                    loading="lazy"
                     style={{
                       width: '100%',
                       height: '100%',

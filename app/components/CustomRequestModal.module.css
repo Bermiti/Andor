@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal);
   background: rgba(10, 22, 40, 0.85);
   backdrop-filter: blur(12px);
   display: flex;
@@ -39,7 +39,7 @@
   color: var(--gray-500);
   font-size: 14px;
   transition: all var(--transition-fast);
-  z-index: 10;
+  z-index: var(--z-content);
 }
 
 .closeBtn:hover {

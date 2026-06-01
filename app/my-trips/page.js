@@ -1,12 +1,14 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CountryManager from '../components/CountryManager';
 import TripHistory from '../components/TripHistory';
 import styles from './page.module.css';
 import { safeParse } from '../lib/safe-json';
+import { getStoredJourneyTrips } from '../lib/itinerary-store';
 
 // Dynamic import for the Globe (needs browser APIs, no SSR)
 const GlobeTracker = dynamic(() => import('../components/GlobeTracker'), {
@@ -14,7 +16,7 @@ const GlobeTracker = dynamic(() => import('../components/GlobeTracker'), {
   loading: () => (
     <div className={styles.globePlaceholder}>
       <div className={styles.placeholderSpinner}></div>
-      <p>Preparing your globe...</p>
+      <p>A preparar o teu globo...</p>
     </div>
   ),
 });
@@ -179,7 +181,7 @@ const DEMO_TRIPS = [
 
 export default function MyTripsPage() {
   const [visitedCountries, setVisitedCountries] = useState([]);
-  const [userTrips, setUserTrips] = useState([]);
+  const [journeyTrips, setJourneyTrips] = useState([]);
 
   // Country name to code mapping for destination matching
   const DEST_TO_CODE = {
@@ -200,7 +202,7 @@ export default function MyTripsPage() {
   // Compute planned country codes from trip destinations that aren't visited yet
   const plannedCountryCodes = useMemo(() => {
     const codes = new Set();
-    userTrips.forEach(trip => {
+    journeyTrips.forEach(trip => {
       if (!trip.destination) return;
       const lower = trip.destination.toLowerCase();
       for (const [name, code] of Object.entries(DEST_TO_CODE)) {
@@ -211,7 +213,21 @@ export default function MyTripsPage() {
       }
     });
     return [...codes];
-  }, [userTrips, visitedCountries]);
+  }, [journeyTrips, visitedCountries]);
+
+  const journeyStats = useMemo(() => {
+    const dayCount = journeyTrips.reduce((sum, trip) => {
+      if (Array.isArray(trip.days)) return sum + trip.days.length;
+      return sum + (Number(trip.daysCount) || 0);
+    }, 0);
+
+    return [
+      { label: 'roteiros guardados', value: journeyTrips.length },
+      { label: 'países visitados', value: visitedCountries.length },
+      { label: 'países planeados', value: plannedCountryCodes.length },
+      { label: 'dias organizados', value: dayCount },
+    ];
+  }, [journeyTrips, plannedCountryCodes.length, visitedCountries.length]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -224,22 +240,7 @@ export default function MyTripsPage() {
       }
     }
 
-    // Load user trips from auth context (localStorage)
-    const userStored = localStorage.getItem('andor_user');
-    let savedTrips = [];
-    if (userStored) {
-      try {
-        const userData = safeParse(userStored, {});
-        savedTrips = userData?.trips || [];
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    // Merge demo trips with user trips (avoid duplicates)
-    const demoIds = DEMO_TRIPS.map(t => t.id);
-    const userOnly = savedTrips.filter(t => !demoIds.includes(t.id));
-    setUserTrips([...DEMO_TRIPS, ...userOnly]);
+    setJourneyTrips(getStoredJourneyTrips());
   }, []);
 
   // Save to localStorage on change
@@ -267,16 +268,33 @@ export default function MyTripsPage() {
                 <circle cx="12" cy="12" r="10" />
                 <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
               </svg>
-              My Trips
+              My Journey
             </span>
             <h1 className={styles.title}>
-              Your <span className={styles.titleHighlight}>World</span> Explorer
+              A tua <span className={styles.titleHighlight}>jornada</span> num só lugar
             </h1>
             <p className={styles.subtitle}>
-              Track every country you have visited. Watch your personal globe light up as you explore the world.
+              Guarda roteiros gerados, acompanha países visitados e transforma planos soltos numa memória organizada.
             </p>
+            <div className={styles.heroActions}>
+              <Link href="/itineraries" className={styles.primaryAction} data-testid="journey-create-trip">
+                Criar viagem
+              </Link>
+              <a href="#journey-history" className={styles.secondaryAction}>
+                Ver roteiros
+              </a>
+            </div>
           </div>
         </div>
+
+        <section className={styles.statsStrip} aria-label="Resumo da tua jornada">
+          {journeyStats.map((stat) => (
+            <div className={styles.statCard} key={stat.label}>
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </div>
+          ))}
+        </section>
 
         <div className={styles.content}>
           <div className={styles.globeSection}>
@@ -291,7 +309,7 @@ export default function MyTripsPage() {
         </div>
 
         <TripHistory
-          trips={userTrips}
+          trips={journeyTrips}
           visitedCountries={visitedCountries}
         />
       </main>

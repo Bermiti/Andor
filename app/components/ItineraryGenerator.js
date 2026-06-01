@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { saveGeneratedItinerary, enrichItineraryData } from '../lib/itinerary-store';
@@ -82,6 +82,33 @@ export default function ItineraryGenerator() {
   const [travelers, setTravelers] = useState('2');
   const [style, setStyle] = useState('cultural');
   const [activeInterests, setActiveInterests] = useState(['History', 'Food', 'Architecture']);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem('andor_planner_state');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.step) setStep(parsed.step);
+        if (parsed.destination !== undefined) setDestination(parsed.destination);
+        if (parsed.budget) setBudget(parsed.budget);
+        if (parsed.days) setDays(parsed.days);
+        if (parsed.travelers) setTravelers(parsed.travelers);
+        if (parsed.style) setStyle(parsed.style);
+        if (parsed.activeInterests) setActiveInterests(parsed.activeInterests);
+      } catch(e){}
+    }
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated) {
+      sessionStorage.setItem('andor_planner_state', JSON.stringify({
+        step, destination, budget, days, travelers, style, activeInterests
+      }));
+    }
+  }, [isHydrated, step, destination, budget, days, travelers, style, activeInterests]);
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState(0);

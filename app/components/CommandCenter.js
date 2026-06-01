@@ -27,17 +27,33 @@ export default function CommandCenter() {
     : commands;
 
   useEffect(() => {
+    const openCommandCenter = () => setIsOpen(true);
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsOpen(prev => !prev);
       }
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const target = e.target;
+        const isTyping =
+          target instanceof HTMLElement &&
+          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+
+        if (!isTyping) {
+          e.preventDefault();
+          setIsOpen(true);
+        }
+      }
       if (e.key === 'Escape') {
         setIsOpen(false);
       }
     };
+    window.addEventListener('andor-open-command-center', openCommandCenter);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('andor-open-command-center', openCommandCenter);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   useEffect(() => {

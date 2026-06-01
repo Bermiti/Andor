@@ -16,7 +16,7 @@
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
   gap: 4px;
-  z-index: 0;
+  z-index: var(--z-base);
   opacity: 0.4;
   transform: rotate(-5deg) scale(1.2);
   transition: opacity 600ms var(--ease);
@@ -101,13 +101,13 @@
     linear-gradient(to bottom,
       rgba(8,12,20,0.5) 0%,
       transparent 20%);
-  z-index: 1;
+  z-index: var(--z-content);
 }
 
 .destinationBackdrop {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: var(--z-base);
   background-position: center;
   background-size: cover;
   opacity: 0;
@@ -126,19 +126,19 @@
 
 .container {
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--layout-max, 1200px);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--content-gutter, 24px);
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
   gap: 64px;
   align-items: center;
 }
 
 .contentLeft {
-  max-width: 500px;
+  max-width: 640px;
 }
 
 .title {
@@ -198,27 +198,29 @@
 
 .searchForm {
   position: relative;
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--r-full);
-  padding: 8px 8px 8px 24px;
-  transition: all 200ms var(--ease);
-  gap: var(--space-2);
+  display: grid;
+  gap: var(--space-3);
+  max-width: 620px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-sm);
+  padding: var(--space-3);
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease), background 200ms var(--ease);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
 }
 
 [data-theme="light"] .searchForm {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(26, 34, 53, 0.12);
+  box-shadow: 0 18px 44px rgba(26, 34, 53, 0.1);
 }
 
 .searchForm.focused {
   border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(212, 168, 67, 0.15), var(--s-gold);
-  background: rgba(255, 255, 255, 0.15);
+  box-shadow: var(--ring), 0 24px 70px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 [data-theme="light"] .searchForm.focused {
@@ -226,9 +228,13 @@
 }
 
 .searchField {
-  flex: 1 1 220px;
   display: flex;
   align-items: center;
+  min-height: var(--control-h, 52px);
+  border-radius: var(--control-radius, 8px);
+  background: rgba(8, 12, 20, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 var(--space-4);
   min-width: 0;
 }
 
@@ -242,25 +248,54 @@
   background: transparent;
   border: none;
   color: var(--t-1);
-  padding: 12px 16px;
+  min-height: 50px;
+  padding: 0 0 0 var(--space-3);
   font-size: 1.125rem;
   font-family: var(--font-body);
   min-width: 0;
   font-size: 16px;
 }
 
+.fieldShell {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.destinationShell {
+  position: relative;
+}
+
+.fieldLabel {
+  color: rgba(240, 237, 230, 0.72);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.formControls {
+  display: grid;
+  grid-template-columns: minmax(138px, 0.82fr) minmax(138px, 0.78fr) minmax(170px, 1fr);
+  gap: var(--space-3);
+  align-items: end;
+}
+
 .compactInput {
-  flex: 0 0 144px;
-  height: 48px;
+  width: 100%;
+  height: var(--control-h, 52px);
   min-width: 120px;
-  border-radius: var(--r-full);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--control-radius, 8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(8, 12, 20, 0.38);
   color: var(--t-1);
   padding: 0 14px;
   font-size: 16px;
 }
 
+[data-theme="light"] .searchField,
 [data-theme="light"] .compactInput {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.8);
@@ -279,10 +314,12 @@
   background: linear-gradient(135deg, var(--gold) 0%, var(--coral) 100%);
   color: var(--bg-0);
   font-weight: 600;
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--r-full);
+  min-height: var(--control-h, 52px);
+  padding: 0 var(--space-5);
+  border-radius: var(--control-radius, 8px);
   transition: all 150ms var(--ease);
-  min-width: 170px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .searchButton:hover {
@@ -293,7 +330,7 @@
 
 .autocomplete {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   left: 0;
   right: 0;
   background: var(--bg-2);
@@ -301,7 +338,19 @@
   border-radius: var(--r-lg);
   overflow: hidden;
   box-shadow: var(--s-3);
-  z-index: 5;
+  z-index: calc(var(--z-content) + 4);
+}
+
+.formHint {
+  margin: 0;
+  color: rgba(240, 237, 230, 0.62);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+[data-theme="light"] .fieldLabel,
+[data-theme="light"] .formHint {
+  color: var(--text-secondary);
 }
 
 [data-theme="light"] .autocomplete {
@@ -542,6 +591,16 @@
   }
 }
 
+@media (max-width: 620px) {
+  .formControls {
+    grid-template-columns: 1fr;
+  }
+
+  .searchButton {
+    width: 100%;
+  }
+}
+
 @media (max-width: 430px) {
   .heroWrapper {
     padding-top: 60px;
@@ -559,9 +618,8 @@
   }
 
   .searchForm {
-    flex-direction: column;
-    padding: 8px;
-    border-radius: var(--r-xl);
+    padding: 10px;
+    border-radius: var(--r-sm);
     gap: 8px;
     background: rgba(255,255,255,0.15);
   }
@@ -570,7 +628,6 @@
   .compactInput,
   .searchButton {
     width: 100%;
-    flex: none;
   }
 
   .searchInput {

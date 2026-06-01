@@ -212,7 +212,20 @@ export default function Navbar() {
                 <a href="/profile" className={styles.dashboardBtn}>
                   Perfil
                 </a>
-                <div className={styles.userAvatar} onClick={() => setShowUserMenu(!showUserMenu)}>
+                <div 
+                  className={styles.userAvatar} 
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowUserMenu(!showUserMenu);
+                    }
+                  }}
+                  aria-label="User menu"
+                  aria-expanded={showUserMenu}
+                >
                   {user.name?.charAt(0).toUpperCase()}
                 </div>
                 {showUserMenu && (

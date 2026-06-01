@@ -33,7 +33,7 @@ const destinationOptions = [
 ];
 
 const bgImages = [
-  'https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?q=80&w=800&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=800&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=800&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=800&auto=format&fit=crop',
@@ -58,8 +58,10 @@ export default function HomeHero({ onOpenWizard }) {
   const [travelers, setTravelers] = useState('2');
   const [isFocused, setIsFocused] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState('');
-  const [chatStep, setChatStep] = useState(0);
+  const [selectedDestinationName, setSelectedDestinationName] = useState('');
+  const [chatStep, setChatStep] = useState(1);
   const dateInputRef = useRef(null);
+  const displayDestination = selectedDestinationName || destinations[destIndex];
 
   const filteredDestinations = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -78,6 +80,8 @@ export default function HomeHero({ onOpenWizard }) {
   const [animState, setAnimState] = useState('visible');
   
   useEffect(() => {
+    if (selectedDestinationName) return;
+
     const interval = setInterval(() => {
       setAnimState('exit');
       setTimeout(() => {
@@ -85,9 +89,9 @@ export default function HomeHero({ onOpenWizard }) {
         setAnimState('enter');
         setTimeout(() => setAnimState('visible'), 400);
       }, 400);
-    }, 2500);
+      }, 2500);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDestinationName]);
 
   // Animate Chat Sequence
   useEffect(() => {
@@ -109,6 +113,7 @@ export default function HomeHero({ onOpenWizard }) {
   const handleDestinationSelect = (destination) => {
     const value = `${destination.city}, ${destination.country}`;
     setQuery(value);
+    setSelectedDestinationName(destination.city === 'Tokyo' ? 'Tóquio' : destination.city);
     setSelectedPhoto(`${destinationPhotos[destination.slug]}?auto=format&fit=crop&w=2200&q=85`);
     setIsFocused(false);
     window.setTimeout(() => dateInputRef.current?.focus(), 80);
@@ -141,7 +146,7 @@ export default function HomeHero({ onOpenWizard }) {
               height={600}
               className={styles.gridImg}
               style={{ animationDelay: `-${i * 2}s` }}
-              loading={i < 3 ? 'eager' : 'lazy'}
+              priority={i < 3}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               quality={75}
             />
@@ -170,7 +175,7 @@ export default function HomeHero({ onOpenWizard }) {
                   display: 'inline-block',
                 }}
               >
-                {destinations[destIndex]}
+                {displayDestination}
               </span>
             </h1>
             <p className={styles.subtitle}>
@@ -178,71 +183,98 @@ export default function HomeHero({ onOpenWizard }) {
             </p>
 
             <form onSubmit={handleSearch} className={`${styles.searchForm} ${isFocused ? styles.focused : ''}`} data-testid="home-search-form">
-              <div className={styles.searchField}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input 
-                  type="text" 
-                  placeholder="Para onde queres ir?" 
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  className={styles.searchInput}
-                  aria-label="Destino"
-                  data-testid="home-destination-input"
-                />
-              </div>
-              <input
-                ref={dateInputRef}
-                type="date"
-                value={travelDate}
-                onChange={(event) => setTravelDate(event.target.value)}
-                className={styles.compactInput}
-                aria-label="Data de partida"
-                data-testid="home-date-input"
-              />
-              <select
-                value={travelers}
-                onChange={(event) => setTravelers(event.target.value)}
-                className={styles.compactInput}
-                aria-label="Viajantes"
-                data-testid="home-travellers-input"
-              >
-                <option value="1">1 viajante</option>
-                <option value="2">2 viajantes</option>
-                <option value="3">3 viajantes</option>
-                <option value="4">4 viajantes</option>
-                <option value="5">5+ viajantes</option>
-              </select>
-              <button type="submit" className={styles.searchButton} data-testid="home-explore-button">
-                Planear a viagem
-              </button>
-
-              {isFocused && filteredDestinations.length > 0 && (
-                <div className={styles.autocomplete}>
-                  {filteredDestinations.map((destination) => (
-                    <button
-                      type="button"
-                      key={`${destination.city}-${destination.country}`}
-                      className={styles.autoItem}
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        handleDestinationSelect(destination);
-                      }}
-                    >
-                      <span className={styles.autoMain}>
-                        <span>{destination.flag}</span>
-                        <strong>{renderHighlighted(destination.city)}</strong>
-                        <span>{destination.country}</span>
-                      </span>
-                      <span className={styles.autoRegion}>{destination.region}</span>
-                    </button>
-                  ))}
+              <div className={`${styles.fieldShell} ${styles.destinationShell}`}>
+                <label className={styles.fieldLabel} htmlFor="home-destination-input">
+                  Destino
+                </label>
+                <div className={styles.searchField}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input 
+                    id="home-destination-input"
+                    type="text" 
+                    placeholder="Cidade, país ou ideia de viagem" 
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setSelectedDestinationName('');
+                      setSelectedPhoto('');
+                      setIsFocused(true);
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    className={styles.searchInput}
+                    aria-label="Destino"
+                    aria-expanded={isFocused && filteredDestinations.length > 0}
+                    autoComplete="off"
+                    data-testid="home-destination-input"
+                  />
                 </div>
-              )}
+
+                {isFocused && filteredDestinations.length > 0 && (
+                  <div className={styles.autocomplete} role="listbox" aria-label="Sugestões de destino">
+                    {filteredDestinations.map((destination) => (
+                      <button
+                        type="button"
+                        key={`${destination.city}-${destination.country}`}
+                        className={styles.autoItem}
+                        role="option"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          handleDestinationSelect(destination);
+                        }}
+                      >
+                        <span className={styles.autoMain}>
+                          <span>{destination.flag}</span>
+                          <strong>{renderHighlighted(destination.city)}</strong>
+                          <span>{destination.country}</span>
+                        </span>
+                        <span className={styles.autoRegion}>{destination.region}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.formControls}>
+                <label className={styles.fieldShell}>
+                  <span className={styles.fieldLabel}>Partida</span>
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={travelDate}
+                    onChange={(event) => setTravelDate(event.target.value)}
+                    className={styles.compactInput}
+                    aria-label="Data de partida"
+                    data-testid="home-date-input"
+                  />
+                </label>
+                <label className={styles.fieldShell}>
+                  <span className={styles.fieldLabel}>Viajantes</span>
+                  <select
+                    value={travelers}
+                    onChange={(event) => setTravelers(event.target.value)}
+                    className={styles.compactInput}
+                    aria-label="Viajantes"
+                    data-testid="home-travellers-input"
+                  >
+                    <option value="1">1 viajante</option>
+                    <option value="2">2 viajantes</option>
+                    <option value="3">3 viajantes</option>
+                    <option value="4">4 viajantes</option>
+                    <option value="5">5+ viajantes</option>
+                  </select>
+                </label>
+                <button type="submit" className={styles.searchButton} data-testid="home-explore-button">
+                  Planear viagem
+                </button>
+              </div>
+
+              <p className={styles.formHint}>
+                Começa com uma cidade. Podes afinar datas, orçamento e ritmo no passo seguinte.
+              </p>
             </form>
           </div>
         </div>

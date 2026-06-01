@@ -8,7 +8,8 @@
     "start": "next start",
     "test:e2e": "playwright test",
     "eval:itineraries": "node scripts/eval-itineraries.js",
-    "check:launch": "node scripts/predeploy-check.js"
+    "check:launch": "node scripts/predeploy-check.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.73",
@@ -17,7 +18,7 @@
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.394.0",
-    "next": "16.2.4",
+    "next": "^16.2.6",
     "next-intl": "^4.12.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -27,6 +28,16 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0"
+    "@playwright/test": "^1.60.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^6.0.2",
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.7"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

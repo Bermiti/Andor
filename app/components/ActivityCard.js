@@ -55,12 +55,11 @@ export default function ActivityCard({
         {/* Thumbnail */}
         <div className={styles.activityThumb}>
           {!imgLoaded && <div className={styles.shimmer} />}
-          <img
+          <Image
             src={photoUrl}
             alt={activity?.name || 'Activity'}
             width={48}
             height={48}
-            loading="lazy"
             onLoad={() => setImgLoaded(true)}
             style={{
               opacity: imgLoaded ? 1 : 0,
@@ -127,12 +126,11 @@ export default function ActivityCard({
       <div className={styles.activityExpandedContent}>
         {/* Full photo */}
         <div className={styles.activityFullPhoto}>
-          <img
+          <Image
             src={photoFullUrl}
             alt={activity?.name || 'Activity'}
             width={800}
             height={300}
-            loading="lazy"
             style={{
               width: '100%',
               height: 180,

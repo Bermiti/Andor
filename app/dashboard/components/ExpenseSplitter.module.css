@@ -7,9 +7,9 @@
 
 /* Groups Panel */
 .groupsPanel {
-  background: white;
+  background: var(--bg-1);
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--b-1);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -25,23 +25,23 @@
 .groupsHeader h3 {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--t-1);
 }
 
 .newGroupBtn {
-  background: #f1f5f9;
+  background: var(--bg-2);
   border: none;
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #334155;
+  color: var(--t-2);
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .newGroupBtn:hover {
-  background: #e2e8f0;
+  background: var(--bg-3);
 }
 
 .newGroupForm, .addExpenseForm {
@@ -49,24 +49,25 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px;
-  background: #f8fafc;
+  background: var(--bg-2);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--b-1);
 }
 
 .formInput {
   padding: 10px 14px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--b-1);
   border-radius: 10px;
   font-size: 14px;
   outline: none;
-  background: white;
+  background: var(--bg-1);
+  color: var(--t-1);
   transition: border-color 0.2s;
   width: 100%;
 }
 
 .formInput:focus {
-  border-color: #1e6fd9;
+  border-color: var(--ocean);
 }
 
 .formRow {
@@ -75,8 +76,8 @@
 }
 
 .createBtn {
-  background: #111;
-  color: white;
+  background: var(--t-1);
+  color: var(--bg-0);
   border: none;
   padding: 10px;
   border-radius: 10px;
@@ -87,7 +88,7 @@
 }
 
 .createBtn:hover {
-  background: #333;
+  background: var(--t-2);
 }
 
 .groupsList {
@@ -99,7 +100,7 @@
 .emptyGroups {
   text-align: center;
   padding: 24px;
-  color: #94a3b8;
+  color: var(--t-3);
   font-size: 14px;
 }
 
@@ -116,21 +117,21 @@
   flex-wrap: wrap;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1.5px solid #e2e8f0;
-  background: white;
+  border: 1.5px solid var(--b-1);
+  background: var(--bg-1);
   cursor: pointer;
   transition: all 0.15s;
   text-align: left;
 }
 
 .groupCard:hover {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  border-color: var(--b-2);
+  background: var(--bg-2);
 }
 
 .groupCardActive {
-  border-color: #111 !important;
-  background: #f8fafc !important;
+  border-color: var(--gold) !important;
+  background: var(--bg-2) !important;
 }
 
 .groupCardInfo {
@@ -141,7 +142,7 @@
 .groupCardName {
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--t-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -149,7 +150,7 @@
 
 .groupCardMeta {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--t-3);
   margin-top: 2px;
 }
 
@@ -172,9 +173,9 @@
   margin-top: 8px;
   padding: 10px;
   border-radius: 10px;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  color: #7c2d12;
+  background: var(--gold-glow);
+  border: 1px solid var(--b-gold);
+  color: var(--gold);
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -188,9 +189,9 @@
 }
 
 .inlineConfirm button {
-  border: 1px solid #fdba74;
-  background: #fff;
-  color: #7c2d12;
+  border: 1px solid var(--gold);
+  background: var(--bg-1);
+  color: var(--gold);
   border-radius: 8px;
   padding: 7px 10px;
   font-weight: 700;
@@ -198,16 +199,16 @@
 }
 
 .inlineConfirm button:last-child {
-  background: #c2410c;
-  border-color: #c2410c;
-  color: #fff;
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--t-1);
 }
 
 /* Detail Panel */
 .detailPanel {
-  background: white;
+  background: var(--bg-1);
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--b-1);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -221,7 +222,7 @@
   justify-content: center;
   text-align: center;
   padding: 60px 24px;
-  color: #94a3b8;
+  color: var(--t-3);
 }
 
 .emptyDetailIcon {
@@ -230,7 +231,7 @@
 }
 
 .emptyDetail h3 {
-  color: #334155;
+  color: var(--t-2);
   margin-bottom: 4px;
 }
 
@@ -244,7 +245,7 @@
 .detailTitle {
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--t-1);
   margin-bottom: 8px;
 }
 
@@ -255,17 +256,17 @@
 }
 
 .memberChip {
-  background: #f1f5f9;
+  background: var(--bg-2);
   padding: 4px 12px;
   border-radius: 99px;
   font-size: 12px;
   font-weight: 500;
-  color: #334155;
+  color: var(--t-2);
 }
 
 .addExpenseBtn {
-  background: #1e6fd9;
-  color: white;
+  background: var(--ocean);
+  color: var(--t-1);
   border: none;
   padding: 10px 18px;
   border-radius: 10px;
@@ -277,7 +278,7 @@
 }
 
 .addExpenseBtn:hover {
-  background: #1656b0;
+  background: var(--ocean-light);
 }
 
 /* Summary */
@@ -288,23 +289,23 @@
 }
 
 .summaryCard {
-  background: #f8fafc;
+  background: var(--bg-2);
   border-radius: 14px;
   padding: 16px;
   text-align: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--b-1);
 }
 
 .summaryLabel {
   font-size: 12px;
-  color: #64748b;
+  color: var(--t-3);
   margin-bottom: 4px;
 }
 
 .summaryValue {
   font-size: 24px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--t-1);
 }
 
 /* Settlements */
@@ -317,7 +318,7 @@
 .sectionSubtitle {
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--t-1);
 }
 
 .settlements {
@@ -331,30 +332,30 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: #fffbeb;
+  background: var(--bg-2);
   border-radius: 12px;
-  border: 1px solid #fde68a;
+  border: 1px solid var(--b-gold);
   font-size: 14px;
 }
 
 .settlementFrom {
   font-weight: 600;
-  color: #ef4444;
+  color: var(--coral);
 }
 
 .settlementArrow {
-  color: #94a3b8;
+  color: var(--t-3);
 }
 
 .settlementTo {
   font-weight: 600;
-  color: #10b981;
+  color: var(--teal);
 }
 
 .settlementAmount {
   margin-left: auto;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--t-1);
 }
 
 /* Expenses List */
@@ -365,7 +366,7 @@
 }
 
 .noExpenses {
-  color: #94a3b8;
+  color: var(--t-3);
   font-size: 14px;
   text-align: center;
   padding: 24px;
@@ -376,26 +377,26 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #fafbfc;
+  background: var(--bg-2);
   border-radius: 12px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--b-1);
   transition: background 0.15s;
 }
 
 .expenseRow:hover {
-  background: #f1f5f9;
+  background: var(--bg-3);
 }
 
 .expenseIcon {
   font-size: 20px;
   width: 36px;
   height: 36px;
-  background: white;
+  background: var(--bg-1);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--b-1);
 }
 
 .expenseInfo {
@@ -406,25 +407,25 @@
 .expenseDesc {
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--t-1);
 }
 
 .expenseMeta {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--t-3);
   margin-top: 2px;
 }
 
 .expenseAmount {
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--t-1);
 }
 
 .expenseDelete {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--t-3);
   font-size: 14px;
   cursor: pointer;
   padding: 4px 8px;
@@ -433,8 +434,8 @@
 }
 
 .expenseDelete:hover {
-  background: #fef2f2;
-  color: #ef4444;
+  background: rgba(232, 96, 74, 0.1);
+  color: var(--coral);
 }
 
 @media (max-width: 768px) {

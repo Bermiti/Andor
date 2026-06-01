@@ -11,8 +11,7 @@ export default function Template({ children }) {
   return (
     <div style={{
       opacity: mounted ? 1 : 0,
-      transform: mounted ? 'translateY(0)' : 'translateY(15px)',
-      transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+      transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
     }}>
       {children}
     </div>

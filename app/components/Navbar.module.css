@@ -22,13 +22,26 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
+[data-theme="light"] .navbar.scrolled {
+  background: rgba(247, 244, 238, 0.9);
+  border-bottom-color: rgba(26, 34, 53, 0.1);
+  box-shadow: 0 10px 30px rgba(26, 34, 53, 0.08);
+}
+
+[data-theme="light"] .navbar.scrolled .logo,
+[data-theme="light"] .navbar.scrolled .link,
+[data-theme="light"] .navbar.scrolled .loginBtn {
+  color: var(--text-primary);
+}
+
 .inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1200px;
+  max-width: var(--layout-max, 1200px);
   margin: 0 auto;
-  padding: 0 var(--space-6);
+  padding: 0 var(--content-gutter, var(--space-6));
+  gap: var(--space-4);
 }
 
 .logo {
@@ -58,7 +71,7 @@
 .links {
   display: flex;
   align-items: center;
-  gap: var(--space-12); /* Increased gap to spread items out */
+  gap: clamp(var(--space-4), 3vw, var(--space-8));
 }
 
 .link {
@@ -87,12 +100,33 @@
   color: var(--gold, #D4A843);
 }
 
-.link:hover::after {
+.link:hover::after,
+.linkActive::after {
   width: 100%;
 }
 
+.linkActive {
+  color: #ffffff;
+}
+
+.linkActive.linkDark {
+  color: #1A2235;
+}
+
+.linkActive::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--gold, #D4A843);
+  transform: translateX(-50%);
+}
+
 .linkDark {
-  color: var(--navy);
+  color: #1A2235;
 }
 
 .linkDark:hover {
@@ -100,13 +134,46 @@
 }
 
 .logoDark {
-  color: var(--navy);
+  color: #1A2235;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  min-width: 0;
+  position: relative;
+  z-index: calc(var(--z-sticky) + 2);
+}
+
+.commandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  min-width: 0;
+  padding: 0 var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--control-radius, 8px);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.commandBtn:hover {
+  border-color: var(--b-gold);
+  background: rgba(212, 168, 67, 0.12);
+  color: var(--gold-light);
+}
+
+[data-theme="light"] .commandBtn {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(26, 34, 53, 0.12);
 }
 
 .mobileDivider,
@@ -116,7 +183,8 @@
 .mobileActions,
 .loginBtnMobile,
 .ctaBtnMobile,
-.userMenuItemMobile {
+.userMenuItemMobile,
+.mobileScrim {
   display: none;
 }
 
@@ -130,6 +198,14 @@
 }
 
 .loginBtn:hover {
+  color: var(--gold, #D4A843);
+}
+
+.loginBtn.linkDark {
+  color: #1A2235;
+}
+
+.loginBtn.linkDark:hover {
   color: var(--gold, #D4A843);
 }
 
@@ -164,7 +240,7 @@
   background: none;
   border: none;
   padding: 0;
-  z-index: 101;
+  z-index: var(--z-sticky);
 }
 
 .mobileToggle span {
@@ -174,6 +250,10 @@
   background: #ffffff;
   border-radius: var(--radius-full);
   transition: all var(--transition-base);
+}
+
+.toggleDark span {
+  background: #1A2235;
 }
 
 /* User Area styles */
@@ -234,7 +314,7 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.08);
   min-width: 240px;
-  z-index: 200;
+  z-index: var(--z-dropdown);
   overflow: hidden;
   animation: menuSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -301,22 +381,48 @@
 
 /* Responsive Mobile Layout Drawer */
 @media (max-width: 768px) {
+  .navbar {
+    padding: var(--space-4) 0;
+  }
+
+  .inner {
+    padding: 0 var(--space-4);
+  }
+
+  .commandBtn,
+  .themeTogglePill {
+    display: none;
+  }
+
+  .mobileScrim {
+    position: fixed;
+    inset: 0;
+    display: block;
+    z-index: var(--z-sticky);
+    min-width: 0;
+    min-height: 0;
+    background: rgba(3, 6, 12, 0.56);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
   .links {
     position: fixed;
     top: 0;
     right: 0;
-    width: 80%;
-    max-width: 300px;
-    height: 100vh;
-    background: #080a12;
+    width: min(88vw, 360px);
+    max-width: none;
+    height: 100dvh;
+    background: linear-gradient(180deg, rgba(8, 10, 18, 0.98), rgba(7, 11, 20, 0.98));
     border-left: 1px solid rgba(255, 255, 255, 0.08);
     flex-direction: column;
     align-items: flex-start;
-    padding: var(--space-24) var(--space-6) var(--space-8);
+    padding: 92px var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
     box-shadow: -10px 0 45px rgba(0, 0, 0, 0.6);
-    z-index: 100;
+    z-index: calc(var(--z-drawer) + 1);
     gap: var(--space-4);
     display: none;
+    overflow-y: auto;
   }
 
   .links.mobileOpen {
@@ -341,8 +447,19 @@
     display: none;
   }
 
+  .linkActive::before {
+    left: -14px;
+    bottom: 50%;
+    transform: translateY(50%);
+    width: 5px;
+    height: 24px;
+    border-radius: 999px;
+  }
+
   .mobileToggle {
     display: flex;
+    position: relative;
+    z-index: calc(var(--z-sticky) + 2);
   }
 
   .loginBtn, .ctaBtn {
@@ -413,8 +530,10 @@
 /* Theme Toggle Pill */
 .themeTogglePill {
   position: relative;
-  width: 58px;
-  height: 28px;
+  width: 62px;
+  height: 34px;
+  min-height: 34px;
+  min-width: 62px;
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   border: 1px solid var(--border-light);
@@ -435,32 +554,32 @@
 
 .themeToggleSlider {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 22px;
-  height: 22px;
+  top: 3px;
+  left: 3px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--gold) 0%, var(--coral) 100%);
   transition: transform var(--transition-base);
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
   box-shadow: var(--shadow-sm);
 }
 
 .themeToggleSliderLight {
-  transform: translateX(30px);
+  transform: translateX(28px);
   background: linear-gradient(135deg, var(--sky) 0%, var(--teal) 100%);
 }
 
 .themeToggleIcon {
-  font-size: 12px;
   user-select: none;
-  z-index: 1;
+  z-index: var(--z-content);
+  color: var(--text-secondary);
 }
 
 /* Language Selector Dropdown */
 .langDropdownWrapper {
   position: relative;
-  z-index: 10;
+  z-index: var(--z-content);
 }
 
 .langPill {
@@ -635,6 +754,13 @@
   .loginBtnMobile,
   .ctaBtnMobile,
   .userMenuItemMobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .commandBtn,
+  .themeTogglePill {
     display: none !important;
   }
 }

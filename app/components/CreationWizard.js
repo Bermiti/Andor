@@ -157,13 +157,40 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
   const [showDropdown, setShowDropdown] = useState(false);
   const [bgImage, setBgImage] = useState('');
 
+  const [isHydrated, setIsHydrated] = useState(false);
+
   useEffect(() => {
-    if (isOpen) {
-      setStep(initialStep);
-      setDestination(initialDestination);
-      setIsSurprise(false);
+    if (isOpen && !isHydrated) {
+      const saved = sessionStorage.getItem('andor_wizard_state');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.step) setStep(parsed.step);
+          if (parsed.destination !== undefined) setDestination(parsed.destination);
+          if (parsed.isSurprise !== undefined) setIsSurprise(parsed.isSurprise);
+          if (parsed.dates) setDates(parsed.dates);
+          if (parsed.travelers) setTravelers(parsed.travelers);
+          if (parsed.stylesList) setStylesList(parsed.stylesList);
+          if (parsed.budgetTier) setBudgetTier(parsed.budgetTier);
+        } catch(e){}
+      } else {
+        setStep(initialStep);
+        setDestination(initialDestination);
+        setIsSurprise(false);
+      }
+      setIsHydrated(true);
+    } else if (!isOpen) {
+      setIsHydrated(false);
     }
-  }, [isOpen, initialDestination, initialStep]);
+  }, [isOpen, initialDestination, initialStep, isHydrated]);
+
+  useEffect(() => {
+    if (isHydrated && isOpen) {
+      sessionStorage.setItem('andor_wizard_state', JSON.stringify({
+        step, destination, isSurprise, dates, travelers, stylesList, budgetTier
+      }));
+    }
+  }, [isHydrated, isOpen, step, destination, isSurprise, dates, travelers, stylesList, budgetTier]);
 
   useEffect(() => {
     if (bgMap[destination]) {

@@ -8,6 +8,7 @@ import { useChatContext } from '../context/ChatContext';
 import { safeParse } from '../lib/safe-json';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from './ToastProvider';
+import ConfirmDialog from './ConfirmDialog';
 
 // Converter from ANDOR rich JSON format to Legacy format for itinerary pages
 function convertAndorToLegacy(andor) {
@@ -751,6 +752,7 @@ export default function FloatingAi() {
       localStorage.removeItem('andor_chat_history');
     }
     setShowNewChatConfirm(false);
+    setShowRestorePrompt(false);
     showToast('🧹 Nova conversa iniciada.');
   };
 
@@ -1358,15 +1360,7 @@ export default function FloatingAi() {
               >
                 Sim
               </button>
-              <button onClick={() => {
-                setMessages([]);
-                if (typeof window !== 'undefined') {
-                  localStorage.removeItem('andor_concierge_messages');
-                  localStorage.removeItem('andor_chat_history');
-                }
-                setShowRestorePrompt(false);
-                showToast('🧹 Nova conversa iniciada.');
-              }} className={styles.restoreNoBtn}>Não</button>
+              <button onClick={handleNewConversation} className={styles.restoreNoBtn}>Não</button>
             </div>
           </div>
         )}
@@ -1647,19 +1641,15 @@ export default function FloatingAi() {
 
       </div>
 
-      {/* Custom Confirmation Modal */}
-      {showNewChatConfirm && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3>Iniciar nova conversa?</h3>
-            <p>Isto irá apagar todo o histórico de planeamento atual. Esta ação é irreversível.</p>
-            <div className={styles.modalBtns}>
-              <button className={styles.modalCancelBtn} onClick={() => setShowNewChatConfirm(false)}>Cancelar</button>
-              <button className={styles.modalConfirmBtn} onClick={confirmNewChat}>Confirmar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showNewChatConfirm}
+        title="Iniciar nova conversa?"
+        description="Isto irá apagar todo o histórico de planeamento atual. Esta ação é irreversível."
+        confirmLabel="Eliminar"
+        destructive
+        onCancel={() => setShowNewChatConfirm(false)}
+        onConfirm={confirmNewChat}
+      />
     </div>
   );
 }

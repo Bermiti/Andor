@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import { useToast } from '../../components/ToastProvider';
+import { WalletCards, Receipt } from 'lucide-react';
 import styles from './ExpenseSplitter.module.css';
 
 export default function ExpenseSplitter() {
@@ -16,6 +19,8 @@ export default function ExpenseSplitter() {
   const [expensePaidBy, setExpensePaidBy] = useState('');
   const [expenseCategory, setExpenseCategory] = useState('other');
   const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState(null);
+  const [pendingDeleteExpense, setPendingDeleteExpense] = useState(null);
+  const { success } = useToast();
 
   useEffect(() => {
     const stored = localStorage.getItem(`andor_expenses_${user?.id}`);
@@ -77,13 +82,20 @@ export default function ExpenseSplitter() {
     setShowAddExpense(false);
   };
 
-  const deleteExpense = (groupId, expenseId) => {
+  const requestDeleteExpense = (groupId, expenseId) => {
+    setPendingDeleteExpense({ groupId, expenseId });
+  };
+
+  const confirmDeleteExpense = () => {
+    if (!pendingDeleteExpense) return;
     const updated = groups.map(g =>
-      g.id === groupId
-        ? { ...g, expenses: g.expenses.filter(e => e.id !== expenseId) }
+      g.id === pendingDeleteExpense.groupId
+        ? { ...g, expenses: g.expenses.filter(e => e.id !== pendingDeleteExpense.expenseId) }
         : g
     );
     saveGroups(updated);
+    setPendingDeleteExpense(null);
+    success('Despesa eliminada.');
   };
 
   const deleteGroup = (groupId) => {
@@ -94,6 +106,7 @@ export default function ExpenseSplitter() {
     saveGroups(groups.filter(g => g.id !== groupId));
     if (activeGroupId === groupId) setActiveGroupId(null);
     setPendingDeleteGroupId(null);
+    success('Grupo eliminado.');
   };
 
   const calculateBalances = (group) => {
@@ -165,6 +178,7 @@ export default function ExpenseSplitter() {
             <input
               type="text"
               placeholder="Group name (e.g. Lisbon Trip)"
+              aria-label="Group name"
               className={styles.formInput}
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
@@ -172,6 +186,7 @@ export default function ExpenseSplitter() {
             <input
               type="text"
               placeholder="Members (separated by comma)"
+              aria-label="Group members"
               className={styles.formInput}
               value={newGroupMembers}
               onChange={(e) => setNewGroupMembers(e.target.value)}
@@ -183,7 +198,7 @@ export default function ExpenseSplitter() {
         <div className={styles.groupsList}>
           {groups.length === 0 && !showNewGroup && (
             <div className={styles.emptyGroups}>
-              <span>💰</span>
+              <WalletCards size={48} strokeWidth={1.5} color="var(--gold)" style={{ margin: '0 auto 16px' }} />
               <p>Create a group to start splitting expenses</p>
             </div>
           )}
@@ -231,7 +246,7 @@ export default function ExpenseSplitter() {
       <div className={styles.detailPanel}>
         {!activeGroup ? (
           <div className={styles.emptyDetail}>
-            <div className={styles.emptyDetailIcon}>👈</div>
+            <Receipt size={64} strokeWidth={1.5} color="var(--t-3)" style={{ marginBottom: '16px' }} />
             <h3>Select or create a group</h3>
             <p>To see expenses and who owes who.</p>
           </div>
@@ -355,7 +370,8 @@ export default function ExpenseSplitter() {
                     <div className={styles.expenseAmount}>€{expense.amount.toFixed(2)}</div>
                     <button
                       className={styles.expenseDelete}
-                      onClick={() => deleteExpense(activeGroup.id, expense.id)}
+                      onClick={() => requestDeleteExpense(activeGroup.id, expense.id)}
+                      aria-label={`Delete ${expense.description}`}
                     >✕</button>
                   </div>
                 ))
@@ -364,6 +380,24 @@ export default function ExpenseSplitter() {
           </>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={Boolean(pendingDeleteGroupId)}
+        title="Eliminar grupo de despesas?"
+        description="Todas as despesas deste grupo serão removidas. Esta acção não pode ser desfeita."
+        confirmLabel="Eliminar"
+        destructive
+        onCancel={() => setPendingDeleteGroupId(null)}
+        onConfirm={() => confirmDeleteGroup(pendingDeleteGroupId)}
+      />
+      <ConfirmDialog
+        isOpen={Boolean(pendingDeleteExpense)}
+        title="Eliminar despesa?"
+        description="Esta despesa será removida do grupo. Esta acção não pode ser desfeita."
+        confirmLabel="Eliminar"
+        destructive
+        onCancel={() => setPendingDeleteExpense(null)}
+        onConfirm={confirmDeleteExpense}
+      />
     </div>
   );
 }

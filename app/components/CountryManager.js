@@ -1,5 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
+import ConfirmDialog from './ConfirmDialog';
+import { useToast } from './ToastProvider';
+import { Globe } from 'lucide-react';
 import styles from './CountryManager.module.css';
 
 // Map of country names to ISO 3166-1 numeric codes (used by world-atlas)
@@ -67,6 +70,8 @@ const COUNTRY_DATA = [
 export default function CountryManager({ visitedCountries = [], onToggleCountry }) {
   const [search, setSearch] = useState('');
   const [justAdded, setJustAdded] = useState(null);
+  const [pendingRemoveCountry, setPendingRemoveCountry] = useState(null);
+  const { success } = useToast();
 
   const visitedNames = useMemo(() => {
     return COUNTRY_DATA.filter(c => visitedCountries.includes(c.code)).sort((a, b) => a.name.localeCompare(b.name));
@@ -87,8 +92,15 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
     setTimeout(() => setJustAdded(null), 1500);
   };
 
-  const removeCountry = (code) => {
-    onToggleCountry(code);
+  const requestRemoveCountry = (country) => {
+    setPendingRemoveCountry(country);
+  };
+
+  const confirmRemoveCountry = () => {
+    if (!pendingRemoveCountry) return;
+    onToggleCountry(pendingRemoveCountry.code);
+    success(`${pendingRemoveCountry.name} removido dos países visitados.`);
+    setPendingRemoveCountry(null);
   };
 
   const handleKeyDown = (e) => {
@@ -104,17 +116,17 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
         <div className={styles.statsRow}>
           <div className={styles.statBox}>
             <span className={styles.statNumber}>{visitedNames.length}</span>
-            <span className={styles.statLabel}>Visited</span>
+            <span className={styles.statLabel}>Visitados</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.statBox}>
             <span className={styles.statNumber}>{COUNTRY_DATA.length - visitedNames.length}</span>
-            <span className={styles.statLabel}>Remaining</span>
+            <span className={styles.statLabel}>Por visitar</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.statBox}>
             <span className={styles.statNumber}>{Math.round((visitedNames.length / COUNTRY_DATA.length) * 100)}%</span>
-            <span className={styles.statLabel}>of the World</span>
+            <span className={styles.statLabel}>do mundo</span>
           </div>
         </div>
         <div className={styles.progressBar}>
@@ -126,7 +138,7 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
       </div>
 
       <div className={styles.searchSection}>
-        <label className={styles.searchLabel}>Add a country</label>
+        <label className={styles.searchLabel}>Adicionar país</label>
         <div className={styles.searchWrapper}>
           <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" />
@@ -135,7 +147,7 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search countries..."
+            placeholder="Pesquisar países..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -161,14 +173,16 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
 
       <div className={styles.listSection}>
         <h4 className={styles.listTitle}>
-          Countries visited
+          Países visitados
           <span className={styles.listCount}>{visitedNames.length}</span>
         </h4>
         {visitedNames.length === 0 ? (
           <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>🌍</span>
-            <p>Your travel map is empty.</p>
-            <p className={styles.emptyHint}>Search for a country above to start tracking!</p>
+            <span className={styles.emptyIcon}>
+              <Globe size={48} strokeWidth={1.5} color="var(--gold)" />
+            </span>
+            <p>O teu mapa de viagens está vazio.</p>
+            <p className={styles.emptyHint}>Pesquisa um país acima para começar.</p>
           </div>
         ) : (
           <div className={styles.countryList}>
@@ -181,8 +195,9 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
                 <span className={styles.countryName}>{country.name}</span>
                 <button
                   className={styles.removeBtn}
-                  onClick={() => removeCountry(country.code)}
-                  title={`Remove ${country.name}`}
+                  onClick={() => requestRemoveCountry(country)}
+                  aria-label={`Remover ${country.name}`}
+                  title={`Remover ${country.name}`}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 6 6 18M6 6l12 12" />
@@ -193,6 +208,15 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
           </div>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={Boolean(pendingRemoveCountry)}
+        title="Remover país visitado?"
+        description="Este país sai do teu mapa de visitados. Podes adicioná-lo outra vez mais tarde."
+        confirmLabel="Remover"
+        destructive
+        onCancel={() => setPendingRemoveCountry(null)}
+        onConfirm={confirmRemoveCountry}
+      />
     </div>
   );
 }
