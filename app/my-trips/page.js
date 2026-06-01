@@ -7,6 +7,7 @@ import CountryManager from '../components/CountryManager';
 import TripHistory from '../components/TripHistory';
 import styles from './page.module.css';
 import { safeParse } from '../lib/safe-json';
+import { useTranslations } from '../context/LanguageContext';
 
 // Dynamic import for the Globe (needs browser APIs, no SSR)
 const GlobeTracker = dynamic(() => import('../components/GlobeTracker'), {
@@ -14,10 +15,11 @@ const GlobeTracker = dynamic(() => import('../components/GlobeTracker'), {
   loading: () => (
     <div className={styles.globePlaceholder}>
       <div className={styles.placeholderSpinner}></div>
-      <p>Preparing your globe...</p>
+      <p>...</p>
     </div>
   ),
 });
+
 
 const DEMO_TRIPS = [
   {
@@ -178,6 +180,7 @@ const DEMO_TRIPS = [
 ];
 
 export default function MyTripsPage() {
+  const t = useTranslations('myTrips');
   const [visitedCountries, setVisitedCountries] = useState([]);
   const [userTrips, setUserTrips] = useState([]);
 
@@ -267,13 +270,13 @@ export default function MyTripsPage() {
                 <circle cx="12" cy="12" r="10" />
                 <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
               </svg>
-              My Trips
+              {t('badge')}
             </span>
             <h1 className={styles.title}>
-              Your <span className={styles.titleHighlight}>World</span> Explorer
+              {t('title')} <span className={styles.titleHighlight}>{t('titleHighlight')}</span> {t('titleSuffix')}
             </h1>
             <p className={styles.subtitle}>
-              Track every country you have visited. Watch your personal globe light up as you explore the world.
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -286,6 +289,7 @@ export default function MyTripsPage() {
             <CountryManager
               visitedCountries={visitedCountries}
               onToggleCountry={handleToggleCountry}
+              translations={t}
             />
           </div>
         </div>

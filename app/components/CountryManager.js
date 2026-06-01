@@ -64,9 +64,17 @@ const COUNTRY_DATA = [
   { name: 'Zambia', code: '894' }, { name: 'Zimbabwe', code: '716' },
 ];
 
-export default function CountryManager({ visitedCountries = [], onToggleCountry }) {
+export default function CountryManager({ visitedCountries = [], onToggleCountry, translations }) {
   const [search, setSearch] = useState('');
   const [justAdded, setJustAdded] = useState(null);
+
+  // Fallback so component works even without translations prop
+  const t = translations || ((key) => ({
+    visited: 'Visited', remaining: 'Remaining', ofTheWorld: 'of the World',
+    addCountry: 'Add a country', searchPlaceholder: 'Search countries...',
+    countriesVisited: 'Countries visited', emptyState: 'Your travel map is empty.',
+    emptyHint: 'Search for a country above to start tracking!', remove: 'Remove',
+  }[key] || key));
 
   const visitedNames = useMemo(() => {
     return COUNTRY_DATA.filter(c => visitedCountries.includes(c.code)).sort((a, b) => a.name.localeCompare(b.name));
@@ -104,17 +112,17 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
         <div className={styles.statsRow}>
           <div className={styles.statBox}>
             <span className={styles.statNumber}>{visitedNames.length}</span>
-            <span className={styles.statLabel}>Visited</span>
+            <span className={styles.statLabel}>{t('visited')}</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.statBox}>
             <span className={styles.statNumber}>{COUNTRY_DATA.length - visitedNames.length}</span>
-            <span className={styles.statLabel}>Remaining</span>
+            <span className={styles.statLabel}>{t('remaining')}</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.statBox}>
             <span className={styles.statNumber}>{Math.round((visitedNames.length / COUNTRY_DATA.length) * 100)}%</span>
-            <span className={styles.statLabel}>of the World</span>
+            <span className={styles.statLabel}>{t('ofTheWorld')}</span>
           </div>
         </div>
         <div className={styles.progressBar}>
@@ -126,7 +134,7 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
       </div>
 
       <div className={styles.searchSection}>
-        <label className={styles.searchLabel}>Add a country</label>
+        <label className={styles.searchLabel}>{t('addCountry')}</label>
         <div className={styles.searchWrapper}>
           <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" />
@@ -135,7 +143,7 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search countries..."
+            placeholder={t('searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -161,14 +169,14 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
 
       <div className={styles.listSection}>
         <h4 className={styles.listTitle}>
-          Countries visited
+          {t('countriesVisited')}
           <span className={styles.listCount}>{visitedNames.length}</span>
         </h4>
         {visitedNames.length === 0 ? (
           <div className={styles.emptyState}>
             <span className={styles.emptyIcon}>🌍</span>
-            <p>Your travel map is empty.</p>
-            <p className={styles.emptyHint}>Search for a country above to start tracking!</p>
+            <p>{t('emptyState')}</p>
+            <p className={styles.emptyHint}>{t('emptyHint')}</p>
           </div>
         ) : (
           <div className={styles.countryList}>
@@ -182,7 +190,7 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry 
                 <button
                   className={styles.removeBtn}
                   onClick={() => removeCountry(country.code)}
-                  title={`Remove ${country.name}`}
+                  title={`${t('remove')} ${country.name}`}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 6 6 18M6 6l12 12" />

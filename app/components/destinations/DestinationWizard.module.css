@@ -1,0 +1,920 @@
+/* ==========================================================================
+   DestinationWizard — Premium Multi-Step Questionnaire
+   Follows CreationWizard design system patterns
+   ========================================================================== */
+
+/* ---- Container & Layout ---- */
+
+.wizardWrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-7) var(--space-4);
+  background: var(--bg-1);
+}
+
+.wizardContainer {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  background: var(--bg-2);
+  border: 1px solid var(--b-2);
+  border-radius: var(--r-xl);
+  padding: var(--space-7) var(--space-7);
+  box-shadow: var(--s-3);
+  overflow: hidden;
+}
+
+/* ---- Progress Bar ---- */
+
+.progressBarWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 10;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--coral));
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ---- Step Indicator ---- */
+
+.stepIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.stepTitle {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--t-1);
+  margin: 0 0 var(--space-2) 0;
+  line-height: 1.2;
+}
+
+.stepSubtitle {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--t-2);
+  margin: 0 0 var(--space-6) 0;
+  line-height: 1.5;
+}
+
+/* ---- Step Transition Animation ---- */
+
+.stepContent {
+  animation: stepFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Section Label ---- */
+
+.sectionLabel {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--t-2);
+  margin-bottom: var(--space-3);
+  display: block;
+}
+
+/* ---- Generic Select Card (used across steps) ---- */
+
+.selectCard {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-1);
+  background: var(--bg-3);
+  border: 1.5px solid var(--b-1);
+  border-radius: var(--r-md);
+  padding: var(--space-4);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--t-1);
+  min-height: 44px;
+  text-align: center;
+  transition:
+    border-color var(--t-base) var(--ease),
+    background-color var(--t-base) var(--ease),
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-base) var(--ease);
+  appearance: none;
+  font: inherit;
+  line-height: 1.3;
+}
+
+.selectCard:hover {
+  border-color: var(--b-gold);
+  transform: translateY(-2px);
+  background: var(--bg-4);
+}
+
+.selectCard.selected {
+  border-color: var(--gold);
+  background: rgba(212, 168, 67, 0.1);
+  box-shadow: 0 0 0 1px var(--gold), var(--s-gold);
+}
+
+.selectCardEmoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.selectCardLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--t-1);
+}
+
+.selectCardDesc {
+  font-size: 0.75rem;
+  color: var(--t-2);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+/* ---- Checkmark overlay for selected cards ---- */
+
+.checkmark {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--gold);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  z-index: 3;
+  animation: scaleCheckIn 0.25s var(--ease-spring) forwards;
+}
+
+@keyframes scaleCheckIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* ---- STEP 1: Quando e Quanto Tempo ---- */
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.monthCard {
+  composes: selectCard;
+  padding: var(--space-3) var(--space-2);
+  gap: var(--space-1);
+}
+
+.monthCard .selectCardEmoji {
+  font-size: 1.4rem;
+}
+
+.durationGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.durationCard {
+  composes: selectCard;
+  padding: var(--space-3) var(--space-2);
+}
+
+/* ---- STEP 2: Partida e Viajantes ---- */
+
+.inputWrapper {
+  position: relative;
+  margin-bottom: var(--space-6);
+}
+
+.textInput {
+  width: 100%;
+  background: var(--bg-3);
+  border: 1.5px solid var(--b-1);
+  border-radius: var(--r-md);
+  color: var(--t-1);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: var(--space-4);
+  min-height: 48px;
+  transition: border-color var(--t-base) var(--ease);
+}
+
+.textInput::placeholder {
+  color: var(--t-3);
+}
+
+.textInput:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+.autocompleteDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--b-2);
+  border-radius: var(--r-md);
+  margin-top: var(--space-1);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 20;
+  box-shadow: var(--s-2);
+}
+
+.autocompleteItem {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--t-1);
+  transition: background var(--t-fast) var(--ease);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.autocompleteItem:hover {
+  background: var(--bg-3);
+}
+
+.autocompleteItem:not(:last-child) {
+  border-bottom: 1px solid var(--b-1);
+}
+
+/* Travelers stepper */
+
+.travelersRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-3);
+  border: 1px solid var(--b-1);
+  border-radius: var(--r-md);
+  padding: var(--space-4) var(--space-5);
+}
+
+.travelersLabel {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--t-1);
+  font-size: 1rem;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.stepperBtn {
+  background: var(--bg-4);
+  border: 1px solid var(--b-2);
+  color: var(--t-1);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 600;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.stepperBtn:hover {
+  background: var(--bg-2);
+  border-color: var(--gold);
+}
+
+.stepperBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stepperValue {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--t-1);
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--font-body);
+}
+
+/* ---- STEP 3: Orçamento ---- */
+
+.budgetToggle {
+  display: flex;
+  gap: 0;
+  background: var(--bg-3);
+  border-radius: var(--r-full);
+  padding: 3px;
+  margin-bottom: var(--space-5);
+  border: 1px solid var(--b-1);
+}
+
+.budgetPill {
+  flex: 1;
+  text-align: center;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--t-2);
+  background: transparent;
+  border: none;
+  min-height: 44px;
+  transition:
+    background var(--t-base) var(--ease),
+    color var(--t-fast) var(--ease),
+    box-shadow var(--t-base) var(--ease);
+}
+
+.budgetPill.active {
+  background: linear-gradient(135deg, var(--gold), var(--coral));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(212, 168, 67, 0.3);
+}
+
+.budgetGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.budgetCard {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  background: var(--bg-3);
+  border: 1.5px solid var(--b-1);
+  border-radius: var(--r-md);
+  padding: var(--space-5);
+  cursor: pointer;
+  min-height: 80px;
+  transition:
+    border-color var(--t-base) var(--ease),
+    background-color var(--t-base) var(--ease),
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-base) var(--ease);
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.budgetCard:hover {
+  border-color: var(--b-gold);
+  background: var(--bg-4);
+  transform: translateY(-2px);
+}
+
+.budgetCard.selected {
+  border-color: var(--gold);
+  background: rgba(212, 168, 67, 0.1);
+  box-shadow: 0 0 0 1px var(--gold), var(--s-gold);
+}
+
+.budgetCardIcon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.budgetCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.budgetCardName {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--t-1);
+}
+
+.budgetCardRange {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--gold-light);
+}
+
+.budgetCardDesc {
+  font-size: 0.8rem;
+  color: var(--t-2);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* ---- STEP 4: Estilo de Viagem ---- */
+
+.styleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.styleCard {
+  composes: selectCard;
+  padding: var(--space-4) var(--space-3);
+  gap: var(--space-2);
+  min-height: 88px;
+}
+
+.styleCard .selectCardEmoji {
+  font-size: 1.8rem;
+}
+
+/* ---- STEP 5: Preferências ---- */
+
+.preferencesSection {
+  margin-bottom: var(--space-6);
+}
+
+.preferencesSection:last-child {
+  margin-bottom: 0;
+}
+
+.preferencesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+.preferenceCard {
+  composes: selectCard;
+  padding: var(--space-3);
+  gap: var(--space-1);
+  min-height: 64px;
+}
+
+.preferenceCard .selectCardEmoji {
+  font-size: 1.3rem;
+}
+
+.preferenceCard .selectCardLabel {
+  font-size: 0.8rem;
+}
+
+/* Avoid chips — multi-select with wrapping layout */
+
+.chipsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-3);
+  border: 1.5px solid var(--b-1);
+  border-radius: var(--r-full);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--t-2);
+  min-height: 40px;
+  transition:
+    border-color var(--t-base) var(--ease),
+    background-color var(--t-base) var(--ease),
+    color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+  appearance: none;
+}
+
+.chip:hover {
+  border-color: var(--b-gold);
+  color: var(--t-1);
+  transform: translateY(-1px);
+}
+
+.chip.selected {
+  border-color: var(--gold);
+  background: rgba(212, 168, 67, 0.12);
+  color: var(--gold-light);
+}
+
+.chipEmoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ---- STEP 6: Informações Adicionais ---- */
+
+.exampleChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.exampleChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--bg-3);
+  border: 1px solid var(--b-1);
+  border-radius: var(--r-full);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--t-2);
+  min-height: 36px;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+  appearance: none;
+}
+
+.exampleChip:hover {
+  background: var(--bg-4);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 120px;
+  background: var(--bg-3);
+  border: 1.5px solid var(--b-1);
+  border-radius: var(--r-md);
+  color: var(--t-1);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: var(--space-4);
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color var(--t-base) var(--ease);
+}
+
+.textarea::placeholder {
+  color: var(--t-3);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+/* ---- Navigation Footer ---- */
+
+.wizardFooter {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--b-2);
+  gap: var(--space-4);
+}
+
+.nextBtn {
+  background: linear-gradient(135deg, var(--gold), var(--coral));
+  border: none;
+  color: #fff;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  min-height: 48px;
+  position: relative;
+  overflow: hidden;
+  transition:
+    opacity var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-base) var(--ease);
+  box-shadow: 0 4px 15px rgba(212, 168, 67, 0.3);
+}
+
+.nextBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(212, 168, 67, 0.4);
+  filter: brightness(1.05);
+}
+
+.nextBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.backBtn {
+  background: transparent;
+  border: 1px solid var(--b-2);
+  color: var(--t-2);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--r-md);
+  min-height: 48px;
+  transition:
+    color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.backBtn:hover {
+  color: var(--t-1);
+  background: var(--bg-3);
+  border-color: var(--b-gold);
+}
+
+/* Back to hero link at top */
+.backToHero {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--t-3);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: var(--space-5);
+  padding: var(--space-2) 0;
+  border: none;
+  background: none;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.backToHero:hover {
+  color: var(--gold);
+}
+
+/* ==========================================================================
+   Light Theme Overrides
+   ========================================================================== */
+
+:global([data-theme="light"]) .wizardWrapper {
+  background: var(--bg-1);
+}
+
+:global([data-theme="light"]) .wizardContainer {
+  background: var(--bg-2);
+  border-color: var(--b-2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .selectCard {
+  background: var(--bg-3);
+  border-color: var(--b-1);
+}
+
+:global([data-theme="light"]) .selectCard:hover {
+  background: var(--bg-4);
+}
+
+:global([data-theme="light"]) .selectCard.selected {
+  background: rgba(212, 168, 67, 0.08);
+}
+
+:global([data-theme="light"]) .textInput {
+  background: var(--bg-3);
+  border-color: var(--b-1);
+}
+
+:global([data-theme="light"]) .autocompleteDropdown {
+  background: var(--bg-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .budgetCard {
+  background: var(--bg-3);
+}
+
+:global([data-theme="light"]) .budgetCard:hover {
+  background: var(--bg-4);
+}
+
+:global([data-theme="light"]) .budgetCard.selected {
+  background: rgba(212, 168, 67, 0.06);
+}
+
+:global([data-theme="light"]) .chip {
+  background: var(--bg-3);
+}
+
+:global([data-theme="light"]) .chip.selected {
+  background: rgba(212, 168, 67, 0.08);
+}
+
+:global([data-theme="light"]) .textarea {
+  background: var(--bg-3);
+}
+
+:global([data-theme="light"]) .budgetToggle {
+  background: var(--bg-3);
+}
+
+:global([data-theme="light"]) .travelersRow {
+  background: var(--bg-3);
+}
+
+:global([data-theme="light"]) .stepperBtn {
+  background: var(--bg-4);
+}
+
+/* ==========================================================================
+   Mobile Responsive — 768px breakpoint
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .wizardWrapper {
+    padding: 0;
+    align-items: stretch;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .wizardContainer {
+    max-width: 100%;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: var(--space-5) var(--space-4);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .progressBarWrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    z-index: 100;
+  }
+
+  .stepTitle {
+    font-size: 1.5rem;
+  }
+
+  .stepSubtitle {
+    font-size: 0.9rem;
+  }
+
+  /* Month grid: 3 columns on mobile */
+  .monthGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  /* Duration grid: 2 columns on mobile */
+  .durationGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  /* Style grid: 2 columns on mobile */
+  .styleGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  /* Preferences grid: 2 columns on mobile */
+  .preferencesGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  /* Budget cards */
+  .budgetCard {
+    padding: var(--space-4);
+  }
+
+  .budgetCardName {
+    font-size: 0.95rem;
+  }
+
+  .budgetCardRange {
+    font-size: 0.8rem;
+  }
+
+  /* Footer: stack buttons vertically */
+  .wizardFooter {
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: auto;
+    padding-top: var(--space-4);
+  }
+
+  .nextBtn {
+    width: 100%;
+    min-height: 56px;
+    font-size: 1.05rem;
+    border-radius: var(--r-md);
+  }
+
+  .backBtn {
+    width: 100%;
+    min-height: 48px;
+    text-align: center;
+    border-radius: var(--r-md);
+  }
+
+  /* Chips smaller */
+  .chip {
+    font-size: 0.8rem;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .exampleChip {
+    font-size: 0.75rem;
+    padding: var(--space-1) var(--space-3);
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .monthGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .monthCard {
+    padding: var(--space-2);
+  }
+
+  .selectCardEmoji {
+    font-size: 1.2rem;
+  }
+
+  .selectCardLabel {
+    font-size: 0.8rem;
+  }
+
+  .styleCard .selectCardEmoji {
+    font-size: 1.4rem;
+  }
+}

@@ -90,9 +90,10 @@
 
 .title {
   font-size: 4.5rem;
-  line-height: 1.1;
+  line-height: 1.05;
   font-family: var(--font-display);
   font-weight: 700;
+  letter-spacing: -0.03em;
   margin-bottom: 24px;
   color: var(--t-1);
 }
@@ -114,10 +115,13 @@
 }
 
 .subtitle {
-  font-size: 1.25rem;
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 400;
   color: var(--t-2);
   margin-bottom: var(--space-4);
-  line-height: 1.6;
+  line-height: 1.65;
+  letter-spacing: 0.005em;
 }
 
 .statsBar {
@@ -145,38 +149,57 @@
 
 .searchForm {
   position: relative;
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--r-full);
-  padding: 8px 8px 8px 24px;
-  transition: all 200ms var(--ease);
-  gap: var(--space-2);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: rgba(12, 18, 30, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 20px;
+  transition: all 300ms var(--ease);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="light"] .searchForm {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
 }
 
 .searchForm.focused {
   border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(212, 168, 67, 0.15), var(--s-gold);
-  background: rgba(255, 255, 255, 0.15);
-}
-
-[data-theme="light"] .searchForm.focused {
-  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 4px rgba(212, 168, 67, 0.12), 0 20px 45px rgba(0, 0, 0, 0.4);
 }
 
 .searchField {
-  flex: 1 1 220px;
+  grid-column: span 2;
   display: flex;
   align-items: center;
-  min-width: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 2px 16px;
+  height: 52px;
+  transition: all 250ms var(--ease);
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .searchField {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.searchField:focus-within {
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 1px rgba(212, 168, 67, 0.3);
+}
+
+[data-theme="light"] .searchField:focus-within {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--gold);
 }
 
 .searchField svg {
@@ -189,60 +212,112 @@
   background: transparent;
   border: none;
   color: var(--t-1);
-  padding: 12px 16px;
-  font-size: 1.125rem;
+  padding: 12px 12px;
+  font-size: 1rem;
   font-family: var(--font-body);
   min-width: 0;
-  font-size: 16px;
-}
-
-.compactInput {
-  flex: 0 0 144px;
-  height: 48px;
-  min-width: 120px;
-  border-radius: var(--r-full);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--t-1);
-  padding: 0 14px;
-  font-size: 16px;
-}
-
-[data-theme="light"] .compactInput {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.8);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-.searchInput::placeholder {
-  color: var(--t-3);
+  outline: none;
 }
 
 [data-theme="light"] .searchInput {
   color: var(--text-primary);
 }
 
+.searchInput::placeholder {
+  color: var(--t-3);
+}
+
+.compactInput {
+  width: 100%;
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--t-1);
+  padding: 0 16px;
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: all 250ms var(--ease);
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .compactInput {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.compactInput:focus {
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .compactInput:focus {
+  background: rgba(255, 255, 255, 1);
+  border-color: var(--gold);
+}
+
+/* Custom indicator for Webkit Date Picker */
+.compactInput::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.8) sepia(50%) saturate(1000%) hue-rotate(330deg);
+  opacity: 0.7;
+  transition: opacity 150ms ease;
+}
+
+.compactInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+[data-theme="light"] .compactInput::-webkit-calendar-picker-indicator {
+  filter: sepia(50%) saturate(1000%) hue-rotate(330deg);
+}
+
+/* Custom styling for Travelers Dropdown Select */
+select.compactInput {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23d4a843' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
 .searchButton {
+  grid-column: span 2;
   background: linear-gradient(135deg, var(--gold) 0%, var(--coral) 100%);
-  color: var(--bg-0);
-  font-weight: 600;
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--r-full);
-  transition: all 150ms var(--ease);
-  min-width: 170px;
+  color: #080c14;
+  font-weight: 700;
+  height: 52px;
+  border-radius: 14px;
+  border: none;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  transition: all 250ms var(--ease);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .searchButton:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: var(--s-coral);
+  box-shadow: 0 8px 20px rgba(235, 116, 83, 0.25);
+}
+
+.searchButton:active {
+  transform: translateY(0);
 }
 
 .autocomplete {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
+  top: 76px;
+  left: 20px;
+  right: 20px;
   background: var(--bg-2);
   border: 1px solid var(--b-1);
   border-radius: var(--r-lg);
@@ -481,18 +556,30 @@
   }
 
   .searchForm {
-    flex-direction: column;
-    padding: 8px;
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 10px;
     border-radius: var(--r-xl);
-    gap: 8px;
-    background: rgba(255,255,255,0.15);
   }
 
   .searchField,
   .compactInput,
   .searchButton {
+    grid-column: span 1;
     width: 100%;
-    flex: none;
+  }
+
+  .searchField {
+    height: 48px;
+  }
+
+  .compactInput {
+    height: 48px;
+  }
+
+  .searchButton {
+    height: 50px;
+    border-radius: 12px;
   }
 
   .searchInput {
@@ -505,10 +592,10 @@
     margin-left: 10px;
   }
 
-  .searchButton {
-    width: 100%;
-    border-radius: var(--r-lg);
-    min-height: 56px;
+  .autocomplete {
+    top: 68px;
+    left: 16px;
+    right: 16px;
   }
 
   .statsBar span {

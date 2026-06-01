@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   z-index: var(--z-sticky);
-  padding: var(--space-5) 0;
+  padding: 28px 0;
   transition: background 300ms cubic-bezier(0.4, 0, 0.2, 1),
               padding 300ms cubic-bezier(0.4, 0, 0.2, 1),
               border-bottom 300ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -18,7 +18,7 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: var(--space-4) 0;
+  padding: 20px 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -29,13 +29,14 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--space-6);
+  height: 56px;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-weight: 700;
   font-size: var(--text-xl);
   color: #ffffff;
@@ -58,17 +59,23 @@
 .links {
   display: flex;
   align-items: center;
-  gap: var(--space-12); /* Increased gap to spread items out */
+  gap: var(--space-12);
+  height: 100%;
 }
 
 .link {
-  font-family: var(--font-heading);
-  font-size: var(--text-base); /* Increased from text-sm */
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
   transition: color var(--transition-fast);
   position: relative;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  line-height: 1;
 }
 
 .link::after {
@@ -77,7 +84,7 @@
   bottom: -4px;
   left: 0;
   width: 0;
-  height: 2px;
+  height: 1px;
   background: var(--gold, #D4A843);
   border-radius: var(--radius-full);
   transition: width var(--transition-base);
@@ -121,11 +128,12 @@
 }
 
 .loginBtn {
-  font-family: var(--font-heading);
-  font-size: var(--text-base); /* Increased from text-sm */
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.75);
   padding: var(--space-2) var(--space-4);
+  letter-spacing: 0.01em;
   transition: color var(--transition-fast);
 }
 
@@ -134,8 +142,8 @@
 }
 
 .ctaBtn {
-  font-family: var(--font-heading);
-  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
   font-weight: 600;
   color: #ffffff;
   background: linear-gradient(135deg, var(--gold, #D4A843) 0%, var(--coral, #FF6B6B) 100%);
@@ -144,6 +152,8 @@
   transition: all var(--transition-base);
   box-shadow: 0 4px 15px rgba(212, 168, 83, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .ctaBtn:hover {

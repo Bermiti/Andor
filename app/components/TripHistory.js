@@ -1,6 +1,7 @@
 'use client';
 import { useMemo } from 'react';
 import styles from './TripHistory.module.css';
+import { useTranslations } from '../context/LanguageContext';
 
 // Country name to code mapping (subset for matching trip destinations)
 const COUNTRY_NAMES = {
@@ -49,14 +50,16 @@ const COUNTRY_NAMES = {
 function getCountryCodeFromDestination(destination) {
   if (!destination) return null;
   const lower = destination.toLowerCase();
-  // Try exact match first, then partial match
   for (const [name, code] of Object.entries(COUNTRY_NAMES)) {
     if (lower.includes(name)) return code;
   }
   return null;
 }
 
-function TripCard({ trip }) {
+function TripCard({ trip, t }) {
+  const stopsLabel = (n) => `${n} ${t('stops')}`;
+  const daysLabel = (n) => `${n} ${n === 1 ? t('day') : t('days')}`;
+
   return (
     <div className={styles.tripCard}>
       <div className={styles.tripCardHeader}>
@@ -66,14 +69,14 @@ function TripCard({ trip }) {
             <h3 className={styles.destName}>{trip.destination || trip.title || 'Trip'}</h3>
             {trip.savedAt && (
               <span className={styles.destDate}>
-                {new Date(trip.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                {new Date(trip.savedAt).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             )}
           </div>
         </div>
         <div className={styles.tripMeta}>
           {trip.days && (
-            <span className={styles.metaTag}>📅 {trip.days.length} {trip.days.length === 1 ? 'day' : 'days'}</span>
+            <span className={styles.metaTag}>📅 {daysLabel(trip.days.length)}</span>
           )}
           {trip.totalCost && (
             <span className={styles.metaTag}>💰 {trip.totalCost}</span>
@@ -95,7 +98,7 @@ function TripCard({ trip }) {
               <summary className={styles.daySummary}>
                 <span className={styles.dayDot}></span>
                 <span className={styles.dayTitle}>{day.title}</span>
-                <span className={styles.dayStopCount}>{day.stops?.length || 0} stops</span>
+                <span className={styles.dayStopCount}>{stopsLabel(day.stops?.length || 0)}</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}>
                   <path d="m6 9 6 6 6-6" />
                 </svg>
@@ -120,7 +123,7 @@ function TripCard({ trip }) {
       {trip.id && (
         <div className={styles.tripActions}>
           <a href={`/itinerary/${trip.id}`} className={styles.viewBtn}>
-            View Full Itinerary →
+            {t('viewFullItinerary')}
           </a>
         </div>
       )}
@@ -129,6 +132,8 @@ function TripCard({ trip }) {
 }
 
 export default function TripHistory({ trips = [], visitedCountries = [] }) {
+  const t = useTranslations('myTrips');
+
   const { completed, planned } = useMemo(() => {
     const completed = [];
     const planned = [];
@@ -155,19 +160,17 @@ export default function TripHistory({ trips = [], visitedCountries = [] }) {
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
               </svg>
-              Travel Journal
+              {t('journalBadge')}
             </span>
-            <h2 className={styles.title}>Your Trip Itineraries</h2>
-            <p className={styles.subtitle}>
-              All your planned trips and travel memories in one place.
-            </p>
+            <h2 className={styles.title}>{t('journalTitle')}</h2>
+            <p className={styles.subtitle}>{t('journalSubtitle')}</p>
           </div>
         </div>
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>✈️</div>
-          <h3 className={styles.emptyTitle}>No itineraries yet</h3>
+          <h3 className={styles.emptyTitle}>{t('noItineraries')}</h3>
           <p className={styles.emptyText}>
-            Create an itinerary on the <a href="/#planner" className={styles.link}>AI Planner</a> and save it to see it here.
+            {t('noItinerariesText')}
           </p>
         </div>
       </section>
@@ -183,12 +186,10 @@ export default function TripHistory({ trips = [], visitedCountries = [] }) {
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
-            Travel Journal
+            {t('journalBadge')}
           </span>
-          <h2 className={styles.title}>Your Trip Itineraries</h2>
-          <p className={styles.subtitle}>
-            All your planned trips and travel memories in one place.
-          </p>
+          <h2 className={styles.title}>{t('journalTitle')}</h2>
+          <p className={styles.subtitle}>{t('journalSubtitle')}</p>
         </div>
       </div>
 
@@ -197,19 +198,19 @@ export default function TripHistory({ trips = [], visitedCountries = [] }) {
         <div className={styles.column}>
           <div className={styles.columnHeader}>
             <span className={styles.columnIcon}>✅</span>
-            <h3 className={styles.columnTitle}>Completed</h3>
+            <h3 className={styles.columnTitle}>{t('completed')}</h3>
             <span className={styles.columnCount}>{completed.length}</span>
           </div>
-          <p className={styles.columnDesc}>Trips you have already made — countries marked on your globe.</p>
+          <p className={styles.columnDesc}>{t('completedDesc')}</p>
 
           {completed.length === 0 ? (
             <div className={styles.columnEmpty}>
-              <p>Add countries to your globe to move trips here.</p>
+              <p>{t('completedEmpty')}</p>
             </div>
           ) : (
             <div className={styles.tripList}>
               {completed.map((trip, i) => (
-                <TripCard key={trip.id || i} trip={trip} />
+                <TripCard key={trip.id || i} trip={trip} t={t} />
               ))}
             </div>
           )}
@@ -219,19 +220,19 @@ export default function TripHistory({ trips = [], visitedCountries = [] }) {
         <div className={styles.column}>
           <div className={styles.columnHeader}>
             <span className={styles.columnIcon}>📋</span>
-            <h3 className={styles.columnTitle}>Planned</h3>
+            <h3 className={styles.columnTitle}>{t('planned')}</h3>
             <span className={styles.columnCount}>{planned.length}</span>
           </div>
-          <p className={styles.columnDesc}>Saved itineraries for destinations you haven't visited yet.</p>
+          <p className={styles.columnDesc}>{t('plannedDesc')}</p>
 
           {planned.length === 0 ? (
             <div className={styles.columnEmpty}>
-              <p>All your trips have been completed! 🎉</p>
+              <p>{t('plannedEmpty')}</p>
             </div>
           ) : (
             <div className={styles.tripList}>
               {planned.map((trip, i) => (
-                <TripCard key={trip.id || i} trip={trip} />
+                <TripCard key={trip.id || i} trip={trip} t={t} />
               ))}
             </div>
           )}
