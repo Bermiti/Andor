@@ -63,6 +63,54 @@ test.describe('Launch mobile regression suite', () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  test('build trip page opens the creation wizard on mobile', async ({ page, baseURL }) => {
+    await page.goto(`${baseURL}/itineraries`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: /Constrói a tua viagem/i })).toBeVisible();
+    await page.getByTestId('build-trip-destination').fill('Lisboa');
+    await expectNoHorizontalOverflow(page);
+    await page.getByTestId('build-trip-primary').click();
+    await expect(page.getByTestId('creation-wizard')).toBeVisible();
+    await expect(page.getByTestId('wizard-destination-input')).toHaveValue('Lisboa');
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('destination plan CTA opens the creation wizard', async ({ page, baseURL }) => {
+    await page.goto(`${baseURL}/itineraries`, { waitUntil: 'domcontentloaded' });
+    await page.getByTestId('plan-lisboa').click();
+    await expect(page.getByTestId('creation-wizard')).toBeVisible();
+    await expect(page.getByTestId('wizard-destination-input')).toHaveValue('Lisboa, Portugal');
+  });
+
+  test('my journey lists saved generated trips', async ({ page, baseURL }) => {
+    const savedTrip = {
+      id: 'gen-journey-test',
+      destination: 'Lisboa, Portugal',
+      savedAt: '2026-05-29T10:00:00.000Z',
+      style: 'Cultural',
+      totalCost: '€320',
+      days: [
+        {
+          title: 'Dia 1 — Alfama e Belém',
+          stops: [
+            { time: '09:00', name: 'Miradouro da Graça', type: 'Vista' },
+            { time: '12:30', name: 'Pastéis de Belém', type: 'Pausa local' },
+          ],
+        },
+      ],
+    };
+
+    await page.addInitScript((trip) => {
+      localStorage.setItem('andor_saved_trips', JSON.stringify([trip]));
+      localStorage.setItem(`andor_itinerary_${trip.id}`, JSON.stringify(trip));
+    }, savedTrip);
+
+    await page.goto(`${baseURL}/my-trips`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: /A tua jornada/i })).toBeVisible();
+    await expect(page.getByText('Lisboa, Portugal')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Ver roteiro completo/i })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
   test('shared itinerary core interactions are mobile-safe', async ({ page, baseURL }) => {
     await openFixtureItinerary(page, baseURL);
     await expect(page.getByTestId('day-tabs')).toBeVisible();
@@ -104,7 +152,9 @@ test.describe('Launch mobile regression suite', () => {
 
   test('chat opens fullscreen-like on mobile and keeps input usable', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
-    await page.getByTestId('floating-ai-toggle').click();
+    const toggle = page.getByTestId('floating-ai-toggle');
+    await toggle.waitFor({ state: 'visible', timeout: 15000 });
+    await toggle.click();
     await expect(page.getByTestId('floating-ai-chat')).toBeVisible();
     await expect(page.getByTestId('floating-ai-input')).toBeVisible();
     await expect(page.getByTestId('floating-ai-send')).toBeVisible();

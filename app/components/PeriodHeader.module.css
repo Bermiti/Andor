@@ -1,0 +1,78 @@
+.periodHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-3);
+  padding: 0 var(--space-4);
+}
+
+.periodLine {
+  flex: 1;
+  height: 1px;
+  background: var(--b-1);
+}
+
+.periodContent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--b-1);
+}
+
+.period-morning .periodContent {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.period-afternoon .periodContent {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.period-evening .periodContent {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.periodEmoji {
+  font-size: 16px;
+}
+
+.periodLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--t-2);
+}
+
+.periodTime {
+  font-size: 11px;
+  color: var(--t-3);
+  margin-left: var(--space-1);
+  font-family: var(--font-mono);
+}
+
+[data-theme="light"] .periodContent {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .periodLabel {
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .periodHeader {
+    margin: var(--space-4) 0 var(--space-2);
+    padding: 0 var(--space-3);
+  }
+
+  .periodContent {
+    padding: 5px 10px;
+  }
+
+  .periodLabel {
+    font-size: 9px;
+  }
+}

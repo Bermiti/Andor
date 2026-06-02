@@ -35,7 +35,7 @@
 
 .heroOverlay {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-content);
   width: 100%;
   min-height: 100%;
   display: flex;
@@ -106,7 +106,7 @@
   pointer-events: none;
   transform: translateY(8px);
   transition: opacity 180ms var(--ease), transform 180ms var(--ease);
-  z-index: 5;
+  z-index: calc(var(--z-content) + 4);
 }
 
 .scoreBadge:hover .scorePopover,
@@ -476,7 +476,7 @@
   bottom: max(20px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   width: min(820px, calc(100vw - 32px));
-  z-index: 80;
+  z-index: var(--z-sticky);
   border-radius: 999px;
   border: 1px solid rgba(245, 208, 111, 0.34);
   background: rgba(7, 12, 20, 0.88);

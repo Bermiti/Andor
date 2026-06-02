@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 96px;
   right: 24px;
-  z-index: 140;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -40,7 +40,7 @@
   border-radius: 50%;
   background-color: #22c55e;
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
 }
 
 .dotPulse {

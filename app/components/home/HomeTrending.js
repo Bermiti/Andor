@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Image from 'next/image';
 import styles from './HomeTrending.module.css';
 import { destinationsData } from '../../lib/destinations';
 
@@ -104,7 +105,16 @@ export default function HomeTrending({ onOpenWizard }) {
             {destinationsData.slice(0, 12).map((dest, i) => (
               <article key={`${dest.name}-${dest.country}`} className={`${styles.card} card-interactive`} style={{ animationDelay: `${i * 0.08}s` }}>
                 <div className={styles.imgWrapper}>
-                  <img src={dest.img} alt={`${dest.name}, ${dest.country}`} width="600" height="800" loading="lazy" decoding="async" />
+                  <Image 
+                    src={dest.img} 
+                    alt={`${dest.name}, ${dest.country}`} 
+                    width={600}
+                    height={800}
+                    loading="lazy"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    quality={85}
+                    className={styles.gridImg}
+                  />
                   <div className={styles.scoreBadge} aria-label={`Andor Score ${dest.score} de 100`}>
                     <span>{dest.score}</span>
                     <small>/100</small>
@@ -150,7 +160,16 @@ export default function HomeTrending({ onOpenWizard }) {
                   {msg.destinations.map((dest, i) => (
                     <article key={`res-${dest.name}-${i}`} className={`${styles.card} card-interactive`} style={{ animationDelay: `${i * 0.05}s` }}>
                       <div className={styles.imgWrapper}>
-                        <img src={dest.img} alt={`${dest.name}, ${dest.country}`} width="600" height="800" loading="lazy" decoding="async" />
+                        <Image 
+                          src={dest.img} 
+                          alt={`${dest.name}, ${dest.country}`} 
+                          width={600}
+                          height={800}
+                          loading="lazy"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          quality={85}
+                          className={styles.gridImg}
+                        />
                         <div className={styles.scoreBadge}>
                           <span>{dest.score}</span><small>/100</small>
                         </div>

@@ -1,0 +1,397 @@
+/* ================================================
+   PREMIUM DAY CARD STYLES
+   Hero-first, energy-focused design
+   ================================================ */
+
+.dayCard {
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.dayCard:hover {
+  border-color: var(--b-gold);
+  box-shadow: 0 12px 32px rgba(212, 168, 67, 0.1);
+}
+
+.dayCard.expanded {
+  box-shadow: var(--s-2);
+}
+
+/* ── HERO SECTION ── */
+.heroSection {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+}
+
+.heroImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--bg-1) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerAnim 2s infinite;
+}
+
+@keyframes shimmerAnim {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 200ms;
+}
+
+.heroImage:hover .image {
+  transform: scale(1.02);
+}
+
+.heroGradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.3) 60%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+}
+
+/* ── HERO CONTENT (Overlay) ── */
+.heroContent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 32px 24px;
+  z-index: calc(var(--z-content) + 1);
+}
+
+.dayLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dayNumber {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(212, 168, 67, 0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(212, 168, 67, 0.5);
+}
+
+.dayEmoji {
+  font-size: 24px;
+}
+
+.dayTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.dayMood {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 16px 0;
+  max-width: 500px;
+}
+
+/* Day Highlights */
+.highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.highlight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+}
+
+.highlightDot {
+  color: var(--gold);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── TOGGLE BUTTON ── */
+.toggleButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: all 200ms;
+  z-index: var(--z-content);
+  backdrop-filter: blur(8px);
+}
+
+.toggleButton:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.dayCard.expanded .toggleButton svg {
+  transform: rotate(180deg);
+}
+
+/* ── STATS BAR ── */
+.statsBar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1px;
+  background: var(--border, rgba(240, 237, 230, 0.08));
+  border-top: 1px solid var(--b-1);
+  border-bottom: 1px solid var(--b-1);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--b-1);
+}
+
+.stat:last-child {
+  border-right: none;
+}
+
+.statIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.statValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t-1);
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--t-3);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* ── ENERGY VISUALIZATION ── */
+.energyVisualization {
+  padding: 20px 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.05) 0%,
+    rgba(59, 130, 246, 0.05) 100%
+  );
+  border-top: 1px solid var(--b-1);
+  border-bottom: 1px solid var(--b-1);
+}
+
+.energyLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--t-3);
+  margin-bottom: 12px;
+}
+
+.energyChart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 64px;
+  gap: 6px;
+}
+
+.energyBar {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  background: var(--gold);
+  min-height: 20%;
+  transition: all 200ms;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.energyBar:hover {
+  opacity: 0.8;
+  transform: scaleY(1.05);
+}
+
+.energyMeta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--t-3);
+  font-weight: 500;
+}
+
+/* ── PERIOD BREAKDOWN ── */
+.periodBreakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  background: var(--b-1);
+  border-top: 1px solid var(--b-1);
+  padding: 1px;
+}
+
+.periodItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-2);
+  border-left: 3px solid var(--gold);
+}
+
+.periodIcon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.periodInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.periodTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t-1);
+}
+
+.periodCount {
+  font-size: 11px;
+  color: var(--t-3);
+  font-weight: 500;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .heroSection {
+    height: 200px;
+  }
+
+  .dayTitle {
+    font-size: 22px;
+  }
+
+  .statsBar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat {
+    border-right: 1px solid var(--b-1);
+    border-bottom: 1px solid var(--b-1);
+  }
+
+  .stat:nth-child(odd) {
+    border-right: 1px solid var(--b-1);
+  }
+
+  .stat:nth-child(even) {
+    border-right: none;
+  }
+
+  .energyChart {
+    height: 48px;
+  }
+
+  .periodBreakdown {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroSection {
+    height: 180px;
+  }
+
+  .heroContent {
+    padding: 20px 16px;
+  }
+
+  .dayTitle {
+    font-size: 20px;
+  }
+
+  .dayMood {
+    font-size: 12px;
+  }
+
+  .statsBar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .statValue {
+    font-size: 13px;
+  }
+
+  .statLabel {
+    font-size: 10px;
+  }
+}

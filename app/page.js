@@ -7,7 +7,6 @@ import CtaFinal from './components/CtaFinal';
 import Footer from './components/Footer';
 import OnboardingModal from './components/OnboardingModal';
 import CreationWizard from './components/CreationWizard';
-import SplashScreen from './components/SplashScreen';
 
 export default function Home() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -58,7 +57,6 @@ export default function Home() {
 
   return (
     <>
-      <SplashScreen />
       <OnboardingModal />
       <Navbar />
       <main className="overflow-hidden" style={{ width: '100%', maxWidth: '100vw' }}>

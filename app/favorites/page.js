@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { MapPin, Ticket, Map } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
 import { trackEvent } from '../lib/analytics';
 import styles from './favorites.module.css';
 
@@ -15,6 +18,7 @@ export default function FavoritesPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmDeleteType, setConfirmDeleteType] = useState(null); // 'dest', 'act', 'itinerary'
   const [showCompare, setShowCompare] = useState(false);
+  const { success } = useToast();
 
   useEffect(() => {
     document.title = "Os Meus Favoritos · Andor";
@@ -137,6 +141,8 @@ export default function FavoritesPage() {
     setFavDestinations(updated);
     localStorage.setItem('andor_favorite_destinations', JSON.stringify(updated));
     setConfirmDeleteId(null);
+    setConfirmDeleteType(null);
+    success('Destino removido dos favoritos.');
     trackEvent('favorite_removed', { type: 'destination', slug });
   };
 
@@ -145,6 +151,8 @@ export default function FavoritesPage() {
     setFavActivities(updated);
     localStorage.setItem('andor_favorite_activities', JSON.stringify(updated));
     setConfirmDeleteId(null);
+    setConfirmDeleteType(null);
+    success('Atividade removida dos favoritos.');
     trackEvent('favorite_removed', { type: 'activity', id });
   };
 
@@ -166,6 +174,8 @@ export default function FavoritesPage() {
       } catch (e) {}
     }
     setConfirmDeleteId(null);
+    setConfirmDeleteType(null);
+    success('Itinerário eliminado.');
     trackEvent('favorite_removed', { type: 'itinerary', id });
   };
 
@@ -226,6 +236,39 @@ export default function FavoritesPage() {
     acc[city].push(act);
     return acc;
   }, {});
+
+  const requestRemove = (id, type) => {
+    setConfirmDeleteId(id);
+    setConfirmDeleteType(type);
+  };
+
+  const confirmRemove = () => {
+    if (confirmDeleteType === 'dest') handleRemoveDestination(confirmDeleteId);
+    if (confirmDeleteType === 'act') handleRemoveActivity(confirmDeleteId);
+    if (confirmDeleteType === 'itinerary') handleRemoveItinerary(confirmDeleteId);
+  };
+
+  const confirmCopy = {
+    dest: {
+      title: 'Remover destino?',
+      description: 'Este destino sai da tua lista de favoritos. Podes guardá-lo novamente mais tarde.',
+      label: 'Remover',
+    },
+    act: {
+      title: 'Remover atividade?',
+      description: 'Esta atividade sai dos favoritos. Esta acção não pode ser desfeita nesta lista.',
+      label: 'Remover',
+    },
+    itinerary: {
+      title: 'Eliminar itinerário?',
+      description: 'Este itinerário será removido dos guardados. Esta acção não pode ser desfeita.',
+      label: 'Eliminar',
+    },
+  }[confirmDeleteType] || {
+    title: 'Remover item?',
+    description: 'Esta acção não pode ser desfeita.',
+    label: 'Remover',
+  };
 
   if (!loaded) {
     return (
@@ -305,29 +348,12 @@ export default function FavoritesPage() {
                         >
                           Criar Itinerário
                         </a>
-                        {confirmDeleteId === dest.slug && confirmDeleteType === 'dest' ? (
-                          <div className={styles.confirmRow}>
-                            <button
-                              onClick={() => handleRemoveDestination(dest.slug)}
-                              className={styles.dangerConfirmBtn}
-                            >
-                              Sim
-                            </button>
-                            <button
-                              onClick={() => { setConfirmDeleteId(null); setConfirmDeleteType(null); }}
-                              className={styles.cancelBtn}
-                            >
-                              Não
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => { setConfirmDeleteId(dest.slug); setConfirmDeleteType('dest'); }}
+                        <button
+                            onClick={() => requestRemove(dest.slug, 'dest')}
                             className={styles.removeBtn}
                           >
                             Remover
                           </button>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -335,10 +361,7 @@ export default function FavoritesPage() {
               </div>
             ) : (
               <div className={styles.emptyState}>
-                <svg className={styles.emptySvg} viewBox="0 0 100 100" width="80" height="80">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(212, 168, 67, 0.2)" strokeWidth="2"/>
-                  <path d="M50 30 C35 15, 15 35, 50 70 C85 35, 65 15, 50 30 Z" fill="rgba(212, 168, 67, 0.1)" stroke="var(--gold)" strokeWidth="2"/>
-                </svg>
+                <MapPin size={48} strokeWidth={1.5} className={styles.emptySvg} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
                 <h3>Nenhum destino nos favoritos</h3>
                 <p>Navega pelas páginas de destinos individuais ou conversa com o Andor para guardares os teus locais favoritos.</p>
                 <a href="/#destinos" className={styles.ctaExplore}>
@@ -377,29 +400,12 @@ export default function FavoritesPage() {
                               >
                                 Ver no itinerário
                               </a>
-                              {confirmDeleteId === act.id && confirmDeleteType === 'act' ? (
-                                <div className={styles.confirmRow}>
-                                  <button
-                                    onClick={() => handleRemoveActivity(act.id)}
-                                    className={styles.dangerConfirmBtn}
-                                  >
-                                    Confirmar
-                                  </button>
-                                  <button
-                                    onClick={() => { setConfirmDeleteId(null); setConfirmDeleteType(null); }}
-                                    className={styles.cancelBtn}
-                                  >
-                                    Não
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => { setConfirmDeleteId(act.id); setConfirmDeleteType('act'); }}
+                              <button
+                                  onClick={() => requestRemove(act.id, 'act')}
                                   className={styles.removeBtn}
                                 >
                                   Remover
                                 </button>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -410,11 +416,7 @@ export default function FavoritesPage() {
               </div>
             ) : (
               <div className={styles.emptyState}>
-                <svg className={styles.emptySvg} viewBox="0 0 100 100" width="80" height="80">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(212, 168, 67, 0.2)" strokeWidth="2"/>
-                  <path d="M30 40 L50 60 L70 40" fill="none" stroke="var(--gold)" strokeWidth="3" strokeLinecap="round"/>
-                  <rect x="40" y="30" width="20" height="15" rx="3" fill="none" stroke="var(--gold)" strokeWidth="2"/>
-                </svg>
+                <Ticket size={48} strokeWidth={1.5} className={styles.emptySvg} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
                 <h3>Nenhuma atividade nos favoritos</h3>
                 <p>Abra os seus itinerários criados e guarde as atividades que mais lhe interessarem para mais tarde.</p>
                 <button
@@ -468,29 +470,12 @@ export default function FavoritesPage() {
                       >
                         Duplicar
                       </button>
-                      {confirmDeleteId === itin.id && confirmDeleteType === 'itinerary' ? (
-                        <div className={styles.confirmRow}>
-                          <button
-                            onClick={() => handleRemoveItinerary(itin.id)}
-                            className={styles.dangerConfirmBtn}
-                          >
-                            Eliminar
-                          </button>
-                          <button
-                            onClick={() => { setConfirmDeleteId(null); setConfirmDeleteType(null); }}
-                            className={styles.cancelBtn}
-                          >
-                            Não
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => { setConfirmDeleteId(itin.id); setConfirmDeleteType('itinerary'); }}
+                      <button
+                          onClick={() => requestRemove(itin.id, 'itinerary')}
                           className={styles.removeBtn}
                         >
                           Apagar
                         </button>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -498,11 +483,7 @@ export default function FavoritesPage() {
               </>
             ) : (
               <div className={styles.emptyState}>
-                <svg className={styles.emptySvg} viewBox="0 0 100 100" width="80" height="80">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(212, 168, 67, 0.2)" strokeWidth="2"/>
-                  <path d="M35 30 H65 V70 H35 Z" fill="none" stroke="var(--gold)" strokeWidth="2"/>
-                  <path d="M45 40 H55 M45 50 H55 M45 60 H55" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
+                <Map size={48} strokeWidth={1.5} className={styles.emptySvg} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
                 <h3>Nenhum itinerário guardado</h3>
                 <p>Utilize o nosso assistente AI ou o configurador para criar e guardar o seu itinerário ideal.</p>
                 <a href="/" className={styles.ctaExplore}>
@@ -538,6 +519,18 @@ export default function FavoritesPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={Boolean(confirmDeleteId)}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.label}
+        destructive
+        onCancel={() => {
+          setConfirmDeleteId(null);
+          setConfirmDeleteType(null);
+        }}
+        onConfirm={confirmRemove}
+      />
       <Footer />
     </>
   );

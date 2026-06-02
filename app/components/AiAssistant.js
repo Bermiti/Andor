@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { Compass } from 'lucide-react';
 import styles from './AiAssistant.module.css';
 import { safeParse } from '../lib/safe-json';
 
@@ -581,7 +582,9 @@ export default function AiAssistant() {
           <div className={styles.chatMessages}>
             {messages.length === 0 && (
               <div style={{ padding: '24px 0', textAlign: 'center' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🧭</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                  <Compass size={48} strokeWidth={1.5} color="var(--gold)" />
+                </div>
                 <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', color: 'var(--text-primary)', marginBottom: '8px' }}>
                   Olá! Como posso ajudar na tua viagem?
                 </h3>

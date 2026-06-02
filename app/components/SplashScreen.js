@@ -12,14 +12,16 @@ export default function SplashScreen() {
     if (!hasSeenSplash) {
       setShow(true);
       sessionStorage.setItem('andor_splash_seen', 'true');
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const visibleMs = reducedMotion ? 450 : 1250;
       
       const fadeOutTimer = setTimeout(() => {
         setFadingOut(true);
-      }, 2000); // Start fading out at 2s
+      }, visibleMs);
       
       const hideTimer = setTimeout(() => {
         setShow(false);
-      }, 2500); // Fully hide at 2.5s
+      }, visibleMs + 420);
       
       return () => {
         clearTimeout(fadeOutTimer);
@@ -35,6 +37,9 @@ export default function SplashScreen() {
       <div className={styles.content}>
         <div className={styles.brand}>✦ ANDOR</div>
         <p className={styles.tagline}>O mundo está à tua espera</p>
+        <div className={styles.progressTrack} aria-hidden="true">
+          <span></span>
+        </div>
       </div>
       <div className={styles.airplaneWrapper}>
         <svg className={styles.airplane} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

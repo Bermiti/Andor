@@ -23,7 +23,7 @@
   padding: 0 var(--space-6);
   text-align: center;
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
 }
 
 .label {

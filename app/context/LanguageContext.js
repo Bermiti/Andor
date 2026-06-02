@@ -31,21 +31,7 @@ export function LanguageProvider({ children }) {
     if (savedLang && translationsMap[savedLang]) {
       setLocaleState(savedLang);
     } else {
-      // Auto-detect system language
-      const navLang = navigator.language;
-      if (navLang.startsWith('pt')) {
-        if (navLang === 'pt-BR') {
-          setLocaleState('pt-BR');
-        } else {
-          setLocaleState('pt');
-        }
-      } else if (navLang.startsWith('es')) {
-        setLocaleState('es');
-      } else if (navLang.startsWith('fr')) {
-        setLocaleState('fr');
-      } else {
-        setLocaleState('en');
-      }
+      setLocaleState('pt');
     }
 
     const savedTheme = localStorage.getItem('andor_theme');

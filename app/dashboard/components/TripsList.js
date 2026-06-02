@@ -1,10 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import { useToast } from '../../components/ToastProvider';
 import styles from './TripsList.module.css';
 
 export default function TripsList() {
   const { user, updateUser } = useAuth();
+  const { success } = useToast();
   const trips = user?.trips || [];
   const [pendingDeleteTripId, setPendingDeleteTripId] = useState(null);
 
@@ -16,6 +19,7 @@ export default function TripsList() {
     const updated = trips.filter(t => t.id !== tripId);
     updateUser({ trips: updated });
     setPendingDeleteTripId(null);
+    success('Viagem eliminada.');
   };
 
   if (trips.length === 0) {
@@ -69,18 +73,18 @@ export default function TripsList() {
                 🗑️
               </button>
             </div>
-            {pendingDeleteTripId === trip.id && (
-              <div className={styles.inlineConfirm}>
-                <span>Delete this saved trip?</span>
-                <div>
-                  <button type="button" onClick={() => setPendingDeleteTripId(null)}>Cancel</button>
-                  <button type="button" onClick={() => confirmDeleteTrip(trip.id)}>Delete</button>
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>
+      <ConfirmDialog
+        isOpen={Boolean(pendingDeleteTripId)}
+        title="Eliminar itinerário?"
+        description="Esta acção não pode ser desfeita."
+        confirmLabel="Eliminar"
+        destructive
+        onCancel={() => setPendingDeleteTripId(null)}
+        onConfirm={() => confirmDeleteTrip(pendingDeleteTripId)}
+      />
     </div>
   );
 }

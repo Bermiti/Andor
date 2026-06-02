@@ -5,8 +5,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(process.env.NODE_ENV === 'development' && {
+    allowedDevOrigins: ['127.0.0.1'],
+    devIndicators: false,
+  }),
   turbopack: {
     root: __dirname,
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'source.unsplash.com',
+      },
+    ],
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [390, 768, 1200, 1920],
+    imageSizes: [64, 128, 256, 400],
   },
 };
 

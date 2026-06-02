@@ -121,6 +121,7 @@ export default function ItineraryPage() {
   const [packingList, setPackingList] = useState(null);
   const [checkedPacking, setCheckedPacking] = useState({});
   const [isPackingGenerating, setIsPackingGenerating] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
 
   useEffect(() => {
     setFavorites(getJson('andor_favorites', [], 'local') || []);
@@ -880,10 +881,52 @@ export default function ItineraryPage() {
             <div className={`${styles.timeline} ${isAdapting ? styles.loading : ''} ${dayTransitioning ? styles.transitioning : ''}`} ref={timelineRef}>
               <div className={styles.timelineHeader}>
                 <h2 className={styles.dayHeading}>{currentDay.title}</h2>
-                <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting}>
-                  {isAdapting ? '⏳ A processar...' : '🔄 Regenerar este dia'}
-                </button>
+                <div className={styles.timelineHeaderActions}>
+                  <button 
+                    type="button"
+                    className={`${styles.viewToggleBtn} ${compactMode ? styles.viewToggleBtnActive : ''}`} 
+                    onClick={() => setCompactMode(!compactMode)}
+                    aria-label={compactMode ? "Mudar para vista detalhada" : "Mudar para vista compacta"}
+                  >
+                    {compactMode ? '≡ Vista Compacta' : '📄 Vista Detalhada'}
+                  </button>
+                  <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting}>
+                    {isAdapting ? '⏳ A processar...' : '🔄 Regenerar este dia'}
+                  </button>
+                </div>
               </div>
+
+              {/* Daily Synopsis / Day Overview */}
+              {!isAdapting && (
+                <div className={styles.daySynopsisCard}>
+                  {currentDay.moodDescription && (
+                    <div className={styles.synopsisMood}>
+                      <span className={styles.quoteIcon}>“</span>
+                      <p className={styles.moodText}>{currentDay.moodDescription}</p>
+                    </div>
+                  )}
+                  <div className={styles.synopsisStats}>
+                    <div className={`${styles.synopsisStatBadge} ${
+                      String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? styles.energyRelaxed :
+                      String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? styles.energyIntense :
+                      styles.energyModerate
+                    }`}>
+                      {String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? '🧘 Ritmo Leve' :
+                       String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? '⚡ Ritmo Intenso' :
+                       '🚶 Ritmo Moderado'}
+                    </div>
+                    <div className={styles.synopsisStatBadge}>
+                      🏃 {currentDay.estimatedDistance || (activeDay === 0 ? '4 km' : activeDay % 2 === 0 ? '8 km' : '6 km')} a pé
+                    </div>
+                    <div className={styles.synopsisStatBadge}>
+                      💰 ~€{getDayBudget(currentDay)} est.
+                    </div>
+                    <div className={styles.synopsisStatBadge}>
+                      🎯 {currentDay.stops?.length || 0} locais
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {isAdapting ? (
                 <div style={{ padding: '20px 0' }}>
@@ -901,128 +944,146 @@ export default function ItineraryPage() {
                     <div key={periodKey} className={styles.periodSection}>
                     <h3 className={styles.periodHeading}>{periodNames[periodKey]}</h3>
                     <div className={styles.periodStops}>
-                      {stops.map((stop) => {
+                      {stops.map((stop, stopIdx) => {
                         const idx = globalStopCounter++;
-                        const isExpanded = !!expandedStops[idx];
+                        const isExpanded = compactMode ? false : !!expandedStops[idx];
                         const isSaved = isStopSaved(stop.name);
                         const crowd = getCrowdLabel(stop.crowdLevel);
                         
                         return (
-                          <div key={idx} id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`} data-testid="activity-card">
+                          <div key={idx}>
+                            {/* Transport bridge from previous activity */}
+                            {stopIdx > 0 && stop.transportFromPrevious && (
+                              <div className={styles.transportBridge}>
+                                <span className={styles.transportBridgeIcon}>
+                                  {stop.transportFromPrevious.mode?.includes('metro') || stop.transportFromPrevious.mode?.includes('Metro') ? '🚇' :
+                                   stop.transportFromPrevious.mode?.includes('walk') || stop.transportFromPrevious.mode?.includes('pé') ? '🚶' :
+                                   stop.transportFromPrevious.mode?.includes('taxi') || stop.transportFromPrevious.mode?.includes('Uber') ? '🚕' :
+                                   stop.transportFromPrevious.mode?.includes('bus') || stop.transportFromPrevious.mode?.includes('autocarro') ? '🚌' : '🚶'}
+                                </span>
+                                <span className={styles.transportBridgeText}>
+                                  {stop.transportFromPrevious.mode} · {stop.transportFromPrevious.duration}
+                                  {stop.transportFromPrevious.cost && ` · €${stop.transportFromPrevious.cost}`}
+                                </span>
+                              </div>
+                            )}
                             
-                            {/* Collapsed State */}
-                            <button
-                              type="button"
-                              className={styles.activityHeader}
-                              onClick={() => toggleStop(idx)}
-                              onKeyDown={(event) => handleActivityKeyDown(event, idx)}
-                              aria-expanded={isExpanded}
-                              data-activity-index={idx}
-                            >
-                              <div className={styles.activityHeaderLeft}>
-                                <span className={styles.activitySequence}>{idx + 1}</span>
-                                {stop.photoKeyword && (
-                                  <img
-                                    src={`https://source.unsplash.com/128x128/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`}
-                                    alt={stop.name}
-                                    className={styles.activityThumb}
-                                    width="56"
-                                    height="56"
-                                    loading="lazy"
-                                    decoding="async"
-                                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                                  />
-                                )}
-                                <div className={styles.activityIcon}>{getStopIcon(stop)}</div>
-                                <div className={styles.activityName}>{stop.name}</div>
-                              </div>
-                              <div className={styles.activityHeaderRight}>
-                                <span className={styles.activityMeta}>⏱️ {stop.duration || (stop.durationMinutes ? stop.durationMinutes + 'm' : '2h')}</span>
-                                <span className={styles.activityMeta}>💰 {stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis'}</span>
-                                {crowd && (
-                                  <span className={`${styles.activityCrowd} ${styles[crowd.cls]}`}>
-                                    👥 {crowd.label}
-                                  </span>
-                                )}
-                                <span className={styles.chevron}>{isExpanded ? '▲' : '▼'}</span>
-                              </div>
-                            </button>
-
-                            {/* Expanded State */}
-                            {isExpanded && (
-                              <div className={styles.activityBody}>
-                                {stop.photoKeyword && (
-                                  <div className={styles.activityPhotoWrapper}>
-                                    <img 
-                                      src={`https://source.unsplash.com/800x400/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`} 
+                            <div id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`} data-testid="activity-card">
+                            
+                              {/* Collapsed State */}
+                              <button
+                                type="button"
+                                className={styles.activityHeader}
+                                onClick={() => toggleStop(idx)}
+                                onKeyDown={(event) => handleActivityKeyDown(event, idx)}
+                                aria-expanded={isExpanded}
+                                data-activity-index={idx}
+                              >
+                                <div className={styles.activityHeaderLeft}>
+                                  <span className={styles.activitySequence}>{idx + 1}</span>
+                                  {stop.photoKeyword && (
+                                    <img
+                                      src={`https://source.unsplash.com/128x128/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`}
                                       alt={stop.name}
-                                      className={styles.activityPhoto}
-                                      width="800"
-                                      height="400"
+                                      className={styles.activityThumb}
+                                      width="56"
+                                      height="56"
                                       loading="lazy"
                                       decoding="async"
                                       onError={(event) => { event.currentTarget.style.display = 'none'; }}
                                     />
-                                  </div>
-                                )}
-                                <div className={styles.activityDetails}>
-                                  <div className={styles.activityDetailRow}>
-                                    <strong>📍 Endereço:</strong> {stop.address || dest.city}
-                                  </div>
-                                  {stop.transportFromPrevious && (
+                                  )}
+                                  <div className={styles.activityIcon}>{getStopIcon(stop)}</div>
+                                  <div className={styles.activityName}>{stop.name}</div>
+                                </div>
+                                <div className={styles.activityHeaderRight}>
+                                  <span className={styles.activityMeta}>⏱️ {stop.duration || (stop.durationMinutes ? stop.durationMinutes + 'm' : '2h')}</span>
+                                  <span className={styles.activityMeta}>💰 {stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis'}</span>
+                                  {crowd && (
+                                    <span className={`${styles.activityCrowd} ${styles[crowd.cls]}`}>
+                                      👥 {crowd.label}
+                                    </span>
+                                  )}
+                                  <span className={styles.chevron}>{isExpanded ? '▲' : '▼'}</span>
+                                </div>
+                              </button>
+
+                              {/* Expanded State */}
+                              {isExpanded && (
+                                <div className={styles.activityBody}>
+                                  {stop.photoKeyword && (
+                                    <div className={styles.activityPhotoWrapper}>
+                                      <img 
+                                        src={`https://source.unsplash.com/800x400/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`} 
+                                        alt={stop.name}
+                                        className={styles.activityPhoto}
+                                        width="800"
+                                        height="400"
+                                        loading="lazy"
+                                        decoding="async"
+                                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                      />
+                                    </div>
+                                  )}
+                                  <div className={styles.activityDetails}>
                                     <div className={styles.activityDetailRow}>
-                                      <strong>🚇 Como chegar:</strong> {stop.transportFromPrevious.mode} ({stop.transportFromPrevious.duration})
-                                      {stop.transportFromPrevious.directions && (
-                                        <span className={styles.transportDirections}> — {stop.transportFromPrevious.directions}</span>
-                                      )}
+                                      <strong>📍 Endereço:</strong> {stop.address || dest.city}
                                     </div>
-                                  )}
-                                  {stop.insiderTip && (
-                                    <div className={styles.insiderTipBox}>
-                                      <span className={styles.insiderTipIcon}>💡</span>
-                                      <div>
-                                        <strong>Segredo do Andor:</strong>
-                                        <p className={styles.insiderTipText}>&ldquo;{stop.insiderTip}&rdquo;</p>
+                                    {stop.transportFromPrevious && (
+                                      <div className={styles.activityDetailRow}>
+                                        <strong>🚇 Como chegar:</strong> {stop.transportFromPrevious.mode} ({stop.transportFromPrevious.duration})
+                                        {stop.transportFromPrevious.directions && (
+                                          <span className={styles.transportDirections}> — {stop.transportFromPrevious.directions}</span>
+                                        )}
                                       </div>
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    className={styles.copyActivityBtn}
-                                    onClick={() => copyActivityDetails(stop)}
-                                    aria-label={`Copiar detalhes de ${stop.name}`}
-                                  >
-                                    📋 Copiar detalhes
-                                  </button>
+                                    )}
+                                    {stop.insiderTip && (
+                                      <div className={styles.insiderTipBox}>
+                                        <span className={styles.insiderTipIcon}>💡</span>
+                                        <div>
+                                          <strong>Segredo do Andor:</strong>
+                                          <p className={styles.insiderTipText}>&ldquo;{stop.insiderTip}&rdquo;</p>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className={styles.copyActivityBtn}
+                                      onClick={() => copyActivityDetails(stop)}
+                                      aria-label={`Copiar detalhes de ${stop.name}`}
+                                    >
+                                      📋 Copiar detalhes
+                                    </button>
+                                  </div>
+                                  <div className={styles.activityActions}>
+                                    <a 
+                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + (stop.address || dest.city))}`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className={styles.btnOutline}
+                                    >
+                                      🗺️ Ver no Mapa
+                                    </a>
+                                    <button
+                                      className={styles.btnOutline}
+                                      onClick={() => setBookingStop(stop)}
+                                      data-testid="booking-button"
+                                    >
+                                      🎟️ Reservar
+                                    </button>
+                                    <FavoriteButton
+                                      itemId={`${dest.city || dest.name || 'trip'}-${stop.name}`}
+                                      itemType="activity"
+                                      className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
+                                      initialActive={isSaved}
+                                      label="Guardar"
+                                      activeLabel="Guardado"
+                                      onToggle={() => toggleSaved(stop)}
+                                    />
+                                  </div>
                                 </div>
-                                <div className={styles.activityActions}>
-                                  <a 
-                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + (stop.address || dest.city))}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className={styles.btnOutline}
-                                  >
-                                    🗺️ Ver no Mapa
-                                  </a>
-                                  <button
-                                    className={styles.btnOutline}
-                                    onClick={() => setBookingStop(stop)}
-                                    data-testid="booking-button"
-                                  >
-                                    🎟️ Reservar
-                                  </button>
-                                  <FavoriteButton
-                                    itemId={`${dest.city || dest.name || 'trip'}-${stop.name}`}
-                                    itemType="activity"
-                                    className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
-                                    initialActive={isSaved}
-                                    label="Guardar"
-                                    activeLabel="Guardado"
-                                    onToggle={() => toggleSaved(stop)}
-                                  />
-                                </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -1030,6 +1091,33 @@ export default function ItineraryPage() {
                   </div>
                 );
               })}
+
+              {/* Contingency plans for rain/fatigue/alternatives */}
+              {!isAdapting && (
+                <div className={styles.contingencyCard}>
+                  <h4 className={styles.contingencyTitle}>📋 Alternativas & Plano de Contingência</h4>
+                  <div className={styles.contingencyGrid}>
+                    <div className={styles.contingencyItem}>
+                      <span className={styles.contingencyIcon}>🌧️ Plano para Chuva</span>
+                      <p className={styles.contingencyText}>
+                        {currentDay.alternativePlans?.rainy || `Em caso de chuva, visite museus cobertos, mercados gastronómicos locais, ou desfrute de pastelarias tradicionais em ${dest.city || dest.name || 'a cidade'}.`}
+                      </p>
+                    </div>
+                    <div className={styles.contingencyItem}>
+                      <span className={styles.contingencyIcon}>💤 Ritmo Lento (Fadiga)</span>
+                      <p className={styles.contingencyText}>
+                        {currentDay.alternativePlans?.relaxed || `Se preferir encurtar o dia, salte a atividade da tarde e descanse no hotel ou faça um passeio leve pelas redondezas.`}
+                      </p>
+                    </div>
+                    <div className={styles.contingencyItem}>
+                      <span className={styles.contingencyIcon}>⚡ Mais Ação (Intenso)</span>
+                      <p className={styles.contingencyText}>
+                        {currentDay.alternativePlans?.intense || `Se ainda tiver energia de sobra, explore miradouros adicionais, feiras locais ao pôr do sol ou ruelas escondidas a pé.`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* REFEIÇÕES DO DIA */}

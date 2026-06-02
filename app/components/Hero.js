@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useTranslations } from '../context/LanguageContext';
 import styles from './Hero.module.css';
 
@@ -272,13 +273,12 @@ export default function Hero({ onOpenWizard }) {
       >
         {COLLAGE_IMAGES.map((url, i) => (
           <div key={i} className={styles.collageItem}>
-            <img
+            <Image
               src={url}
               alt="Destino"
-              width="420"
-              height="560"
-              loading="lazy"
-              decoding="async"
+              width={420}
+              height={560}
+              priority={i < 3}
               onError={(event) => {
                 event.currentTarget.style.opacity = '0';
               }}

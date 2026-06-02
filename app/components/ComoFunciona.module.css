@@ -11,7 +11,7 @@
   margin: 0 auto;
   padding: 0 var(--space-6);
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
 }
 
 .header {
@@ -62,7 +62,7 @@
   left: 15%;
   right: 15%;
   height: 4px;
-  z-index: 1;
+  z-index: var(--z-content);
 }
 
 .svgPathProgress {
@@ -81,7 +81,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-8);
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
 }
 
 .stepCard {

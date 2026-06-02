@@ -18,7 +18,7 @@ export default function Footer() {
               <span>Andor</span>
             </div>
             <p className={styles.tagline}>
-              O concierge de viagens sobre-humano 24/7. Redefinindo a forma como planeias e vives o mundo.
+              Planeamento de viagens personalizado, em português, com roteiros pensados para o teu ritmo.
             </p>
             <div className={styles.socials}>
               {/* Instagram */}
@@ -47,10 +47,10 @@ export default function Footer() {
           {/* Coluna 2: Produto */}
           <div className={styles.column}>
             <h4 className={styles.columnTitle}>Produto</h4>
-            <a href="/#como-funciona" className={styles.columnLink}>Features</a>
-            <a href="/#pricing" className={styles.columnLink}>Preços</a>
-            <a href="/api-documentation" className={styles.columnLink}>API</a>
-            <a href="/for-agencies" className={styles.columnLink}>Para Agências</a>
+            <a href="/features" className={styles.columnLink}>Funcionalidades</a>
+            <a href="/itineraries" className={styles.columnLink}>Criar viagem</a>
+            <a href="/pricing" className={styles.columnLink}>Preços</a>
+            <a href="/destinations" className={styles.columnLink}>Destinos</a>
           </div>
 
           {/* Coluna 3: Destinos */}

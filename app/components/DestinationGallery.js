@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import styles from './DestinationGallery.module.css';
 
 const defaultImages = [
@@ -29,7 +30,7 @@ const galleryDatabase = {
     'https://images.unsplash.com/photo-1431274172761-fca41d930114?q=80&w=800&auto=format&fit=crop'
   ],
   'tokyo': [
-    'https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=800&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1518826778787-43d3729364fc?q=80&w=800&auto=format&fit=crop'
@@ -116,17 +117,16 @@ export default function DestinationGallery({ destination = '' }) {
             className={styles.photoCard} 
             onClick={() => setLightboxIndex(index)}
           >
-            <img 
+            <Image 
               src={url} 
               alt={`${destination} view ${index + 1}`} 
-              className={styles.image} 
-              width="600"
-              height="420"
-              loading="lazy" 
-              decoding="async"
-              onError={(event) => {
-                event.currentTarget.style.opacity = '0';
-              }}
+              width={600}
+              height={420}
+              loading="lazy"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              quality={75}
+              className={styles.image}
+              style={{ objectFit: 'cover' }}
             />
             <div className={styles.overlay}>
               <span className={styles.zoomIcon}>🔍 View Full</span>
@@ -156,14 +156,16 @@ export default function DestinationGallery({ destination = '' }) {
           </button>
           
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-            <img 
+            <Image 
               src={photos[lightboxIndex]} 
               alt={`${destination} detailed view ${lightboxIndex + 1}`} 
-              className={styles.lightboxImage}
-              width="1200"
-              height="800"
+              width={1200}
+              height={800}
               loading="lazy"
-              decoding="async"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
+              quality={90}
+              className={styles.lightboxImage}
+              style={{ objectFit: 'cover' }}
             />
             <div className={styles.caption}>
               {destination} — Photo {lightboxIndex + 1} of {photos.length}

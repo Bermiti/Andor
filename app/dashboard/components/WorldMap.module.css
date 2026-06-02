@@ -90,7 +90,7 @@
   background: none;
   border: none;
   padding: 0;
-  z-index: 2;
+  z-index: calc(var(--z-content) + 1);
 }
 
 .pinDot {
@@ -132,7 +132,7 @@
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 10;
+  z-index: var(--z-content);
   display: flex;
   flex-direction: column;
   align-items: center;

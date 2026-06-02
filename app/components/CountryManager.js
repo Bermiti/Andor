@@ -1,5 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
+import ConfirmDialog from './ConfirmDialog';
+import { useToast } from './ToastProvider';
+import { Globe } from 'lucide-react';
 import styles from './CountryManager.module.css';
 
 // Map of country names to ISO 3166-1 numeric codes (used by world-atlas)
@@ -67,6 +70,8 @@ const COUNTRY_DATA = [
 export default function CountryManager({ visitedCountries = [], onToggleCountry, translations }) {
   const [search, setSearch] = useState('');
   const [justAdded, setJustAdded] = useState(null);
+  const [pendingRemoveCountry, setPendingRemoveCountry] = useState(null);
+  const { success } = useToast();
 
   // Fallback so component works even without translations prop
   const t = translations || ((key) => ({
@@ -95,8 +100,15 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry,
     setTimeout(() => setJustAdded(null), 1500);
   };
 
-  const removeCountry = (code) => {
-    onToggleCountry(code);
+  const requestRemoveCountry = (country) => {
+    setPendingRemoveCountry(country);
+  };
+
+  const confirmRemoveCountry = () => {
+    if (!pendingRemoveCountry) return;
+    onToggleCountry(pendingRemoveCountry.code);
+    success(`${pendingRemoveCountry.name} removido dos países visitados.`);
+    setPendingRemoveCountry(null);
   };
 
   const handleKeyDown = (e) => {
@@ -174,7 +186,9 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry,
         </h4>
         {visitedNames.length === 0 ? (
           <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>🌍</span>
+            <span className={styles.emptyIcon}>
+              <Globe size={48} strokeWidth={1.5} color="var(--gold)" />
+            </span>
             <p>{t('emptyState')}</p>
             <p className={styles.emptyHint}>{t('emptyHint')}</p>
           </div>
@@ -189,7 +203,8 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry,
                 <span className={styles.countryName}>{country.name}</span>
                 <button
                   className={styles.removeBtn}
-                  onClick={() => removeCountry(country.code)}
+                  onClick={() => requestRemoveCountry(country)}
+                  aria-label={`${t('remove')} ${country.name}`}
                   title={`${t('remove')} ${country.name}`}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -201,6 +216,15 @@ export default function CountryManager({ visitedCountries = [], onToggleCountry,
           </div>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={Boolean(pendingRemoveCountry)}
+        title="Remover país visitado?"
+        description="Este país sai do teu mapa de visitados. Podes adicioná-lo outra vez mais tarde."
+        confirmLabel="Remover"
+        destructive
+        onCancel={() => setPendingRemoveCountry(null)}
+        onConfirm={confirmRemoveCountry}
+      />
     </div>
   );
 }

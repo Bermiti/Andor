@@ -1,16 +1,40 @@
 import './globals.css';
+import { Outfit, Cormorant_Garamond, JetBrains_Mono } from 'next/font/google';
+import dynamic from 'next/dynamic';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ToastProvider } from './components/ToastProvider';
 import { ChatContextProvider } from './context/ChatContext';
 import CommandCenter from './components/CommandCenter';
-import FloatingAi from './components/FloatingAi';
 import CustomRequestModal from './components/CustomRequestModal';
 import NewsletterPopup from './components/NewsletterPopup';
 import EasterEgg from './components/EasterEgg';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import SplashScreen from './components/SplashScreen';
 import Script from 'next/script';
+import FloatingAiWrapper from './components/FloatingAiWrapper';
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-cormorant',
+  display: 'swap',
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://andor.travels'),
@@ -20,6 +44,7 @@ export const metadata = {
   },
   description: 'Andor é um concierge de viagens inteligente com inteligência artificial. Planeia, adapta e guia a tua aventura em tempo real com itinerários premium e recomendações locais.',
   keywords: 'viagens, roteiro de viagem, planear viagem, inteligência artificial, itinerários personalizados, turismo de luxo',
+  manifest: '/manifest.json',
   alternates: {
     canonical: '/',
   },
@@ -54,7 +79,6 @@ const jsonLdData = {
   "name": "Andor Travels",
   "description": "Concierge de viagens inteligente com inteligência artificial. Planeia itinerários de luxo personalizados em segundos.",
   "url": "https://andor.travels",
-  "telephone": "+351900000000",
   "priceRange": "$$",
   "address": {
     "@type": "PostalAddress",
@@ -69,7 +93,7 @@ const jsonLdData = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt" suppressHydrationWarning>
+    <html lang="pt" className={`${outfit.variable} ${cormorant.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0A1628" />
@@ -80,7 +104,9 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         />
-
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preload" as="image" href="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800&auto=format&fit=crop" imagesrcset="" />
         <script 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
@@ -103,7 +129,7 @@ export default function RootLayout({ children }) {
                 <EasterEgg />
                 <CommandCenter />
                 <ErrorBoundary>
-                  <FloatingAi />
+                  <FloatingAiWrapper />
                 </ErrorBoundary>
                 <CustomRequestModal />
                 <NewsletterPopup />
@@ -116,4 +142,3 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-

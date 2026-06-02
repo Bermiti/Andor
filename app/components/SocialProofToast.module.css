@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 24px;
   left: 24px;
-  z-index: 150;
+  z-index: var(--z-sticky);
   pointer-events: none;
 }
 
