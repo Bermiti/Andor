@@ -105,9 +105,9 @@ export default function CtaFinal() {
           </div>
 
           <div className={styles.trustSignals}>
-            <span>🔒 Dados seguros</span>
-            <span>⭐ 4.9/5 de 2.400+ utilizadores</span>
-            <span>🌍 120+ países</span>
+            <span>Dados seguros</span>
+            <span>4.9/5 de 2.400+ utilizadores</span>
+            <span>120+ países</span>
           </div>
         </div>
       </div>

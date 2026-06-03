@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import styles from './NewsletterPopup.module.css';
 
@@ -32,86 +33,85 @@ export default function NewsletterPopup() {
     } catch (error) {}
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!email) return;
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!email || loading) return;
+
     setLoading(true);
-    // Simulate API subscription
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          source: 'newsletter_popup',
+          metadata: { page: window.location.pathname },
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || 'Nao foi possivel concluir a subscricao.');
+      }
+
       setIsSubscribed(true);
-      try {
-        localStorage.setItem('andor_newsletter_dismissed', 'true');
-      } catch (error) {}
-    }, 1000);
+      localStorage.setItem('andor_newsletter_dismissed', 'true');
+    } catch (error) {
+      showToast(error.message || 'Nao foi possivel concluir a subscricao.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className={styles.overlay} onClick={handleDismiss}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.closeBtn} aria-label="Close newsletter popup" onClick={handleDismiss}>✕</button>
-        
+      <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
+        <button className={styles.closeBtn} aria-label="Fechar newsletter" onClick={handleDismiss}>
+          <X size={16} aria-hidden="true" />
+        </button>
+
         {!isSubscribed ? (
           <div className={styles.content}>
             <div className={styles.imageHeader}>
               <div className={styles.overlayGradient}></div>
-              <span className={styles.badge}>SPECIAL OFFER</span>
-              <h3 className={styles.modalTitle}>Unlock 10% Off Your First Journey</h3>
+              <span className={styles.badge}>ANDOR INSIGHTS</span>
+              <h3 className={styles.modalTitle}>Recebe briefs de viagem selecionados</h3>
             </div>
-            
+
             <form onSubmit={handleSubmit} className={styles.form}>
               <p className={styles.desc}>
-                Join the Andor Circle. Subscribe to our newsletter to receive curated destination guides, secret itineraries, and a 10% welcome discount voucher.
+                Uma selecao curta de destinos, alertas sazonais e ideias de itinerario para quem planeia viagens com criterio.
               </p>
-              
+
               <div className={styles.inputField}>
-                <input 
-                  type="email" 
-                  placeholder="Enter your email address"
+                <input
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   className={styles.input}
                   required
                 />
               </div>
-              
+
               <button type="submit" className={styles.submitBtn} disabled={loading}>
-                {loading ? 'Subscribing...' : 'Claim 10% Discount ✨'}
+                {loading ? 'A subscrever...' : 'Subscrever'}
               </button>
-              
+
               <button type="button" className={styles.noThanks} onClick={handleDismiss}>
-                No thanks, I prefer paying full price
+                Agora nao
               </button>
             </form>
           </div>
         ) : (
           <div className={styles.success}>
-            <div className={styles.giftIcon}>🎁</div>
-            <h3 className={styles.successTitle}>Welcome to the Circle!</h3>
+            <h3 className={styles.successTitle}>Subscricao confirmada</h3>
             <p className={styles.successDesc}>
-              Use the promo code below at checkout to redeem your 10% discount on any premium itinerary guide.
+              O email ficou registado. Vais receber apenas atualizacoes relevantes da Andor.
             </p>
-            
-            <div className={styles.voucherBox}>
-              <span className={styles.voucherCode}>WELCOME10</span>
-              <button 
-                type="button"
-                className={styles.copyBtn} 
-                onClick={() => {
-                  navigator.clipboard.writeText('WELCOME10')
-                    .then(() => showToast('Código WELCOME10 copiado.', 'success'))
-                    .catch(() => showToast('Não foi possível copiar o código.', 'error'));
-                }}
-              >
-                Copy Code
-              </button>
-            </div>
-            
-            <p className={styles.voucherExpiry}>Valid for 30 days. Sent to: {email}</p>
-            
-            <button type="button" className={styles.doneBtn} onClick={handleDismiss}>Start Exploring</button>
+            <button type="button" className={styles.doneBtn} onClick={handleDismiss}>Fechar</button>
           </div>
         )}
       </div>

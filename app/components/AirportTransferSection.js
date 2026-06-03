@@ -11,7 +11,7 @@ export default function AirportTransferSection({ airportTransfer }) {
   if (!airportTransfer) {
     return (
       <div className={styles.empty}>
-        <div className={styles.emptyIcon}>🚕</div>
+        <div className={styles.emptyIcon}>TR</div>
         <p>Informações de transferência a carregar...</p>
       </div>
     );
@@ -23,7 +23,6 @@ export default function AirportTransferSection({ airportTransfer }) {
       <div className={styles.header}>
         <div className={styles.titleArea}>
           <h2 className={styles.title}>
-            <span className={styles.icon}>🚕</span>
             Transfer Aeroporto
           </h2>
           <p className={styles.subtitle}>{airportTransfer.overview}</p>
@@ -56,10 +55,6 @@ export default function AirportTransferSection({ airportTransfer }) {
             <div key={idx} className={`${styles.card} ${styles[`tier_${option.tier}`]}`}>
               {/* Tier Badge */}
               <div className={styles.cardBadge}>
-                {option.tier === 'budget' && '💰'}
-                {option.tier === 'standard' && '⚖️'}
-                {option.tier === 'premium' && '👑'}
-                {' '}
                 {option.tier === 'budget' && 'Económico'}
                 {option.tier === 'standard' && 'Padrão'}
                 {option.tier === 'premium' && 'Premium'}
@@ -100,7 +95,7 @@ export default function AirportTransferSection({ airportTransfer }) {
               {/* Pros */}
               {option.pros && option.pros.length > 0 && (
                 <div className={styles.section_}>
-                  <div className={styles.sectionTitle}>✓ Vantagens</div>
+                  <div className={styles.sectionTitle}>Vantagens</div>
                   <ul className={styles.list}>
                     {option.pros.map((pro, i) => (
                       <li key={i}>{pro}</li>
@@ -112,7 +107,7 @@ export default function AirportTransferSection({ airportTransfer }) {
               {/* Cons */}
               {option.cons && option.cons.length > 0 && (
                 <div className={styles.section_}>
-                  <div className={styles.sectionTitle}>✗ Desvantagens</div>
+                  <div className={styles.sectionTitle}>Desvantagens</div>
                   <ul className={styles.list}>
                     {option.cons.map((con, i) => (
                       <li key={i}>{con}</li>
@@ -132,7 +127,7 @@ export default function AirportTransferSection({ airportTransfer }) {
               {/* Warnings */}
               {option.warnings && option.warnings.length > 0 && (
                 <div className={styles.warnings}>
-                  <span className={styles.warningIcon}>⚠️</span>
+                  <span className={styles.warningIcon}>Atenção</span>
                   <div className={styles.warningContent}>
                     {option.warnings.map((warning, i) => (
                       <div key={i} className={styles.warning}>{warning}</div>
@@ -148,7 +143,7 @@ export default function AirportTransferSection({ airportTransfer }) {
       {/* Tips */}
       {airportTransfer.tips && airportTransfer.tips.length > 0 && (
         <div className={styles.tips}>
-          <div className={styles.tipsTitle}>💡 Dicas</div>
+          <div className={styles.tipsTitle}>Dicas</div>
           <ul className={styles.tipsList}>
             {airportTransfer.tips.map((tip, idx) => (
               <li key={idx}>{tip}</li>

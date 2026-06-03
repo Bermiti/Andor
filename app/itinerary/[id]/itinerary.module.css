@@ -1211,7 +1211,7 @@
 }
 
 .tipsItem::before {
-  content: '💡 ';
+  content: 'Nota: ';
 }
 
 .tipsItem:last-child {

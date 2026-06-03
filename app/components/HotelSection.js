@@ -1,6 +1,7 @@
 'use client';
 
 import styles from './HotelSection.module.css';
+import AccommodationCard from './AccommodationCard';
 
 /**
  * PHASE 11.3: HotelSection Component
@@ -11,7 +12,7 @@ export default function HotelSection({ accommodation, destination }) {
   if (!accommodation) {
     return (
       <div className={styles.empty}>
-        <div className={styles.emptyIcon}>🏨</div>
+        <div className={styles.emptyIcon}>HT</div>
         <p>Informações de hotéis a carregar...</p>
       </div>
     );
@@ -23,7 +24,6 @@ export default function HotelSection({ accommodation, destination }) {
       <div className={styles.header}>
         <div className={styles.titleArea}>
           <h2 className={styles.title}>
-            <span className={styles.icon}>🏨</span>
             Alojamento
           </h2>
           <p className={styles.subtitle}>{accommodation.overview}</p>
@@ -54,7 +54,7 @@ export default function HotelSection({ accommodation, destination }) {
         <div className={styles.recommendedArea}>
           <div className={styles.areaHeader}>
             <h3 className={styles.areaTitle}>
-              <span className={styles.badge}>⭐ Recomendado</span>
+              <span className={styles.badge}>Recomendado</span>
               {accommodation.recommendedArea}
             </h3>
             {accommodation.whyRecommended && (
@@ -69,51 +69,52 @@ export default function HotelSection({ accommodation, destination }) {
         <div className={styles.tiersSection}>
           <h3 className={styles.tiersTitle}>Tipos de Alojamento</h3>
           <div className={styles.tiersGrid}>
-            {accommodation.hotels.map((tier, idx) => (
-              <div key={idx} className={`${styles.tierCard} ${styles[`tier_${tier.tier}`]}`}>
-                {/* Tier Badge */}
-                <div className={styles.tierBadge}>
-                  {tier.tier === 'economical' && '💰'}
-                  {tier.tier === 'boutique' && '✨'}
-                  {tier.tier === 'premium' && '👑'}
-                  {' '}
-                  {tier.tier === 'economical' && 'Económico'}
-                  {tier.tier === 'boutique' && 'Boutique'}
-                  {tier.tier === 'premium' && 'Premium'}
-                </div>
+            {accommodation.hotels.map((tier, idx) => {
+              if (tier.source) {
+                return <AccommodationCard key={idx} hotel={tier} destination={destination} />;
+              }
+              return (
+                <div key={idx} className={`${styles.tierCard} ${styles[`tier_${tier.tier}`]}`}>
+                  {/* Tier Badge */}
+                  <div className={styles.tierBadge}>
+                    {tier.tier === 'economical' && 'Económico'}
+                    {tier.tier === 'boutique' && 'Boutique'}
+                    {tier.tier === 'premium' && 'Premium'}
+                  </div>
 
-                {/* Price */}
-                <div className={styles.tierPrice}>
-                  €{tier.estimatedNightlyPrice || tier.pricePerNight}
-                  <span className={styles.priceUnit}>/noite</span>
-                </div>
+                  {/* Price */}
+                  <div className={styles.tierPrice}>
+                    €{tier.estimatedNightlyPrice || tier.pricePerNight}
+                    <span className={styles.priceUnit}>/noite</span>
+                  </div>
 
-                {/* Description */}
-                {tier.description && (
-                  <p className={styles.tierDescription}>{tier.description}</p>
-                )}
+                  {/* Description */}
+                  {tier.description && (
+                    <p className={styles.tierDescription}>{tier.description}</p>
+                  )}
 
-                {/* Examples */}
-                {(tier.exampleNames || tier.name) && (
-                  <div className={styles.examples}>
-                    <div className={styles.examplesLabel}>Exemplos:</div>
-                    <div className={styles.examplesList}>
-                      {tier.exampleNames ? tier.exampleNames.slice(0, 2).map((name, i) => (
-                        <span key={i} className={styles.exampleTag}>{name}</span>
-                      )) : <span className={styles.exampleTag}>{tier.name}</span>}
+                  {/* Examples */}
+                  {(tier.exampleNames || tier.name) && (
+                    <div className={styles.examples}>
+                      <div className={styles.examplesLabel}>Exemplos:</div>
+                      <div className={styles.examplesList}>
+                        {tier.exampleNames ? tier.exampleNames.slice(0, 2).map((name, i) => (
+                          <span key={i} className={styles.exampleTag}>{name}</span>
+                        )) : <span className={styles.exampleTag}>{tier.name}</span>}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Best For */}
-                {tier.bestFor && (
-                  <div className={styles.bestFor}>
-                    <strong>Melhor para:</strong>
-                    <p>{tier.bestFor}</p>
-                  </div>
-                )}
-              </div>
-            ))}
+                  {/* Best For */}
+                  {tier.bestFor && (
+                    <div className={styles.bestFor}>
+                      <strong>Melhor para:</strong>
+                      <p>{tier.bestFor}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -134,12 +135,12 @@ export default function HotelSection({ accommodation, destination }) {
                 )}
                 {area.distanceToCenter && (
                   <div className={styles.altDistance}>
-                    📍 {area.distanceToCenter}
+                    {area.distanceToCenter}
                   </div>
                 )}
                 {area.pros && (
                   <div className={styles.altPros}>
-                    ✓ {area.pros.join(', ')}
+                    {area.pros.join(', ')}
                   </div>
                 )}
               </div>
@@ -151,7 +152,7 @@ export default function HotelSection({ accommodation, destination }) {
       {/* Disclaimer */}
       {accommodation.disclaimer && (
         <div className={styles.disclaimer}>
-          <span>ℹ️</span>
+          <span>Info</span>
           <p>{accommodation.disclaimer}</p>
         </div>
       )}

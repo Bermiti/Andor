@@ -12,10 +12,12 @@ export default function Home() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardDestination, setWizardDestination] = useState('');
   const [wizardStep, setWizardStep] = useState(1);
+  const [wizardDefaults, setWizardDefaults] = useState({});
 
-  const openWizard = (destination = '', step = 1) => {
+  const openWizard = (destination = '', step = 1, defaults = {}) => {
     setWizardDestination(destination);
     setWizardStep(step);
+    setWizardDefaults(defaults || {});
     setIsWizardOpen(true);
   };
 
@@ -69,6 +71,8 @@ export default function Home() {
         onClose={() => setIsWizardOpen(false)} 
         initialDestination={wizardDestination}
         initialStep={wizardStep}
+        initialDates={wizardDefaults.dates}
+        initialTravelers={wizardDefaults.travelers}
       />
     </>
   );

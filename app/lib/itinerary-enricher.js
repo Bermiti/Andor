@@ -99,6 +99,7 @@ export function enrichItinerary(rawItinerary) {
       generatedAt: new Date().toISOString(),
       source: 'andor-ai',
       version: '2.0',
+      enrichmentStatus: rawItinerary.metadata?.enrichmentStatus || 'pending',
       ...rawItinerary.metadata,
     },
   };
@@ -126,6 +127,8 @@ function enrichDays(days, totalDays, destinationName, destinationCoordinates) {
       coordinates: safeCoordinates(stop.coordinates, destinationName, stopIdx + idx),
       bookingRequired: stop.bookingRequired || false,
       emoji: stop.emoji || '📍',
+      coordinateSource: stop.coordinateSource || 'ai',
+      source: stop.source || 'ai',
     })),
     meals: enrichMeals(day.meals),
     transport: day.transport || { type: 'walk', duration: '30min', cost: 0 },

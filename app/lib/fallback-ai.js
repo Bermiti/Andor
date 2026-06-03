@@ -164,17 +164,112 @@ const destinationData = {
   },
 };
 
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function parseRequestedDays(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return 2;
+  return Math.min(14, Math.max(1, parsed));
+}
+
+function getDestinationCenterFromDays(days, fallback = { lat: 38.7223, lng: -9.1393 }) {
+  for (const day of days || []) {
+    for (const stop of day.stops || []) {
+      const coords = stop.coordinates;
+      if (coords && Number.isFinite(Number(coords.lat)) && Number.isFinite(Number(coords.lng))) {
+        return { lat: Number(coords.lat), lng: Number(coords.lng) };
+      }
+    }
+  }
+  return fallback;
+}
+
+function buildSupplementalDay(cityName, dayIndex, center, symbol = '€') {
+  const themes = [
+    'Local Markets & Quiet Districts',
+    'Design Streets & Independent Cafes',
+    'Gardens, Galleries & Slow Evening',
+    'Neighbourhood Food Route',
+    'Waterfront Views & Last-Night Rituals',
+    'Hidden Museums & Residential Lanes',
+    'Day Trip Edges & Sunset Return',
+  ];
+  const title = `Day ${dayIndex + 1} — ${themes[dayIndex % themes.length]}`;
+  const offset = (step) => ({
+    lat: center.lat + Math.sin(dayIndex + step) * 0.018,
+    lng: center.lng + Math.cos(dayIndex + step) * 0.018,
+  });
+  const amounts = symbol === '¥'
+    ? { breakfast: 900, lunch: 1800, culture: 1200, dinner: 3600 }
+    : { breakfast: 8, lunch: 18, culture: 10, dinner: 32 };
+
+  const result = {
+    title,
+    transportTip: 'Keep the day grouped by neighbourhood and use public transport only for the longest hop.',
+    localSecrets: `Ask a cafe or hotel team member in ${cityName} where they go after work; those streets often beat the obvious guidebook route.`,
+    stops: [
+      { time: '09:00', name: `${cityName} neighbourhood cafe`, type: 'Breakfast — local start', isRestaurant: true, estimatedCost: `${symbol}${amounts.breakfast}`, coordinates: offset(1), localSecret: 'Sit at the counter if available; service is faster and staff often share better tips.' },
+      { time: '10:30', name: `${cityName} independent market`, type: 'Market — local produce and makers', estimatedCost: 'Free', coordinates: offset(2), localSecret: 'Walk the outer aisles first; the best small vendors are rarely at the main entrance.' },
+      { time: '12:30', name: `${cityName} casual lunch room`, type: 'Lunch — practical regional food', isRestaurant: true, estimatedCost: `${symbol}${amounts.lunch}`, coordinates: offset(3), localSecret: 'Ask for the daily plate before reading the full menu.' },
+      { time: '14:30', name: `${cityName} small museum or gallery`, type: 'Culture — focused visit', estimatedCost: `${symbol}${amounts.culture}`, coordinates: offset(4), localSecret: 'Check if the temporary exhibition is included; it is usually the best part.' },
+      { time: '17:00', name: `${cityName} golden-hour viewpoint`, type: 'Views — unhurried stop', estimatedCost: 'Free', coordinates: offset(5), localSecret: 'Arrive 30 minutes before sunset and leave by a side street rather than the main exit.' },
+      { time: '20:00', name: `${cityName} dinner reservation`, type: 'Dinner — local recommendation', isRestaurant: true, estimatedCost: `${symbol}${amounts.dinner}`, coordinates: offset(6), localSecret: 'Book the first or last seating for a calmer room.' },
+    ],
+  };
+  return result;
+}
+
+function attachTripSummary(result, requestedDays, budget) {
+  const currencyCode = result.currency === '¥' ? 'JPY' : result.currency === '$' ? 'USD' : 'EUR';
+  const dayCost = result.currency === '¥' ? 8500 : result.currency === '$' ? 120 : 95;
+  const min = dayCost * requestedDays;
+  const max = Math.round(min * 1.25);
+
+  result.trip = {
+    ...(result.trip || {}),
+    totalDays: requestedDays,
+    travelStyle: result.trip?.travelStyle || 'cultural',
+    groupType: result.trip?.groupType || 'travellers',
+    budgetTier: budget || result.trip?.budgetTier || 'comfort',
+    budgetBreakdown: {
+      flights: { min: 0, max: 0 },
+      accommodation: { total: Math.round(min * 0.45) },
+      food: { total: Math.round(min * 0.28) },
+      activities: { total: Math.round(min * 0.18) },
+      transport: { total: Math.round(min * 0.09) },
+      grandTotal: { min, max },
+      perPersonEstimate: { min, max },
+      currency: currencyCode,
+    },
+    topTips: result.trip?.topTips || [
+      'Book the most constrained activity first.',
+      'Keep one late afternoon flexible every two days.',
+      'Save all addresses offline before leaving the hotel.',
+    ],
+  };
+  result.totalCost = `${result.currency || '€'}${min}-${result.currency || '€'}${max}`;
+  return result;
+}
+
 // Generate a smart itinerary for any destination
 export function generateFallbackItinerary(destination, numDays = 2, budget = '') {
+  const requestedDays = parseRequestedDays(numDays);
   const key = destination.toLowerCase().split(',')[0].trim();
   
   // Check if we have pre-built data
   for (const [k, v] of Object.entries(destinationData)) {
     if (key.includes(k) || k.includes(key)) {
-      const result = { ...v };
+      const result = clone(v);
+      const cityName = destination.split(',')[0].trim() || result.name || destination;
+      const center = getDestinationCenterFromDays(result.days);
       result.destination = destination;
-      result.days = result.days.slice(0, parseInt(numDays) || 2);
-      return result;
+      result.days = result.days.slice(0, requestedDays);
+      while (result.days.length < requestedDays) {
+        result.days.push(buildSupplementalDay(cityName, result.days.length, center, result.currency || '€'));
+      }
+      return attachTripSummary(result, requestedDays, budget);
     }
   }
 
@@ -185,12 +280,13 @@ export function generateFallbackItinerary(destination, numDays = 2, budget = '')
   const baseLat = 38.72 + (Math.random() - 0.5) * 5;
   const baseLng = -9.13 + (Math.random() - 0.5) * 5;
 
-  return {
+  const result = {
     destination: destination,
     tripOverview: `Discover the best of ${cityName} with this curated professional itinerary.`,
     flights: { suggestion: `Direct flights to ${cityName} available from major hubs.`, averagePrice: '€150-300' },
     accommodation: { hotelName: `${cityName} Grand Hotel`, type: 'Boutique', reason: 'Central location with excellent reviews.' },
-    days: Array.from({ length: Math.min(parseInt(numDays) || 2, 5) }, (_, i) => ({
+    currency: '€',
+    days: Array.from({ length: requestedDays }, (_, i) => ({
       title: `Day ${i + 1} — ${['Secrets and Ancient Streets', 'Culinary Wonders and Hidden Alleys', 'Sunset Vistas and Local Life', 'Cultural Legends and Modern Pulse', 'Scenic Escapes and Quiet Paths'][i % 5]} of ${cityName}`,
       transportTip: 'Local public transport is highly efficient and recommended.',
       localSecrets: `Visit the small alleys off the main street in ${cityName} to find local artisan shops.`,
@@ -207,6 +303,7 @@ export function generateFallbackItinerary(destination, numDays = 2, budget = '')
     contingency: { emergencyInfo: 'Call local emergency services (112 in EU). Keep copies of your ID.', unexpectedTips: 'Book main attractions 48h in advance to skip lines.' },
     totalCost: budget ? `€${budget}` : '€250',
   };
+  return attachTripSummary(result, requestedDays, budget);
 }
 
 // Smart chat responses

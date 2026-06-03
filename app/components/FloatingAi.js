@@ -906,10 +906,10 @@ export default function FloatingAi() {
         return (
           <div className={styles.itineraryCard}>
             <div className={styles.itineraryCardHeader}>
-              <span className={styles.itineraryIcon}>✨</span>
+              <span className={styles.itineraryIcon}>A</span>
               <div>
                 <h4 className={styles.itineraryTitle}>Itinerário criado</h4>
-                <p className={styles.itinerarySub}>🗾 {city} · {days} dias · €{budgetMin}est</p>
+                <p className={styles.itinerarySub}>{city} · {days} dias · €{budgetMin} est</p>
               </div>
             </div>
             <div className={styles.itineraryActions}>
@@ -923,7 +923,7 @@ export default function FloatingAi() {
           </div>
         );
       } catch (e) {
-        return <div className={styles.itineraryLoading}>✨ A estruturar o teu Itinerário Completo...</div>;
+        return <div className={styles.itineraryLoading}>A estruturar o teu itinerário completo...</div>;
       }
     }
 
@@ -1287,7 +1287,7 @@ export default function FloatingAi() {
           <div className={styles.particleRing2}></div>
         </div>
         
-        <span className={styles.toggleIcon}>{isOpen ? '✕' : '✨'}</span>
+        <span className={styles.toggleIcon}>{isOpen ? 'x' : 'A'}</span>
         
         {hasUnread && (
           <span className={styles.unreadBadge}>{unreadCount}</span>

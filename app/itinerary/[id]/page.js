@@ -1,6 +1,26 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import {
+  CalendarDays,
+  Copy,
+  Edit3,
+  FileText,
+  History,
+  Loader2,
+  Map,
+  MapPin,
+  MessageCircle,
+  Package,
+  Palette,
+  RefreshCw,
+  Route,
+  Settings,
+  Share2,
+  Ticket,
+  Users,
+  WalletCards,
+} from 'lucide-react';
 import { getItinerary, saveGeneratedItinerary } from '../../lib/itinerary-store';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
 import { getJson, setJson } from '../../lib/storage';
@@ -24,34 +44,123 @@ import FavoriteButton from '../../components/FavoriteButton';
 import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { Modal, Drawer } from '../../components/ui/Modal';
+import EnhancedActivityCard from '../../components/EnhancedActivityCard';
+import RestaurantCard from '../../components/RestaurantCard';
+import AccommodationCard from '../../components/AccommodationCard';
+import TransportCard from '../../components/TransportCard';
+import EnrichmentProgress from '../../components/EnrichmentProgress';
 import styles from './itinerary.module.css';
 import { trackEvent } from '../../lib/analytics';
 
 const getStopIcon = (stop) => {
   const type = (stop.type || '').toLowerCase();
-  const name = (stop.name || '').toLowerCase();
   
-  if (type.includes('restaurant') || type.includes('food') || type.includes('dining')) return '🍽️';
-  if (type.includes('museum') || type.includes('culture') || type.includes('history')) return '🏛️';
-  if (type.includes('nature') || type.includes('park')) return '🌿';
-  if (type.includes('shopping') || type.includes('market')) return '🛍️';
-  if (type.includes('cafe') || type.includes('coffee')) return '☕';
-  if (type.includes('entertainment') || type.includes('bar') || type.includes('night')) return '🎭';
-  if (type.includes('transport') || type.includes('flight')) return '✈️';
-  if (type.includes('hotel') || type.includes('stay')) return '🏨';
-  return stop.emoji || '📍';
+  if (type.includes('restaurant') || type.includes('food') || type.includes('dining')) return 'FOOD';
+  if (type.includes('museum') || type.includes('culture') || type.includes('history')) return 'ART';
+  if (type.includes('nature') || type.includes('park')) return 'NAT';
+  if (type.includes('shopping') || type.includes('market')) return 'SHOP';
+  if (type.includes('cafe') || type.includes('coffee')) return 'CAFE';
+  if (type.includes('entertainment') || type.includes('bar') || type.includes('night')) return 'EVE';
+  if (type.includes('transport') || type.includes('flight')) return 'MOVE';
+  if (type.includes('hotel') || type.includes('stay')) return 'STAY';
+  return 'PIN';
 };
 
 const getDayEmoji = (day) => {
-  if (day.emoji) return day.emoji;
   const theme = (day.theme || '').toLowerCase();
-  if (theme.includes('arrival')) return '🛬';
-  if (theme.includes('culture')) return '🏛️';
-  if (theme.includes('food')) return '🍜';
-  if (theme.includes('nature')) return '🗻';
-  if (theme.includes('shopping')) return '🛍️';
-  if (theme.includes('night')) return '🎭';
-  return '📍';
+  if (theme.includes('arrival')) return 'ARR';
+  if (theme.includes('culture')) return 'CUL';
+  if (theme.includes('food')) return 'FOOD';
+  if (theme.includes('nature')) return 'NAT';
+  if (theme.includes('shopping')) return 'SHOP';
+  if (theme.includes('night')) return 'EVE';
+  return 'DAY';
+};
+
+const CURRENCY_SYMBOLS = {
+  EUR: '€',
+  JPY: '¥',
+  USD: '$',
+  GBP: '£',
+  IDR: 'Rp',
+  MAD: 'MAD',
+};
+
+const COUNTRY_CODE_BY_NAME = {
+  japan: 'JP',
+  france: 'FR',
+  indonesia: 'ID',
+  portugal: 'PT',
+  'united kingdom': 'GB',
+  spain: 'ES',
+  italy: 'IT',
+  netherlands: 'NL',
+  morocco: 'MA',
+  'united states': 'US',
+};
+
+const normalizeCurrencyCode = (currency) => {
+  if (!currency) return 'EUR';
+  if (typeof currency === 'object') return normalizeCurrencyCode(currency.code || currency.symbol);
+  const value = String(currency).trim().toUpperCase();
+  if (value === '€') return 'EUR';
+  if (value === '¥' || value === 'JPY') return 'JPY';
+  if (value === '$' || value === 'USD') return 'USD';
+  if (value === '£' || value === 'GBP') return 'GBP';
+  if (value === 'RP' || value === 'IDR') return 'IDR';
+  if (value === 'MAD') return 'MAD';
+  return /^[A-Z]{3}$/.test(value) ? value : 'EUR';
+};
+
+const getCurrencyContext = (itinerary) => {
+  const dest = typeof itinerary?.destination === 'string'
+    ? {}
+    : (itinerary?.destination || {});
+  const trip = itinerary?.trip || {};
+  const code = normalizeCurrencyCode(dest.currency?.code || trip.budgetBreakdown?.currency || dest.currency);
+  return {
+    code,
+    symbol: CURRENCY_SYMBOLS[code] || code,
+  };
+};
+
+const formatCurrencyAmount = (value, context = { code: 'EUR', symbol: '€' }) => {
+  if (value === undefined || value === null || value === '') return 'Grátis';
+  const currency = typeof context === 'string'
+    ? { code: normalizeCurrencyCode(context), symbol: CURRENCY_SYMBOLS[normalizeCurrencyCode(context)] || context }
+    : context;
+
+  if (typeof value === 'string') {
+    if (/free|gr[aá]tis/i.test(value)) return 'Grátis';
+    if (/[€$£¥]|JPY|USD|GBP|EUR|IDR|MAD/i.test(value)) return value;
+    const parsed = parseFloat(value.replace(/[^\d.-]/g, ''));
+    if (!Number.isFinite(parsed)) return value;
+    value = parsed;
+  }
+
+  try {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: currency.code,
+      maximumFractionDigits: 0,
+    }).format(Number(value));
+  } catch (error) {
+    return `${currency.symbol}${value}`;
+  }
+};
+
+const formatCurrencyRange = (min, max, context) => {
+  const left = formatCurrencyAmount(min, context);
+  const right = formatCurrencyAmount(max, context);
+  return `${left} – ${right}`;
+};
+
+const getDestinationBadge = (dest = {}) => {
+  if (typeof dest === 'string') return dest.split(',')[1]?.trim().slice(0, 2).toUpperCase() || 'TR';
+  if (dest.countryCode) return String(dest.countryCode).toUpperCase();
+  if (dest.flag && /^[A-Z]{2}$/.test(String(dest.flag))) return dest.flag;
+  const country = String(dest.country || '').toLowerCase();
+  return COUNTRY_CODE_BY_NAME[country] || country.slice(0, 2).toUpperCase() || 'TR';
 };
 
 const getDayBudget = (day) => {
@@ -122,6 +231,7 @@ export default function ItineraryPage() {
   const [checkedPacking, setCheckedPacking] = useState({});
   const [isPackingGenerating, setIsPackingGenerating] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
+  const [enrichmentStatus, setEnrichmentStatus] = useState('idle');
 
   useEffect(() => {
     setFavorites(getJson('andor_favorites', [], 'local') || []);
@@ -142,35 +252,10 @@ export default function ItineraryPage() {
   const versionsLoadedRef = useRef(false);
 
   useEffect(() => {
-    let data = null;
-    if (params.id === 'share') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sharedData = urlParams.get('data');
-      if (sharedData) {
-        try {
-          const decoder = new TextDecoder();
-          const binaryString = atob(sharedData);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          const jsonStr = decoder.decode(bytes);
-          data = safeParse(jsonStr, null);
-        } catch (e) {}
-      } else {
-        const urlId = urlParams.get('id');
-        if (urlId) {
-          data = getJson(`andor_shared_${urlId}`, null, 'local');
-        }
-      }
-    } else {
-      data = getItinerary(params.id);
-      if (!data && typeof window !== 'undefined') {
-        data = getJson(`andor_shared_${params.id}`, null, 'local');
-      }
-    }
+    let cancelled = false;
 
-    if (data) {
+    const applyData = (data) => {
+      if (!data || cancelled) return false;
       try {
         const val = validateAndNormalize(data);
         if (val.fatal) {
@@ -178,8 +263,8 @@ export default function ItineraryPage() {
         } else {
           const normalized = val.normalized || data;
           const validatedData = validateAndFixCoordinates(
-            normalized, 
-            normalized.destination?.city || ''
+            normalized,
+            normalized.destination?.city || normalized.destination?.name || ''
           );
           const enriched = enrichItinerary(validatedData);
           setItinerary(enriched);
@@ -189,9 +274,142 @@ export default function ItineraryPage() {
         const enriched = enrichItinerary(data);
         setItinerary(enriched);
       }
-    }
-    setLoading(false);
+      return true;
+    };
+
+    const loadItinerary = async () => {
+      let data = null;
+      if (params.id === 'share') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedData = urlParams.get('data');
+        if (sharedData) {
+          try {
+            const decoder = new TextDecoder();
+            const binaryString = atob(sharedData);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            const jsonStr = decoder.decode(bytes);
+            data = safeParse(jsonStr, null);
+          } catch (e) {}
+        } else {
+          const urlId = urlParams.get('id');
+          if (urlId) {
+            data = getJson(`andor_shared_${urlId}`, null, 'local');
+          }
+        }
+      } else {
+        data = getItinerary(params.id);
+        if (!data && typeof window !== 'undefined') {
+          data = getJson(`andor_shared_${params.id}`, null, 'local');
+        }
+        if (!data) {
+          try {
+            const response = await fetch(`/api/itineraries/${encodeURIComponent(params.id)}`, { cache: 'no-store' });
+            if (response.ok) {
+              const payload = await response.json();
+              data = payload.itinerary;
+              if (data) {
+                setJson(`andor_itinerary_${params.id}`, data, 'local');
+                setJson(`andor_shared_${params.id}`, data, 'local');
+              }
+            }
+          } catch (error) {}
+        }
+      }
+
+      applyData(data);
+      if (!cancelled) setLoading(false);
+    };
+
+    loadItinerary();
+    return () => {
+      cancelled = true;
+    };
   }, [params.id]);
+
+  useEffect(() => {
+    if (!itinerary || !id || enrichmentStatus !== 'idle') return;
+    if (itinerary.metadata?.enrichmentStatus === 'complete') {
+      setEnrichmentStatus('complete');
+      return;
+    }
+
+    let active = true;
+    const runEnrichment = async () => {
+      setEnrichmentStatus('geocoding');
+      setTimeout(() => { if (active) setEnrichmentStatus('activities'); }, 1500);
+      setTimeout(() => { if (active) setEnrichmentStatus('restaurants'); }, 3000);
+
+      try {
+        const response = await fetch('/api/enrich-itinerary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itinerary,
+            preferences: {
+              departureCity: 'Lisboa'
+            }
+          })
+        });
+
+        if (!active) return;
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.enriched) {
+            setItinerary(prev => {
+              const updated = {
+                ...prev,
+                days: prev.days.map((day, dIdx) => {
+                  const enrichedDay = data.days?.[dIdx] || {};
+                  return {
+                    ...day,
+                    stops: day.stops.map((stop, sIdx) => {
+                      const enrichedStop = enrichedDay.stops?.[sIdx] || {};
+                      return {
+                        ...stop,
+                        ...enrichedStop,
+                        description: enrichedStop.description || stop.description,
+                        hours: enrichedStop.hours || stop.hours,
+                        cost: enrichedStop.cost ?? stop.cost,
+                        photo: enrichedStop.photo || stop.photo,
+                        wikipediaUrl: enrichedStop.wikipediaUrl || stop.wikipediaUrl,
+                        enrichmentSource: enrichedStop.enrichmentSource || stop.enrichmentSource,
+                        enriched: true
+                      };
+                    }),
+                    enrichedRestaurants: enrichedDay.enrichedRestaurants || []
+                  };
+                }),
+                flightOptions: data.transport?.options || prev.flightOptions,
+                accommodation: data.accommodation || prev.accommodation,
+                metadata: {
+                  ...prev.metadata,
+                  enrichmentStatus: 'complete'
+                }
+              };
+              setJson(`andor_itinerary_${id}`, updated, 'local');
+              setJson(`andor_shared_${id}`, updated, 'local');
+              return updated;
+            });
+            setEnrichmentStatus('complete');
+          } else {
+            setEnrichmentStatus('error');
+          }
+        } else {
+          setEnrichmentStatus('error');
+        }
+      } catch (err) {
+        console.error('Failed to enrich itinerary:', err);
+        if (active) setEnrichmentStatus('error');
+      }
+    };
+
+    runEnrichment();
+    return () => { active = false; };
+  }, [itinerary, id, enrichmentStatus]);
 
   useEffect(() => {
     if (itinerary) {
@@ -259,7 +477,7 @@ export default function ItineraryPage() {
     setItinerary(version.itinerary);
     saveItinerarySnapshot(version.itinerary);
     setShowVersionsModal(false);
-    showToast(`📋 ${version.label} restaurada.`, 'success');
+    showToast(`${version.label} restaurada.`, 'success');
   };
 
   const buildPackingList = () => {
@@ -306,7 +524,7 @@ export default function ItineraryPage() {
       setPackingList(nextList);
       setJson(`andor_packing_${id}`, nextList, 'local');
       setIsPackingGenerating(false);
-      showToast('📦 Lista de bagagem criada.', 'success');
+      showToast('Lista de bagagem criada.', 'success');
     }, 650);
   };
 
@@ -338,56 +556,63 @@ export default function ItineraryPage() {
       const nextUrl = shareUrl || createShareUrl();
       setShareUrl(nextUrl);
       await navigator.clipboard.writeText(nextUrl);
-      showToast('✅ Link copiado para a área de transferência!', 'success');
+      showToast('Link copiado para a área de transferência.', 'success');
     } catch (err) {
-      showToast('❌ Erro ao partilhar.', 'error');
+      showToast('Erro ao partilhar.', 'error');
     }
   };
 
   const copyActivityDetails = async (stop) => {
     try {
+      const currencyContext = getCurrencyContext(itinerary);
       const text = [
         stop.name,
         stop.address ? `Endereço: ${stop.address}` : null,
         stop.duration ? `Duração: ${stop.duration}` : null,
-        stop.cost !== undefined ? `Custo: €${stop.cost}` : stop.estimatedCost ? `Custo: ${stop.estimatedCost}` : null,
+        stop.cost !== undefined ? `Custo: ${formatCurrencyAmount(stop.cost, currencyContext)}` : stop.estimatedCost ? `Custo: ${formatCurrencyAmount(stop.estimatedCost, currencyContext)}` : null,
         stop.insiderTip ? `Segredo do Andor: ${stop.insiderTip}` : null,
       ].filter(Boolean).join('\n');
       await navigator.clipboard.writeText(text);
-      showToast('📋 Actividade copiada.', 'success');
+      showToast('Actividade copiada.', 'success');
     } catch (err) {
-      showToast('❌ Não foi possível copiar a actividade.', 'error');
+      showToast('Não foi possível copiar a actividade.', 'error');
     }
   };
 
   const copyCurrentDayPlan = async () => {
     try {
       const day = currentDay;
+      const currencyContext = getCurrencyContext(itinerary);
       const lines = [
         `${getDayEmoji(day)} Dia ${activeDay + 1}: ${day.title}`,
         day.moodDescription || null,
-        ...(day.stops || []).map((stop, index) => `${index + 1}. ${stop.name} · ${stop.duration || '2h'} · ${stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis'}`),
+        ...(day.stops || []).map((stop, index) => `${index + 1}. ${stop.name} · ${stop.duration || '2h'} · ${stop.cost !== undefined ? formatCurrencyAmount(stop.cost, currencyContext) : formatCurrencyAmount(stop.estimatedCost || 'Grátis', currencyContext)}`),
         day.localSecret ? `Segredo do Andor: ${day.localSecret}` : null,
       ].filter(Boolean);
       await navigator.clipboard.writeText(lines.join('\n'));
-      showToast('📋 Plano do dia copiado.', 'success');
+      showToast('Plano do dia copiado.', 'success');
     } catch (err) {
-      showToast('❌ Não foi possível copiar o dia.', 'error');
+      showToast('Não foi possível copiar o dia.', 'error');
     }
   };
 
   const handleExportPDF = async () => {
     if (typeof window === 'undefined' || !itinerary) return;
-    showToast('📄 A gerar PDF...', 'info');
+    showToast('A gerar PDF...', 'info');
     
     let html2pdf;
     try {
       html2pdf = (await import('html2pdf.js')).default;
     } catch (e) {
-      showToast('❌ Erro ao inicializar gerador de PDF.', 'error');
+      showToast('Erro ao inicializar gerador de PDF.', 'error');
       return;
     }
 
+    const currencyContext = getCurrencyContext(itinerary);
+    const pdfMoney = (value) => formatCurrencyAmount(value, currencyContext);
+    const pdfDestination = typeof itinerary.destination === 'string'
+      ? { name: itinerary.destination }
+      : (itinerary.destination || {});
     const safeText = (value) => String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -401,7 +626,7 @@ export default function ItineraryPage() {
         
         <!-- CAPA -->
         <div style="text-align:center; padding:60px 0; border-bottom:2px solid #D4A843; margin-bottom: 40px;">
-          <div style="font-size:48px; margin-bottom:16px;">${itinerary.destination?.flag || '✈️'}</div>
+          <div style="font-size:22px; margin-bottom:16px; letter-spacing:0.08em; font-weight:700;">${safeText(getDestinationBadge(pdfDestination))}</div>
           <h1 style="font-size:36px; color:#1A2235; margin:0;">${itinerary.destination?.city || itinerary.destination?.name || 'O teu Destino'}</h1>
           <p style="font-size:18px; color:#666; margin:8px 0;">${itinerary.trip?.totalDays || itinerary.days?.length || '–'} dias · ${itinerary.trip?.groupType || 'Viagem'} · ${itinerary.trip?.travelStyle || 'Exploração'}</p>
           <p style="font-size:14px; color:#D4A843; margin:16px 0; font-style:italic;">"${itinerary.destination?.andorVerdict || ''}"</p>
@@ -410,16 +635,16 @@ export default function ItineraryPage() {
         
         <!-- RESUMO DE ORÇAMENTO -->
         <div style="margin:40px 0; padding:24px; background:#f8f8f8; border-radius:8px; page-break-inside:avoid;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">💰 Estimativa de Orçamento</h2>
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Estimativa de Orçamento</h2>
           <table style="width:100%; border-collapse:collapse; font-size:14px;">
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">✈️ Voos</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.flights?.min || 0}-${itinerary.trip?.budgetBreakdown?.flights?.max || 0}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🏨 Alojamento</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.accommodation?.total || 0}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🍽️ Refeições</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.food?.total || 0}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🎭 Actividades</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.activities?.total || 0}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">🚇 Transportes</td><td style="text-align:right; padding:8px 0;">~€${itinerary.trip?.budgetBreakdown?.transport?.total || 0}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Voos</td><td style="text-align:right; padding:8px 0;">~${formatCurrencyRange(itinerary.trip?.budgetBreakdown?.flights?.min || 0, itinerary.trip?.budgetBreakdown?.flights?.max || 0, currencyContext)}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Alojamento</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.accommodation?.total || 0)}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Refeições</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.food?.total || 0)}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Actividades</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.activities?.total || 0)}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Transportes</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.transport?.total || 0)}</td></tr>
             <tr style="border-top:2px solid #D4A843; font-weight:bold;">
               <td style="padding:12px 0;">TOTAL ESTIMADO</td>
-              <td style="text-align:right; padding:12px 0; color:#D4A843;">~€${itinerary.trip?.budgetBreakdown?.grandTotal?.min || 0}-${itinerary.trip?.budgetBreakdown?.grandTotal?.max || 0}</td>
+              <td style="text-align:right; padding:12px 0; color:#D4A843;">~${formatCurrencyRange(itinerary.trip?.budgetBreakdown?.grandTotal?.min || 0, itinerary.trip?.budgetBreakdown?.grandTotal?.max || 0, currencyContext)}</td>
             </tr>
           </table>
         </div>
@@ -437,37 +662,37 @@ export default function ItineraryPage() {
                 ${getDayEmoji(day)} Dia ${day.dayNumber} — ${day.title}
               </h2>
               <p style="color:#666; font-style:italic; font-size:14px; margin-bottom:10px;">${day.moodDescription || ''}</p>
-              <p style="font-size:13px; color:#555; margin-bottom:15px;">💰 Orçamento do dia: ~€${dayBudget} · ⛅ ${day.weather?.avgTemp || ''} ${day.weather?.condition || ''}</p>
+              <p style="font-size:13px; color:#555; margin-bottom:15px;">Orçamento do dia: ~${pdfMoney(dayBudget)} · ${day.weather?.avgTemp || ''} ${day.weather?.condition || ''}</p>
               
               ${morningActivities.length ? `
-                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">🌅 Manhã</h3>
+                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Manhã</h3>
                 ${morningActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${a.emoji || '📍'} ${a.name}</strong>
-                    <br/><span style="font-size:12px; color:#888;">📍 ${a.address || ''} · ⏱ ${a.duration || '2h'} · 💰 ${a.cost > 0 ? '€'+a.cost : 'Grátis'}</span>
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">💡 ${a.insiderTip}</span>` : ''}
+                    <strong>${getStopIcon(a)} ${a.name}</strong>
+                    <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${a.insiderTip}</span>` : ''}
                   </div>
                 `).join('')}
               ` : ''}
 
               ${afternoonActivities.length ? `
-                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">☀️ Tarde</h3>
+                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Tarde</h3>
                 ${afternoonActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${a.emoji || '📍'} ${a.name}</strong>
-                    <br/><span style="font-size:12px; color:#888;">📍 ${a.address || ''} · ⏱ ${a.duration || '2h'} · 💰 ${a.cost > 0 ? '€'+a.cost : 'Grátis'}</span>
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">💡 ${a.insiderTip}</span>` : ''}
+                    <strong>${getStopIcon(a)} ${a.name}</strong>
+                    <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${a.insiderTip}</span>` : ''}
                   </div>
                 `).join('')}
               ` : ''}
 
               ${eveningActivities.length ? `
-                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">🌙 Noite</h3>
+                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Noite</h3>
                 ${eveningActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${a.emoji || '📍'} ${a.name}</strong>
-                    <br/><span style="font-size:12px; color:#888;">📍 ${a.address || ''} · ⏱ ${a.duration || '2h'} · 💰 ${a.cost > 0 ? '€'+a.cost : 'Grátis'}</span>
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">💡 ${a.insiderTip}</span>` : ''}
+                    <strong>${getStopIcon(a)} ${a.name}</strong>
+                    <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${a.insiderTip}</span>` : ''}
                   </div>
                 `).join('')}
               ` : ''}
@@ -487,7 +712,7 @@ export default function ItineraryPage() {
           <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">ℹ️ Informação Prática</h2>
           <p style="font-size:14px; margin:8px 0;">🛂 <strong>Visto:</strong> ${itinerary.destination?.visaInfo || 'Não necessita de visto para estadias curtas'}</p>
           <p style="font-size:14px; margin:8px 0;">🏥 <strong>Saúde:</strong> ${itinerary.destination?.healthInfo || 'Sem requisitos especiais'}</p>
-          <p style="font-size:14px; margin:8px 0;">🔒 <strong>Segurança:</strong> ${itinerary.destination?.safetyLevel || 'Normal'}</p>
+          <p style="font-size:14px; margin:8px 0;"><strong>Segurança:</strong> ${itinerary.destination?.safetyLevel || 'Normal'}</p>
           <p style="font-size:14px; margin:8px 0;">💵 <strong>Gorjetas:</strong> ${itinerary.destination?.tippingCulture || 'Opcional'}</p>
           <p style="font-size:14px; margin:8px 0;">🔌 <strong>Tomadas:</strong> ${itinerary.destination?.electricityPlug || 'Tipos padrão'}</p>
           ${itinerary.destination?.simCard ? `<p style="font-size:14px; margin:8px 0;">📱 <strong>Cartão SIM:</strong> ${itinerary.destination.simCard}</p>` : ''}
@@ -520,9 +745,9 @@ export default function ItineraryPage() {
     };
     
     html2pdf().set(options).from(content).save().then(() => {
-      showToast('✅ PDF exportado com sucesso!', 'success');
+      showToast('PDF exportado com sucesso.', 'success');
     }).catch(err => {
-      showToast('❌ Erro ao exportar PDF.', 'error');
+      showToast('Erro ao exportar PDF.', 'error');
     });
   };
 
@@ -554,14 +779,14 @@ export default function ItineraryPage() {
       });
 
       if (!response.ok) {
-        showToast('❌ Erro ao regenerar o dia.', 'error');
+        showToast('Erro ao regenerar o dia.', 'error');
         return;
       }
       
       const data = await response.json();
       const newDay = data.day;
       if (!newDay) {
-        showToast('❌ Erro ao processar a resposta do dia.', 'error');
+        showToast('Erro ao processar a resposta do dia.', 'error');
         return;
       }
 
@@ -576,9 +801,9 @@ export default function ItineraryPage() {
       setItinerary(newItinerary);
       saveItinerarySnapshot(newItinerary);
       saveVersion(`Dia ${activeDay + 1} regenerado`, newItinerary);
-      showToast(`✅ Dia ${activeDay + 1} regenerado com sucesso!`, 'success');
+      showToast(`Dia ${activeDay + 1} regenerado com sucesso.`, 'success');
     } catch (error) {
-      showToast('❌ Ocorreu um erro inesperado.', 'error');
+      showToast('Ocorreu um erro inesperado.', 'error');
     } finally {
       setIsAdapting(false);
       setAdaptFeedback('');
@@ -609,10 +834,10 @@ export default function ItineraryPage() {
         }
         return fav !== stopName;
       });
-      showToast('💔 Removido dos favoritos.', 'info');
+      showToast('Removido dos favoritos.', 'info');
     } else {
       nextFavorites = [...favorites, { name: stopName, destination: destName }];
-      showToast('❤️ Guardado nos favoritos!', 'success');
+      showToast('Guardado nos favoritos.', 'success');
     }
     
     setFavorites(nextFavorites);
@@ -628,7 +853,7 @@ export default function ItineraryPage() {
         id: stopName.toLowerCase().replace(/\s+/g, '-'),
         name: stopName,
         type: stop.type || 'Actividade',
-        cost: stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis',
+        cost: stop.cost !== undefined ? formatCurrencyAmount(stop.cost, getCurrencyContext(itinerary)) : formatCurrencyAmount(stop.estimatedCost || 'Grátis', getCurrencyContext(itinerary)),
         duration: stop.duration || '2h',
         city: dest.city || dest.name || (typeof itinerary?.destination === 'string' ? itinerary.destination : ''),
         destinationSlug: dest.slug || 'tokyo',
@@ -699,6 +924,9 @@ export default function ItineraryPage() {
     ? { name: itinerary.destination } 
     : (itinerary.destination || {});
   const trip = itinerary.trip || {};
+  const currencyContext = getCurrencyContext(itinerary);
+  const formatMoney = (value) => formatCurrencyAmount(value, currencyContext);
+  const destinationBadge = getDestinationBadge(dest);
   const currentDay = itinerary.days?.[activeDay] || {};
   const dayCoordinates = (currentDay.stops || [])
     .map(stop => Array.isArray(stop.coordinates)
@@ -715,7 +943,7 @@ export default function ItineraryPage() {
   const budgetMin = trip.budgetBreakdown?.grandTotal?.min;
   const budgetMax = trip.budgetBreakdown?.grandTotal?.max;
   const budgetDisplay = budgetMin
-    ? `€${budgetMin} – €${budgetMax}`
+    ? formatCurrencyRange(budgetMin, budgetMax, currencyContext)
     : itinerary.totalCost || null;
 
   // Group stops for the current day
@@ -742,34 +970,34 @@ export default function ItineraryPage() {
           <div className={styles.headerTitleRow}>
             <div className={styles.headerTitleGroup}>
               <h1 className={styles.headerCity}>
-                <span className={styles.headerFlag}>{dest.flag || '📍'}</span>
+                <span className={styles.headerFlag}>{destinationBadge}</span>
                 {dest.city || dest.name || itinerary.destination}
               </h1>
               <div className={styles.headerMeta}>
                 <span className={styles.headerMetaChip}>
-                  📅 {trip.totalDays || itinerary.days?.length || '–'} dias
+                  <CalendarDays size={16} aria-hidden="true" /> {trip.totalDays || itinerary.days?.length || '–'} dias
                 </span>
                 <span className={styles.headerMetaChip}>
-                  👥 {trip.groupType || 'Casal'}
+                  <Users size={16} aria-hidden="true" /> {trip.groupType || 'Casal'}
                 </span>
                 <span className={styles.headerMetaChip}>
-                  🎨 {trip.travelStyle || 'Cultural'}
+                  <Palette size={16} aria-hidden="true" /> {trip.travelStyle || 'Cultural'}
                 </span>
                 {budgetDisplay && (
                   <span className={styles.headerMetaChipGold}>
-                    💰 {budgetDisplay}
+                    <WalletCards size={16} aria-hidden="true" /> {budgetDisplay}
                   </span>
                 )}
               </div>
             </div>
             <div className={styles.headerActionsDesktop}>
-              <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title="Editar este dia">✏️ <span>Editar</span></button>
-              <button className={styles.btnSecondary} onClick={handleShare} aria-label="Partilhar itinerário" title="Partilhar itinerário">🔗 <span>Partilhar</span></button>
-              <button className={styles.btnSecondary} onClick={handleExportPDF} aria-label="Exportar PDF" title="Exportar PDF">📄 <span>PDF</span></button>
-              <button className={styles.btnSecondary} onClick={() => setShowVersionsModal(true)} aria-label="Ver versões" title="Ver versões">📋 <span>Versões</span></button>
-              <button className={styles.btnSecondary} onClick={handleGeneratePackingList} aria-label="Gerar lista de bagagem" title="Gerar lista de bagagem">📦 <span>Bagagem</span></button>
-              <button className={styles.btnSecondary} onClick={copyCurrentDayPlan} aria-label="Copiar plano do dia" title="Copiar plano do dia">📋 <span>Copiar</span></button>
-              <button className={styles.btnPrimary} onClick={openAIChat} aria-label="Pedir ajuda ao Andor" title="Pedir ajuda ao Andor">💬 <span>Andor</span></button>
+              <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title="Editar este dia"><Edit3 size={16} aria-hidden="true" /> <span>Editar</span></button>
+              <button className={styles.btnSecondary} onClick={handleShare} aria-label="Partilhar itinerário" title="Partilhar itinerário"><Share2 size={16} aria-hidden="true" /> <span>Partilhar</span></button>
+              <button className={styles.btnSecondary} onClick={handleExportPDF} aria-label="Exportar PDF" title="Exportar PDF"><FileText size={16} aria-hidden="true" /> <span>PDF</span></button>
+              <button className={styles.btnSecondary} onClick={() => setShowVersionsModal(true)} aria-label="Ver versões" title="Ver versões"><History size={16} aria-hidden="true" /> <span>Versões</span></button>
+              <button className={styles.btnSecondary} onClick={handleGeneratePackingList} aria-label="Gerar lista de bagagem" title="Gerar lista de bagagem"><Package size={16} aria-hidden="true" /> <span>Bagagem</span></button>
+              <button className={styles.btnSecondary} onClick={copyCurrentDayPlan} aria-label="Copiar plano do dia" title="Copiar plano do dia"><Copy size={16} aria-hidden="true" /> <span>Copiar</span></button>
+              <button className={styles.btnPrimary} onClick={openAIChat} aria-label="Pedir ajuda ao Andor" title="Pedir ajuda ao Andor"><MessageCircle size={16} aria-hidden="true" /> <span>Andor</span></button>
             </div>
           </div>
         </header>
@@ -788,7 +1016,7 @@ export default function ItineraryPage() {
                   data-testid={`day-tab-${i + 1}`}
                 >
                   <div className={styles.dayTabEmoji}>
-                    {isAdapting && activeDay === i ? '⏳' : getDayEmoji(day)}
+                    {isAdapting && activeDay === i ? <Loader2 size={16} aria-hidden="true" /> : getDayEmoji(day)}
                   </div>
                   <div className={styles.dayTabContent}>
                     <div className={styles.dayTabNumber}>DIA {i + 1}</div>
@@ -796,7 +1024,7 @@ export default function ItineraryPage() {
                       {(day.title?.length > 16 ? day.title.substring(0, 16) + '…' : day.title) || `Dia ${i + 1}`}
                     </div>
                     {dayBudget > 0 && (
-                      <div className={styles.dayTabBudget}>~€{dayBudget}</div>
+                      <div className={styles.dayTabBudget}>~{formatMoney(dayBudget)}</div>
                     )}
                   </div>
                 </button>
@@ -823,7 +1051,7 @@ export default function ItineraryPage() {
             {/* MAPA INTERACTIVO */}
             <div className={styles.mapContainer} data-testid="itinerary-map-container">
               <ErrorBoundary>
-                <LiveMap stops={currentDay.stops || []} destination={dest} />
+                <LiveMap stops={currentDay.stops || []} destination={dest} currency={currencyContext.symbol} />
               </ErrorBoundary>
             </div>
             <a
@@ -832,7 +1060,7 @@ export default function ItineraryPage() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              🗺️ Abrir este dia no Google Maps
+              <Map size={16} aria-hidden="true" /> Abrir este dia no Google Maps
             </a>
 
             <DailyPlanTimeline dailyPlans={itinerary.days} destination={dest.city || dest.name} />
@@ -841,7 +1069,7 @@ export default function ItineraryPage() {
             <div className={styles.dayMetaCards}>
               {currentDay.weather && (
                 <div className={styles.metaCard}>
-                  <span className={styles.metaIcon}>{currentDay.weather.emoji || '⛅'}</span>
+                  <span className={styles.metaIcon}>WX</span>
                   <div>
                     <div className={styles.metaLabel}>Clima</div>
                     <div className={styles.metaValue}>{currentDay.weather.avgTemp} · {currentDay.weather.condition}</div>
@@ -853,16 +1081,16 @@ export default function ItineraryPage() {
               )}
               {currentDay.transport && (
                 <div className={styles.metaCard}>
-                  <span className={styles.metaIcon}>🚃</span>
+                  <span className={styles.metaIcon}><Route size={18} aria-hidden="true" /></span>
                   <div>
                     <div className={styles.metaLabel}>Transporte do Dia</div>
                     <div className={styles.metaValue}>
                       {currentDay.transport.mainMode || currentDay.transport.mainRecommendation}
                     </div>
                     <div className={styles.metaValueSub}>
-                      Est. €{currentDay.transport.cost}
+                      Est. {formatMoney(currentDay.transport.cost)}
                       {currentDay.transport.dayPass && (
-                        <span> · Passe diário: €{currentDay.transport.dayPass.price || currentDay.transport.dayPass}</span>
+                        <span> · Passe diário: {formatMoney(currentDay.transport.dayPass.price || currentDay.transport.dayPass)}</span>
                       )}
                     </div>
                     {currentDay.transport.apps && currentDay.transport.apps.length > 0 && (
@@ -888,10 +1116,10 @@ export default function ItineraryPage() {
                     onClick={() => setCompactMode(!compactMode)}
                     aria-label={compactMode ? "Mudar para vista detalhada" : "Mudar para vista compacta"}
                   >
-                    {compactMode ? '≡ Vista Compacta' : '📄 Vista Detalhada'}
+                    {compactMode ? 'Vista compacta' : 'Vista detalhada'}
                   </button>
                   <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting}>
-                    {isAdapting ? '⏳ A processar...' : '🔄 Regenerar este dia'}
+                    {isAdapting ? <><Loader2 size={16} aria-hidden="true" /> A processar...</> : <><RefreshCw size={16} aria-hidden="true" /> Regenerar este dia</>}
                   </button>
                 </div>
               </div>
@@ -911,19 +1139,19 @@ export default function ItineraryPage() {
                       String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? styles.energyIntense :
                       styles.energyModerate
                     }`}>
-                      {String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? '🧘 Ritmo Leve' :
-                       String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? '⚡ Ritmo Intenso' :
-                       '🚶 Ritmo Moderado'}
+                      {String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? 'Ritmo leve' :
+                       String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? 'Ritmo intenso' :
+                       'Ritmo moderado'}
                     </div>
                     <div className={styles.synopsisStatBadge}>
-                      🏃 {currentDay.estimatedDistance || (activeDay === 0 ? '4 km' : activeDay % 2 === 0 ? '8 km' : '6 km')} a pé
+                      {currentDay.estimatedDistance || (activeDay === 0 ? '4 km' : activeDay % 2 === 0 ? '8 km' : '6 km')} a pé
                     </div>
                     <div className={styles.synopsisStatBadge}>
-                      💰 ~€{getDayBudget(currentDay)} est.
+                      ~{formatMoney(getDayBudget(currentDay))} est.
                     </div>
-                    <div className={styles.synopsisStatBadge}>
-                      🎯 {currentDay.stops?.length || 0} locais
-                    </div>
+                    {enrichmentStatus !== 'complete' && enrichmentStatus !== 'idle' && (
+                      <EnrichmentProgress status={enrichmentStatus} />
+                    )}
                   </div>
                 </div>
               )}
@@ -938,209 +1166,80 @@ export default function ItineraryPage() {
                   const stops = groupedStops[periodKey];
                   if (!stops || stops.length === 0) return null;
                   
-                  const periodNames = { morning: 'MANHÃ 🌅', afternoon: 'TARDE ☀️', evening: 'NOITE 🌙' };
+                  const periodNames = { morning: 'MANHÃ', afternoon: 'TARDE', evening: 'NOITE' };
 
                   return (
                     <div key={periodKey} className={styles.periodSection}>
-                    <h3 className={styles.periodHeading}>{periodNames[periodKey]}</h3>
-                    <div className={styles.periodStops}>
-                      {stops.map((stop, stopIdx) => {
-                        const idx = globalStopCounter++;
-                        const isExpanded = compactMode ? false : !!expandedStops[idx];
-                        const isSaved = isStopSaved(stop.name);
-                        const crowd = getCrowdLabel(stop.crowdLevel);
-                        
-                        return (
-                          <div key={idx}>
-                            {/* Transport bridge from previous activity */}
-                            {stopIdx > 0 && stop.transportFromPrevious && (
-                              <div className={styles.transportBridge}>
-                                <span className={styles.transportBridgeIcon}>
-                                  {stop.transportFromPrevious.mode?.includes('metro') || stop.transportFromPrevious.mode?.includes('Metro') ? '🚇' :
-                                   stop.transportFromPrevious.mode?.includes('walk') || stop.transportFromPrevious.mode?.includes('pé') ? '🚶' :
-                                   stop.transportFromPrevious.mode?.includes('taxi') || stop.transportFromPrevious.mode?.includes('Uber') ? '🚕' :
-                                   stop.transportFromPrevious.mode?.includes('bus') || stop.transportFromPrevious.mode?.includes('autocarro') ? '🚌' : '🚶'}
-                                </span>
-                                <span className={styles.transportBridgeText}>
-                                  {stop.transportFromPrevious.mode} · {stop.transportFromPrevious.duration}
-                                  {stop.transportFromPrevious.cost && ` · €${stop.transportFromPrevious.cost}`}
-                                </span>
-                              </div>
-                            )}
-                            
-                            <div id={`activity-${idx}`} className={`${styles.activityCard} ${isExpanded ? styles.expanded : ''}`} data-testid="activity-card">
-                            
-                              {/* Collapsed State */}
-                              <button
-                                type="button"
-                                className={styles.activityHeader}
-                                onClick={() => toggleStop(idx)}
-                                onKeyDown={(event) => handleActivityKeyDown(event, idx)}
-                                aria-expanded={isExpanded}
-                                data-activity-index={idx}
-                              >
-                                <div className={styles.activityHeaderLeft}>
-                                  <span className={styles.activitySequence}>{idx + 1}</span>
-                                  {stop.photoKeyword && (
-                                    <img
-                                      src={`https://source.unsplash.com/128x128/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`}
-                                      alt={stop.name}
-                                      className={styles.activityThumb}
-                                      width="56"
-                                      height="56"
-                                      loading="lazy"
-                                      decoding="async"
-                                      onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                                    />
-                                  )}
-                                  <div className={styles.activityIcon}>{getStopIcon(stop)}</div>
-                                  <div className={styles.activityName}>{stop.name}</div>
-                                </div>
-                                <div className={styles.activityHeaderRight}>
-                                  <span className={styles.activityMeta}>⏱️ {stop.duration || (stop.durationMinutes ? stop.durationMinutes + 'm' : '2h')}</span>
-                                  <span className={styles.activityMeta}>💰 {stop.cost !== undefined ? `€${stop.cost}` : stop.estimatedCost || 'Grátis'}</span>
-                                  {crowd && (
-                                    <span className={`${styles.activityCrowd} ${styles[crowd.cls]}`}>
-                                      👥 {crowd.label}
-                                    </span>
-                                  )}
-                                  <span className={styles.chevron}>{isExpanded ? '▲' : '▼'}</span>
-                                </div>
-                              </button>
-
-                              {/* Expanded State */}
-                              {isExpanded && (
-                                <div className={styles.activityBody}>
-                                  {stop.photoKeyword && (
-                                    <div className={styles.activityPhotoWrapper}>
-                                      <img 
-                                        src={`https://source.unsplash.com/800x400/?${encodeURIComponent(stop.photoKeyword || stop.name)}&sig=${encodeURIComponent(stop.id || idx)}`} 
-                                        alt={stop.name}
-                                        className={styles.activityPhoto}
-                                        width="800"
-                                        height="400"
-                                        loading="lazy"
-                                        decoding="async"
-                                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                                      />
-                                    </div>
-                                  )}
-                                  <div className={styles.activityDetails}>
-                                    <div className={styles.activityDetailRow}>
-                                      <strong>📍 Endereço:</strong> {stop.address || dest.city}
-                                    </div>
-                                    {stop.transportFromPrevious && (
-                                      <div className={styles.activityDetailRow}>
-                                        <strong>🚇 Como chegar:</strong> {stop.transportFromPrevious.mode} ({stop.transportFromPrevious.duration})
-                                        {stop.transportFromPrevious.directions && (
-                                          <span className={styles.transportDirections}> — {stop.transportFromPrevious.directions}</span>
-                                        )}
-                                      </div>
-                                    )}
-                                    {stop.insiderTip && (
-                                      <div className={styles.insiderTipBox}>
-                                        <span className={styles.insiderTipIcon}>💡</span>
-                                        <div>
-                                          <strong>Segredo do Andor:</strong>
-                                          <p className={styles.insiderTipText}>&ldquo;{stop.insiderTip}&rdquo;</p>
-                                        </div>
-                                      </div>
-                                    )}
-                                    <button
-                                      type="button"
-                                      className={styles.copyActivityBtn}
-                                      onClick={() => copyActivityDetails(stop)}
-                                      aria-label={`Copiar detalhes de ${stop.name}`}
-                                    >
-                                      📋 Copiar detalhes
-                                    </button>
-                                  </div>
-                                  <div className={styles.activityActions}>
-                                    <a 
-                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + (stop.address || dest.city))}`} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className={styles.btnOutline}
-                                    >
-                                      🗺️ Ver no Mapa
-                                    </a>
-                                    <button
-                                      className={styles.btnOutline}
-                                      onClick={() => setBookingStop(stop)}
-                                      data-testid="booking-button"
-                                    >
-                                      🎟️ Reservar
-                                    </button>
-                                    <FavoriteButton
-                                      itemId={`${dest.city || dest.name || 'trip'}-${stop.name}`}
-                                      itemType="activity"
-                                      className={`${styles.btnOutline} ${isSaved ? styles.btnSaved : ''}`}
-                                      initialActive={isSaved}
-                                      label="Guardar"
-                                      activeLabel="Guardado"
-                                      onToggle={() => toggleSaved(stop)}
-                                    />
-                                  </div>
+                      <h3 className={styles.periodHeading}>{periodNames[periodKey]}</h3>
+                      <div className={styles.periodStops}>
+                        {stops.map((stop, stopIdx) => {
+                          const idx = globalStopCounter++;
+                          const isSaved = isStopSaved(stop.name);
+                          
+                          return (
+                            <div key={idx}>
+                              {/* Transport bridge from previous activity */}
+                              {stopIdx > 0 && stop.transportFromPrevious && (
+                                <div className={styles.transportBridge}>
+                                  <span className={styles.transportBridgeIcon}>
+                                    <Route size={16} aria-hidden="true" />
+                                  </span>
+                                  <span className={styles.transportBridgeText}>
+                                    {stop.transportFromPrevious.mode} · {stop.transportFromPrevious.duration}
+                                    {stop.transportFromPrevious.cost && ` · ${formatMoney(stop.transportFromPrevious.cost)}`}
+                                  </span>
                                 </div>
                               )}
+                              
+                              <EnhancedActivityCard
+                                activity={stop}
+                                index={idx}
+                                period={periodKey}
+                                isSaved={isSaved}
+                                isExpanded={compactMode ? false : !!expandedStops[idx]}
+                                onToggle={() => toggleStop(idx)}
+                                onSave={() => toggleSaved(stop)}
+                                onBook={() => setBookingStop(stop)}
+                                onCopy={() => copyActivityDetails(stop)}
+                                onMapFocus={(coords) => {
+                                  // focus on map
+                                }}
+                                isDayHighlight={stopIdx === 0}
+                              />
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-
-              {/* Contingency plans for rain/fatigue/alternatives */}
-              {!isAdapting && (
-                <div className={styles.contingencyCard}>
-                  <h4 className={styles.contingencyTitle}>📋 Alternativas & Plano de Contingência</h4>
-                  <div className={styles.contingencyGrid}>
-                    <div className={styles.contingencyItem}>
-                      <span className={styles.contingencyIcon}>🌧️ Plano para Chuva</span>
-                      <p className={styles.contingencyText}>
-                        {currentDay.alternativePlans?.rainy || `Em caso de chuva, visite museus cobertos, mercados gastronómicos locais, ou desfrute de pastelarias tradicionais em ${dest.city || dest.name || 'a cidade'}.`}
-                      </p>
-                    </div>
-                    <div className={styles.contingencyItem}>
-                      <span className={styles.contingencyIcon}>💤 Ritmo Lento (Fadiga)</span>
-                      <p className={styles.contingencyText}>
-                        {currentDay.alternativePlans?.relaxed || `Se preferir encurtar o dia, salte a atividade da tarde e descanse no hotel ou faça um passeio leve pelas redondezas.`}
-                      </p>
-                    </div>
-                    <div className={styles.contingencyItem}>
-                      <span className={styles.contingencyIcon}>⚡ Mais Ação (Intenso)</span>
-                      <p className={styles.contingencyText}>
-                        {currentDay.alternativePlans?.intense || `Se ainda tiver energia de sobra, explore miradouros adicionais, feiras locais ao pôr do sol ou ruelas escondidas a pé.`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  );
+                })}
             </div>
 
             {/* REFEIÇÕES DO DIA */}
             {currentDay.meals && (
               <div className={styles.mealsSection}>
-                <h3 className={styles.sectionTitle}>🍽️ Refeições do Dia</h3>
+                <h3 className={styles.sectionTitle}>Refeições do Dia</h3>
                 <div className={styles.mealsGrid}>
                   {['breakfast', 'lunch', 'dinner'].map(mealType => {
                     const meal = currentDay.meals[mealType];
                     if (!meal) return null;
-                    const icons = { breakfast: '🌅 Pequeno-almoço', lunch: '☀️ Almoço', dinner: '🌙 Jantar' };
+                    const icons = { breakfast: 'Pequeno-almoço', lunch: 'Almoço', dinner: 'Jantar' };
                     const borderClass = {
                       breakfast: styles.mealBorderGold,
                       lunch: styles.mealBorderBlue,
                       dinner: styles.mealBorderPurple,
                     };
+                    const mealPriceRange = String(meal.priceRange || '').trim();
+                    const mealCostDisplay = mealPriceRange && !/^[A-Z]{3}$|^[€$£¥]+$/.test(mealPriceRange)
+                      ? mealPriceRange
+                      : formatMoney(meal.cost);
                     return (
                       <div key={mealType} className={`${styles.mealCard} ${borderClass[mealType]}`}>
                         <div className={styles.mealHeader}>{icons[mealType]}</div>
                         <div className={styles.mealName}>{meal.name}</div>
                         <div className={styles.mealMeta}>
                           {meal.cuisine || meal.type}
-                          <span className={styles.mealCost}> · {meal.priceRange || `€${meal.cost}`}</span>
+                          <span className={styles.mealCost}> · {mealCostDisplay}</span>
                         </div>
                         {(meal.mustOrder || meal.note) && (
                           <div className={styles.mealTip}>
@@ -1153,7 +1252,7 @@ export default function ItineraryPage() {
                           rel="noopener noreferrer"
                           className={styles.mealMapLink}
                         >
-                          📍 Ver no Google Maps
+                          <MapPin size={16} aria-hidden="true" /> Ver no Google Maps
                         </a>
                       </div>
                     );
@@ -1162,10 +1261,31 @@ export default function ItineraryPage() {
               </div>
             )}
 
+            {/* RESTAURANTES ENRIQUECIDOS NAS PROXIMIDADES */}
+            {currentDay.enrichedRestaurants && currentDay.enrichedRestaurants.length > 0 && (
+              <div className={styles.mealsSection}>
+                <h3 className={styles.sectionTitle}>Restaurantes Recomendados (Dados Reais)</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                  {currentDay.enrichedRestaurants.map((restaurant, rIdx) => (
+                    <RestaurantCard
+                      key={rIdx}
+                      restaurant={restaurant}
+                      onMapFocus={(coords) => {
+                        const event = new CustomEvent('andor-open-map', {
+                          detail: { coordinates: coords, name: restaurant.name }
+                        });
+                        window.dispatchEvent(event);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* SEGREDO LOCAL */}
             {(currentDay.localSecret || currentDay.culturalNote) && (
               <div className={styles.localSecretCard}>
-                <div className={styles.localSecretIcon}>🔑</div>
+                <div className={styles.localSecretIcon}>Nota</div>
                 <div className={styles.localSecretContent}>
                   <h4 className={styles.localSecretTitle}>Segredo Local do Andor</h4>
                   <p>{currentDay.localSecret}</p>
@@ -1181,14 +1301,14 @@ export default function ItineraryPage() {
               aria-expanded={showMobileBudget}
               data-testid="mobile-budget-toggle"
             >
-              💰 Ver Orçamento Completo {showMobileBudget ? '▲' : '▼'}
+              Ver orçamento completo {showMobileBudget ? '▲' : '▼'}
             </button>
           </div>
 
           {/* PAINEL LATERAL (DIREITO) */}
           <div className={`${styles.rightPanel} ${showMobileBudget ? styles.mobileBudgetOpen : styles.mobileBudgetCollapsed}`}>
             
-            <BudgetVisualization budget={trip.budget || trip.budgetScenarios || (trip.budgetBreakdown ? { 
+            <BudgetVisualization currency={currencyContext.symbol} budget={trip.budget || trip.budgetScenarios || (trip.budgetBreakdown ? { 
               scenarios: [{ 
                 tier: 'balanced', 
                 total: trip.budgetBreakdown.grandTotal?.min || 0, 
@@ -1203,7 +1323,7 @@ export default function ItineraryPage() {
             } : { scenarios: [] })} />
             
             <button className={styles.btnOutlineFull} onClick={() => setShowBudgetDrawer(true)} style={{ marginBottom: '16px' }}>
-              ⚙️ Ajustar Orçamento
+              <Settings size={16} aria-hidden="true" /> Ajustar orçamento
             </button>
 
             <BookingChecklist bookingChecklist={itinerary.bookingChecklist || trip.bookingChecklist || itinerary.trip?.bookingChecklist} />
@@ -1243,7 +1363,7 @@ export default function ItineraryPage() {
             {/* TOP TIPS */}
             {trip.topTips && (
               <div className={styles.sidebarCard}>
-                <h3 className={styles.tipsHeading}>📋 Dicas Top do Andor</h3>
+                <h3 className={styles.tipsHeading}>Dicas Top do Andor</h3>
                 <ul className={styles.tipsList}>
                   {trip.topTips.map((tip, i) => (
                     <li key={i} className={styles.tipsItem}>{tip}</li>
@@ -1254,7 +1374,7 @@ export default function ItineraryPage() {
 
             <div className={styles.sidebarCard}>
               <div className={styles.packingHeader}>
-                <h3 className={styles.tipsHeading}>📦 Lista de Bagagem</h3>
+                <h3 className={styles.tipsHeading}>Lista de Bagagem</h3>
                 <button className={styles.btnSecondary} onClick={handleGeneratePackingList} disabled={isPackingGenerating}>
                   {isPackingGenerating ? 'A gerar...' : packingList ? 'Atualizar' : 'Gerar'}
                 </button>
@@ -1262,10 +1382,10 @@ export default function ItineraryPage() {
               {packingList ? (
                 <div className={styles.packingList}>
                   {Object.entries({
-                    essential: '✈️ Essencial',
-                    clothes: '👕 Roupa',
-                    apps: '📱 Apps',
-                    avoid: '❌ Não levar',
+                    essential: 'Essencial',
+                    clothes: 'Roupa',
+                    apps: 'Apps',
+                    avoid: 'Não levar',
                   }).map(([category, label]) => (
                     <div key={category} className={styles.packingGroup}>
                       <h4>{label}</h4>
@@ -1292,9 +1412,9 @@ export default function ItineraryPage() {
 
             {/* ACTIONS */}
             <div className={styles.sidebarActionsCol}>
-              <button className={styles.btnSecondaryFull} onClick={handleExportPDF}>📄 Exportar PDF</button>
-              <button className={styles.btnSecondaryFull} onClick={handleShare}>🔗 Partilhar Link</button>
-              <button className={styles.btnPrimaryFull} onClick={openAIChat}>💬 Pedir ao Andor</button>
+              <button className={styles.btnSecondaryFull} onClick={handleExportPDF}><FileText size={16} aria-hidden="true" /> Exportar PDF</button>
+              <button className={styles.btnSecondaryFull} onClick={handleShare}><Share2 size={16} aria-hidden="true" /> Partilhar link</button>
+              <button className={styles.btnPrimaryFull} onClick={openAIChat}><MessageCircle size={16} aria-hidden="true" /> Pedir ao Andor</button>
             </div>
 
           </div>
@@ -1305,7 +1425,7 @@ export default function ItineraryPage() {
       <Modal
         isOpen={showAdaptModal}
         onClose={() => setShowAdaptModal(false)}
-        title={`🔄 Regenerar Dia ${activeDay + 1}`}
+        title={`Regenerar Dia ${activeDay + 1}`}
       >
         <p className={styles.modalSubtitle}>O que não gostaste neste dia?</p>
             
@@ -1340,14 +1460,14 @@ export default function ItineraryPage() {
       <Drawer
         isOpen={showBudgetDrawer}
         onClose={() => setShowBudgetDrawer(false)}
-        title="⚙️ Ajustar Orçamento"
+        title="Ajustar Orçamento"
       >
         <div className={styles.modalBody}>
           <ErrorBoundary>
             <BudgetCalculator 
               baseCost={trip.budgetBreakdown?.grandTotal?.min || 500} 
               daysCount={trip.totalDays || itinerary.days?.length || 3} 
-              currency="€" 
+              currency={currencyContext.symbol} 
             />
           </ErrorBoundary>
         </div>
@@ -1359,7 +1479,7 @@ export default function ItineraryPage() {
       <Modal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        title="🔗 Partilhar Itinerário"
+        title="Partilhar Itinerário"
       >
         <div className={styles.sharePreview}>
           <span>URL privada deste roteiro</span>
@@ -1376,7 +1496,7 @@ export default function ItineraryPage() {
       <Modal
         isOpen={showVersionsModal}
         onClose={() => setShowVersionsModal(false)}
-        title="📋 Versões do Itinerário"
+        title="Versões do Itinerário"
       >
         <div className={styles.versionList}>
           {versions.map((version) => (
@@ -1396,7 +1516,7 @@ export default function ItineraryPage() {
       <Modal
         isOpen={!!bookingStop}
         onClose={() => setBookingStop(null)}
-        title={`🎟️ Reservar ${bookingStop?.name || ''}`}
+        title={`Reservar ${bookingStop?.name || ''}`}
       >
         {bookingStop && (
           <div className={styles.bookingModal}>

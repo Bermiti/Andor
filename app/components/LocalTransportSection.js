@@ -11,7 +11,7 @@ export default function LocalTransportSection({ localTransport }) {
   if (!localTransport) {
     return (
       <div className={styles.empty}>
-        <div className={styles.emptyIcon}>🚇</div>
+        <div className={styles.emptyIcon}>MT</div>
         <p>Informações de transportes a carregar...</p>
       </div>
     );
@@ -23,7 +23,6 @@ export default function LocalTransportSection({ localTransport }) {
       <div className={styles.header}>
         <div className={styles.titleArea}>
           <h2 className={styles.title}>
-            <span className={styles.icon}>🚇</span>
             Transportes Locais
           </h2>
           <p className={styles.subtitle}>{localTransport.overview}</p>
@@ -56,7 +55,7 @@ export default function LocalTransportSection({ localTransport }) {
                 )}
                 {pass.recommendation && (
                   <div className={styles.recommendation}>
-                    💡 {pass.recommendation}
+                    Nota: {pass.recommendation}
                   </div>
                 )}
               </div>

@@ -5,12 +5,26 @@
 import { safeParse } from './safe-json';
 import { getJson, setJson } from './storage';
 
+export function unwrapGeneratedItinerary(response) {
+  if (!response || typeof response !== 'object') return response;
+  if (response.itinerary && typeof response.itinerary === 'object') {
+    return {
+      ...response.itinerary,
+      id: response.itinerary.id || response.id,
+      shareToken: response.itinerary.shareToken || response.shareToken,
+      persistence: response.persistence,
+    };
+  }
+  return response;
+}
+
 export function enrichItineraryData(itinerary) {
   if (!itinerary) return null;
   
   let enriched;
   try {
-    enriched = typeof itinerary === 'string' ? safeParse(itinerary, null) : JSON.parse(JSON.stringify(itinerary));
+    const raw = typeof itinerary === 'string' ? safeParse(itinerary, null) : itinerary;
+    enriched = raw ? JSON.parse(JSON.stringify(unwrapGeneratedItinerary(raw))) : null;
     if (!enriched) return null;
   } catch (e) {
     return null;
@@ -320,9 +334,10 @@ export function enrichItineraryData(itinerary) {
 }
 
 export function saveGeneratedItinerary(itinerary) {
-  const id = 'gen-' + Date.now();
+  const normalizedInput = unwrapGeneratedItinerary(itinerary);
+  const id = normalizedInput?.id || 'gen-' + Date.now();
   const savedAt = new Date().toISOString();
-  const stored = { ...itinerary, id, createdAt: savedAt, savedAt };
+  const stored = { ...normalizedInput, id, createdAt: normalizedInput?.createdAt || savedAt, savedAt: normalizedInput?.savedAt || savedAt };
   setJson(`andor_itinerary_${id}`, stored, 'session');
   setJson(`andor_itinerary_${id}`, stored, 'local');
   setJson(`andor_shared_${id}`, stored, 'local');

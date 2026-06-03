@@ -14,7 +14,7 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
   if (!dailyPlans || dailyPlans.length === 0) {
     return (
       <div className={styles.empty}>
-        <div className={styles.emptyIcon}>📅</div>
+        <div className={styles.emptyIcon}>PL</div>
         <p>Planos diários a carregar...</p>
       </div>
     );
@@ -39,13 +39,13 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
           </ul>
         )}
         {period.duration && (
-          <div className={styles.duration}>⏱️ {period.duration}</div>
+          <div className={styles.duration}>{period.duration}</div>
         )}
         {period.neighborhood && (
-          <div className={styles.location}>📍 {period.neighborhood}</div>
+          <div className={styles.location}>{period.neighborhood}</div>
         )}
         {period.tips && (
-          <div className={styles.tips}>💡 {period.tips}</div>
+          <div className={styles.tips}>Nota: {period.tips}</div>
         )}
       </div>
     );
@@ -56,7 +56,6 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
       {/* Header */}
       <div className={styles.header}>
         <h2 className={styles.title}>
-          <span className={styles.icon}>📅</span>
           Plano Diário
         </h2>
         <p className={styles.subtitle}>Itinerário completo dia a dia</p>
@@ -89,7 +88,7 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
                 {(day.morning || day.periods?.morning) && (
                   <div className={styles.period}>
                     <div className={styles.periodHeader}>
-                      <span className={styles.periodIcon}>🌅</span>
+                      <span className={styles.periodIcon}>AM</span>
                       <span className={styles.periodLabel}>Manhã</span>
                     </div>
                     {renderPeriod(day.morning || day.periods?.morning)}
@@ -100,7 +99,7 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
                 {(day.afternoon || day.periods?.afternoon) && (
                   <div className={styles.period}>
                     <div className={styles.periodHeader}>
-                      <span className={styles.periodIcon}>☀️</span>
+                      <span className={styles.periodIcon}>PM</span>
                       <span className={styles.periodLabel}>Tarde</span>
                     </div>
                     {renderPeriod(day.afternoon || day.periods?.afternoon)}
@@ -111,7 +110,7 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
                 {(day.evening || day.periods?.evening) && (
                   <div className={styles.period}>
                     <div className={styles.periodHeader}>
-                      <span className={styles.periodIcon}>🌙</span>
+                      <span className={styles.periodIcon}>EV</span>
                       <span className={styles.periodLabel}>Noite</span>
                     </div>
                     {renderPeriod(day.evening || day.periods?.evening)}
@@ -128,7 +127,7 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
                 {/* Weather or Special Notes */}
                 {day.notes && (
                   <div className={styles.dayNotes}>
-                    📌 {day.notes}
+                    {day.notes}
                   </div>
                 )}
               </div>
@@ -141,7 +140,7 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
       {dailyPlans.length > 0 && (
         <div className={styles.summary}>
           <div className={styles.summaryItem}>
-            <span className={styles.summaryIcon}>📍</span>
+            <span className={styles.summaryIcon}>TR</span>
             <span className={styles.summaryText}>
               {dailyPlans.length} dias em {destination}
             </span>

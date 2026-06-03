@@ -107,7 +107,12 @@ export default function HomeHero({ onOpenWizard }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (onOpenWizard) onOpenWizard(query, 1);
+    if (onOpenWizard) {
+      onOpenWizard(query, 1, {
+        dates: { start: travelDate, end: '', flexible: false },
+        travelers: { adults: Math.max(1, Number.parseInt(travelers, 10) || 2), children: 0 },
+      });
+    }
   };
 
   const handleDestinationSelect = (destination) => {

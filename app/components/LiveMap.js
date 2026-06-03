@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import styles from './LiveMap.module.css';
+import { getZoomForType } from '../lib/geocoding';
 
-export default function LiveMap({ stops = [], destination = {} }) {
+export default function LiveMap({ stops = [], destination = {}, currency = '€' }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -10,6 +11,29 @@ export default function LiveMap({ stops = [], destination = {} }) {
   const tileLayerRef = useRef(null);
   
   const [mapType, setMapType] = useState('map'); // 'map' or 'satellite'
+
+  const parseCoordinates = (value) => {
+    if (Array.isArray(value) && value.length >= 2) {
+      const lat = Number(value[0]);
+      const lng = Number(value[1]);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    }
+    if (value && typeof value === 'object') {
+      const lat = Number(value.lat ?? value.latitude);
+      const lng = Number(value.lng ?? value.lon ?? value.longitude);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    }
+    return null;
+  };
+
+  const formatCost = (value) => {
+    if (value === undefined || value === null || value === '') return 'Grátis';
+    if (typeof value === 'string') {
+      if (/free|gr[aá]tis/i.test(value)) return 'Grátis';
+      if (/[€$£¥]|JPY|USD|GBP|EUR|IDR|MAD/i.test(value)) return value;
+    }
+    return `${currency}${value}`;
+  };
 
   // Dynamic map type toggle
   const toggleMapType = async (type) => {
@@ -55,13 +79,26 @@ export default function LiveMap({ stops = [], destination = {} }) {
     return () => clearTimeout(timer);
   }, [stops]);
 
-  const getPeriodColor = (timeStr) => {
-    if (!timeStr) return '#3B82F6'; // Tarde (blue)
-    const hour = parseInt(timeStr.split(':')[0], 10);
-    if (isNaN(hour)) return '#3B82F6';
-    if (hour >= 5 && hour < 12) return '#F59E0B'; // Manhã (amber)
-    if (hour >= 12 && hour < 18) return '#3B82F6'; // Tarde (blue)
-    return '#8B5CF6'; // Noite (violet)
+  const getMarkerColor = (stop) => {
+    const type = (stop.type || stop.category || '').toLowerCase();
+    if (type.includes('meal') || type.includes('restaurant') || type.includes('food') || type.includes('dining') || type.includes('breakfast') || type.includes('lunch') || type.includes('dinner')) {
+      return '#F97316'; // Meal (orange)
+    }
+    if (type.includes('hotel') || type.includes('accommodation') || type.includes('stay') || type.includes('hostel')) {
+      return '#22C55E'; // Hotel (green)
+    }
+    if (type.includes('transport') || type.includes('flight') || type.includes('train') || type.includes('bus') || type.includes('car') || type.includes('transfer')) {
+      return '#6B7280'; // Transport (grey)
+    }
+    return '#3B82F6'; // Activity (blue)
+  };
+
+  const getTypeBadge = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t.includes('meal') || t.includes('restaurant') || t.includes('food') || t.includes('dining')) return 'Restaurante';
+    if (t.includes('hotel') || t.includes('stay') || t.includes('accommodation')) return 'Hospedagem';
+    if (t.includes('transport') || t.includes('flight') || t.includes('move')) return 'Transporte';
+    return 'Atividade';
   };
 
   const getCategoryPhoto = (stop) => {
@@ -91,9 +128,11 @@ export default function LiveMap({ stops = [], destination = {} }) {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !mapContainerRef.current) return;
+    let cancelled = false;
 
     const initMap = async () => {
       const L = await import('leaflet');
+      if (cancelled || !mapContainerRef.current) return;
       
       // Fix default Leaflet icon assets
       delete L.Icon.Default.prototype._getIconUrl;
@@ -103,27 +142,36 @@ export default function LiveMap({ stops = [], destination = {} }) {
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
 
-      const validateAndFixCoordinates = (stops) => {
-        return stops.filter((stop) => {
-          if (!stop.coordinates) return false;
-          const { lat, lng } = stop.coordinates;
-          if (typeof lat !== 'number' || typeof lng !== 'number') return false;
-          // Filter out obvious invalid coordinates like [0, 0] or completely invalid ones
-          if (Math.abs(lat) < 0.1 && Math.abs(lng) < 0.1) return false;
-          return true;
-        });
+      const validateAndFixCoordinates = (inputStops) => {
+        return inputStops
+          .map((stop) => {
+            const coordinates = parseCoordinates(stop.coordinates);
+            return coordinates ? { ...stop, coordinates } : null;
+          })
+          .filter((stop) => {
+            if (!stop?.coordinates) return false;
+            const { lat, lng } = stop.coordinates;
+            if (Math.abs(lat) < 0.1 && Math.abs(lng) < 0.1) return false;
+            return true;
+          });
       };
 
       const validStops = validateAndFixCoordinates(fadingStops);
 
       if (!mapInstanceRef.current) {
+        if (mapContainerRef.current._leaflet_id) {
+          delete mapContainerRef.current._leaflet_id;
+        }
+        const destinationCoords = parseCoordinates(destination?.coordinates);
         const initialCenter = validStops.length > 0
           ? [validStops[0].coordinates.lat, validStops[0].coordinates.lng]
-          : destination?.coordinates ? [destination.coordinates.lat, destination.coordinates.lng] : [38.7223, -9.1393];
+          : destinationCoords ? [destinationCoords.lat, destinationCoords.lng] : [38.7223, -9.1393];
+
+        const initialZoom = destination?.zoom || (destination?.type ? getZoomForType(destination.type) : 13);
 
         const map = L.map(mapContainerRef.current, {
           center: initialCenter,
-          zoom: 13,
+          zoom: initialZoom,
           zoomControl: false,
         });
 
@@ -192,7 +240,7 @@ export default function LiveMap({ stops = [], destination = {} }) {
       clusters.forEach((cluster) => {
         const isCluster = cluster.stops.length > 1;
         const mainStop = cluster.stops[0];
-        const markerColor = getPeriodColor(mainStop.time);
+        const markerColor = getMarkerColor(mainStop);
         
         // Custom Leaflet marker HTML
         const customIcon = L.divIcon({
@@ -209,7 +257,7 @@ export default function LiveMap({ stops = [], destination = {} }) {
         // Rich interactive popup showing single stop or list of stops in cluster
         let popupContent = `<div class="${styles.mapPopup}">`;
         if (isCluster) {
-          popupContent += `<h4 class="${styles.popupClusterTitle}">🏢 ${cluster.stops.length} Stops Here</h4>`;
+          popupContent += `<h4 class="${styles.popupClusterTitle}">${cluster.stops.length} locais neste ponto</h4>`;
           cluster.stops.forEach((s) => {
             popupContent += `
               <div class="${styles.clusterStopItem}">
@@ -223,16 +271,23 @@ export default function LiveMap({ stops = [], destination = {} }) {
           });
         } else {
           const photoUrl = getCategoryPhoto(mainStop);
+          const badgeText = getTypeBadge(mainStop.type);
           popupContent += `
             <img src="${photoUrl}" width="260" height="100" loading="lazy" decoding="async" class="${styles.popupPhoto}" alt="${mainStop.name}" />
-            <div class="${styles.popupTime}">${mainStop.time || mainStop.period || ''}</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 9px; font-weight: 700; background-color: ${markerColor}; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">${badgeText}</span>
+              <span class="${styles.popupTime}" style="margin-bottom: 0;">${mainStop.time || mainStop.period || ''}</span>
+            </div>
             <h4 class="${styles.popupName}">${mainStop.name}</h4>
             <div class="${styles.popupMetaRow}">
               <span>${mainStop.duration || '90 min'}</span>
-              <span>${mainStop.cost !== undefined ? `€${mainStop.cost}` : mainStop.estimatedCost || 'Grátis'}</span>
-              ${mainStop.rating ? `<span>★ ${mainStop.rating}</span>` : ''}
+              <span>${mainStop.cost !== undefined ? formatCost(mainStop.cost) : formatCost(mainStop.estimatedCost || 'Grátis')}</span>
+              ${mainStop.rating ? `<span>Rating ${mainStop.rating}</span>` : ''}
             </div>
             ${mainStop.transportFromPrevious?.duration ? `<div class="${styles.popupType}">Como chegar: ${mainStop.transportFromPrevious.duration}</div>` : ''}
+            <div class="popupSource" style="font-size: 10px; margin-top: 4px; margin-bottom: 4px; color: #aaa;">
+              ${mainStop.coordinateSource === 'nominatim' ? '📍 Dados reais (Nominatim)' : '🤖 Dados estimados'}
+            </div>
             <div class="${styles.popupActions}">
               <a href="#activity-${mainStop.originalIndex}" class="${styles.popupMapBtn}">Ver detalhes</a>
               <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mainStop.name)}" target="_blank" rel="noopener noreferrer" class="${styles.popupMapBtn}">Directions</a>
@@ -267,13 +322,19 @@ export default function LiveMap({ stops = [], destination = {} }) {
       if (latlngs.length > 0) {
         const bounds = L.latLngBounds(latlngs);
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true, duration: 1.2 });
-      } else if (destination?.coordinates) {
-        map.setView([destination.coordinates.lat, destination.coordinates.lng], 12);
+      } else {
+        const destinationCoords = parseCoordinates(destination?.coordinates);
+        if (destinationCoords) {
+          map.setView([destinationCoords.lat, destinationCoords.lng], 12);
+        }
       }
     };
 
-    initMap();
-  }, [fadingStops, mapType]);
+    initMap().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [fadingStops, mapType, currency, destination]);
 
   useEffect(() => {
     const handleFlyTo = (e) => {
@@ -301,14 +362,14 @@ export default function LiveMap({ stops = [], destination = {} }) {
           onClick={() => toggleMapType('map')}
           aria-label="Ver mapa padrão"
         >
-          🗺️ Map
+          Mapa
         </button>
         <button
           className={`${styles.toggleBtn} ${mapType === 'satellite' ? styles.active : ''}`}
           onClick={() => toggleMapType('satellite')}
           aria-label="Ver mapa satélite"
         >
-          🛰️ Satellite
+          Satélite
         </button>
       </div>
 
