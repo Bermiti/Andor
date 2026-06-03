@@ -93,5 +93,19 @@
     "day": "day",
     "days": "days",
     "stops": "stops"
+  },
+  "destinations": {
+    "pageTitle": "Destinations · Andor",
+    "heroBadge": "Destinations",
+    "heroTitle": "Find the",
+    "heroTitleAccent": "Ideal Destination",
+    "heroSubtitle": "Answer a few questions and receive personalized recommendations based on your preferences, budget, and travel style.",
+    "heroCta": "Start",
+    "heroTrust": "satisfied travelers",
+    "loadingTitle": "Analyzing your profile...",
+    "loadingTip1": "Analyzing your preferences...",
+    "loadingTip2": "Comparing hundreds of destinations...",
+    "loadingTip3": "Calculating compatibility...",
+    "loadingTip4": "Preparing personalized recommendations..."
   }
 }

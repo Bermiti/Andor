@@ -93,5 +93,19 @@
     "day": "jour",
     "days": "jours",
     "stops": "arrêts"
+  },
+  "destinations": {
+    "pageTitle": "Destinations · Andor",
+    "heroBadge": "Destinations",
+    "heroTitle": "Trouvez la Destination",
+    "heroTitleAccent": "Idéale",
+    "heroSubtitle": "Répondez à quelques questions et recevez des recommandations personnalisées basées sur vos préférences, votre budget et votre style de voyage.",
+    "heroCta": "Commencer",
+    "heroTrust": "voyageurs satisfaits",
+    "loadingTitle": "Analyse de votre profil en cours...",
+    "loadingTip1": "Analyse de vos préférences...",
+    "loadingTip2": "Comparaison de centaines de destinations...",
+    "loadingTip3": "Calcul de la compatibilité...",
+    "loadingTip4": "Préparation de recommandations personnalisées..."
   }
 }
