@@ -220,21 +220,21 @@
 
 /* ---- LIGHT MODE ---- */
 [data-theme="light"] {
-  --bg-0: #F7F4EE;
-  --bg-1: #F0EDE6;
+  --bg-0: #EDE9E0;
+  --bg-1: #E5E1D6;
   --bg-2: #FFFFFF;
-  --bg-3: #F7F4EE;
-  --bg-4: #EDE9E0;
+  --bg-3: #EDE9E0;
+  --bg-4: #D8D2C4;
   --t-1: #1A2235;
   --t-2: #4A5568;
-  --t-3: #9AA5B4;
-  --b-1: rgba(26,34,53,0.06);
-  --b-2: rgba(26,34,53,0.12);
+  --t-3: #8C99AF;
+  --b-1: rgba(26,34,53,0.08);
+  --b-2: rgba(26,34,53,0.16);
   --s-card: 0 4px 24px rgba(0,0,0,0.08);
   
-  --bg-primary: #F7F4EE;
+  --bg-primary: #EDE9E0;
   --bg-secondary: #FFFFFF;
-  --bg-light: #F7F4EE;
+  --bg-light: #EDE9E0;
   --text-primary: #1A2235;
   --text-secondary: #4A5568;
   
@@ -244,7 +244,7 @@
   
   /* Glass effect light mode */
   --bg-glass: rgba(255,255,255,0.8);
-  --bg-elevated: #F0EDE6;
+  --bg-elevated: #E5E1D6;
   --text-primary: #1A2235;
   --text-secondary: #4A5568;
   --surface-base: rgba(255, 255, 255, 0.78);

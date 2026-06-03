@@ -121,7 +121,7 @@
 }
 
 [data-theme="light"] .bgOverlay {
-  background: linear-gradient(90deg, #F7F4EE 0%, rgba(247, 244, 238, 0.85) 50%, rgba(247, 244, 238, 0.5) 100%);
+  background: linear-gradient(90deg, #EDE9E0 0%, rgba(237, 233, 224, 0.85) 50%, rgba(237, 233, 224, 0.5) 100%);
 }
 
 .container {

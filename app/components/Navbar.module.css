@@ -23,15 +23,29 @@
 }
 
 [data-theme="light"] .navbar.scrolled {
-  background: rgba(247, 244, 238, 0.9);
-  border-bottom-color: rgba(26, 34, 53, 0.1);
+  background: rgba(237, 233, 224, 0.92);
+  border-bottom-color: rgba(26, 34, 53, 0.12);
   box-shadow: 0 10px 30px rgba(26, 34, 53, 0.08);
 }
 
-[data-theme="light"] .navbar.scrolled .logo,
-[data-theme="light"] .navbar.scrolled .link,
-[data-theme="light"] .navbar.scrolled .loginBtn {
+[data-theme="light"] .logo {
   color: var(--text-primary);
+}
+
+[data-theme="light"] .link {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .linkActive {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .loginBtn {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .mobileToggle span {
+  background: var(--text-primary);
 }
 
 .inner {
