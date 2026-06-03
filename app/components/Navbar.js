@@ -29,7 +29,8 @@ export default function Navbar() {
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   
   const isMyTrips = pathname === '/my-trips';
-  const forceDarkText = isMyTrips && !scrolled;
+  const isLightTheme = theme === 'light';
+  const forceDarkText = (isMyTrips && !scrolled) || isLightTheme;
   const linkClass = forceDarkText ? `${styles.link} ${styles.linkDark}` : styles.link;
   
   const langDropdownRef = useRef(null);

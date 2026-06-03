@@ -948,7 +948,7 @@ ul, ol {
 
 /* LIGHT THEME VARIABLES OVERRIDES */
 [data-theme="light"] {
-  --bg-primary:    #F7F4EE;
+  --bg-primary:    #EDE9E0;
   --bg-secondary:  #FFFFFF;
   --bg-elevated:   #F0EDE6;
   --bg-glass:      rgba(247,244,238,0.85);
