@@ -29,23 +29,23 @@
 }
 
 [data-theme="light"] .logo {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
 }
 
 [data-theme="light"] .link {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
 }
 
 [data-theme="light"] .linkActive {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
 }
 
 [data-theme="light"] .loginBtn {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
 }
 
 [data-theme="light"] .mobileToggle span {
-  background: var(--text-primary);
+  background: var(--text-primary) !important;
 }
 
 .inner {
