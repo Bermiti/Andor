@@ -22,30 +22,30 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme="light"] .navbar.scrolled {
+:global([data-theme="light"]) .navbar.scrolled {
   background: rgba(237, 233, 224, 0.92);
   border-bottom-color: rgba(26, 34, 53, 0.12);
   box-shadow: 0 10px 30px rgba(26, 34, 53, 0.08);
 }
 
-[data-theme="light"] .logo {
-  color: var(--text-primary) !important;
+:global([data-theme="light"]) .logo {
+  color: #1A2235 !important;
 }
 
-[data-theme="light"] .link {
-  color: var(--text-primary) !important;
+:global([data-theme="light"]) .link {
+  color: #1A2235 !important;
 }
 
-[data-theme="light"] .linkActive {
-  color: var(--text-primary) !important;
+:global([data-theme="light"]) .linkActive {
+  color: #1A2235 !important;
 }
 
-[data-theme="light"] .loginBtn {
-  color: var(--text-primary) !important;
+:global([data-theme="light"]) .loginBtn {
+  color: #1A2235 !important;
 }
 
-[data-theme="light"] .mobileToggle span {
-  background: var(--text-primary) !important;
+:global([data-theme="light"]) .mobileToggle span {
+  background: #1A2235 !important;
 }
 
 .inner {
@@ -191,8 +191,8 @@
   color: var(--gold-light);
 }
 
-[data-theme="light"] .commandBtn {
-  color: var(--text-primary);
+:global([data-theme="light"]) .commandBtn {
+  color: #1A2235;
   background: rgba(255, 255, 255, 0.72);
   border-color: rgba(26, 34, 53, 0.12);
 }
