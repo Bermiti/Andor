@@ -14,7 +14,10 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.73",
     "@anthropic-ai/sdk": "^0.98.1",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.107.0",
     "ai": "^6.0.180",
+    "groq-sdk": "^1.2.1",
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.394.0",

@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, X } from 'lucide-react';
 import { trackEvent } from '../lib/analytics';
+import { useToast } from './ToastProvider';
 import styles from './CustomRequestModal.module.css';
 
 export default function CustomRequestModal() {
+  const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [destination, setDestination] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -14,20 +17,21 @@ export default function CustomRequestModal() {
   const [notes, setNotes] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submittedRequest, setSubmittedRequest] = useState(null);
 
   useEffect(() => {
     const handleOpen = () => {
       setIsOpen(true);
       setIsSubmitted(false);
+      setSubmittedRequest(null);
     };
     window.addEventListener('open-custom-request', handleOpen);
     return () => window.removeEventListener('open-custom-request', handleOpen);
   }, []);
 
-  // Close modal when pressing Escape key
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
         setIsOpen(false);
       }
     };
@@ -37,173 +41,172 @@ export default function CustomRequestModal() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!destination || !startDate || !endDate || !budget) {
-      return;
-    }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!destination || !startDate || !endDate || !budget || loading) return;
+
     setLoading(true);
-    
-    // Simulate API submission
-    setTimeout(() => {
-      setLoading(false);
-      setIsSubmitted(true);
-      
-      try {
-        const stored = localStorage.getItem('andor_custom_requests');
-        const reqs = stored ? JSON.parse(stored) : [];
-        const newRequest = {
-          id: `req-${Date.now()}`,
+    try {
+      const response = await fetch('/api/custom-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           destination,
           startDate,
           endDate,
           budget,
           travelers,
           notes,
-          status: 'Pendente',
-          dateSubmitted: new Date().toLocaleDateString('pt-PT')
-        };
-        localStorage.setItem('andor_custom_requests', JSON.stringify([newRequest, ...reqs]));
-        
-        // Track the submission event
-        trackEvent('custom_request_submitted', {
-          destination,
-          startDate,
-          endDate,
-          budget: parseFloat(budget),
-          travelers,
-          hasNotes: notes ? true : false
-        });
-      } catch (err) {
-        // ignore
+        }),
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.message || 'Nao foi possivel enviar o pedido.');
       }
-    }, 1200);
+
+      setSubmittedRequest(body.request || null);
+      setIsSubmitted(true);
+      trackEvent('custom_request_submitted', {
+        destination,
+        startDate,
+        endDate,
+        budget: parseFloat(budget),
+        travelers,
+        hasNotes: Boolean(notes),
+        provider: body.provider,
+      });
+    } catch (error) {
+      showToast(error.message || 'Nao foi possivel enviar o pedido.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className={styles.overlay} onClick={() => setIsOpen(false)}>
-      <div 
-        className={styles.modal} 
-        onClick={(e) => e.stopPropagation()}
+      <div
+        className={styles.modal}
+        onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <button 
-          className={styles.closeBtn} 
-          aria-label="Fechar modal" 
+        <button
+          className={styles.closeBtn}
+          aria-label="Fechar modal"
           onClick={() => setIsOpen(false)}
         >
-          ✕
+          <X size={16} aria-hidden="true" />
         </button>
-        
+
         {!isSubmitted ? (
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.header}>
-              <span className={styles.icon}>✨</span>
-              <h3 id="modal-title" className={styles.title}>Viagem Personalizada Bespoke</h3>
-              <p className={styles.subtitle}>Deixa os nossos especialistas desenharem um itinerário de luxo à tua medida.</p>
+              <h3 id="modal-title" className={styles.title}>Pedido de viagem personalizada</h3>
+              <p className={styles.subtitle}>Envia os detalhes essenciais para a equipa preparar uma proposta estruturada.</p>
             </div>
-            
+
             <div className={styles.field}>
-              <label htmlFor="destination-input" className={styles.label}>Para onde gostarias de ir? *</label>
-              <input 
+              <label htmlFor="destination-input" className={styles.label}>Destino *</label>
+              <input
                 id="destination-input"
-                type="text" 
-                placeholder="ex. Costa Amalfitana, Japão, Patagónia"
+                type="text"
+                placeholder="ex. Costa Amalfitana, Japao, Patagonia"
                 value={destination}
-                onChange={(e) => setDestination(e.target.value)}
+                onChange={(event) => setDestination(event.target.value)}
                 className={styles.input}
                 required
               />
             </div>
-            
+
             <div className={styles.row}>
               <div className={styles.field}>
-                <label htmlFor="start-date-input" className={styles.label}>Data de Início *</label>
-                <input 
+                <label htmlFor="start-date-input" className={styles.label}>Data de inicio *</label>
+                <input
                   id="start-date-input"
-                  type="date" 
+                  type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(event) => setStartDate(event.target.value)}
                   className={styles.input}
                   required
                 />
               </div>
               <div className={styles.field}>
-                <label htmlFor="end-date-input" className={styles.label}>Data de Fim *</label>
-                <input 
+                <label htmlFor="end-date-input" className={styles.label}>Data de fim *</label>
+                <input
                   id="end-date-input"
-                  type="date" 
+                  type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(event) => setEndDate(event.target.value)}
                   className={styles.input}
                   required
                 />
               </div>
             </div>
-            
+
             <div className={styles.row}>
               <div className={styles.field}>
-                <label htmlFor="budget-input" className={styles.label}>Orçamento Estimado (€) *</label>
-                <input 
+                <label htmlFor="budget-input" className={styles.label}>Orcamento estimado (EUR) *</label>
+                <input
                   id="budget-input"
-                  type="number" 
+                  type="number"
                   placeholder="ex. 5000"
                   value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
+                  onChange={(event) => setBudget(event.target.value)}
                   className={styles.input}
                   required
                 />
               </div>
               <div className={styles.field}>
-                <label htmlFor="travelers-select" className={styles.label}>Número de Acompanhantes *</label>
-                <select 
+                <label htmlFor="travelers-select" className={styles.label}>Viajantes *</label>
+                <select
                   id="travelers-select"
                   value={travelers}
-                  onChange={(e) => setTravelers(e.target.value)}
+                  onChange={(event) => setTravelers(event.target.value)}
                   className={styles.select}
                   required
                 >
-                  <option value="1">1 Pessoa (Mochileiro/Solo)</option>
-                  <option value="2">2 Pessoas (Casal)</option>
-                  <option value="3">3 Pessoas</option>
-                  <option value="4">4 Pessoas</option>
-                  <option value="5+">Grupo de 5+ Pessoas</option>
+                  <option value="1">1 pessoa</option>
+                  <option value="2">2 pessoas</option>
+                  <option value="3">3 pessoas</option>
+                  <option value="4">4 pessoas</option>
+                  <option value="5+">Grupo de 5+ pessoas</option>
                 </select>
               </div>
             </div>
-            
+
             <div className={styles.field}>
-              <label htmlFor="notes-textarea" className={styles.label}>Requisitos Especiais ou Interesses</label>
-              <textarea 
+              <label htmlFor="notes-textarea" className={styles.label}>Preferencias e requisitos</label>
+              <textarea
                 id="notes-textarea"
-                placeholder="ex. Alimentação vegetariana, heli-ski, jantares românticos ao pôr do sol, hotéis com acessibilidade..."
+                placeholder="ex. restaurantes especificos, acessibilidade, ritmo calmo, hoteis preferidos..."
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(event) => setNotes(event.target.value)}
                 className={styles.textarea}
                 rows={3}
               />
             </div>
-            
+
             <button type="submit" className={styles.submitBtn} disabled={loading}>
-              {loading ? 'A Submeter Pedido...' : 'Enviar Pedido Bespoke ✨'}
+              {loading ? 'A enviar pedido...' : 'Enviar pedido'}
             </button>
           </form>
         ) : (
           <div className={styles.success}>
-            <div className={styles.successIcon}>🌴</div>
-            <h3 className={styles.successTitle}>Pedido Enviado!</h3>
+            <CheckCircle2 size={44} aria-hidden="true" />
+            <h3 className={styles.successTitle}>Pedido recebido</h3>
             <p className={styles.successDesc}>
-              Obrigado por confiares no Andor. A nossa equipa de concierge de elite vai desenhar a tua proposta de viagem exclusiva e contactar-te-á nas próximas 24 horas.
+              A equipa Andor recebeu os detalhes e pode acompanhar o pedido com a referencia abaixo.
             </p>
             <div className={styles.summaryBox}>
+              {submittedRequest?.id && <div className={styles.summaryItem}><strong>Referencia:</strong> {submittedRequest.id}</div>}
               <div className={styles.summaryItem}><strong>Destino:</strong> {destination}</div>
               <div className={styles.summaryItem}><strong>Datas:</strong> {startDate} a {endDate}</div>
-              <div className={styles.summaryItem}><strong>Viajantes:</strong> {travelers} pessoas</div>
-              <div className={styles.summaryItem}><strong>Orçamento:</strong> €{budget}</div>
+              <div className={styles.summaryItem}><strong>Viajantes:</strong> {travelers}</div>
+              <div className={styles.summaryItem}><strong>Orcamento:</strong> EUR {budget}</div>
             </div>
             <button className={styles.doneBtn} onClick={() => setIsOpen(false)}>Fechar</button>
           </div>

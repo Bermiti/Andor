@@ -3,6 +3,25 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from './ToastProvider';
 import { trackEvent } from '../lib/analytics';
+import {
+  Compass,
+  Utensils,
+  BookOpen,
+  Heart,
+  Users as UsersIcon,
+  Sparkles,
+  Beer,
+  ShoppingBag,
+  Sliders,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Calendar,
+  CheckCircle,
+  HelpCircle,
+  Briefcase,
+  DollarSign
+} from 'lucide-react';
 import styles from './CreationWizard.module.css';
 
 const AUTOCOMPLETE_DATA = [
@@ -28,6 +47,33 @@ const AUTOCOMPLETE_DATA = [
   { name: 'Cape Town, South Africa', flag: '🇿🇦', continent: 'África' },
 ];
 
+const COUNTRY_CODES = {
+  japan: 'JP',
+  france: 'FR',
+  indonesia: 'ID',
+  usa: 'US',
+  portugal: 'PT',
+  spain: 'ES',
+  uk: 'GB',
+  italy: 'IT',
+  netherlands: 'NL',
+  thailand: 'TH',
+  uae: 'AE',
+  turkey: 'TR',
+  australia: 'AU',
+  morocco: 'MA',
+  'czech republic': 'CZ',
+  greece: 'GR',
+  'south korea': 'KR',
+  argentina: 'AR',
+  'south africa': 'ZA',
+};
+
+const getDestinationCode = (name = '') => {
+  const country = String(name).split(',').pop()?.trim().toLowerCase();
+  return COUNTRY_CODES[country] || country?.slice(0, 2).toUpperCase() || 'TR';
+};
+
 const SEASONAL_SUGGESTIONS = {
   0: [{ name: 'Tokyo, Japan', flag: '🇯🇵', why: 'Inverno suave, sem multidões' }, { name: 'Bangkok, Thailand', flag: '🇹🇭', why: 'Época seca, perfeito' }, { name: 'Dubai, UAE', flag: '🇦🇪', why: 'Temperatura ideal' }],
   1: [{ name: 'Bali, Indonesia', flag: '🇮🇩', why: 'Preços baixos' }, { name: 'Marrakech, Morocco', flag: '🇲🇦', why: 'Clima perfeito' }, { name: 'Buenos Aires, Argentina', flag: '🇦🇷', why: 'Verão portenho' }],
@@ -52,7 +98,6 @@ const bgMap = {
   'Rome, Italy': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1600',
 };
 
-/* Custom Calendar component to handle 1 month at a time and touch targets >= 40px */
 function CustomCalendar({ value, onChange }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -141,7 +186,14 @@ function CustomCalendar({ value, onChange }) {
   );
 }
 
-export default function CreationWizard({ isOpen, onClose, initialDestination = '', initialStep = 1 }) {
+export default function CreationWizard({
+  isOpen,
+  onClose,
+  initialDestination = '',
+  initialStep = 1,
+  initialDates = null,
+  initialTravelers = null,
+}) {
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -149,15 +201,44 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
   const [destination, setDestination] = useState(initialDestination);
   const [isSurprise, setIsSurprise] = useState(false);
   const [dates, setDates] = useState({ start: '', end: '', flexible: false });
+  const [datesUnknown, setDatesUnknown] = useState(false);
   const [travelers, setTravelers] = useState({ adults: 2, children: 0 });
   const [stylesList, setStylesList] = useState([]);
-  const [budgetTier, setBudgetTier] = useState('');
+  
+  // New personalization fields
+  const [travelerType, setTravelerType] = useState('couple');
+  const [budgetPerDay, setBudgetPerDay] = useState(100); // defaults to €100/day
+  const [dietary, setDietary] = useState([]);
+  const [mobilityReduced, setMobilityReduced] = useState(false);
+  const [transportPreference, setTransportPreference] = useState('any');
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [liveSuggestions, setLiveSuggestions] = useState([]);
   const [bgImage, setBgImage] = useState('');
-
   const [isHydrated, setIsHydrated] = useState(false);
+
+  // Debounce city autocomplete
+  useEffect(() => {
+    if (!destination || destination.trim().length < 2) {
+      setLiveSuggestions([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/autocomplete?q=${encodeURIComponent(destination)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setLiveSuggestions(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch autocomplete suggestions:', err);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [destination]);
 
   useEffect(() => {
     if (isOpen && !isHydrated) {
@@ -169,28 +250,39 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
           if (parsed.destination !== undefined) setDestination(parsed.destination);
           if (parsed.isSurprise !== undefined) setIsSurprise(parsed.isSurprise);
           if (parsed.dates) setDates(parsed.dates);
+          if (parsed.datesUnknown !== undefined) setDatesUnknown(parsed.datesUnknown);
           if (parsed.travelers) setTravelers(parsed.travelers);
           if (parsed.stylesList) setStylesList(parsed.stylesList);
-          if (parsed.budgetTier) setBudgetTier(parsed.budgetTier);
-        } catch(e){}
+          if (parsed.travelerType) setTravelerType(parsed.travelerType);
+          if (parsed.budgetPerDay) setBudgetPerDay(parsed.budgetPerDay);
+          if (parsed.dietary) setDietary(parsed.dietary);
+          if (parsed.mobilityReduced !== undefined) setMobilityReduced(parsed.mobilityReduced);
+          if (parsed.transportPreference) setTransportPreference(parsed.transportPreference);
+        } catch (e) {}
       } else {
         setStep(initialStep);
         setDestination(initialDestination);
+        if (initialDates) setDates({ start: initialDates.start || '', end: initialDates.end || '', flexible: Boolean(initialDates.flexible) });
+        if (initialTravelers) setTravelers({
+          adults: Math.max(1, Number(initialTravelers.adults) || 2),
+          children: Math.max(0, Number(initialTravelers.children) || 0),
+        });
         setIsSurprise(false);
       }
       setIsHydrated(true);
     } else if (!isOpen) {
       setIsHydrated(false);
     }
-  }, [isOpen, initialDestination, initialStep, isHydrated]);
+  }, [isOpen, initialDestination, initialStep, initialDates, initialTravelers, isHydrated]);
 
   useEffect(() => {
     if (isHydrated && isOpen) {
       sessionStorage.setItem('andor_wizard_state', JSON.stringify({
-        step, destination, isSurprise, dates, travelers, stylesList, budgetTier
+        step, destination, isSurprise, dates, datesUnknown, travelers, stylesList,
+        travelerType, budgetPerDay, dietary, mobilityReduced, transportPreference
       }));
     }
-  }, [isHydrated, isOpen, step, destination, isSurprise, dates, travelers, stylesList, budgetTier]);
+  }, [isHydrated, isOpen, step, destination, isSurprise, dates, datesUnknown, travelers, stylesList, travelerType, budgetPerDay, dietary, mobilityReduced, transportPreference]);
 
   useEffect(() => {
     if (bgMap[destination]) {
@@ -201,7 +293,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
   }, [destination]);
 
   const getDaysCount = () => {
-    if (!dates.start || !dates.end) return 5;
+    if (datesUnknown || !dates.start || !dates.end) return 5;
     const start = new Date(dates.start);
     const end = new Date(dates.end);
     const diffTime = Math.abs(end - start);
@@ -209,9 +301,28 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
     return Math.max(1, diffDays + 1);
   };
 
+  const getBudgetTierLabel = (val) => {
+    if (val <= 80) return 'Económico';
+    if (val <= 150) return 'Confortável';
+    if (val <= 300) return 'Premium';
+    return 'Luxo';
+  };
+
   if (!isOpen) return null;
 
   const handleNext = () => {
+    if (step === 1 && !isSurprise && !destination.trim()) {
+      showToast('Indica o destino da viagem.', 'warning');
+      return;
+    }
+    if (step === 2 && !datesUnknown && (!dates.start || !dates.end)) {
+      showToast('Seleciona as datas ou marca que ainda não sabes.', 'warning');
+      return;
+    }
+    if (step === 3 && stylesList.length === 0) {
+      showToast('Escolhe pelo menos um estilo de viagem.', 'warning');
+      return;
+    }
     if (step < 4) setStep(step + 1);
   };
 
@@ -223,12 +334,19 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
     if (stylesList.includes(styleId)) {
       setStylesList(stylesList.filter(s => s !== styleId));
     } else {
-      if (stylesList.length < 2) {
+      if (stylesList.length < 3) {
         setStylesList([...stylesList, styleId]);
       } else {
-        // Replace first
-        setStylesList([stylesList[1], styleId]);
+        setStylesList([...stylesList.slice(1), styleId]);
       }
+    }
+  };
+
+  const handleDietaryToggle = (item) => {
+    if (dietary.includes(item)) {
+      setDietary(dietary.filter(d => d !== item));
+    } else {
+      setDietary([...dietary, item]);
     }
   };
 
@@ -239,9 +357,18 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
       const payload = {
         destination: isSurprise ? 'Destino Surpresa' : destination,
         days: getDaysCount(),
-        budget: budgetTier,
+        budget: getBudgetTierLabel(budgetPerDay).toLowerCase(),
         travelers: travelers.adults + travelers.children,
-        style: stylesList.join(', ')
+        style: stylesList.join(', '),
+        startDate: datesUnknown ? null : dates.start,
+        endDate: datesUnknown ? null : dates.end,
+        datesFlexible: dates.flexible,
+        // Advanced personalization preferences
+        travelerType,
+        dietaryRestrictions: dietary,
+        mobilityReduced,
+        transportPreference,
+        budgetPerDay
       };
 
       const response = await fetch('/api/generate-itinerary', {
@@ -252,6 +379,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
 
       if (!response.ok) throw new Error('API failed');
       const data = await response.json();
+      const itinerary = data.itinerary || data;
 
       trackEvent('itinerary_generated', {
         destination: payload.destination,
@@ -262,7 +390,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
       });
 
       const { saveGeneratedItinerary } = await import('../lib/itinerary-store');
-      const newId = saveGeneratedItinerary(data);
+      const newId = saveGeneratedItinerary(itinerary);
 
       setTimeout(() => {
         setIsSubmitting(false);
@@ -272,13 +400,17 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
 
     } catch (error) {
       setIsSubmitting(false);
-      showToast('❌ Erro ao gerar itinerário. Tenta novamente.', 'error');
+      showToast('Erro ao gerar itinerário. Tenta novamente.', 'error');
     }
   };
 
-  const filteredDestinations = AUTOCOMPLETE_DATA.filter(d =>
-    d.name.toLowerCase().includes(destination.toLowerCase())
-  );
+  const filteredDestinations = liveSuggestions.length > 0
+    ? liveSuggestions
+    : AUTOCOMPLETE_DATA.filter(d =>
+        d.name.toLowerCase().includes(destination.toLowerCase())
+      );
+
+  const estimatedTotal = budgetPerDay * getDaysCount() * (travelers.adults + travelers.children);
 
   return (
     <div className={styles.wizardOverlay} data-testid="creation-wizard">
@@ -313,7 +445,7 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                     className={`${styles.destToggle} ${isSurprise ? styles.active : ''}`}
                     onClick={() => setIsSurprise(true)}
                   >
-                    Surpreende-me 🎲
+                    Surpreende-me
                   </button>
                 </div>
 
@@ -349,12 +481,12 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                   </div>
                 ) : (
                   <div className={styles.surpriseBox}>
-                    <h3>🎲 Destinos recomendados para esta época</h3>
+                    <h3>Destinos recomendados para esta época</h3>
                     <p className={styles.surpriseSubtext}>Baseado no clima, festivais e preços actuais.</p>
                     <div className={styles.seasonalGrid}>
                       {(SEASONAL_SUGGESTIONS[new Date().getMonth()] || SEASONAL_SUGGESTIONS[0]).map((s, i) => (
                         <div key={i} className={styles.seasonalCard} onClick={() => { setDestination(s.name); setIsSurprise(false); }}>
-                          <span className={styles.seasonalFlag}>{s.flag}</span>
+                          <span className={styles.seasonalFlag}>{getDestinationCode(s.name)}</span>
                           <div className={styles.seasonalInfo}>
                             <strong>{s.name}</strong>
                             <span>{s.why}</span>
@@ -375,16 +507,39 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                 <div className={styles.calendarSection}>
                   <CustomCalendar value={dates} onChange={setDates} />
                   <div className={styles.selectedDatesSummary}>
-                    <span>📅 Partida: <strong>{dates.start || 'Seleciona no mapa'}</strong></span>
+                    <span>Partida: <strong>{dates.start || 'Seleciona no mapa'}</strong></span>
                     <span> &nbsp;&middot;&nbsp; Regresso: <strong>{dates.end || 'Seleciona no mapa'}</strong></span>
                   </div>
                   <label className={styles.checkboxLabel}>
                     <input type="checkbox" checked={dates.flexible} onChange={e => setDates({...dates, flexible: e.target.checked})} />
                     Datas Flexíveis (±3 dias)
                   </label>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={datesUnknown}
+                      onChange={e => setDatesUnknown(e.target.checked)}
+                      data-testid="wizard-dates-unknown"
+                    />
+                    Ainda não sei as datas
+                  </label>
                 </div>
 
                 <div className={styles.travelersBox}>
+                  <div className={styles.travelerRow}>
+                    <span>Tipo de Viajante</span>
+                    <select
+                      className={styles.selectInput}
+                      value={travelerType}
+                      onChange={(e) => setTravelerType(e.target.value)}
+                    >
+                      <option value="solo">Solo</option>
+                      <option value="couple">Casal</option>
+                      <option value="friends">Grupo de Amigos</option>
+                      <option value="family">Família</option>
+                      <option value="honeymoon">Lua de Mel</option>
+                    </select>
+                  </div>
                   <div className={styles.travelerRow}>
                     <span>Adultos</span>
                     <div className={styles.stepper}>
@@ -409,15 +564,17 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
             {step === 3 && (
               <div className={styles.stepFadeIn}>
                 <h2 className={styles.stepTitle}>Que tipo de viagem é esta?</h2>
-                <p className={styles.stepSubtitle}>Escolhe até 2 estilos.</p>
+                <p className={styles.stepSubtitle}>Escolhe até 3 estilos.</p>
                 <div className={styles.styleGrid}>
                   {[
-                    { id: 'aventura', icon: '🏔️', label: 'Aventura', desc: 'Trilhos e desportos extremos', bg: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=70' },
-                    { id: 'gastronomia', icon: '🍽️', label: 'Gastronomia', desc: 'Mercados locais e degustações', bg: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=70' },
-                    { id: 'cultura', icon: '🏛️', label: 'Cultura', desc: 'Museus, história e monumentos', bg: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=400&q=70' },
-                    { id: 'romance', icon: '💑', label: 'Romance', desc: 'Sunsets e jantares românticos', bg: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=400&q=70' },
-                    { id: 'familia', icon: '👨‍👩‍👧', label: 'Família', desc: 'Ritmo calmo, todas as idades', bg: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=70' },
-                    { id: 'bem-estar', icon: '🧘', label: 'Bem-estar', desc: 'Spas, yoga e relaxamento', bg: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&q=70' }
+                    { id: 'aventura', icon: <Compass size={24} />, label: 'Aventura', desc: 'Trilhos e desportos extremos', bg: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=70' },
+                    { id: 'gastronomia', icon: <Utensils size={24} />, label: 'Gastronomia', desc: 'Mercados locais e degustações', bg: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=70' },
+                    { id: 'cultura', icon: <BookOpen size={24} />, label: 'Cultura', desc: 'Museus, história e monumentos', bg: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=400&q=70' },
+                    { id: 'romance', icon: <Heart size={24} />, label: 'Romance', desc: 'Sunsets e jantares românticos', bg: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=400&q=70' },
+                    { id: 'familia', icon: <UsersIcon size={24} />, label: 'Família', desc: 'Ritmo calmo, todas as idades', bg: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=70' },
+                    { id: 'bem-estar', icon: <Sparkles size={24} />, label: 'Bem-estar', desc: 'Spas, yoga e relaxamento', bg: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&q=70' },
+                    { id: 'vida-noturna', icon: <Beer size={24} />, label: 'Vida Noturna', desc: 'Bares, clubes e vida noturna', bg: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=70' },
+                    { id: 'compras', icon: <ShoppingBag size={24} />, label: 'Compras', desc: 'Lojas locais, mercados e boutiques', bg: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=70' }
                   ].map(s => {
                     const isSelected = stylesList.includes(s.id);
                     return (
@@ -444,36 +601,212 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
               </div>
             )}
 
-            {/* STEP 4: BUDGET */}
+            {/* STEP 4: BUDGET SLIDER */}
             {step === 4 && (
               <div className={styles.stepFadeIn}>
-                <h2 className={styles.stepTitle}>Qual é o teu orçamento total?</h2>
-                <div className={styles.budgetTiers}>
-                  {[
-                    { id: 'budget', name: 'Económico', range: '€0-800/pessoa', desc: 'Hostels, transportes públicos, street food' },
-                    { id: 'comfort', name: 'Confortável', range: '€800-2000/pessoa', desc: 'Hotéis 3-4★, mix de restaurantes, actividades principais' },
-                    { id: 'premium', name: 'Premium', range: '€2000-5000/pessoa', desc: 'Hotéis 4-5★, restaurantes especiais, experiências exclusivas' },
-                    { id: 'luxury', name: 'Luxo', range: '€5000+/pessoa', desc: '5★ only, transfers privados, experiências únicas' }
-                  ].map(t => {
-                    const isSelected = budgetTier === t.id;
-                    return (
-                      <button
-                        type="button"
-                        key={t.id}
-                        className={`${styles.budgetCard} ${isSelected ? styles.selected : ''}`}
-                        onClick={() => setBudgetTier(t.id)}
-                        aria-pressed={isSelected}
-                        data-testid={`wizard-budget-${t.id}`}
-                      >
-                        {isSelected && <div className={styles.checkmark}>✓</div>}
-                        <div className={styles.budgetTop}>
-                          <strong className={styles.budgetName}>{t.name}</strong>
-                          <span className={styles.budgetRange}>{t.range}</span>
+                <h2 className={styles.stepTitle}>Qual é o teu orçamento diário?</h2>
+                <p className={styles.stepSubtitle}>Orçamento diário estimado por pessoa (alojamento + refeições + atividades)</p>
+
+                {/* Presets for E2E and quick selection */}
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setBudgetPerDay(50)}
+                    data-testid="wizard-budget-economy"
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--b-1)',
+                      background: budgetPerDay <= 80 ? 'var(--gold)' : 'var(--bg-elevated)',
+                      color: budgetPerDay <= 80 ? 'var(--bg-primary)' : 'var(--t-1)',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      transition: 'all 200ms'
+                    }}
+                  >
+                    💰 Económico
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBudgetPerDay(120)}
+                    data-testid="wizard-budget-comfort"
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--b-1)',
+                      background: budgetPerDay > 80 && budgetPerDay <= 150 ? 'var(--gold)' : 'var(--bg-elevated)',
+                      color: budgetPerDay > 80 && budgetPerDay <= 150 ? 'var(--bg-primary)' : 'var(--t-1)',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      transition: 'all 200ms'
+                    }}
+                  >
+                    ✨ Confortável
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBudgetPerDay(250)}
+                    data-testid="wizard-budget-premium"
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--b-1)',
+                      background: budgetPerDay > 150 && budgetPerDay <= 300 ? 'var(--gold)' : 'var(--bg-elevated)',
+                      color: budgetPerDay > 150 && budgetPerDay <= 300 ? 'var(--bg-primary)' : 'var(--t-1)',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      transition: 'all 200ms'
+                    }}
+                  >
+                    💎 Premium
+                  </button>
+                </div>
+
+                <div className={styles.sliderSection}>
+                  <div className={styles.sliderValueRow}>
+                    <span className={styles.sliderLabel}>Orçamento Diário:</span>
+                    <strong className={styles.sliderValue}>€{budgetPerDay} <span className={styles.sliderPerDay}>/ dia por pessoa</span></strong>
+                  </div>
+                  
+                  <input
+                    type="range"
+                    min="30"
+                    max="500"
+                    step="5"
+                    value={budgetPerDay}
+                    onChange={(e) => setBudgetPerDay(Number(e.target.value))}
+                    className={styles.rangeSlider}
+                  />
+
+                  <div className={styles.sliderLabelRow}>
+                    <span>€30</span>
+                    <span>€150</span>
+                    <span>€300</span>
+                    <span>€500+</span>
+                  </div>
+
+                  <div className={styles.sliderTierStatus}>
+                    Classe de Serviço: <strong className={styles.tierNameStatus}>{getBudgetTierLabel(budgetPerDay)}</strong>
+                  </div>
+                </div>
+
+                <div className={styles.budgetStatsBox}>
+                  <h3 className={styles.statsBoxTitle}>Estimativa de Custo Total da Viagem:</h3>
+                  <div className={styles.statsBoxGrid}>
+                    <div className={styles.statsItem}>
+                      <span className={styles.statsLabel}>Duração</span>
+                      <strong className={styles.statsVal}>{getDaysCount()} dias</strong>
+                    </div>
+                    <div className={styles.statsItem}>
+                      <span className={styles.statsLabel}>Viajantes</span>
+                      <strong className={styles.statsVal}>{travelers.adults + travelers.children}</strong>
+                    </div>
+                    <div className={styles.statsItem}>
+                      <span className={styles.statsLabel}>Custo Total Est.</span>
+                      <strong className={styles.statsVal} style={{ color: 'var(--gold-light)' }}>€{estimatedTotal}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Collapsible Advanced Preferences panel */}
+                <div className={styles.collapsibleSection} style={{ marginTop: '24px' }}>
+                  <button
+                    type="button"
+                    className={styles.collapseHeader}
+                    onClick={() => setAdvancedExpanded(!advancedExpanded)}
+                  >
+                    <span>Preferências de Viagem Avançadas (Opcional)</span>
+                    {advancedExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </button>
+
+                  {advancedExpanded && (
+                    <div className={styles.collapseContent}>
+                      {/* Dietary Restrictions */}
+                      <div className={styles.prefGroup}>
+                        <h4 className={styles.prefGroupTitle}>Restrições Alimentares</h4>
+                        <div className={styles.checkboxGrid}>
+                          {['Vegetariano', 'Vegan', 'Halal', 'Sem Glúten'].map(opt => {
+                            const isChecked = dietary.includes(opt);
+                            return (
+                              <button
+                                type="button"
+                                key={opt}
+                                className={`${styles.badgeSelector} ${isChecked ? styles.badgeActive : ''}`}
+                                onClick={() => handleDietaryToggle(opt)}
+                              >
+                                {opt} {isChecked && '✓'}
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div className={styles.budgetDesc}>{t.desc}</div>
-                      </button>
-                    );
-                  })}
+                      </div>
+
+                      {/* Mobility */}
+                      <div className={styles.prefGroup}>
+                        <h4 className={styles.prefGroupTitle}>Acessibilidade / Mobilidade Reduzida</h4>
+                        <label className={styles.toggleRow}>
+                          <span>Necessito de rotas adaptadas para mobilidade reduzida</span>
+                          <input
+                            type="checkbox"
+                            checked={mobilityReduced}
+                            onChange={(e) => setMobilityReduced(e.target.checked)}
+                            className={styles.toggleSwitch}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Transport */}
+                      <div className={styles.prefGroup}>
+                        <h4 className={styles.prefGroupTitle}>Preferência de Transportes</h4>
+                        <div className={styles.radioGroup}>
+                          {[
+                            { id: 'any', label: 'Qualquer transporte' },
+                            { id: 'avoid flights', label: 'Evitar voos internos' },
+                            { id: 'ground only', label: 'Apenas transporte terrestre' }
+                          ].map(t => (
+                            <label key={t.id} className={styles.radioLabel}>
+                              <input
+                                type="radio"
+                                name="transportPref"
+                                value={t.id}
+                                checked={transportPreference === t.id}
+                                onChange={() => setTransportPreference(t.id)}
+                              />
+                              <span>{t.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Final Summary Card */}
+                <div className={styles.summaryCard} style={{ marginTop: '24px' }}>
+                  <h3 className={styles.summaryTitle}>✦ Confirmar Viagem Andor</h3>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryItemLabel}><MapPin size={14} /> Destino:</span>
+                    <strong>{isSurprise ? 'Destino Surpresa' : destination || 'Destino por definir'}</strong>
+                  </div>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryItemLabel}><Calendar size={14} /> Duração & Datas:</span>
+                    <strong>{getDaysCount()} dias {datesUnknown ? '(Datas Flexíveis)' : `(${dates.start} a ${dates.end})`}</strong>
+                  </div>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryItemLabel}><UsersIcon size={14} /> Viajantes:</span>
+                    <strong>{travelers.adults + travelers.children} ({travelerType === 'couple' ? 'Casal' : travelerType})</strong>
+                  </div>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryItemLabel}><Briefcase size={14} /> Estilos:</span>
+                    <strong style={{ textTransform: 'capitalize' }}>{stylesList.join(', ') || 'Nenhum'}</strong>
+                  </div>
+                  <div className={styles.summaryRow} style={{ borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '10px' }}>
+                    <span className={styles.summaryItemLabel}><DollarSign size={14} /> Custo Estimado:</span>
+                    <strong style={{ color: 'var(--gold-light)', fontSize: '1.2rem' }}>€{estimatedTotal} <span style={{ fontSize: '0.8rem', color: '#aaa', fontWeight: 'normal' }}>(€{budgetPerDay}/dia)</span></strong>
+                  </div>
                 </div>
               </div>
             )}
@@ -485,7 +818,11 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                   type="button"
                   className={styles.nextBtn}
                   onClick={handleNext}
-                  disabled={step === 1 && !isSurprise && !destination}
+                  disabled={
+                    (step === 1 && !isSurprise && !destination.trim()) ||
+                    (step === 2 && !datesUnknown && (!dates.start || !dates.end)) ||
+                    (step === 3 && stylesList.length === 0)
+                  }
                   data-testid="wizard-next"
                 >
                   Próximo &rarr;
@@ -495,10 +832,9 @@ export default function CreationWizard({ isOpen, onClose, initialDestination = '
                   type="button"
                   className={styles.submitBtn}
                   onClick={handleSubmit}
-                  disabled={!budgetTier}
                   data-testid="wizard-submit"
                 >
-                  ✨ Criar o Meu Itinerário
+                  Criar o meu itinerário
                 </button>
               )}
 

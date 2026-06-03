@@ -272,7 +272,7 @@ export default function MyTripsPage() {
               </svg>
               {t('badge')}
             </span>
-            <h1 className={styles.title}>
+            <h1 className={styles.title} aria-label="A tua jornada">
               {t('title')} <span className={styles.titleHighlight}>{t('titleHighlight')}</span> {t('titleSuffix')}
             </h1>
             <p className={styles.subtitle}>

@@ -1,0 +1,151 @@
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 250ms ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.card:hover {
+  border-color: var(--b-gold);
+  box-shadow: 0 6px 16px rgba(212, 168, 67, 0.08);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hotelIcon {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--b-1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+}
+
+.nameArea {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t-1);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sourceBadge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.srcBooking {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.srcEstimated {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--t-3);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.ratingNumber {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t-2);
+}
+
+.description {
+  font-size: 12.5px;
+  color: var(--t-2);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--b-1);
+  padding-top: 8px;
+}
+
+.priceSection {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.price {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.priceSub {
+  font-size: 11px;
+  color: var(--t-3);
+}
+
+.bookBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--b-gold);
+  border-radius: 6px;
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 200ms;
+}
+
+.bookBtn:hover {
+  background: var(--gold);
+  color: var(--bg-primary);
+}

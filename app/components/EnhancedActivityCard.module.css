@@ -138,7 +138,7 @@
 .activityExpandedContent {
   padding: 0;
   border-top: 1px solid var(--b-1);
-  max-height: 1000px;
+  max-height: 1500px;
   animation: expandIn 300ms ease-out;
 }
 
@@ -149,7 +149,7 @@
   }
   to {
     opacity: 1;
-    max-height: 1000px;
+    max-height: 1500px;
   }
 }
 
@@ -167,7 +167,7 @@
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.3) 100%
+    rgba(0, 0, 0, 0.4) 100%
   );
 }
 
@@ -181,6 +181,32 @@
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+.sourceTag {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tagReal {
+  background: rgba(16, 185, 129, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.tagEstimated {
+  background: rgba(107, 114, 128, 0.85);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
   backdrop-filter: blur(4px);
 }
 
@@ -210,6 +236,34 @@
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* ── DESCRIPTION SECTION ── */
+.descriptionSection {
+  padding: 16px;
+  border-bottom: 1px solid var(--b-1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.descriptionText {
+  font-size: 13.5px;
+  color: var(--t-1);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.wikiLink {
+  font-size: 12px;
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.wikiLink:hover {
+  text-decoration: underline;
 }
 
 /* ── WHY MATTERS SECTION ── */
@@ -274,12 +328,9 @@
   white-space: nowrap;
 }
 
-/* ── CARDS (Transport, Secret, Crowd, Weather) ── */
+/* ── CARDS (Transport, Secret) ── */
 .transportCard,
-.secretCard,
-.crowdCard,
-.warningCard,
-.alternativeCard {
+.secretCard {
   padding: 12px 16px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--b-1);
@@ -291,26 +342,8 @@
   background: linear-gradient(135deg, rgba(212, 168, 67, 0.08) 0%, var(--bg-elevated) 100%);
 }
 
-.crowdCard {
-  border-left-color: #F59E0B;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, var(--bg-elevated) 100%);
-}
-
-.warningCard {
-  border-left-color: #EF4444;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, var(--bg-elevated) 100%);
-}
-
-.alternativeCard {
-  border-left-color: #3B82F6;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, var(--bg-elevated) 100%);
-}
-
 .transportCardTitle,
-.secretTitle,
-.crowdTitle,
-.warningTitle,
-.alternativeTitle {
+.secretTitle {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -350,30 +383,11 @@
   font-style: italic;
 }
 
-.secretContent,
-.crowdContent,
-.warningContent {
+.secretContent {
   font-size: 13px;
   color: var(--t-1);
   margin: 0;
   line-height: 1.5;
-}
-
-.alternativeContent {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.altName {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--t-1);
-}
-
-.altMeta {
-  font-size: 12px;
-  color: var(--t-2);
 }
 
 /* ── ACTION BUTTONS ── */
@@ -405,6 +419,12 @@
 .btnSecondary:hover {
   background: var(--bg-1);
   border-color: var(--b-gold);
+  color: var(--gold);
+}
+
+.btnSaved {
+  background: rgba(212, 168, 67, 0.1);
+  border-color: var(--gold);
   color: var(--gold);
 }
 

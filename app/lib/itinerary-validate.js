@@ -170,7 +170,7 @@ function normalizeTransport(transport, isFirst) {
   };
 }
 
-function normalizeActivity(activity, dayIndex, activityIndex, bounds, destinationName, result) {
+function normalizeActivity(activity, dayIndex, activityIndex, bounds, destinationName, result, currencyCode = 'EUR') {
   const source = activity && typeof activity === 'object' ? activity : {};
   const name = safeText(source.name || source.title, `Stop ${activityIndex + 1}`);
   const rawCoords = parseCoordinate(source.coordinates || source.coords || source.location || source.coordinate);
@@ -207,7 +207,7 @@ function normalizeActivity(activity, dayIndex, activityIndex, bounds, destinatio
     durationMinutes: numberOr(source.durationMinutes, null) || numberOr(source.duration, 90),
     cost,
     estimatedCost: source.estimatedCost ?? cost,
-    currency: source.currency || 'EUR',
+    currency: source.currency || currencyCode,
     rating,
     crowd: safeText(source.crowd, 'moderate'),
     bookingRequired: Boolean(source.bookingRequired),
@@ -241,7 +241,19 @@ function buildPeriods(day, activities) {
   return periods;
 }
 
-function normalizeMeal(meal, mealName, destinationName, bounds, result) {
+function getDefaultMealCost(mealName, currencyCode) {
+  const defaults = {
+    EUR: { breakfast: 8, lunch: 18, dinner: 32 },
+    JPY: { breakfast: 900, lunch: 1800, dinner: 3600 },
+    USD: { breakfast: 12, lunch: 24, dinner: 45 },
+    GBP: { breakfast: 9, lunch: 20, dinner: 38 },
+    IDR: { breakfast: 60000, lunch: 150000, dinner: 280000 },
+    MAD: { breakfast: 45, lunch: 100, dinner: 180 },
+  };
+  return (defaults[currencyCode] || defaults.EUR)[mealName] || defaults.EUR[mealName] || 20;
+}
+
+function normalizeMeal(meal, mealName, destinationName, bounds, result, currencyCode = 'EUR') {
   if (mealName === 'breakfast' && meal === null) return null;
   const source = meal && typeof meal === 'object' ? meal : {};
   const fallbackName = mealName === 'breakfast' ? `Breakfast near ${destinationName}` : `${mealName} near ${destinationName}`;
@@ -260,8 +272,9 @@ function normalizeMeal(meal, mealName, destinationName, bounds, result) {
     name,
     cuisine: safeText(source.cuisine || source.type, mealName === 'breakfast' ? 'Cafe' : 'Local cuisine'),
     type: safeText(source.type, mealName),
-    priceRange: safeText(source.priceRange, 'EUR'),
-    cost: Math.max(0, numberOr(source.cost, mealName === 'breakfast' ? 8 : mealName === 'lunch' ? 18 : 32)),
+    priceRange: safeText(source.priceRange, ''),
+    cost: Math.max(0, numberOr(source.cost, getDefaultMealCost(mealName, currencyCode))),
+    currency: source.currency || currencyCode,
     address: safeText(source.address, destinationName),
     coordinates,
     mustOrder: safeText(source.mustOrder || source.note, mealName === 'breakfast' ? 'house pastry and coffee' : 'the seasonal house speciality'),
@@ -374,7 +387,14 @@ export function validateAndNormalize(itinerary) {
         ],
     ...normalized.trip,
   };
+  const destinationCurrency = normalized.destination.currency?.code || normalized.destination.currency || 'EUR';
   normalized.trip.budgetBreakdown = normalizeBudgetBreakdown(normalized.trip.budgetBreakdown);
+  normalized.trip.budgetBreakdown.currency = destinationCurrency;
+  ['flights', 'accommodation', 'food', 'transport', 'activities', 'grandTotal'].forEach((key) => {
+    if (normalized.trip.budgetBreakdown[key]) {
+      normalized.trip.budgetBreakdown[key].currency = destinationCurrency;
+    }
+  });
   normalized.summary = normalized.summary || {
     title: `${normalized.destination.city} trip`,
     estimatedTotalCost: normalized.trip.budgetBreakdown.grandTotal.min,
@@ -386,7 +406,7 @@ export function validateAndNormalize(itinerary) {
     const day = rawDay && typeof rawDay === 'object' ? rawDay : {};
     const title = normalizeDayTitle(day, dayIndex, normalized.destination.city, seenTitles, result);
     const activities = getRawActivities(day).map((activity, activityIndex) => {
-      const normalizedActivity = normalizeActivity(activity, dayIndex, activityIndex, bounds, normalized.destination.city, result);
+      const normalizedActivity = normalizeActivity(activity, dayIndex, activityIndex, bounds, normalized.destination.city, result, destinationCurrency);
       if (normalizedActivity.coordinates) mapCriticalCount += 1;
       return normalizedActivity;
     });
@@ -413,9 +433,9 @@ export function validateAndNormalize(itinerary) {
       activities,
       stops: activities,
       meals: {
-        breakfast: 'breakfast' in meals ? normalizeMeal(meals.breakfast, 'breakfast', normalized.destination.city, bounds, result) : null,
-        lunch: normalizeMeal(meals.lunch, 'lunch', normalized.destination.city, bounds, result),
-        dinner: normalizeMeal(meals.dinner, 'dinner', normalized.destination.city, bounds, result),
+        breakfast: 'breakfast' in meals ? normalizeMeal(meals.breakfast, 'breakfast', normalized.destination.city, bounds, result, destinationCurrency) : null,
+        lunch: normalizeMeal(meals.lunch, 'lunch', normalized.destination.city, bounds, result, destinationCurrency),
+        dinner: normalizeMeal(meals.dinner, 'dinner', normalized.destination.city, bounds, result, destinationCurrency),
       },
       localSecret: safeText(day.localSecret || day.localSecrets, `Ask a staff member in ${normalized.destination.city} which street they use for a quiet dinner after work, then save that area offline.`),
     };

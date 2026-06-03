@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import styles from './EnhancedActivityCard.module.css';
-import { MapPin, Navigation, Lightbulb, Calendar, Bookmark, Map, Clock, Users, Cloud, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, Lightbulb, Calendar, Bookmark, Map, Clock, Users, Cloud, AlertCircle, Copy } from 'lucide-react';
 
 /**
  * ENHANCED ACTIVITY CARD
@@ -23,10 +24,28 @@ export default function EnhancedActivityCard({
   period,
   onMapFocus,
   onSave,
+  onBook,
+  onCopy,
+  isSaved = false,
+  isExpanded = false,
+  onToggle,
   isDayHighlight = false,
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const expanded = onToggle ? isExpanded : localExpanded;
+  const setExpanded = onToggle ? onToggle : setLocalExpanded;
   const [imgLoaded, setImgLoaded] = useState(false);
+
+  useEffect(() => {
+    if (expanded && activity?.coordinates) {
+      if (onMapFocus) onMapFocus(activity.coordinates);
+      // Dispatch custom event for LiveMap
+      const event = new CustomEvent('andor-open-map', {
+        detail: { coordinates: activity.coordinates, name: activity.name }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [expanded, activity?.coordinates, onMapFocus, activity?.name]);
 
   const periodColors = {
     morning: '#F59E0B',
@@ -34,21 +53,20 @@ export default function EnhancedActivityCard({
     evening: '#8B5CF6',
   };
 
-  const photoKeyword = activity?.photoKeyword || activity?.type || 'travel';
-  const photoUrl = `https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=500&h=300&auto=format&fit=crop&q=80`;
-  const photoFullUrl = `https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=800&h=400&auto=format&fit=crop&q=80`;
+  const isEnriched = activity?.enrichmentSource && activity?.enrichmentSource !== 'ai' && activity?.enrichmentSource !== 'estimated';
+  
+  // Choose photo: enriched API image, custom photo, or dynamic unsplash query fallback
+  const photoUrl = activity?.photo || `https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop&q=80`;
+  const photoFullUrl = activity?.photo || `https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop&q=80`;
 
   const handleExpandClick = (e) => {
     e.stopPropagation();
     setExpanded(!expanded);
-    if (!expanded && onMapFocus && activity?.coordinates) {
-      onMapFocus(activity.coordinates);
-    }
   };
 
   // Energy level indicator
-  const getEnergyLevel = (activity) => {
-    const energyRequired = activity.energyRequired || 50;
+  const getEnergyLevel = (act) => {
+    const energyRequired = act.energyRequired || 50;
     if (energyRequired >= 75) return { label: 'Muito intenso', color: '#EF4444', icon: '⚡' };
     if (energyRequired >= 50) return { label: 'Activo', color: '#F59E0B', icon: '✨' };
     if (energyRequired >= 25) return { label: 'Moderado', color: '#3B82F6', icon: '😌' };
@@ -58,10 +76,11 @@ export default function EnhancedActivityCard({
   const energy = getEnergyLevel(activity);
 
   // Crowd level
-  const getCrowdLevel = (activity) => {
-    const crowd = activity.crowd || 'medium';
-    if (crowd === 'low') return { label: 'Tranquilo', color: '#10B981' };
-    if (crowd === 'high') return { label: 'Muito movimentado', color: '#EF4444' };
+  const getCrowdLevel = (act) => {
+    const crowd = act.crowd || act.crowdLevel || 'medium';
+    const c = String(crowd).toLowerCase();
+    if (c.includes('low') || c.includes('baix')) return { label: 'Tranquilo', color: '#10B981' };
+    if (c.includes('high') || c.includes('alt') || c.includes('muito')) return { label: 'Muito movimentado', color: '#EF4444' };
     return { label: 'Moderado', color: '#F59E0B' };
   };
 
@@ -70,11 +89,9 @@ export default function EnhancedActivityCard({
   return (
     <div
       className={`${styles.activityCard} ${expanded ? styles.expanded : ''} ${isDayHighlight ? styles.highlight : ''}`}
+      data-testid="activity-card"
       onClick={() => {
         setExpanded(!expanded);
-        if (!expanded && onMapFocus && activity?.coordinates) {
-          onMapFocus(activity.coordinates);
-        }
       }}
     >
       {/* COLLAPSED STATE */}
@@ -117,9 +134,9 @@ export default function EnhancedActivityCard({
             )}
             <span className={styles.metaPill}>
               💰{' '}
-              {activity?.cost === 0 || activity?.cost === '0'
+              {activity?.cost === 0 || activity?.cost === '0' || activity?.cost === 'Grátis'
                 ? 'Grátis'
-                : `€${activity.cost || 0}`}
+                : typeof activity?.cost === 'number' ? `€${activity.cost}` : activity?.cost || 'Grátis'}
             </span>
             {activity?.rating && (
               <span className={styles.metaPill}>⭐ {activity.rating}</span>
@@ -151,202 +168,216 @@ export default function EnhancedActivityCard({
       </div>
 
       {/* EXPANDED STATE */}
-      <div className={styles.activityExpandedContent}>
-        {/* Full photo */}
-        <div className={styles.activityFullPhoto}>
-          <img
-            src={photoFullUrl}
-            alt={activity?.name || 'Activity'}
-            loading="lazy"
-            style={{
-              width: '100%',
-              height: 200,
-              objectFit: 'cover',
-            }}
-          />
-          <div className={styles.photoGradient} />
-          {isDayHighlight && (
-            <div className={styles.highlightBadge}>⭐ Destaque do dia</div>
-          )}
-        </div>
-
-        {/* Activity title in expanded */}
-        <div className={styles.expandedHeader}>
-          <h3 className={styles.activityHeading}>
-            {activity?.emoji || '📍'} {activity?.name || 'Activity'}
-          </h3>
-          {activity?.type && (
-            <span className={styles.typeTag}>{activity.type}</span>
-          )}
-        </div>
-
-        {/* WHY THIS MATTERS */}
-        {activity?.whyMatters && (
-          <div className={styles.whyMatters}>
-            <div className={styles.whyMatterTitle}>
-              <Lightbulb size={14} />
-              Por que é importante
-            </div>
-            <p className={styles.whyMatterText}>{activity.whyMatters}</p>
-          </div>
-        )}
-
-        {/* Address & Location */}
-        {activity?.address && (
-          <p className={styles.activityAddress}>
-            <MapPin size={12} style={{ marginRight: 6 }} />
-            {activity.address}
-          </p>
-        )}
-
-        {/* Quick Info Pills */}
-        <div className={styles.infoPills}>
-          {activity?.duration && (
-            <span className={styles.infoPill}>
-              <Clock size={12} />
-              {activity.duration}
-            </span>
-          )}
-          <span className={styles.infoPill}>
-            💰{' '}
-            {activity?.cost === 0 || activity?.cost === '0'
-              ? 'Grátis'
-              : `€${activity.cost || 0}`}
-          </span>
-          <span className={styles.infoPill}>
-            ⭐ {activity?.rating || '4.8'}
-          </span>
-          <span
-            className={styles.infoPill}
-            style={{ color: crowd.color, borderColor: crowd.color }}
-          >
-            <Users size={12} />
-            {crowd.label}
-          </span>
-          <span
-            className={styles.infoPill}
-            style={{ color: energy.color }}
-          >
-            {energy.icon} {energy.label}
-          </span>
-        </div>
-
-        {/* HOW TO GET THERE */}
-        {activity?.transportFromPrevious && (
-          <div className={styles.transportCard}>
-            <div className={styles.transportCardTitle}>
-              <Navigation size={14} />
-              Como chegar
-            </div>
-            <div className={styles.transportCardContent}>
-              <div className={styles.transportMode}>
-                {activity.transportFromPrevious.mode}
-                {activity.transportFromPrevious.line && ` • ${activity.transportFromPrevious.line}`}
-              </div>
-              <div className={styles.transportMeta}>
-                <span>{activity.transportFromPrevious.duration}</span>
-                <span>
-                  {activity.transportFromPrevious.cost === 0 ||
-                  activity.transportFromPrevious.cost === '0'
-                    ? 'Grátis'
-                    : `€${activity.transportFromPrevious.cost}`}
-                </span>
-              </div>
-              {activity.transportFromPrevious.directions && (
-                <div className={styles.transportDirections}>
-                  {activity.transportFromPrevious.directions}
-                </div>
+      {expanded && (
+        <div className={styles.activityExpandedContent}>
+          {/* Full photo */}
+          <div className={styles.activityFullPhoto}>
+            <img
+              src={photoFullUrl}
+              alt={activity?.name || 'Activity'}
+              loading="lazy"
+              style={{
+                width: '100%',
+                height: 200,
+                objectFit: 'cover',
+              }}
+            />
+            <div className={styles.photoGradient} />
+            {isDayHighlight && (
+              <div className={styles.highlightBadge}>⭐ Destaque do dia</div>
+            )}
+            <div className={styles.sourceTag}>
+              {isEnriched ? (
+                <span className={styles.tagReal}>✨ Dados Reais ({activity.enrichmentSource})</span>
+              ) : (
+                <span className={styles.tagEstimated}>📖 Estimativa</span>
               )}
             </div>
           </div>
-        )}
 
-        {/* INSIDER TIP */}
-        {activity?.insiderTip && (
-          <div className={styles.secretCard}>
-            <div className={styles.secretTitle}>
-              <Lightbulb size={14} />
-              Dica do Andor
-            </div>
-            <p className={styles.secretContent}>"{activity.insiderTip}"</p>
+          {/* Activity title in expanded */}
+          <div className={styles.expandedHeader}>
+            <h3 className={styles.activityHeading}>
+              {activity?.emoji || '📍'} {activity?.name || 'Activity'}
+            </h3>
+            {activity?.type && (
+              <span className={styles.typeTag}>{activity.type}</span>
+            )}
           </div>
-        )}
 
-        {/* CROWD TIMING */}
-        {activity?.crowdPeakTime && (
-          <div className={styles.crowdCard}>
-            <div className={styles.crowdTitle}>
-              <Users size={14} />
-              Melhor altura para visitar
+          {/* DESCRIPTION */}
+          {activity?.description && (
+            <div className={styles.descriptionSection}>
+              <p className={styles.descriptionText}>{activity.description}</p>
+              {activity?.wikipediaUrl && (
+                <a
+                  href={activity.wikipediaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.wikiLink}
+                >
+                  Ler mais na Wikipedia →
+                </a>
+              )}
             </div>
-            <p className={styles.crowdContent}>
-              Muito movimentado entre {activity.crowdPeakTime}. Chegue mais cedo ou mais tarde para evitar multidões.
+          )}
+
+          {/* WHY THIS MATTERS */}
+          {activity?.whyMatters && (
+            <div className={styles.whyMatters}>
+              <div className={styles.whyMatterTitle}>
+                <Lightbulb size={14} />
+                Por que é importante
+              </div>
+              <p className={styles.whyMatterText}>{activity.whyMatters}</p>
+            </div>
+          )}
+
+          {/* Address & Location */}
+          {activity?.address && (
+            <p className={styles.activityAddress}>
+              <MapPin size={12} style={{ marginRight: 6 }} />
+              {activity.address}
             </p>
-          </div>
-        )}
+          )}
 
-        {/* WEATHER CONCERNS */}
-        {activity?.weatherConcern === 'rainy_risky' && (
-          <div className={styles.warningCard}>
-            <div className={styles.warningTitle}>
-              <Cloud size={14} />
-              Cuidado com chuva
-            </div>
-            <p className={styles.warningContent}>
-              Esta atividade é outdoor. Verifique a previsão antes de ir.
-            </p>
+          {/* Quick Info Pills */}
+          <div className={styles.infoPills}>
+            {activity?.duration && (
+              <span className={styles.infoPill}>
+                <Clock size={12} />
+                {activity.duration}
+              </span>
+            )}
+            <span className={styles.infoPill}>
+              💰{' '}
+              {activity?.cost === 0 || activity?.cost === '0' || activity?.cost === 'Grátis'
+                ? 'Grátis'
+                : typeof activity?.cost === 'number' ? `€${activity.cost}` : activity?.cost || 'Grátis'}
+            </span>
+            <span className={styles.infoPill}>
+              ⭐ {activity?.rating || '4.5'}
+            </span>
+            <span
+              className={styles.infoPill}
+              style={{ color: crowd.color, borderColor: crowd.color }}
+            >
+              <Users size={12} />
+              {crowd.label}
+            </span>
+            <span
+              className={styles.infoPill}
+              style={{ color: energy.color }}
+            >
+              {energy.icon} {energy.label}
+            </span>
+            {activity?.hours && (
+              <span className={styles.infoPill}>
+                🕐 {activity.hours}
+              </span>
+            )}
           </div>
-        )}
 
-        {/* RAIN ALTERNATIVES */}
-        {activity?.rainAlternative && (
-          <div className={styles.alternativeCard}>
-            <div className={styles.alternativeTitle}>
-              <AlertCircle size={14} />
-              Se chover, considere
-            </div>
-            <div className={styles.alternativeContent}>
-              <div className={styles.altName}>{activity.rainAlternative.name}</div>
-              <div className={styles.altMeta}>
-                {activity.rainAlternative.type} • {activity.rainAlternative.duration}
+          {/* HOW TO GET THERE */}
+          {activity?.transportFromPrevious && (
+            <div className={styles.transportCard}>
+              <div className={styles.transportCardTitle}>
+                <Navigation size={14} />
+                Como chegar
+              </div>
+              <div className={styles.transportCardContent}>
+                <div className={styles.transportMode}>
+                  {activity.transportFromPrevious.mode}
+                  {activity.transportFromPrevious.line && ` • ${activity.transportFromPrevious.line}`}
+                </div>
+                <div className={styles.transportMeta}>
+                  <span>{activity.transportFromPrevious.duration}</span>
+                  <span>
+                    {activity.transportFromPrevious.cost === 0 ||
+                    activity.transportFromPrevious.cost === '0'
+                      ? 'Grátis'
+                      : `€${activity.transportFromPrevious.cost}`}
+                  </span>
+                </div>
+                {activity.transportFromPrevious.directions && (
+                  <div className={styles.transportDirections}>
+                    {activity.transportFromPrevious.directions}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className={styles.activityActions}>
-          {activity?.coordinates && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${activity.coordinates[0]},${activity.coordinates[1]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${styles.btnSecondary}`}
-            >
-              <Map size={14} />
-              Ver no Mapa
-            </a>
           )}
-          {activity?.bookingRequired && activity?.bookingUrl && (
-            <a
-              href={activity.bookingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+
+          {/* INSIDER TIP */}
+          {activity?.insiderTip && (
+            <div className={styles.secretCard}>
+              <div className={styles.secretTitle}>
+                <Lightbulb size={14} />
+                Dica do Andor
+              </div>
+              <p className={styles.secretContent}>"{activity.insiderTip}"</p>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className={styles.activityActions}>
+            {activity?.coordinates && (
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onMapFocus) onMapFocus(activity.coordinates);
+                  const event = new CustomEvent('andor-open-map', {
+                    detail: { coordinates: activity.coordinates, name: activity.name }
+                  });
+                  window.dispatchEvent(event);
+                }}
+              >
+                <Map size={14} />
+                Ver no Mapa
+              </button>
+            )}
+            
+            <button
+              type="button"
               className={styles.btnSecondary}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onCopy) onCopy(activity);
+              }}
+            >
+              <Copy size={14} />
+              Copiar
+            </button>
+
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onBook) onBook(activity);
+              }}
+              data-testid="booking-button"
             >
               <Calendar size={14} />
               Reservar
-            </a>
-          )}
-          <button
-            className={styles.btnSecondary}
-            onClick={() => onSave && onSave(activity)}
-          >
-            <Bookmark size={14} />
-            Guardar
-          </button>
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.btnSecondary} ${isSaved ? styles.btnSaved : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onSave) onSave(activity);
+              }}
+            >
+              <Bookmark size={14} />
+              {isSaved ? 'Guardado' : 'Guardar'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

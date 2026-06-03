@@ -40,7 +40,7 @@ export default function LoginModal({ isOpen, onClose }) {
         setLoading(false);
         return;
       }
-      const result = register(name, email, password);
+      const result = await register(name, email, password);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -52,7 +52,7 @@ export default function LoginModal({ isOpen, onClose }) {
         setLoading(false);
         return;
       }
-      const result = login(email, password);
+      const result = await login(email, password);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -79,14 +79,14 @@ export default function LoginModal({ isOpen, onClose }) {
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <button className={styles.closeBtn} onClick={onClose}>&times;</button>
         
-        <div className={styles.modalLogo}>🧭</div>
+        <div className={styles.modalLogo}>A</div>
         <h2 className={styles.title}>
           {isRegister ? 'Create your account' : 'Welcome back'}
         </h2>
         <p className={styles.subtitle}>
           {isRegister 
-            ? 'Join thousands of smart travelers.' 
-            : 'Log in to continue your adventures.'}
+            ? 'Cria uma conta para guardar viagens e preferências.' 
+            : 'Entra para continuar a planear com segurança.'}
         </p>
 
         <form onSubmit={handleSubmit} className={styles.form}>

@@ -33,13 +33,13 @@ export default function AlertsSection({ warnings, destination }) {
 
   const getAlertIcon = (type) => {
     switch (type) {
-      case 'scams': return '🚨';
-      case 'safety': return '⚠️';
-      case 'cultural': return '🌍';
-      case 'health': return '🏥';
-      case 'practical': return '📋';
-      case 'weather': return '🌦️';
-      default: return 'ℹ️';
+      case 'scams': return 'AL';
+      case 'safety': return 'SF';
+      case 'cultural': return 'CL';
+      case 'health': return 'HL';
+      case 'practical': return 'PR';
+      case 'weather': return 'WX';
+      default: return 'IN';
     }
   };
 
@@ -60,7 +60,6 @@ export default function AlertsSection({ warnings, destination }) {
       {/* Header */}
       <div className={styles.header}>
         <h2 className={styles.title}>
-          <span className={styles.icon}>⚠️</span>
           Informações Importantes
         </h2>
         <p className={styles.subtitle}>Tudo o que precisa saber antes de viajar</p>
@@ -91,7 +90,7 @@ export default function AlertsSection({ warnings, destination }) {
                     )}
                     {alert.advice && (
                       <div className={styles.alertAdvice}>
-                        <strong>💡 Conselho:</strong> {alert.advice}
+                        <strong>Conselho:</strong> {alert.advice}
                       </div>
                     )}
                   </div>

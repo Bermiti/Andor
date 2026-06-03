@@ -3,6 +3,8 @@
  * Ensures map ALWAYS shows correct city, never zero-zero or out-of-bounds
  */
 
+import { getCountryCentroid } from './geocoding';
+
 export const CITY_BOUNDS = {
   tokyo: { lat: [35.0, 36.5], lng: [139.0, 140.5], center: [35.6762, 139.6503] },
   paris: { lat: [48.5, 49.2], lng: [2.0, 2.7], center: [48.8566, 2.3522] },
@@ -44,7 +46,7 @@ export const CITY_BOUNDS = {
   budapest: { lat: [47.4, 47.6], lng: [19.0, 19.2], center: [47.4979, 19.0402] },
 };
 
-function getDestinationKey(destinationName) {
+export function getDestinationKey(destinationName) {
   if (!destinationName) return null;
   const key = destinationName.toLowerCase()
     .replace(/,.*$/, '')
@@ -61,7 +63,7 @@ function getDestinationKey(destinationName) {
   return null;
 }
 
-function isValidCoordinate(lat, lng) {
+export function isValidCoordinate(lat, lng) {
   if (lat === null || lat === undefined || lng === null || lng === undefined) return false;
   if (typeof lat !== 'number' || typeof lng !== 'number') return false;
   if (lat === 0 && lng === 0) return false;
@@ -69,7 +71,7 @@ function isValidCoordinate(lat, lng) {
   return true;
 }
 
-function isCoordinateInBounds(lat, lng, bounds) {
+export function isCoordinateInBounds(lat, lng, bounds) {
   if (!isValidCoordinate(lat, lng)) return false;
   const [latMin, latMax] = bounds.lat;
   const [lngMin, lngMax] = bounds.lng;
@@ -79,24 +81,30 @@ function isCoordinateInBounds(lat, lng, bounds) {
 export function validateAndFixCoordinates(itineraryData, destinationName) {
   if (!itineraryData || typeof itineraryData !== 'object') return itineraryData;
   
-  const destKey = getDestinationKey(destinationName);
-  if (!destKey || !CITY_BOUNDS[destKey]) return itineraryData;
-  
-  const bounds = CITY_BOUNDS[destKey];
-  const [centerLat, centerLng] = bounds.center;
+  const destKey = getDestinationKey(destinationName || itineraryData.destination?.name);
+  const bounds = destKey ? CITY_BOUNDS[destKey] : null;
+  const [centerLat, centerLng] = getDestinationCenter(destinationName || itineraryData.destination?.name);
   
   function fixCoord(coords) {
     if (!coords) return [centerLat, centerLng];
     
     if (Array.isArray(coords)) {
       const [lat, lng] = coords;
-      if (isCoordinateInBounds(lat, lng, bounds)) return coords;
+      if (bounds) {
+        if (isCoordinateInBounds(lat, lng, bounds)) return coords;
+      } else {
+        if (isValidCoordinate(lat, lng)) return coords;
+      }
       return [centerLat, centerLng];
     }
     
     if (typeof coords === 'object' && coords.lat !== undefined && coords.lng !== undefined) {
       const { lat, lng } = coords;
-      if (isCoordinateInBounds(lat, lng, bounds)) return coords;
+      if (bounds) {
+        if (isCoordinateInBounds(lat, lng, bounds)) return coords;
+      } else {
+        if (isValidCoordinate(lat, lng)) return coords;
+      }
       return { lat: centerLat, lng: centerLng };
     }
     
@@ -147,7 +155,22 @@ export function validateAndFixCoordinates(itineraryData, destinationName) {
 
 export function getDestinationCenter(destinationName) {
   const key = getDestinationKey(destinationName);
-  if (!key || !CITY_BOUNDS[key]) return [51.5074, -0.1278]; // London fallback
-  const [lat, lng] = CITY_BOUNDS[key].center;
-  return [lat, lng];
+  if (key && CITY_BOUNDS[key]) {
+    const [lat, lng] = CITY_BOUNDS[key].center;
+    return [lat, lng];
+  }
+  
+  if (destinationName) {
+    // Try splitting by comma, check from right to left (usually city, country)
+    const parts = destinationName.split(',').map(s => s.trim());
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const centroid = getCountryCentroid(parts[i]);
+      if (centroid) return centroid;
+    }
+    
+    const centroid = getCountryCentroid(destinationName);
+    if (centroid) return centroid;
+  }
+  
+  return [51.5074, -0.1278]; // London fallback
 }

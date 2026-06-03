@@ -1,0 +1,148 @@
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 250ms ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.card:hover {
+  border-color: var(--b-gold);
+  box-shadow: 0 6px 16px rgba(212, 168, 67, 0.08);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.typeIcon {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--b-1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+}
+
+.operatorArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+}
+
+.operatorName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t-1);
+}
+
+.sourceBadge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.srcAmadeus {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.srcEstimated {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--t-3);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.timingArea {
+  background: var(--bg-elevated);
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t-1);
+}
+
+.duration {
+  font-size: 12px;
+  color: var(--t-2);
+}
+
+.stopsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stops {
+  font-size: 11px;
+  color: var(--t-3);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priceSection {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.priceSub {
+  font-size: 10px;
+  color: var(--t-3);
+}
+
+.bookBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--b-gold);
+  border-radius: 6px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 200ms;
+}
+
+.bookBtn:hover {
+  background: var(--gold);
+  color: var(--bg-primary);
+}

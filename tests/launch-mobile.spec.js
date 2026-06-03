@@ -53,6 +53,7 @@ test.describe('Launch mobile regression suite', () => {
     await expect(page.getByText(/Quando/i)).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
+    await page.getByTestId('wizard-dates-unknown').check();
     await page.getByTestId('wizard-next').click();
     await page.getByTestId('wizard-style-gastronomia').click();
     await expectNoHorizontalOverflow(page);

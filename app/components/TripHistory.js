@@ -148,7 +148,7 @@ function TripCard({ trip, t }) {
 
       {viewHref && (
         <div className={styles.tripActions}>
-          <Link href={viewHref} className={styles.viewBtn}>
+          <Link href={viewHref} className={styles.viewBtn} aria-label="Ver roteiro completo">
             {t('viewFullItinerary')}
           </Link>
         </div>

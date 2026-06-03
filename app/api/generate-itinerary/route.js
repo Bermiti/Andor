@@ -2,11 +2,146 @@ import { generateFallbackItinerary } from '../../lib/fallback-ai';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
 import PHASE11_ENHANCED_SYSTEM_PROMPT from '../../lib/phase11-2-enhanced-prompt';
 import { validateAndFixCoordinates, getDestinationCenter } from '../../lib/coordinate-validator';
+import { geocodeServerSide } from '../../lib/geocoding';
 import { validateAllDayTitles, isBannedDayTitle, suggestDayTitle } from '../../lib/day-title-validator';
 import { apiError, cleanInteger, cleanList, cleanLocale, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
+import { createItineraryRecord } from '../../lib/supabase/db';
 
-function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedDays) {
+const DESTINATION_CURRENCY_HINTS = [
+  { match: /tokyo|kyoto|osaka|japan/i, code: 'JPY', symbol: 'JPY' },
+  { match: /london|united kingdom|uk/i, code: 'GBP', symbol: 'GBP' },
+  { match: /new york|nyc|usa|united states/i, code: 'USD', symbol: 'USD' },
+  { match: /bali|indonesia/i, code: 'IDR', symbol: 'IDR' },
+  { match: /marrakech|morocco/i, code: 'MAD', symbol: 'MAD' },
+];
+
+const LOCAL_CURRENCY_SCALE = {
+  JPY: { factor: 160, lowGrandTotal: 20000, lowActivity: 500 },
+  IDR: { factor: 17000, lowGrandTotal: 1000000, lowActivity: 100000 },
+  MAD: { factor: 11, lowGrandTotal: 10000, lowActivity: 250 },
+};
+
+function parseMoneyValue(value, fallback = 0) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const parsed = Number(String(value ?? '').replace(/[^\d.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getDestinationCurrency(destination, fallbackDestination = '') {
+  const haystack = [
+    destination?.city,
+    destination?.name,
+    destination?.country,
+    fallbackDestination,
+  ].filter(Boolean).join(' ');
+
+  const hint = DESTINATION_CURRENCY_HINTS.find((item) => item.match.test(haystack));
+  if (hint) return { code: hint.code, symbol: hint.symbol };
+
+  const existing = typeof destination?.currency === 'object'
+    ? destination.currency
+    : null;
+  if (existing?.code) return existing;
+  if (typeof destination?.currency === 'string' && /^[A-Z]{3}$/i.test(destination.currency)) {
+    return { code: destination.currency.toUpperCase(), symbol: destination.currency.toUpperCase() };
+  }
+  return { code: 'EUR', symbol: 'EUR' };
+}
+
+function maybeScaleCurrencyValues(itinerary, currency) {
+  const scale = LOCAL_CURRENCY_SCALE[currency.code];
+  if (!scale || !itinerary?.trip?.budgetBreakdown) return;
+
+  const budget = itinerary.trip.budgetBreakdown;
+  const grandMax = parseMoneyValue(budget.grandTotal?.max, 0);
+  const shouldScaleBudget = grandMax > 0 && grandMax < scale.lowGrandTotal;
+  const scaleValue = (value, lowThreshold = scale.lowActivity) => {
+    const parsed = parseMoneyValue(value, null);
+    if (parsed === null || parsed <= 0 || parsed >= lowThreshold) return value;
+    return Math.round(parsed * scale.factor);
+  };
+
+  if (shouldScaleBudget) {
+    ['flights', 'accommodation', 'food', 'transport', 'activities'].forEach((key) => {
+      if (!budget[key]) return;
+      ['min', 'max', 'total', 'perNight', 'perDay'].forEach((field) => {
+        if (budget[key][field] !== undefined) budget[key][field] = scaleValue(budget[key][field], scale.lowGrandTotal);
+      });
+    });
+    if (budget.grandTotal) {
+      budget.grandTotal.min = scaleValue(budget.grandTotal.min, scale.lowGrandTotal);
+      budget.grandTotal.max = scaleValue(budget.grandTotal.max, scale.lowGrandTotal);
+    }
+    if (budget.perPersonEstimate) {
+      budget.perPersonEstimate.min = scaleValue(budget.perPersonEstimate.min, scale.lowGrandTotal);
+      budget.perPersonEstimate.max = scaleValue(budget.perPersonEstimate.max, scale.lowGrandTotal);
+    }
+  }
+
+  (itinerary.flightOptions || []).forEach((flight) => {
+    if (!flight.estimatedPrice) return;
+    ['economy', 'premiumEconomy', 'business'].forEach((field) => {
+      if (flight.estimatedPrice[field] !== undefined) flight.estimatedPrice[field] = scaleValue(flight.estimatedPrice[field], scale.lowGrandTotal);
+    });
+  });
+  if (itinerary.accommodation?.recommended?.pricePerNight !== undefined) {
+    itinerary.accommodation.recommended.pricePerNight = scaleValue(itinerary.accommodation.recommended.pricePerNight, scale.lowGrandTotal);
+  }
+
+  (itinerary.days || []).forEach((day) => {
+    if (day.budgetEstimate !== undefined) day.budgetEstimate = scaleValue(day.budgetEstimate);
+    if (day.estimatedCost !== undefined) day.estimatedCost = scaleValue(day.estimatedCost);
+    if (day.transport?.cost !== undefined) day.transport.cost = scaleValue(day.transport.cost);
+    if (day.transport?.totalDayCost !== undefined) day.transport.totalDayCost = scaleValue(day.transport.totalDayCost);
+    (day.stops || day.activities || []).forEach((activity) => {
+      if (activity.cost !== undefined) activity.cost = scaleValue(activity.cost);
+      if (activity.transportFromPrevious?.cost !== undefined) {
+        activity.transportFromPrevious.cost = scaleValue(activity.transportFromPrevious.cost);
+      }
+    });
+    Object.values(day.meals || {}).forEach((meal) => {
+      if (meal?.cost !== undefined) meal.cost = scaleValue(meal.cost);
+    });
+  });
+}
+
+function ensureCurrencyOnItinerary(itinerary, currency) {
+  if (!itinerary || !currency?.code) return itinerary;
+  itinerary.destination = {
+    ...(typeof itinerary.destination === 'object' ? itinerary.destination : { city: itinerary.destination }),
+    currency,
+  };
+
+  const budget = itinerary.trip?.budgetBreakdown;
+  if (budget) {
+    budget.currency = currency.code;
+    ['flights', 'accommodation', 'food', 'transport', 'activities', 'grandTotal'].forEach((key) => {
+      if (budget[key]) budget[key].currency = currency.code;
+    });
+  }
+
+  (itinerary.flightOptions || []).forEach((flight) => {
+    if (flight.estimatedPrice) flight.estimatedPrice.currency = currency.code;
+  });
+  if (itinerary.accommodation?.recommended) {
+    itinerary.accommodation.recommended.currency = currency.code;
+  }
+
+  (itinerary.days || []).forEach((day) => {
+    if (day.transport) day.transport.currency = currency.code;
+    (day.stops || day.activities || []).forEach((activity) => {
+      activity.currency = currency.code;
+      if (activity.transportFromPrevious) {
+        activity.transportFromPrevious.currency = currency.code;
+      }
+    });
+  });
+  maybeScaleCurrencyValues(itinerary, currency);
+  return itinerary;
+}
+
+async function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedDays) {
   if (!itinerary || typeof itinerary !== 'object') {
     throw new Error('Generated itinerary is not an object');
   }
@@ -17,8 +152,24 @@ function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedD
     : { city: itinerary.destination || fallbackDestination };
   destination.city = destination.city || destination.name || fallbackDestination;
   destination.name = destination.name || destination.city;
+  const destinationCurrency = getDestinationCurrency(destination, fallbackDestination);
+  destination.currency = destination.currency || destinationCurrency;
 
-  const [centerLat, centerLng] = getDestinationCenter(destination.city || fallbackDestination);
+  const country = destination.countryCode || destination.country || '';
+  
+  // Dynamic geocoding for the destination
+  let destCoords = null;
+  try {
+    const geoDest = await geocodeServerSide(destination.city, country);
+    if (geoDest) {
+      destCoords = [geoDest.lat, geoDest.lng];
+      destination.coordinates = destCoords;
+    }
+  } catch (err) {
+    console.error('Failed to geocode destination city:', err);
+  }
+
+  const [centerLat, centerLng] = destCoords || getDestinationCenter(destination.city || fallbackDestination);
   if (!Array.isArray(destination.coordinates)) {
     destination.coordinates = [centerLat, centerLng];
   }
@@ -27,6 +178,12 @@ function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedD
   if (days.length === 0) {
     throw new Error('Generated itinerary has no days');
   }
+
+  const isValidCoordinateLocal = (lat, lng) => {
+    if (lat === null || lat === undefined || lng === null || lng === undefined) return false;
+    if (lat === 0 && lng === 0) return false;
+    return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+  };
 
   const seenTitles = new Set();
   const repairedDays = days.slice(0, Number(requestedDays) || days.length).map((day, dayIndex) => {
@@ -49,8 +206,8 @@ function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedD
         nextActivity.name = nextActivity.name || `Local ${activityIndex + 1}`;
         nextActivity.type = nextActivity.type || nextActivity.category || 'experience';
         nextActivity.duration = nextActivity.duration || '90 min';
-        nextActivity.cost = typeof nextActivity.cost === 'number' ? nextActivity.cost : (parseFloat(nextActivity.estimatedCost) || 0);
-        nextActivity.currency = nextActivity.currency || 'EUR';
+        nextActivity.cost = typeof nextActivity.cost === 'number' ? nextActivity.cost : parseMoneyValue(nextActivity.estimatedCost, 0);
+        nextActivity.currency = nextActivity.currency || destinationCurrency.code;
         nextActivity.address = nextActivity.address || destination.city;
         if (!Array.isArray(nextActivity.coordinates)) {
           nextActivity.coordinates = [centerLat, centerLng];
@@ -82,6 +239,42 @@ function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedD
     return nextDay;
   });
 
+  // Perform geocoding sequentially for all activities
+  const activitiesToGeocode = [];
+  repairedDays.forEach(day => {
+    ['morning', 'afternoon', 'evening'].forEach(period => {
+      if (day.periods?.[period]?.activities) {
+        day.periods[period].activities.forEach(act => {
+          activitiesToGeocode.push(act);
+        });
+      }
+    });
+  });
+
+  for (const act of activitiesToGeocode) {
+    try {
+      const query = `${act.name}, ${destination.city}`;
+      const geo = await geocodeServerSide(query, country);
+      if (geo) {
+        act.coordinates = [geo.lat, geo.lng];
+        act.coordinateSource = 'nominatim';
+      } else {
+        const hasValidAiCoords = Array.isArray(act.coordinates) && 
+                                 act.coordinates.length >= 2 && 
+                                 isValidCoordinateLocal(act.coordinates[0], act.coordinates[1]);
+        if (hasValidAiCoords) {
+          act.coordinateSource = 'ai';
+        } else {
+          act.coordinates = [centerLat, centerLng];
+          act.coordinateSource = 'centroid';
+        }
+      }
+    } catch (err) {
+      console.error(`Error geocoding activity ${act.name}:`, err);
+      act.coordinateSource = 'centroid';
+    }
+  }
+
   const repaired = {
     ...itinerary,
     destination,
@@ -108,7 +301,7 @@ function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedD
     throw new Error(validation.errors.join('; '));
   }
 
-  return validation.normalized || coordinateFixed;
+  return ensureCurrencyOnItinerary(validation.normalized || coordinateFixed, destinationCurrency);
 }
 
 export async function POST(req) {
@@ -125,6 +318,53 @@ export async function POST(req) {
     const interests = cleanList(body.interests || body.travelStyle, 8, 60);
     const style = cleanString(body.style || interests.join(', '), 'culture', 120);
     const activeLocale = cleanLocale(body.locale);
+    const startDate = cleanString(body.startDate || body.dates?.start, '', 20);
+    const endDate = cleanString(body.endDate || body.dates?.end, '', 20);
+
+    const travelerType = cleanString(body.travelerType, 'couple', 40);
+    const dietaryRestrictions = cleanList(body.dietaryRestrictions || body.dietary, 6, 60);
+    const mobilityReduced = Boolean(body.mobilityReduced ?? body.reducedMobility);
+    const transportPreference = cleanString(body.transportPreference || body.transport, 'any', 40);
+    const budgetPerDay = cleanInteger(body.budgetPerDay, 0, 0, 5000);
+
+    const respondWithItinerary = async (itinerary, source = 'generated') => {
+      const payload = {
+        ...itinerary,
+        trip: {
+          ...(itinerary.trip || {}),
+          totalDays: Number(days) || itinerary.trip?.totalDays || itinerary.days?.length || 0,
+          budgetTier: budget,
+          groupType: `${travelers} viajante${travelers === 1 ? '' : 's'}`,
+          travelStyle: style,
+          startDate: startDate || itinerary.trip?.startDate || null,
+          endDate: endDate || itinerary.trip?.endDate || null,
+        },
+      };
+
+      const persisted = await createItineraryRecord(payload, {
+        days,
+        budget,
+        travelers,
+        style,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        source,
+      });
+
+      const saved = persisted.ok
+        ? { ...payload, id: persisted.id, shareToken: persisted.shareToken }
+        : payload;
+
+      return Response.json({
+        ...saved,
+        itinerary: saved,
+        persistence: {
+          provider: persisted.provider,
+          persisted: persisted.ok,
+          reason: persisted.reason || null,
+        },
+      });
+    };
 
     if (destination.length < 2) {
       return apiError('DESTINATION_REQUIRED', 'Indica um destino para criar o itinerário.', 400, false);
@@ -660,7 +900,16 @@ PERMANENTLY BANNED (never use these patterns):
 4. RESPONSE FORMAT:
 Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`;
 
-    const userPrompt = `Create a perfect ${days || 3}-day travel itinerary for ${destination}. Budget: ${budget || 'Confortável'}. Travelers: ${travelers || 2}. Travel style: ${style || 'cultural'}. Interests: ${interests?.join(', ') || 'general'}. Return ONLY valid JSON matching the exact requested schema.`;
+    const userPrompt = `Create a perfect ${days || 3}-day travel itinerary for ${destination}. 
+Budget tier/preference: ${budget || 'Confortável'}.${budgetPerDay > 0 ? ` Target Budget per day: ${budgetPerDay} EUR per person.` : ''}
+Travelers: ${travelers || 2} (${travelerType}). 
+Travel style/interests: ${style || 'cultural'}. Interests: ${interests?.join(', ') || 'general'}.
+Constraints:
+- Dietary restrictions: ${dietaryRestrictions.length > 0 ? dietaryRestrictions.join(', ') : 'None'}. Make sure all recommended meals/restaurants accommodate these restrictions.
+- Reduced mobility: ${mobilityReduced ? 'YES (Strict accessibility constraint. Only include wheelchair/mobility accessible activities, avoid steep hikes, long stairs, or excessive walking. Prioritize ground/accessible transport).' : 'No special mobility constraints.'}
+- Transport preference: ${transportPreference === 'avoid flights' ? 'Prefer ground transport (trains, buses) over domestic flights.' : transportPreference === 'ground only' ? 'Strictly ground transport only.' : 'Any transport mode allowed.'}
+
+Return ONLY valid JSON matching the exact requested schema.`;
 
     // Try real AI first (Groq Llama)
     const groqKey = process.env.GROQ_API_KEY;
@@ -690,8 +939,8 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
           const data = await response.json();
           try {
             const parsed = JSON.parse(data.choices[0].message.content);
-            const result = normalizeGeneratedItinerary(parsed, destination, days);
-            return Response.json(result);
+            const result = await normalizeGeneratedItinerary(parsed, destination, days);
+            return respondWithItinerary(result, 'groq');
           } catch (e) {
             logger.warn('generate_itinerary:groq_parse_failed', e, { destination, days });
           }
@@ -963,13 +1212,13 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
           prompt: `${systemPrompt}\n\n${userPrompt}`,
         });
         
-        let result = normalizeGeneratedItinerary(object, destination, days);
+        let result = await normalizeGeneratedItinerary(object, destination, days);
         const titleValidation = validateAllDayTitles(result);
         if (!titleValidation.valid) {
           // day title validation warnings, but continue
         }
         
-        return Response.json(result);
+        return respondWithItinerary(result, 'gemini');
       } catch (e) {
         logger.warn('generate_itinerary:gemini_provider_failed', e, { destination, days });
       }
@@ -978,7 +1227,7 @@ Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`
     // Fallback — always works
     const itinerary = generateFallbackItinerary(destination, days, budget);
     const validation = validateAndNormalize(itinerary);
-    return Response.json(validation.normalized || itinerary);
+    return respondWithItinerary(validation.normalized || itinerary, 'fallback');
 
   } catch (error) {
     const errorId = logger.error('generate_itinerary:unhandled', error);

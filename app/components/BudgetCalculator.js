@@ -41,13 +41,13 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
 
   return (
     <div className={styles.calculator}>
-      <h3 className={styles.title}>🧮 Planeador de Orçamento Interativo</h3>
+      <h3 className={styles.title}>Planeador de Orçamento Interativo</h3>
       <p className={styles.subtitle}>Personaliza os teus níveis de viagem para calcular a estimativa de custos instantaneamente.</p>
 
       {/* Sliders */}
       <div className={styles.sliderGroup}>
         <div className={styles.sliderLabelRow}>
-          <span>👥 Viajantes</span>
+          <span>Viajantes</span>
           <span className={styles.sliderVal}>{travelers} {travelers === 1 ? 'pessoa' : 'pessoas'}</span>
         </div>
         <input
@@ -62,7 +62,7 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
 
       <div className={styles.sliderGroup}>
         <div className={styles.sliderLabelRow}>
-          <span>📅 Duração</span>
+          <span>Duração</span>
           <span className={styles.sliderVal}>{days} {days === 1 ? 'dia' : 'dias'}</span>
         </div>
         <input
@@ -77,7 +77,7 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
 
       {/* Tiers Selectors */}
       <div className={styles.tierSelector}>
-        <label className={styles.selectorLabel}>✈️ Classe do Voo</label>
+        <label className={styles.selectorLabel}>Classe do Voo</label>
         <div className={styles.tabsGrid}>
           {[
             { id: 'economy', label: 'Económica' },
@@ -96,7 +96,7 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
       </div>
 
       <div className={styles.tierSelector}>
-        <label className={styles.selectorLabel}>🏨 Alojamento</label>
+        <label className={styles.selectorLabel}>Alojamento</label>
         <div className={styles.tabsGrid}>
           {[
             { id: 'budget', label: 'Económico' },
@@ -115,7 +115,7 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
       </div>
 
       <div className={styles.tierSelector}>
-        <label className={styles.selectorLabel}>🍽️ Refeições & Gastronomia</label>
+        <label className={styles.selectorLabel}>Refeições & Gastronomia</label>
         <div className={styles.tabsGrid}>
           {[
             { id: 'budget', label: 'Local' },

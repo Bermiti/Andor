@@ -1,0 +1,182 @@
+.container {
+  background: linear-gradient(135deg, rgba(26, 34, 53, 0.03) 0%, rgba(212, 168, 67, 0.05) 100%);
+  border: 1px dashed var(--b-gold);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  animation: fadeIn 300ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sparkleIcon {
+  color: var(--gold);
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); opacity: 0.8; }
+  to { transform: scale(1.1); opacity: 1; }
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t-1);
+  letter-spacing: 0.3px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--t-2);
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--t-3);
+  transition: all 200ms ease;
+}
+
+.stepIconContainer {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--b-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--t-3);
+}
+
+.stepLabel {
+  font-weight: 500;
+}
+
+/* Step Status States */
+.step.loading {
+  color: var(--t-1);
+}
+
+.step.loading .stepIconContainer {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(212, 168, 67, 0.05);
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  100% { transform: rotate(360deg); }
+}
+
+.step.done {
+  color: #10b981;
+}
+
+.step.done .stepIconContainer {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+}
+
+.checkIcon {
+  stroke-width: 3;
+}
+
+/* Skeletons */
+.skeletons {
+  border-top: 1px solid var(--b-1);
+  padding-top: 16px;
+}
+
+.skeletonCard {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--b-1);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.skeletonThumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  animation: shimmer 1.5s infinite linear;
+  background-image: linear-gradient(
+    90deg,
+    var(--bg-elevated) 0px,
+    var(--bg-1) 40px,
+    var(--bg-elevated) 80px
+  );
+  background-size: 200% 100%;
+}
+
+.skeletonContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonTitle {
+  height: 10px;
+  width: 60%;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  animation: shimmer 1.5s infinite linear;
+  background-image: linear-gradient(
+    90deg,
+    var(--bg-elevated) 0px,
+    var(--bg-1) 40px,
+    var(--bg-elevated) 80px
+  );
+  background-size: 200% 100%;
+}
+
+.skeletonMeta {
+  height: 8px;
+  width: 40%;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  animation: shimmer 1.5s infinite linear;
+  background-image: linear-gradient(
+    90deg,
+    var(--bg-elevated) 0px,
+    var(--bg-1) 40px,
+    var(--bg-elevated) 80px
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -80px 0; }
+  100% { background-position: 80px 0; }
+}
