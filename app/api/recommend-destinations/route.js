@@ -1,289 +1,92 @@
-import Groq from 'groq-sdk';
-import { cleanLocale, cleanString, cleanList, cleanInteger, hasProviderKey, readJsonBody } from '../../lib/api-utils';
+import { hasProviderKey, cleanString } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
 import { destinationsData } from '../../lib/destinations';
 
-// ---------------------------------------------------------------------------
-// System prompt builder — locale-aware
-// ---------------------------------------------------------------------------
+const SYSTEM_PROMPT = `You are ANDOR — an elite AI travel agent and luxury travel consultant.
+Analyze the user's travel preferences questionnaire and recommend the best matching destinations.
 
-function buildSystemPrompt(locale) {
-  const langMap = {
-    pt: 'European Portuguese',
-    'pt-PT': 'European Portuguese',
-    'pt-BR': 'Brazilian Portuguese',
-    en: 'English',
-    es: 'Spanish',
-    fr: 'French',
-  };
-  const lang = langMap[locale] || 'European Portuguese';
-
-  return `You are an elite travel consultant with 20+ years of experience. You have personally visited 120+ countries and have deep knowledge of every destination's culture, costs, climate, safety, and hidden gems.
-
-TASK:
-Analyze the traveler's profile and recommend EXACTLY 10–12 destinations that genuinely match their preferences. Return a JSON object — no markdown, no commentary.
-
-LANGUAGE — CRITICAL:
-ALL text output (profile summary, destination names, explanations, tags, strengths, everything) MUST be written in ${lang}. Never mix languages.
-
-RESPONSE FORMAT — return EXACTLY this JSON structure:
+You must reply with EXACTLY a valid JSON object in the following format:
 {
-  "userProfile": "<2–3 sentence summary of the traveler's profile>",
+  "userProfile": "Summary of the user profile based on questionnaire answers.",
   "destinations": [
     {
-      "name": "<city/region name>",
-      "country": "<country>",
-      "score": <0–100 integer reflecting real compatibility>,
-      "explanation": "<2–3 sentences explaining WHY this destination fits their profile>",
-      "tags": ["<tag1>", "<tag2>", "<tag3>"],
-      "idealDuration": "<e.g. 5–7 dias>",
-      "estimatedBudget": "<e.g. €1200–1600>",
-      "bestTime": "<e.g. Maio a Outubro>",
-      "strengths": ["<strength1>", "<strength2>"],
-      "consideration": "<one potential drawback, or null if none>"
+      "name": "Destination Name",
+      "country": "Country",
+      "score": 95,
+      "explanation": "2-3 sentences explaining exactly why this destination matches their profile.",
+      "tags": ["Tag1", "Tag2", "Tag3"],
+      "idealDuration": "7 days",
+      "estimatedBudget": "€1500–2000",
+      "bestTime": "Best months to visit",
+      "strengths": ["Key strength 1", "Key strength 2"],
+      "consideration": "Subtle warning or caveat if any, or null"
     }
   ]
 }
 
-SCORING RULES:
-- 90–100: Near-perfect match on all criteria (travel style, budget, climate, duration, flight time)
-- 80–89: Strong match, one minor compromise
-- 70–79: Good match, two compromises
-- 60–69: Decent option with notable trade-offs
-- Below 60: Do NOT include
+CRITICAL RULES:
+1. Output MUST be a valid JSON object with EXACTLY the keys "userProfile" and "destinations".
+2. Do NOT write any conversational text, markdown formatting blocks (like \`\`\`json), or explanations outside of the JSON object.
+3. Recommend exactly 10 to 12 destinations.
+4. Each destination must have all the fields: name, country, score (integer 0-100), explanation, tags, idealDuration, estimatedBudget, bestTime, strengths, and consideration (string or null).
+5. All text content (userProfile, explanation, tags, idealDuration, estimatedBudget, bestTime, strengths, consideration) MUST be written in the specified locale/language:
+   - If locale is 'pt', use European Portuguese.
+   - If locale is 'pt-BR', use Brazilian Portuguese.
+   - If locale is 'es', use Spanish.
+   - If locale is 'fr', use French.
+   - If locale is 'en', use English.
+6. The score should represent compatibility (0-100) based on the user's preferences, styles, avoids, and budget.
+7. The budget estimation should reflect the user's selected budget level and number of travelers.`;
 
-DIVERSITY RULES:
-- Mix continents/regions (don't put 8 European destinations unless the user specifically limits to Europe)
-- Mix price ranges within the user's budget tolerance
-- Mix popular and lesser-known destinations based on their preference
-- Include at least 2 unexpected/creative picks the user might not have considered
-
-QUALITY RULES:
-- estimatedBudget must reflect REAL costs for the stated duration, number of travelers, and budget tier
-- Account for departure city when estimating flight costs
-- bestTime must be factually correct for that destination's climate
-- Tags should be specific (not just "Culture" — use "Street Art", "Wine Region", "Surf", etc.)
-- Strengths should be concrete and specific, not generic
-- consideration should flag real issues (monsoon season, visa requirements, overtourism, etc.)
-
-BUDGET REFERENCE (per person, approximate):
-- economic: up to €500
-- moderate: €500–€1500
-- comfortable: €1500–€3000
-- premium: €3000–€5000
-- luxury: €5000+
-
-When budgetType is "total", divide accordingly by number of travelers.`;
-}
-
-// ---------------------------------------------------------------------------
-// Build the user message from the profile
-// ---------------------------------------------------------------------------
-
-function buildUserMessage(profile, locale) {
-  const parts = [];
-
-  if (profile.travelMonth) parts.push(`Travel month: ${profile.travelMonth}`);
-  if (profile.duration) parts.push(`Duration: ${profile.duration} days`);
-  if (profile.departureCity) parts.push(`Departure city: ${profile.departureCity}`);
-  if (profile.travelers) parts.push(`Number of travelers: ${profile.travelers}`);
-  if (profile.budgetType) parts.push(`Budget type: ${profile.budgetType}`);
-  if (profile.budget) parts.push(`Budget level: ${profile.budget}`);
-  if (profile.travelStyles?.length) parts.push(`Travel styles: ${profile.travelStyles.join(', ')}`);
-  if (profile.climate) parts.push(`Preferred climate: ${profile.climate}`);
-  if (profile.maxFlightHours) parts.push(`Max flight duration: ${profile.maxFlightHours} hours`);
-  if (profile.destinationPopularity) parts.push(`Destination type preference: ${profile.destinationPopularity}`);
-  if (profile.avoid?.length) parts.push(`Wants to avoid: ${profile.avoid.join(', ')}`);
-  if (profile.additionalInfo) parts.push(`Additional notes: ${profile.additionalInfo}`);
-
-  return parts.join('\n');
-}
-
-// ---------------------------------------------------------------------------
-// Validate and clean the AI response
-// ---------------------------------------------------------------------------
-
-function validateDestinations(parsed) {
-  if (!parsed || typeof parsed !== 'object') return null;
-
-  const userProfile = typeof parsed.userProfile === 'string' ? parsed.userProfile : '';
-  let destinations = [];
-
-  if (Array.isArray(parsed.destinations)) {
-    destinations = parsed.destinations;
-  } else if (Array.isArray(parsed)) {
-    destinations = parsed;
-  } else {
-    // Try to find an array in the response
-    const arrayValue = Object.values(parsed).find((v) => Array.isArray(v));
-    if (arrayValue) destinations = arrayValue;
+function safeCleanAndParseJson(text) {
+  let clean = text.trim();
+  // Strip markdown code blocks if the model wrapped it
+  if (clean.startsWith('```')) {
+    clean = clean.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '').trim();
   }
-
-  const cleaned = destinations
-    .filter((d) => d && typeof d === 'object' && d.name && d.country)
-    .map((d) => ({
-      name: String(d.name),
-      country: String(d.country),
-      score: typeof d.score === 'number' ? Math.min(100, Math.max(0, Math.round(d.score))) : 80,
-      explanation: String(d.explanation || ''),
-      tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 6) : [],
-      idealDuration: String(d.idealDuration || ''),
-      estimatedBudget: String(d.estimatedBudget || ''),
-      bestTime: String(d.bestTime || ''),
-      strengths: Array.isArray(d.strengths) ? d.strengths.map(String).slice(0, 4) : [],
-      consideration: d.consideration ? String(d.consideration) : null,
-    }))
-    .slice(0, 14);
-
-  if (cleaned.length === 0) return null;
-
-  return { userProfile, destinations: cleaned };
+  return JSON.parse(clean);
 }
-
-// ---------------------------------------------------------------------------
-// Static fallback — curated from destinations data
-// ---------------------------------------------------------------------------
-
-function buildStaticFallback(profile, locale) {
-  const styleMap = {
-    praia: ['Praia', 'Sol', 'Relax'],
-    beach: ['Praia', 'Sol', 'Relax'],
-    playa: ['Praia', 'Sol', 'Relax'],
-    plage: ['Praia', 'Sol', 'Relax'],
-    cidade: ['Cidade', 'Cultura'],
-    city: ['Cidade', 'Cultura'],
-    ciudad: ['Cidade', 'Cultura'],
-    ville: ['Cidade', 'Cultura'],
-    natureza: ['Natureza', 'Aventura'],
-    nature: ['Natureza', 'Aventura'],
-    naturaleza: ['Natureza', 'Aventura'],
-    aventura: ['Aventura', 'Natureza'],
-    adventure: ['Aventura', 'Natureza'],
-    cultura: ['Cultura', 'História'],
-    culture: ['Cultura', 'História'],
-    gastronomia: ['Gastronomia'],
-    gastronomy: ['Gastronomia'],
-    luxo: ['Luxo', 'Romântico'],
-    luxury: ['Luxo', 'Romântico'],
-    lujo: ['Luxo', 'Romântico'],
-    luxe: ['Luxo', 'Romântico'],
-    descanso: ['Relax'],
-    relax: ['Relax'],
-    romântica: ['Romântico'],
-    romantic: ['Romântico'],
-    romántica: ['Romântico'],
-    romantique: ['Romântico'],
-    família: ['Natureza', 'Relax'],
-    family: ['Natureza', 'Relax'],
-    familia: ['Natureza', 'Relax'],
-    amigos: ['Festa', 'Cidade'],
-    friends: ['Festa', 'Cidade'],
-    nightlife: ['Festa'],
-    'vida noturna': ['Festa'],
-  };
-
-  const userTags = new Set();
-  const styles = Array.isArray(profile.travelStyles) ? profile.travelStyles : [];
-  for (const style of styles) {
-    const mapped = styleMap[style.toLowerCase()] || [];
-    mapped.forEach((t) => userTags.add(t));
-  }
-
-  const scored = destinationsData.map((dest) => {
-    let matchScore = 0;
-    const destTags = dest.tags || [];
-    for (const tag of destTags) {
-      if (userTags.has(tag)) matchScore += 15;
-    }
-    return { ...dest, matchScore };
-  });
-
-  scored.sort((a, b) => b.matchScore - a.matchScore || b.score - a.score);
-
-  const top = scored.slice(0, 12);
-
-  const langLabel = {
-    pt: 'Perfil gerado a partir das preferências indicadas.',
-    'pt-BR': 'Perfil gerado a partir das preferências indicadas.',
-    en: 'Profile generated from stated preferences.',
-    es: 'Perfil generado a partir de las preferencias indicadas.',
-    fr: 'Profil généré à partir des préférences indiquées.',
-  };
-
-  return {
-    userProfile: langLabel[locale] || langLabel.pt,
-    destinations: top.map((d, i) => ({
-      name: d.name,
-      country: d.country,
-      score: Math.max(65, d.score - i * 2),
-      explanation: d.description || '',
-      tags: (d.tags || []).slice(0, 4),
-      idealDuration: '5–7 dias',
-      estimatedBudget: d.price || '€800–1200',
-      bestTime: 'Abril a Outubro',
-      strengths: (d.tags || []).slice(0, 2),
-      consideration: null,
-    })),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// POST handler
-// ---------------------------------------------------------------------------
 
 export async function POST(req) {
   try {
-    const body = await readJsonBody(req, 'recommend-destinations');
-    if (!body || typeof body !== 'object') {
-      return Response.json({ error: 'Invalid request body' }, { status: 400 });
-    }
+    const body = await req.json();
+    const profile = body.profile || {};
+    const locale = body.locale || 'pt';
 
-    const profile = body.profile && typeof body.profile === 'object' ? body.profile : {};
-    const locale = cleanLocale(body.locale);
+    const userPrompt = `Recomenda destinos para este perfil de utilizador:
+${JSON.stringify(profile, null, 2)}
 
-    // Sanitize profile fields
-    const cleanProfile = {
-      travelMonth: cleanString(profile.travelMonth, '', 40),
-      duration: cleanString(profile.duration, '', 20),
-      departureCity: cleanString(profile.departureCity, '', 80),
-      travelers: cleanInteger(profile.travelers, 2, 1, 20),
-      budgetType: cleanString(profile.budgetType, 'total', 20),
-      budget: cleanString(profile.budget, 'moderate', 30),
-      travelStyles: cleanList(profile.travelStyles, 12, 40),
-      climate: cleanString(profile.climate, '', 30),
-      maxFlightHours: cleanString(profile.maxFlightHours, '', 10),
-      destinationPopularity: cleanString(profile.destinationPopularity, 'balanced', 30),
-      avoid: cleanList(profile.avoid, 10, 40),
-      additionalInfo: cleanString(profile.additionalInfo, '', 500),
-    };
+Idioma de resposta (locale): "${locale}"`;
 
-    const systemPrompt = buildSystemPrompt(locale);
-    const userMessage = buildUserMessage(cleanProfile, locale);
-
-    // -----------------------------------------------------------------------
-    // Provider 1: Groq SDK (primary)
-    // -----------------------------------------------------------------------
     const groqKey = process.env.GROQ_API_KEY;
     if (hasProviderKey(groqKey)) {
       try {
-        const groq = new Groq({ apiKey: groqKey });
-        const completion = await groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
-          temperature: 0.7,
-          max_tokens: 4000,
-          response_format: { type: 'json_object' },
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 3000,
+            response_format: { type: "json_object" }
+          }),
         });
 
-        const content = completion.choices?.[0]?.message?.content;
-        if (content) {
-          const parsed = JSON.parse(content);
-          const result = validateDestinations(parsed);
-          if (result) {
-            return Response.json(result);
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content || '';
+          if (content) {
+            const parsed = safeCleanAndParseJson(content);
+            if (parsed.destinations && Array.isArray(parsed.destinations)) {
+              return Response.json(parsed);
+            }
           }
         }
       } catch (e) {
@@ -291,31 +94,24 @@ export async function POST(req) {
       }
     }
 
-    // -----------------------------------------------------------------------
-    // Provider 2: Anthropic Claude (fallback)
-    // -----------------------------------------------------------------------
+    // Fallback: Anthropic
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (hasProviderKey(anthropicKey)) {
       try {
-        // Dynamic import to avoid Turbopack resolution issues
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const anthropic = new Anthropic({ apiKey: anthropicKey });
-
-        const message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+        const response = await anthropic.messages.create({
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 4000,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userMessage }],
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: userPrompt }]
         });
 
-        const content = message.content?.[0]?.text;
+        const content = response.content?.[0]?.text || '';
         if (content) {
-          // Claude may wrap JSON in markdown code blocks — strip them
-          const jsonStr = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-          const parsed = JSON.parse(jsonStr);
-          const result = validateDestinations(parsed);
-          if (result) {
-            return Response.json(result);
+          const parsed = safeCleanAndParseJson(content);
+          if (parsed.destinations && Array.isArray(parsed.destinations)) {
+            return Response.json(parsed);
           }
         }
       } catch (e) {
@@ -323,16 +119,63 @@ export async function POST(req) {
       }
     }
 
-    // -----------------------------------------------------------------------
-    // Provider 3: Static fallback
-    // -----------------------------------------------------------------------
-    logger.info('recommend-destinations:static_fallback', { locale });
-    const fallback = buildStaticFallback(cleanProfile, locale);
+    // Curated Static Fallback
+    logger.warn('recommend-destinations:using_static_fallback');
+    
+    // Simple logic to translate static fallback strings depending on locale
+    const isEnglish = locale === 'en';
+    const isSpanish = locale === 'es';
+    const isFrench = locale === 'fr';
 
-    // Simulate processing time so the UI loading state feels natural
-    await new Promise((r) => setTimeout(r, 1500));
+    const userProfileText = isEnglish
+      ? `Traveler profile matching ${profile.travelers || 2} people departing from ${profile.departureCity || 'default city'} in ${profile.travelMonth || 'flexible'}.`
+      : isSpanish
+      ? `Perfil del viajero con ${profile.travelers || 2} personas saliendo de ${profile.departureCity || 'ciudad por defecto'} en ${profile.travelMonth || 'flexible'}.`
+      : isFrench
+      ? `Profil de voyageur avec ${profile.travelers || 2} personnes au départ de ${profile.departureCity || 'ville par défaut'} en ${profile.travelMonth || 'flexible'}.`
+      : `Perfil de viajante correspondente a ${profile.travelers || 2} pessoas com partida de ${profile.departureCity || 'Lisboa'} em ${profile.travelMonth || 'setembro'}.`;
 
-    return Response.json(fallback);
+    const mappedDestinations = destinationsData.slice(0, 10).map((d) => {
+      let explanation = d.description;
+      let strengths = [d.badge || 'Excelente clima'];
+      let idealDuration = profile.duration ? `${profile.duration} dias` : '7 dias';
+      let bestTime = 'Maio a Outubro';
+
+      if (isEnglish) {
+        if (d.name === 'Kyoto') {
+          explanation = 'Perfect match for cultural exploration, gardens and historical heritage.';
+          strengths = ['Stunning historic temples', 'Beautiful zen gardens'];
+          bestTime = 'April to November';
+        } else if (d.name === 'Lisboa') {
+          explanation = 'Incredible food, vibrant light, historic neighbourhoods and beach closeness.';
+          strengths = ['Amazing gastronomy', 'Beautiful views and light'];
+          bestTime = 'May to October';
+        } else {
+          explanation = `Great fit for your travel styles with beautiful landscapes.`;
+        }
+        idealDuration = profile.duration ? `${profile.duration} days` : '7 days';
+        bestTime = 'May to October';
+      }
+
+      return {
+        name: d.name,
+        country: d.country,
+        score: d.score || 90,
+        explanation: explanation,
+        tags: d.tags || [],
+        idealDuration: idealDuration,
+        estimatedBudget: d.price || '€1000',
+        bestTime: bestTime,
+        strengths: strengths,
+        consideration: null
+      };
+    });
+
+    return Response.json({
+      userProfile: userProfileText,
+      destinations: mappedDestinations
+    });
+
   } catch (error) {
     logger.error('recommend-destinations:unhandled', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
