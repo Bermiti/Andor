@@ -120,6 +120,9 @@ export const COUNTRY_NAME_TO_CENTROID = {
   "nova zelândia": COUNTRY_CENTROIDS.nz,
   ireland: COUNTRY_CENTROIDS.ie,
   irlanda: COUNTRY_CENTROIDS.ie,
+  iceland: COUNTRY_CENTROIDS.is,
+  islandia: COUNTRY_CENTROIDS.is,
+  islândia: COUNTRY_CENTROIDS.is,
   georgia: COUNTRY_CENTROIDS.ge,
 };
 

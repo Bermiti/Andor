@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body), sans-serif;
 }
 
 /* Floating Global Button "Ask Andor" */
@@ -1624,36 +1624,6 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* Inline Map Widget Styles */
-.inlineMapWrapper {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.mapLinkBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(212, 175, 55, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  color: #D4AF37;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
-  text-align: center;
-}
-
-.mapLinkBtn:hover {
-  background: rgba(212, 175, 55, 0.2);
-  border-color: #D4AF37;
-}
-
 /* Custom modal styling */
 .modalOverlay {
   position: fixed;
@@ -1774,4 +1744,39 @@
 .surpriseItineraryBtn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(212, 168, 67, 0.35);
+}
+
+/* Session 8 editorial assistant surface */
+.toggle,
+.logoMark,
+.avatarMain,
+.messageUser .bubble,
+.itineraryViewBtn,
+.sendButton,
+.wizardSubmit,
+.revealAccept,
+.restoreYesBtn,
+.modalConfirmBtn,
+.surpriseItineraryBtn {
+  background: var(--color-primary);
+  color: #0C0C0C;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+}
+
+.activeCollab,
+.activeTherapy {
+  background: rgba(201,168,76,0.14);
+  border-color: rgba(201,168,76,0.32);
+}
+
+.radarLine {
+  background: var(--color-primary);
+}
+
+.therapyTheme {
+  background: var(--surface-card);
+}
+
+.therapyTheme .logoMark {
+  background: var(--color-primary);
 }

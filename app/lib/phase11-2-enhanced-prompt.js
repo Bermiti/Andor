@@ -161,7 +161,7 @@ ALWAYS INCLUDE:
 - Passport/money: How secure is it?
 - Luggage: How much can you carry?
 - Night factor: Changes the recommendation?
-- Pro tip: E.g., "Get SIM card at airport before transfer — use offline Google Maps on local phone for navigation confidence"
+- Pro tip: E.g., "Get SIM card at airport before transfer — save the hotel address and transport pass info offline"
 
 ═══════════════════════════════════════════════════════════════
 
@@ -185,7 +185,7 @@ Never generic. Always include math on whether passes are worth it.
    - Cost per journey: Specific prices
 
 3. APPS LOCALS USE:
-   - Google Maps: Works? Any issues?
+   - Local transit app: Works? Any issues?
    - Citymapper: Coverage in this city?
    - Local app: E.g., "Moovit Lisboa", "Transporte.pt"
    - Payment: Apple Pay? Suica? Card?

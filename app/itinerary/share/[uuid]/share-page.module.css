@@ -1,0 +1,26 @@
+.statusPage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: #f8f8f6;
+  color: #20242a;
+  text-align: center;
+}
+
+.statusBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statusBrand span { display: flex; flex-direction: column; text-align: left; }
+.statusBrand strong { font-size: 1.1rem; }
+.statusBrand small { color: #74787e; font-size: 0.64rem; letter-spacing: 0.12em; }
+.statusRule { width: 54px; height: 2px; margin: 36px 0 26px; background: #d4a853; }
+.statusCode { color: #1e6fd9; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
+.statusPage h1 { margin: 10px 0 12px; font-family: var(--font-heading, Georgia, serif); font-size: 2.5rem; letter-spacing: 0; }
+.statusPage p { max-width: 520px; margin: 0; color: #686c72; line-height: 1.65; }
+.statusPage a { margin-top: 28px; color: #1e6fd9; font-weight: 800; text-decoration: none; }

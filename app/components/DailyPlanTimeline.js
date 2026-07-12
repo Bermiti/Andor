@@ -20,6 +20,18 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
     );
   }
 
+  const renderActivityLine = (activity) => {
+    if (typeof activity === 'string') return activity;
+    if (!activity || typeof activity !== 'object') return null;
+
+    return [
+      activity.startTime || activity.time,
+      activity.name || activity.title,
+      activity.duration,
+      activity.bookingRequired ? 'reserva recomendada' : null,
+    ].filter(Boolean).join(' · ');
+  };
+
   const renderPeriod = (period) => {
     if (!period) return null;
 
@@ -33,9 +45,10 @@ export default function DailyPlanTimeline({ dailyPlans, destination }) {
         )}
         {period.activities && period.activities.length > 0 && (
           <ul className={styles.activitiesList}>
-            {period.activities.map((activity, idx) => (
-              <li key={idx}>{activity}</li>
-            ))}
+            {period.activities.map((activity, idx) => {
+              const activityLine = renderActivityLine(activity);
+              return activityLine ? <li key={activity?.id || idx}>{activityLine}</li> : null;
+            })}
           </ul>
         )}
         {period.duration && (

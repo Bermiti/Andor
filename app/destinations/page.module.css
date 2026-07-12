@@ -9,6 +9,11 @@
   overflow-x: hidden;
 }
 
+.pageShell {
+  min-height: 100vh;
+  background: #0c0c0c;
+}
+
 /* ═══════════ HERO SECTION ═══════════ */
 
 .hero {
@@ -26,7 +31,7 @@
   position: absolute;
   inset: 0;
   background: var(--bg-0);
-  z-index: 0;
+  z-index: var(--z-base);
 }
 
 .heroOverlay {
@@ -59,7 +64,7 @@
 
 .heroContent {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-content);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -217,7 +222,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 1;
+  z-index: var(--z-content);
   opacity: 0.3;
 }
 
@@ -384,6 +389,36 @@
 
 [data-theme="light"] .progressBarContainer {
   background: rgba(26, 34, 53, 0.08);
+}
+
+/* Match the editorial dark system tokens so light mode remains readable. */
+[data-theme="light"] .heroBackground,
+[data-theme="light"] .wizardSection,
+[data-theme="light"] .loadingSection {
+  background: #0c0c0c;
+}
+
+[data-theme="light"] .heroTitle,
+[data-theme="light"] .loadingTitle {
+  color: #f0ede8;
+}
+
+[data-theme="light"] .heroSubtitle,
+[data-theme="light"] .loadingTip,
+[data-theme="light"] .trustText {
+  color: #b8b1aa;
+}
+
+[data-theme="light"] .trustText strong {
+  color: #f0ede8;
+}
+
+[data-theme="light"] .trustAvatar {
+  border-color: #0c0c0c;
+}
+
+[data-theme="light"] .progressBarContainer {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ═══════════ RESPONSIVE ═══════════ */

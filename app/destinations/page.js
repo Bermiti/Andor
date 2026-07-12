@@ -119,13 +119,13 @@ export default function DestinationsPage() {
   }, []);
 
   return (
-    <>
+    <div className={styles.pageShell}>
       <Navbar />
       <main className={styles.main}>
 
         {/* ═══════════ HERO PHASE ═══════════ */}
         {pagePhase === 'hero' && (
-          <section className={styles.hero}>
+          <section key="destinations-hero" className={styles.hero}>
             <div className={styles.heroBackground}>
               <div className={styles.heroOverlay} />
               <div className={styles.heroGlow} />
@@ -158,7 +158,7 @@ export default function DestinationsPage() {
                   <div className={styles.trustAvatar} style={{ background: 'linear-gradient(135deg, #00C9A7, #4AE8C8)' }}>✦</div>
                 </div>
                 <span className={styles.trustText}>
-                  <strong>12.000+</strong> {t('heroTrust') || 'viajantes satisfeitos'}
+                  Roteiro, orçamento e reservas no mesmo fluxo
                 </span>
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function DestinationsPage() {
 
         {/* ═══════════ WIZARD PHASE ═══════════ */}
         {pagePhase === 'wizard' && (
-          <section className={styles.wizardSection}>
+          <section key="destinations-wizard" className={styles.wizardSection}>
             <DestinationWizard
               onComplete={handleWizardComplete}
               onBack={handleBackToHero}
@@ -185,7 +185,7 @@ export default function DestinationsPage() {
 
         {/* ═══════════ LOADING PHASE ═══════════ */}
         {pagePhase === 'loading' && (
-          <section className={styles.loadingSection}>
+          <section key="destinations-loading" className={styles.loadingSection}>
             <div className={styles.loadingContainer}>
               <div className={styles.loadingIcon}>
                 <svg viewBox="0 0 24 24" fill="none" className={styles.loadingGlobe}>
@@ -215,7 +215,7 @@ export default function DestinationsPage() {
 
         {/* ═══════════ RESULTS PHASE ═══════════ */}
         {pagePhase === 'results' && (
-          <section className={styles.resultsSection} ref={resultsRef}>
+          <section key="destinations-results" className={styles.resultsSection} ref={resultsRef}>
             <DestinationResults
               recommendations={recommendations}
               userProfile={userProfile}
@@ -237,6 +237,6 @@ export default function DestinationsPage() {
 
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

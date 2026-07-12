@@ -11,7 +11,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--surface-card);
   border-radius: 20px;
   border: 1px solid #e2e8f0;
   overflow: hidden;
@@ -132,7 +132,7 @@
   margin: 0 20px 16px;
   padding: 12px;
   border-radius: 12px;
-  background: #fff7ed;
+  background: rgba(201,168,76,0.10);
   border: 1px solid #fed7aa;
   color: #7c2d12;
   display: flex;
@@ -149,7 +149,7 @@
 
 .inlineConfirm button {
   border: 1px solid #fdba74;
-  background: #fff;
+  background: var(--surface-card);
   color: #7c2d12;
   border-radius: 8px;
   padding: 7px 10px;
@@ -167,7 +167,7 @@
 .empty {
   text-align: center;
   padding: 60px 24px;
-  background: white;
+  background: var(--surface-card);
   border-radius: 20px;
   border: 1px solid #e2e8f0;
 }

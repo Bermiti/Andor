@@ -75,7 +75,7 @@ Use this exact structure for the day object:
     "duration": "20 mins",
     "tip": "Useful tip",
     "dayPassRecommendation": "24h Pass",
-    "apps": ["Google Maps"]
+    "apps": ["App local de transportes"]
   },
   "periods": {
     "morning": {

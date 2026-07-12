@@ -24,7 +24,7 @@
 }
 
 [data-theme="light"] .card {
-  background: #fff;
+  background: var(--surface-card);
   border-color: rgba(0,0,0,0.05);
   box-shadow: var(--shadow-card);
 }
@@ -239,4 +239,26 @@
   .cardMeta {
     display: none;
   }
+}
+
+/* Session 8 dark home cards */
+.card,
+[data-theme="light"] .card {
+  background: var(--surface-card);
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.20);
+}
+
+.cardTitle,
+[data-theme="light"] .cardTitle {
+  color: var(--text-primary);
+}
+
+.cardMeta {
+  color: var(--text-secondary);
+}
+
+.tag {
+  color: var(--color-primary);
+  background: rgba(201,168,76,0.12);
 }

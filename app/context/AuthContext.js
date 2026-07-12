@@ -84,7 +84,25 @@ export function AuthProvider({ children }) {
 
     const hydrate = async () => {
       if (!supabase) {
-        setUser(loadLocalUser());
+        try {
+          const response = await fetch('/api/auth/local/me', {
+            cache: 'no-store',
+            credentials: 'same-origin',
+          });
+          if (!active) return;
+          if (response.ok) {
+            const payload = await response.json();
+            setUser(payload.user || null);
+            saveLocalUser(payload.user || null);
+          } else {
+            setUser(null);
+            saveLocalUser(null);
+          }
+        } catch (error) {
+          if (!active) return;
+          setUser(null);
+          saveLocalUser(null);
+        }
         setLoading(false);
         return;
       }
@@ -153,26 +171,23 @@ export function AuthProvider({ children }) {
       return { success: true, pendingVerification: !data?.session };
     }
 
-    const users = safeParse(localStorage.getItem('andor_users'), []) || [];
-    if (users.find((item) => item.email === email)) {
-      return { error: 'This email is already registered.' };
+    try {
+      const response = await fetch('/api/auth/local/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name, email, password }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        return { error: payload?.error?.message || 'Nao foi possivel criar a conta.' };
+      }
+      setUser(payload.user);
+      saveLocalUser(payload.user);
+      return { success: true, provider: 'local-server' };
+    } catch (error) {
+      return { error: 'Nao foi possivel ligar ao servidor.' };
     }
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      email,
-      createdAt: new Date().toISOString(),
-      visitedCountries: [],
-      trips: [],
-      interests: ['History', 'Food'],
-      bio: '',
-      lookingForBuddy: false,
-    };
-    users.push(newUser);
-    localStorage.setItem('andor_users', safeStringify(users));
-    saveLocalUser(newUser);
-    setUser(newUser);
-    return { success: true, provider: 'local' };
   };
 
   const login = async (email, password) => {
@@ -186,19 +201,33 @@ export function AuthProvider({ children }) {
       return { success: true };
     }
 
-    const users = safeParse(localStorage.getItem('andor_users'), []) || [];
-    const found = users.find((item) => item.email === email);
-    if (!found) {
-      return { error: 'Email not found. Please register first.' };
+    try {
+      const response = await fetch('/api/auth/local/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email, password }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        return { error: payload?.error?.message || 'Email ou palavra-passe invalidos.' };
+      }
+      setUser(payload.user);
+      saveLocalUser(payload.user);
+      return { success: true, provider: 'local-server' };
+    } catch (error) {
+      return { error: 'Nao foi possivel ligar ao servidor.' };
     }
-    saveLocalUser(found);
-    setUser(found);
-    return { success: true, provider: 'local' };
   };
 
   const logout = async () => {
     if (supabase) {
       await supabase.auth.signOut();
+    } else {
+      await fetch('/api/auth/local/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+      }).catch(() => {});
     }
     saveLocalUser(null);
     setUser(null);
@@ -248,7 +277,7 @@ export function AuthProvider({ children }) {
       updateUser,
       saveTrip,
       toggleCountry,
-      authProvider: supabase ? 'supabase' : 'local',
+      authProvider: supabase ? 'supabase' : 'local-server',
     }}>
       {children}
     </AuthContext.Provider>

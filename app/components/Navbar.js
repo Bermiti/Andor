@@ -31,7 +31,14 @@ export default function Navbar() {
   const isMyTrips = pathname === '/my-trips';
   const isLightTheme = theme === 'light';
   const forceDarkText = (isMyTrips && !scrolled) || isLightTheme;
-  const linkClass = forceDarkText ? `${styles.link} ${styles.linkDark}` : styles.link;
+  
+  const getLinkClass = (href) => {
+    const isActive = href === '/'
+      ? pathname === '/'
+      : pathname === href || pathname?.startsWith(`${href}/`);
+    const baseClass = forceDarkText ? `${styles.link} ${styles.linkDark}` : styles.link;
+    return `${baseClass} ${isActive ? styles.linkActive : ''}`;
+  };
   
   const langDropdownRef = useRef(null);
 
@@ -91,7 +98,7 @@ export default function Navbar() {
       <nav className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
         <div className={styles.inner}>
           {/* Logo "✦ Andor" */}
-          <a href="/" className={`${styles.logo} ${forceDarkText ? styles.logoDark : ''}`}>
+          <a href="/" className={styles.logo}>
             <span className={styles.logoIcon}>
               <AndorLogo size={32} />
             </span>
@@ -100,15 +107,15 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
-            <a href="/features" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
+            <a href="/features" className={getLinkClass('/features')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('features')}
             </a>
-            <a href="/destinations" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
+            <a href="/destinations" className={getLinkClass('/destinations')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('destinations')}
             </a>
-            <a 
-              href="/#concierge" 
-              className={linkClass} 
+            <a
+              href="/#concierge"
+              className={styles.link}
               onClick={(e) => {
                 setIsMobileMenuOpen(false);
                 // Open AI drawer directly
@@ -117,10 +124,10 @@ export default function Navbar() {
             >
               {t('itineraries')}
             </a>
-            <a href="/my-trips" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
+            <a href="/my-trips" className={getLinkClass('/my-trips')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('myJourney')}
             </a>
-            <a href="/pricing" className={linkClass} onClick={() => setIsMobileMenuOpen(false)}>
+            <a href="/pricing" className={getLinkClass('/pricing')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('pricing')}
             </a>
             
@@ -244,7 +251,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button className={`${styles.loginBtn} ${forceDarkText ? styles.linkDark : ''}`} onClick={() => setIsLoginOpen(true)}>{t('login')}</button>
+              <button className={styles.loginBtn} onClick={() => setIsLoginOpen(true)}>{t('login')}</button>
             )}
             
             {/* Hamburger Toggle */}

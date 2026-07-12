@@ -8,16 +8,16 @@ import styles from './features.module.css';
 
 const features = [
   {
-    title: 'Roteiros com intenção',
-    text: 'Dias organizados por ritmo, zona e energia, com tempo realista entre paragens.',
+    title: 'Roteiros prontos a usar',
+    text: 'Dias organizados por ritmo, zona e energia, com tempos realistas entre paragens.',
   },
   {
-    title: 'Orçamento visível',
-    text: 'Sugestões alinhadas com o teu intervalo de gasto, sem perder contexto local.',
+    title: 'Orçamento que ajuda decisões',
+    text: 'Sugestões alinhadas com o intervalo de gasto, com custos por dia e prioridades claras.',
   },
   {
-    title: 'IA que pergunta melhor',
-    text: 'Quando falta informação, o Andor ajuda-te a afinar destino, datas e estilo.',
+    title: 'Dossier para levar ou vender',
+    text: 'Transforma o plano num PDF partilhável para viajantes, amigos ou clientes.',
   },
 ];
 
@@ -33,16 +33,16 @@ export default function FeaturesPage() {
         <section className={styles.hero}>
           <div>
             <p className={styles.kicker}>Funcionalidades</p>
-            <h1>Menos pesquisa. Mais viagem.</h1>
+            <h1>Da ideia solta ao plano pronto.</h1>
             <p>
-              O Andor junta perguntas certas, planeamento por IA e uma apresentação limpa
-              para transformar uma ideia solta num roteiro útil.
+              O Andor junta perguntas certas, planeamento por IA, orçamento, reservas e uma
+              apresentação limpa para transformar intenção em viagem.
             </p>
           </div>
           <aside className={styles.summaryCard}>
             <span>Foco principal</span>
-            <strong>Criar viagem</strong>
-            <p>Uma entrada simples para construir um plano personalizado desde o primeiro clique.</p>
+            <strong>Roteiro operacional</strong>
+            <p>Uma entrada simples para sair com decisões, prioridades e próximos passos.</p>
           </aside>
         </section>
 
@@ -60,8 +60,8 @@ export default function FeaturesPage() {
 
         <section className={styles.cta}>
           <div>
-            <h2>Constrói a tua próxima viagem.</h2>
-            <p>Começa por destino, ritmo ou uma ideia vaga. O wizard trata do resto.</p>
+            <h2>Constrói a próxima viagem.</h2>
+            <p>Começa por destino, ritmo ou uma ideia vaga. O wizard transforma o resto em plano.</p>
           </div>
           <Link href="/itineraries">
             Criar viagem

@@ -224,12 +224,30 @@ export default function MyTripsPage() {
     }, 0);
 
     return [
-      { label: 'roteiros guardados', value: journeyTrips.length },
-      { label: 'países visitados', value: visitedCountries.length },
-      { label: 'países planeados', value: plannedCountryCodes.length },
-      { label: 'dias organizados', value: dayCount },
+      { label: journeyTrips.length === 1 ? 'roteiro guardado' : 'roteiros guardados', value: journeyTrips.length },
+      { label: visitedCountries.length === 1 ? 'país visitado' : 'países visitados', value: visitedCountries.length },
+      { label: plannedCountryCodes.length === 1 ? 'país planeado' : 'países planeados', value: plannedCountryCodes.length },
+      { label: dayCount === 1 ? 'dia organizado' : 'dias organizados', value: dayCount },
     ];
   }, [journeyTrips, plannedCountryCodes.length, visitedCountries.length]);
+
+  const journeyPrompt = useMemo(() => {
+    if (journeyTrips.length === 0) {
+      return {
+        eyebrow: 'Comeca aqui',
+        title: 'Guarda o primeiro roteiro e a viagem ganha forma.',
+        body: 'Quando criares uma viagem, ela aparece aqui com dias, custos, destinos e progresso.',
+      };
+    }
+
+    const latestTrip = journeyTrips[0];
+    const days = Array.isArray(latestTrip.days) ? latestTrip.days.length : latestTrip.daysCount;
+    return {
+      eyebrow: 'Proximo passo',
+      title: latestTrip.title && latestTrip.title !== latestTrip.destination ? latestTrip.title : 'Roteiro mais recente',
+      body: `${days || 'Alguns'} dias guardados. Abre o roteiro, ajusta detalhes e marca o pais como visitado quando regressares.`,
+    };
+  }, [journeyTrips]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -287,6 +305,16 @@ export default function MyTripsPage() {
               </a>
             </div>
           </div>
+          <aside className={styles.heroPrompt} aria-label="Proximo passo da jornada">
+            <span>{journeyPrompt.eyebrow}</span>
+            <strong>{journeyPrompt.title}</strong>
+            <p>{journeyPrompt.body}</p>
+            <div className={styles.promptRail}>
+              <i></i>
+              <i></i>
+              <i></i>
+            </div>
+          </aside>
         </div>
 
         <section className={styles.statsStrip} aria-label="Resumo da tua jornada">

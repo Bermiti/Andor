@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './EnhancedActivityCard.module.css';
-import { MapPin, Navigation, Lightbulb, Calendar, Bookmark, Map, Clock, Users, Cloud, AlertCircle, Copy } from 'lucide-react';
+import { MapPin, Navigation, Lightbulb, Calendar, Bookmark, Clock, Users, AlertCircle, Copy, CheckCircle2, StickyNote } from 'lucide-react';
 
 /**
  * ENHANCED ACTIVITY CARD
@@ -22,10 +22,10 @@ export default function EnhancedActivityCard({
   activity,
   index,
   period,
-  onMapFocus,
   onSave,
   onBook,
   onCopy,
+  onUpdate,
   isSaved = false,
   isExpanded = false,
   onToggle,
@@ -35,17 +35,11 @@ export default function EnhancedActivityCard({
   const expanded = onToggle ? isExpanded : localExpanded;
   const setExpanded = onToggle ? onToggle : setLocalExpanded;
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(activity?.userNotes || '');
 
   useEffect(() => {
-    if (expanded && activity?.coordinates) {
-      if (onMapFocus) onMapFocus(activity.coordinates);
-      // Dispatch custom event for LiveMap
-      const event = new CustomEvent('andor-open-map', {
-        detail: { coordinates: activity.coordinates, name: activity.name }
-      });
-      window.dispatchEvent(event);
-    }
-  }, [expanded, activity?.coordinates, onMapFocus, activity?.name]);
+    setNoteDraft(activity?.userNotes || '');
+  }, [activity?.id, activity?.userNotes]);
 
   const periodColors = {
     morning: '#F59E0B',
@@ -53,11 +47,27 @@ export default function EnhancedActivityCard({
     evening: '#8B5CF6',
   };
 
-  const isEnriched = activity?.enrichmentSource && activity?.enrichmentSource !== 'ai' && activity?.enrichmentSource !== 'estimated';
+  const isVerified = (
+    activity?.enrichmentSource &&
+    activity.enrichmentSource !== 'ai' &&
+    activity.enrichmentSource !== 'estimated'
+  ) || ['nominatim', 'curated'].includes(activity?.coordinateSource);
+
+  const buildImageQuery = () => {
+    const raw = [
+      activity?.photoKeyword,
+      activity?.name,
+      activity?.address,
+      activity?.category || activity?.type,
+    ].filter(Boolean).join(' ');
+    const query = raw.trim() || 'specific travel place';
+    return encodeURIComponent(query);
+  };
   
-  // Choose photo: enriched API image, custom photo, or dynamic unsplash query fallback
-  const photoUrl = activity?.photo || `https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop&q=80`;
-  const photoFullUrl = activity?.photo || `https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop&q=80`;
+  // Choose photo: enriched API image, custom photo, or destination/place-specific image search fallback.
+  const imageQuery = buildImageQuery();
+  const photoUrl = activity?.photo || `https://source.unsplash.com/500x300/?${imageQuery}&sig=${encodeURIComponent(activity?.id || activity?.name || index)}`;
+  const photoFullUrl = activity?.photo || `https://source.unsplash.com/800x400/?${imageQuery}&sig=${encodeURIComponent(`${activity?.id || activity?.name || index}-full`)}`;
 
   const handleExpandClick = (e) => {
     e.stopPropagation();
@@ -85,6 +95,17 @@ export default function EnhancedActivityCard({
   };
 
   const crowd = getCrowdLevel(activity);
+  const practicalDetails = [
+    activity?.bestTime && { label: 'Melhor hora', value: activity.bestTime },
+    {
+      label: 'Reserva',
+      value: activity?.bookingRequired
+        ? activity?.bookingTip || 'Recomendada antes de fechar o resto do dia.'
+        : 'Nao obrigatoria; confirma horarios antes de sair.',
+    },
+    activity?.backupOption && { label: 'Plano B', value: activity.backupOption },
+    activity?.practicalNote && { label: 'Nota pratica', value: activity.practicalNote },
+  ].filter(Boolean);
 
   return (
     <div
@@ -127,6 +148,9 @@ export default function EnhancedActivityCard({
         <div className={styles.activityInfo}>
           <div className={styles.activityName}>
             {activity?.emoji || '📍'} {activity?.name || 'Activity'}
+            {['booked', 'confirmed'].includes(activity?.planningStatus) && (
+              <span className={styles.confirmedMark} title="Atividade confirmada"><CheckCircle2 size={14} aria-hidden="true" /></span>
+            )}
           </div>
           <div className={styles.activityMeta}>
             {activity?.duration && (
@@ -187,10 +211,10 @@ export default function EnhancedActivityCard({
               <div className={styles.highlightBadge}>⭐ Destaque do dia</div>
             )}
             <div className={styles.sourceTag}>
-              {isEnriched ? (
-                <span className={styles.tagReal}>✨ Dados Reais ({activity.enrichmentSource})</span>
+              {isVerified ? (
+                <span className={styles.tagReal}>Dados verificados</span>
               ) : (
-                <span className={styles.tagEstimated}>📖 Estimativa</span>
+                <span className={styles.tagEstimated}>Sugestao Andor</span>
               )}
             </div>
           </div>
@@ -278,6 +302,20 @@ export default function EnhancedActivityCard({
             )}
           </div>
 
+          {practicalDetails.length > 0 && (
+            <div className={styles.plannerNotes}>
+              {practicalDetails.map((detail) => (
+                <div key={detail.label} className={styles.plannerNote}>
+                  <div className={styles.plannerNoteLabel}>
+                    <AlertCircle size={12} />
+                    {detail.label}
+                  </div>
+                  <p>{detail.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* HOW TO GET THERE */}
           {activity?.transportFromPrevious && (
             <div className={styles.transportCard}>
@@ -319,26 +357,35 @@ export default function EnhancedActivityCard({
             </div>
           )}
 
+          <div className={styles.activityPlanning} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.planningField}>
+              <label htmlFor={`activity-status-${activity?.id || index}`}>Estado</label>
+              <select
+                id={`activity-status-${activity?.id || index}`}
+                value={activity?.planningStatus || 'pending'}
+                onChange={(event) => onUpdate?.({ planningStatus: event.target.value })}
+              >
+                <option value="pending">Pendente</option>
+                <option value="booked">Reservado</option>
+                <option value="confirmed">Confirmado</option>
+                <option value="not_needed">Não é necessário</option>
+              </select>
+            </div>
+            <div className={styles.planningField}>
+              <label htmlFor={`activity-note-${activity?.id || index}`}><StickyNote size={13} aria-hidden="true" /> Nota pessoal</label>
+              <textarea
+                id={`activity-note-${activity?.id || index}`}
+                value={noteDraft}
+                onChange={(event) => setNoteDraft(event.target.value)}
+                onBlur={() => onUpdate?.({ userNotes: noteDraft.trim() })}
+                placeholder="Horário confirmado, ponto de encontro, preferência..."
+                rows={2}
+              />
+            </div>
+          </div>
+
           {/* Action buttons */}
           <div className={styles.activityActions}>
-            {activity?.coordinates && (
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onMapFocus) onMapFocus(activity.coordinates);
-                  const event = new CustomEvent('andor-open-map', {
-                    detail: { coordinates: activity.coordinates, name: activity.name }
-                  });
-                  window.dispatchEvent(event);
-                }}
-              >
-                <Map size={14} />
-                Ver no Mapa
-              </button>
-            )}
-            
             <button
               type="button"
               className={styles.btnSecondary}

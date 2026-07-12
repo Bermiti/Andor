@@ -1,4 +1,4 @@
-import { generateFallbackItinerary } from '../../lib/fallback-ai';
+import { generateDestinationAwareFallbackItinerary, generateFallbackItinerary } from '../../lib/fallback-ai';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
 import PHASE11_ENHANCED_SYSTEM_PROMPT from '../../lib/phase11-2-enhanced-prompt';
 import { validateAndFixCoordinates, getDestinationCenter } from '../../lib/coordinate-validator';
@@ -7,6 +7,7 @@ import { validateAllDayTitles, isBannedDayTitle, suggestDayTitle } from '../../l
 import { apiError, cleanInteger, cleanList, cleanLocale, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
 import { createItineraryRecord } from '../../lib/supabase/db';
+import { ensureBookingReadyItinerary } from '../../lib/booking-ready';
 
 const DESTINATION_CURRENCY_HINTS = [
   { match: /tokyo|kyoto|osaka|japan/i, code: 'JPY', symbol: 'JPY' },
@@ -141,7 +142,35 @@ function ensureCurrencyOnItinerary(itinerary, currency) {
   return itinerary;
 }
 
-async function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedDays) {
+function buildContextualSuggestions(destinationCity, profile = {}) {
+  const city = destinationCity || 'este destino';
+  const paceLabel = profile.pace || 'balanced';
+  const walkingLabel = profile.walkingLevel || profile.kidsWalking || 'medium';
+  return [
+    `Versao mais local de ${city}`,
+    `Menos caminhadas em ${city}`,
+    `Mais comida tipica em ${city}`,
+    `Plano chuva para ${city}`,
+    `Ritmo ${paceLabel} com walking ${walkingLabel}`,
+  ];
+}
+
+function repairGenericSuggestions(itinerary, destinationCity, profile = {}) {
+  const generic = /adjust|pace|nearby escape|food-focused|more local|generic|itinerary|roteiro|ritmo|gastronom/i;
+  const suggestions = Array.isArray(itinerary?.suggestions) ? itinerary.suggestions : [];
+  const useful = suggestions
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .filter((item) => item.length <= 80)
+    .filter((item) => !generic.test(item) || item.toLowerCase().includes(String(destinationCity || '').toLowerCase()));
+
+  itinerary.suggestions = useful.length >= 3
+    ? useful.slice(0, 5)
+    : buildContextualSuggestions(destinationCity, profile).slice(0, 5);
+  return itinerary;
+}
+
+async function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedDays, profile = {}) {
   if (!itinerary || typeof itinerary !== 'object') {
     throw new Error('Generated itinerary is not an object');
   }
@@ -235,7 +264,7 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
     nextDay.meals = nextDay.meals || {};
     nextDay.localSecret = nextDay.localSecret || `Pergunta ao staff do hotel qual é a rua onde eles jantariam numa noite livre.`;
     nextDay.weather = nextDay.weather || { avgTemp: '18°C', condition: 'Variável', emoji: '🌤️', tip: 'Leva uma camada leve.' };
-    nextDay.transport = nextDay.transport || { mainMode: 'A pé + transporte público', apps: ['Google Maps'], cost: 8 };
+    nextDay.transport = nextDay.transport || { mainMode: 'A pé + transporte público', apps: ['App local de transportes'], cost: 8 };
     return nextDay;
   });
 
@@ -295,6 +324,8 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
     suggestions: Array.isArray(itinerary.suggestions) ? itinerary.suggestions : [],
   };
 
+  repairGenericSuggestions(repaired, destination.city, profile);
+
   const coordinateFixed = validateAndFixCoordinates(repaired, destination.city);
   const validation = validateAndNormalize(coordinateFixed);
   if (validation.fatal) {
@@ -320,15 +351,43 @@ export async function POST(req) {
     const activeLocale = cleanLocale(body.locale);
     const startDate = cleanString(body.startDate || body.dates?.start, '', 20);
     const endDate = cleanString(body.endDate || body.dates?.end, '', 20);
+    const originCity = cleanString(body.originCity || body.departureCity || body.origin, '', 80);
+    const arrivalTime = cleanString(body.arrivalTime || body.arrivalWindow, '', 40);
+    const departureTime = cleanString(body.departureTime || body.departureWindow, '', 40);
+    const mustSee = cleanList(body.mustSee || body.mustSeeList, 8, 90);
+    const avoid = cleanList(body.avoid || body.avoidList, 8, 90);
+    const authenticityLevel = cleanString(body.authenticityLevel, 'balanced', 40);
+    const walkingLevel = cleanString(body.walkingLevel, 'medium', 40);
+    const foodAdventure = cleanString(body.foodAdventure, 'balanced', 40);
+    const memoryMode = cleanString(body.memoryMode, 'none', 20);
 
     const travelerType = cleanString(body.travelerType, 'couple', 40);
     const dietaryRestrictions = cleanList(body.dietaryRestrictions || body.dietary, 6, 60);
     const mobilityReduced = Boolean(body.mobilityReduced ?? body.reducedMobility);
     const transportPreference = cleanString(body.transportPreference || body.transport, 'any', 40);
     const budgetPerDay = cleanInteger(body.budgetPerDay, 0, 0, 5000);
+    const budgetIncludesFlights = cleanString(body.budgetIncludesFlights, 'unknown', 20);
+    const pace = cleanString(body.pace || body.tripPace, 'balanced', 40);
+    const childrenAges = cleanString(body.childrenAges, '', 80);
+    const kidsWalking = cleanString(body.kidsWalking, 'medium', 40);
+    const personalityContext = {
+      arrivalInstinct: cleanString(body.personalityContext?.arrivalInstinct || body.arrivalInstinct, '', 80),
+      memoryPreference: cleanString(body.personalityContext?.memoryPreference || body.memoryPreference, '', 80),
+      hotelPreference: cleanString(body.personalityContext?.hotelPreference || body.hotelPreference, '', 80),
+    };
+    const companyMode = Boolean(body.companyMode || body.b2bMode || body.clientMode);
+    const clientName = cleanString(body.clientName, '', 90);
+    const companyName = cleanString(body.companyName, '', 90);
+    const preparedBy = cleanString(body.preparedBy, '', 90);
+    const internalNotes = cleanString(body.internalNotes, '', 600);
+    const clientFacingNotes = cleanString(body.clientFacingNotes, '', 600);
+    const budgetApprovalStatus = cleanString(body.budgetApprovalStatus, 'not_requested', 40);
+    const bookingStatus = cleanString(body.bookingStatus, 'not_started', 40);
+    const exportPreference = cleanString(body.exportPreference || body.pdfPreference, 'client_pdf', 40);
+    const forceFallback = body.forceFallback === true;
 
     const respondWithItinerary = async (itinerary, source = 'generated') => {
-      const payload = {
+      const basePayload = {
         ...itinerary,
         trip: {
           ...(itinerary.trip || {}),
@@ -336,10 +395,55 @@ export async function POST(req) {
           budgetTier: budget,
           groupType: `${travelers} viajante${travelers === 1 ? '' : 's'}`,
           travelStyle: style,
+          tripPace: pace,
           startDate: startDate || itinerary.trip?.startDate || null,
           endDate: endDate || itinerary.trip?.endDate || null,
+          travelerProfile: {
+            travelerType,
+            travelers,
+            childrenAges: childrenAges || null,
+            kidsWalking,
+            dietaryRestrictions,
+            mobilityReduced,
+            transportPreference,
+            budgetPerDay,
+            budgetIncludesFlights,
+            pace,
+            originCity,
+            arrivalTime,
+            departureTime,
+            mustSee,
+            avoid,
+            authenticityLevel,
+            walkingLevel,
+            foodAdventure,
+            memoryMode,
+            personalityContext,
+            companyMode,
+            clientName,
+            companyName,
+            preparedBy,
+            internalNotes,
+            clientFacingNotes,
+            budgetApprovalStatus,
+            bookingStatus,
+            exportPreference,
+          },
+        },
+        metadata: {
+          ...(itinerary.metadata || {}),
+          dataHonesty: {
+            verifiedBadge: 'Dados verificados',
+            suggestionBadge: 'Sugestao Andor',
+          },
+          travelerProfileSource: 'conversational-wizard',
+          memoryMode,
+          generationSource: source,
         },
       };
+      const payload = ensureBookingReadyItinerary(basePayload, {
+        profile: basePayload.trip.travelerProfile,
+      });
 
       const persisted = await createItineraryRecord(payload, {
         days,
@@ -382,6 +486,8 @@ a logistics expert, and a budget optimization specialist.
 CORE IDENTITY:
 - You are NOT a generic assistant. You are a specialist.
 - You give specific advice, never generic platitudes.
+- You do not reuse previous itineraries, saved memory, or canned city templates.
+- Every output is generated from the current request only.
 - Not "visit a temple" but "Senso-ji at 6:30am before 
   crowds — exit 1 from Asakusa station, 3 min walk"
 - Not "try local food" but "Ichiran Ramen on Takeshita-dori:
@@ -410,13 +516,14 @@ DESTINATION EXPERTISE — for every place you know:
 → What to book in advance and how far ahead
 → Apps locals use for transport, food, navigation
 
-WHEN PLANNING A TRIP — always ask these if unknown:
-(max 2 questions per response, then proceed with assumptions)
-1. Travel style: adventure/culture/food/relaxation/romance/family
-2. Budget: backpacker(€)/mid-range(€€)/premium(€€€)/luxury(€€€€)
-3. Group: solo/couple/friends/family (with children ages if relevant)
-4. Departure city (for flight suggestions)
-5. Any hard constraints: dietary, mobility, visa, phobias
+CURRENT REQUEST ONLY:
+- Do not ask follow-up questions. Return JSON now.
+- Use only the destination and preferences in this request.
+- If a detail is missing, make a clearly labelled sensible assumption in metadata.assumptions.
+- The same preferences in two different cities must produce recognisably different neighbourhoods, food, transport, safety notes, and day rhythm.
+- Avoid template language such as "historic center", "traditional restaurant", "main cathedral/temple" unless it is the real local name.
+- suggestions must be contextual chips for THIS destination and THIS traveler profile, never generic actions.
+- photoKeyword must include the exact place name + destination city + country + visual category.
 
 ITINERARY CONSTRUCTION RULES:
 - Day 1: always arrival + orientation + light exploration
@@ -492,6 +599,15 @@ TRANSPORT KNOWLEDGE:
 - Best local taxi/rideshare apps by country
 - Train passes: when worth it vs point-to-point
 - Airport transfer options ranked by value
+
+BOOKING-READY RULES:
+- Never claim flights, hotels, restaurants, activities, cars, or transfers are booked.
+- Do not request, store, or infer payment card data.
+- Return search links or provider links for flights, hotels, rental cars, restaurants, and activities when possible.
+- Every booking task starts with status "not_started" unless the user explicitly supplied a real confirmation.
+- Include manual fields the traveler can fill later: reference, price, notes, and status.
+- If live provider data is missing, use honest fallback search links and label them as estimates.
+- Include airport arrival/departure planning, local transport, rental car advice, documents, alerts, and contingency plans.
 
 WHEN GENERATING ITINERARY JSON:
 Return ONLY valid JSON. No markdown. No explanation text.
@@ -635,6 +751,106 @@ Use this exact structure:
       "bookingUrl": "https://www.hyatt.com/en-US/hotel/japan/park-hyatt-tokyo"
     }
   },
+  "airportTransfer": {
+    "overview": "Arrival and departure transfer strategy",
+    "options": [
+      {
+        "tier": "budget",
+        "name": "Public transport",
+        "description": "How to get from the airport to the base area",
+        "estimatedCost": 12,
+        "estimatedDuration": "45 min",
+        "bestFor": "lowest cost"
+      }
+    ],
+    "tips": ["Save hotel address offline before landing"]
+  },
+  "localTransport": {
+    "overview": "How to move day to day",
+    "passes": [{ "name": "Transit card", "cost": 10, "validity": "stored value", "includes": ["metro", "bus"], "recommendation": "Worth it for 3+ rides/day" }],
+    "apps": [{ "name": "Local transit app", "purpose": "public transport schedules" }],
+    "tips": ["Group each day by neighborhood"]
+  },
+  "rentalCar": {
+    "recommended": false,
+    "strategy": "Use only for regional day trips if public transport is weak",
+    "pickup": "Airport or city pickup advice",
+    "insuranceNote": "Verify excess and coverage; do not store payment data",
+    "parkingNote": "Check hotel parking and city restrictions",
+    "searchLinks": { "rentalCars": "https://www.rentalcars.com/" },
+    "bookingStatus": "not_started"
+  },
+  "bookingChecklist": {
+    "items": [
+      {
+        "id": "flights",
+        "category": "flights",
+        "task": "Search and select flights",
+        "description": "Compare live prices, baggage, arrival time, and cancellation rules",
+        "priority": "critical",
+        "status": "not_started",
+        "daysBeforeDeparture": 90,
+        "searchUrl": "https://www.google.com/travel/flights",
+        "reference": "",
+        "price": "",
+        "notes": ""
+      }
+    ],
+    "notes": "Manual checklist only; nothing is booked by Andor"
+  },
+  "documentsChecklist": {
+    "items": [
+      {
+        "id": "passport",
+        "category": "identity",
+        "title": "Passport or national ID valid for entry",
+        "description": "Confirm accepted ID, validity window, blank-page rules, and name spelling",
+        "importance": "required",
+        "whoNeedsIt": "Every traveler",
+        "timing": "60+ days before departure",
+        "status": "needed",
+        "notes": "",
+        "sourceReason": "Core travel document; verify official entry rules"
+      }
+    ]
+  },
+  "backupPlans": {
+    "items": [
+      {
+        "id": "bad_weather",
+        "category": "weather",
+        "severity": "medium",
+        "trigger": "Bad weather or unsafe outdoor conditions",
+        "replacementPlan": "Same-area indoor/covered route",
+        "costImpact": "Neutral to moderate",
+        "timeImpact": "Keep same half-day block",
+        "moveOrCancel": "Move exposed outdoor stops first",
+        "practicalNote": "Check hours and transport the night before",
+        "clientFacing": "If weather turns, the day pivots to covered stops without losing the main rhythm",
+        "sourceReason": "Weather-safe operating fallback"
+      }
+    ],
+    "notes": "Backup plans are operational fallbacks; verify provider policies and live conditions"
+  },
+  "warnings": [
+    { "type": "practical", "title": "Verify live details", "description": "Prices and opening hours can change", "advice": "Confirm before paying" }
+  ],
+  "contingencyPlans": {
+    "rainyDay": "Specific rainy-day replacement plan",
+    "delayRecovery": "What to move if arrival is delayed",
+    "tiredDay": "Lower-energy version",
+    "lowerBudget": "How to reduce cost without ruining the day"
+  },
+  "exportMetadata": {
+    "brand": "Andor",
+    "clientName": "",
+    "companyName": "",
+    "preparedBy": "",
+    "budgetApprovalStatus": "not_requested",
+    "bookingStatus": "not_started",
+    "clientFacingNotes": "",
+    "internalNotes": ""
+  },
   "days": [
     {
       "dayNumber": 1,
@@ -663,7 +879,7 @@ Use this exact structure:
           "cost": 5,
           "note": "Carrega €30 — usa em metro, comboio e convenience stores"
         },
-        "apps": ["Google Maps", "Hyperdia", "Suica app"],
+        "apps": ["Hyperdia", "Suica app"],
         "totalDayCost": 35
       },
       "periods": {
@@ -805,7 +1021,7 @@ Use this exact structure:
       "Guarda-chuva compacto (chuva imprevisível)"
     ],
     "appsMustHave": [
-      "Google Maps (funciona perfeitamente para metro japonês)",
+      "App oficial/local de transportes para horarios recentes",
       "Google Translate — modo câmara para menus em japonês",
       "Tabelog — avaliações de restaurantes pelos locais",
       "Hyperdia — horários de comboios precisos"
@@ -901,21 +1117,63 @@ PERMANENTLY BANNED (never use these patterns):
 Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`;
 
     const userPrompt = `Create a perfect ${days || 3}-day travel itinerary for ${destination}. 
+Memory mode: ${memoryMode}. Do not use saved memory, previous itineraries, or canned examples. Treat this as a fresh request.
 Budget tier/preference: ${budget || 'Confortável'}.${budgetPerDay > 0 ? ` Target Budget per day: ${budgetPerDay} EUR per person.` : ''}
 Travelers: ${travelers || 2} (${travelerType}). 
 Travel style/interests: ${style || 'cultural'}. Interests: ${interests?.join(', ') || 'general'}.
+Trip pace: ${pace}. Budget includes flights: ${budgetIncludesFlights}.
+Origin/departure city for flight and arrival assumptions: ${originCity || 'not specified'}.
+Arrival window: ${arrivalTime || 'not specified'}.
+Departure/last-day window: ${departureTime || 'not specified'}.
+Must-see or must-do requests: ${mustSee.length > 0 ? mustSee.join('; ') : 'none specified'}.
+Things to avoid: ${avoid.length > 0 ? avoid.join('; ') : 'none specified'}.
+Authenticity vs icons preference: ${authenticityLevel}.
+Walking tolerance: ${walkingLevel}. Food adventure level: ${foodAdventure}.
+Family context: ${childrenAges ? `children ages around ${childrenAges}; walking tolerance ${kidsWalking}` : 'no specific children-age context'}.
+Qualitative traveler personality:
+- First instinct on arrival: ${personalityContext.arrivalInstinct || 'not specified'}
+- Favorite travel memory type: ${personalityContext.memoryPreference || 'not specified'}
+- Accommodation philosophy: ${personalityContext.hotelPreference || 'not specified'}
+Use these qualitative answers to tune tone, pacing, neighborhoods, hotel tier, and hidden-gem choices. Do not treat them as rigid filters.
 Constraints:
 - Dietary restrictions: ${dietaryRestrictions.length > 0 ? dietaryRestrictions.join(', ') : 'None'}. Make sure all recommended meals/restaurants accommodate these restrictions.
 - Reduced mobility: ${mobilityReduced ? 'YES (Strict accessibility constraint. Only include wheelchair/mobility accessible activities, avoid steep hikes, long stairs, or excessive walking. Prioritize ground/accessible transport).' : 'No special mobility constraints.'}
-- Transport preference: ${transportPreference === 'avoid flights' ? 'Prefer ground transport (trains, buses) over domestic flights.' : transportPreference === 'ground only' ? 'Strictly ground transport only.' : 'Any transport mode allowed.'}
+- Transport preference: ${transportPreference === 'public' ? 'Prefer public transport with exact lines/passes.' : transportPreference === 'car' ? 'Prefer rent-a-car where useful; include parking/logistics.' : transportPreference === 'walk' ? 'Prefer walkable neighborhood clusters and short transfers.' : transportPreference === 'avoid flights' ? 'Prefer ground transport (trains, buses) over domestic flights.' : transportPreference === 'ground only' ? 'Strictly ground transport only.' : 'Any transport mode allowed.'}
+- Location data: include addresses when useful, but do not promise live navigation or turn-by-turn directions.
+- Images: every activity photoKeyword must be specific enough for image search: exact place + city + country + category. Never use just "travel", "landmark", "food", or a city name alone.
+- Suggestions: return 3-5 chips that are natural next actions for this exact itinerary, e.g. neighbourhood swap, food upgrade, rainy-day version, child-friendly pacing, not generic "adjust itinerary".
+- Booking-ready: include flight search strategy, hotel area/options, airport transfers, local transport, rental-car recommendation, restaurant reservation advice, documents, alerts, contingencies, and manual booking checklist items. Do not say anything is booked or confirmed.
+- Client/company mode: if requested, use professional client-ready wording and include exportMetadata fields for client name, company name, prepared by, budget approval, booking status, client-facing notes, and internal notes.
 
 Return ONLY valid JSON matching the exact requested schema.`;
 
     // Try real AI first (Groq Llama)
     const groqKey = process.env.GROQ_API_KEY;
     const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    const generationProfile = {
+      travelerType,
+      travelers,
+      childrenAges,
+      kidsWalking,
+      dietaryRestrictions,
+      mobilityReduced,
+      transportPreference,
+      budgetPerDay,
+      budgetIncludesFlights,
+      pace,
+      originCity,
+      arrivalTime,
+      departureTime,
+      mustSee,
+      avoid,
+      authenticityLevel,
+      walkingLevel,
+      foodAdventure,
+      memoryMode,
+      personalityContext,
+    };
 
-    if (hasProviderKey(groqKey)) {
+    if (!forceFallback && hasProviderKey(groqKey)) {
       try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -939,7 +1197,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
           const data = await response.json();
           try {
             const parsed = JSON.parse(data.choices[0].message.content);
-            const result = await normalizeGeneratedItinerary(parsed, destination, days);
+            const result = await normalizeGeneratedItinerary(parsed, destination, days, generationProfile);
             return respondWithItinerary(result, 'groq');
           } catch (e) {
             logger.warn('generate_itinerary:groq_parse_failed', e, { destination, days });
@@ -950,7 +1208,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
       }
     }
 
-    if (hasProviderKey(geminiKey)) {
+    if (!forceFallback && hasProviderKey(geminiKey)) {
       try {
         const { google } = await import('@ai-sdk/google');
         const { generateObject } = await import('ai');
@@ -1212,7 +1470,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
           prompt: `${systemPrompt}\n\n${userPrompt}`,
         });
         
-        let result = await normalizeGeneratedItinerary(object, destination, days);
+        let result = await normalizeGeneratedItinerary(object, destination, days, generationProfile);
         const titleValidation = validateAllDayTitles(result);
         if (!titleValidation.valid) {
           // day title validation warnings, but continue
@@ -1224,8 +1482,28 @@ Return ONLY valid JSON matching the exact requested schema.`;
       }
     }
 
-    // Fallback — always works
-    const itinerary = generateFallbackItinerary(destination, days, budget);
+    // Fallback — always works, but first tries real map-aware planning for unknown destinations.
+    const fallbackPreferences = {
+      originCity,
+      arrivalTime,
+      departureTime,
+      mustSee,
+      avoid,
+      authenticityLevel,
+      walkingLevel,
+      foodAdventure,
+      pace,
+      memoryMode,
+    };
+    let itinerary = await generateDestinationAwareFallbackItinerary(destination, days, budget, fallbackPreferences);
+    if (!itinerary?.days?.length) {
+      itinerary = generateFallbackItinerary(destination, days, budget);
+    }
+    try {
+      itinerary = await normalizeGeneratedItinerary(itinerary, destination, days, generationProfile);
+    } catch (error) {
+      logger.warn('generate_itinerary:fallback_normalization_failed', error, { destination, days });
+    }
     const validation = validateAndNormalize(itinerary);
     return respondWithItinerary(validation.normalized || itinerary, 'fallback');
 

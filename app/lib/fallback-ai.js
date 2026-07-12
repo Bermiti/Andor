@@ -1,3 +1,6 @@
+import { geocodeServerSide } from './geocoding';
+import { getDestinationCenter } from './coordinate-validator';
+
 // Smart fallback data for when no AI API key is configured.
 // This ensures the app ALWAYS works, even without an API key.
 
@@ -164,6 +167,266 @@ const destinationData = {
   },
 };
 
+const CURATED_FIXTURE_LOADERS = {
+  tokyo: () => import('../../scripts/eval-fixtures/tokyo-7-days.json').then((module) => module.default),
+  paris: () => import('../../scripts/eval-fixtures/paris-5-days.json').then((module) => module.default),
+  bali: () => import('../../scripts/eval-fixtures/bali-10-days.json').then((module) => module.default),
+  lisbon: () => import('../../scripts/eval-fixtures/lisbon-3-days.json').then((module) => module.default),
+  'new york': () => import('../../scripts/eval-fixtures/new-york-4-days.json').then((module) => module.default),
+  rome: () => import('../../scripts/eval-fixtures/rome-4-days.json').then((module) => module.default),
+};
+
+const DESTINATION_ALIASES = {
+  lisboa: 'lisbon',
+  lisbon: 'lisbon',
+  toquio: 'tokyo',
+  tokyo: 'tokyo',
+  paris: 'paris',
+  bali: 'bali',
+  'nova iorque': 'new york',
+  nyc: 'new york',
+  'new york': 'new york',
+  roma: 'rome',
+  rome: 'rome',
+};
+
+const OFFLINE_PLACE_SEEDS = {
+  azores: [
+    ['Portas da Cidade', 'landmark', 37.7394, -25.6687],
+    ['Mercado da Graça', 'food', 37.7415, -25.6654],
+    ['Jardim António Borges', 'nature', 37.7465, -25.6752],
+    ['A Tasca', 'food', 37.7393, -25.6698],
+    ['Miradouro da Vista do Rei', 'nature', 37.8395, -25.7948],
+    ['Miradouro da Boca do Inferno', 'nature', 37.8251, -25.7604],
+    ['Sete Cidades lakeside', 'nature', 37.8610, -25.7941],
+    ['Piscinas Naturais dos Mosteiros', 'nature', 37.8909, -25.8246],
+    ['Caldeira Velha', 'nature', 37.7814, -25.4986],
+    ['Miradouro da Lagoa do Fogo', 'nature', 37.7570, -25.4664],
+    ['Centro histórico da Ribeira Grande', 'landmark', 37.8218, -25.5214],
+    ['Associação Agrícola de São Miguel', 'food', 37.8041, -25.5628],
+    ['Lagoa das Furnas e caldeiras', 'nature', 37.7637, -25.3302],
+    ['Parque Terra Nostra', 'nature', 37.7726, -25.3138],
+    ['Poça da Dona Beija', 'nature', 37.7694, -25.3171],
+    ["Tony's Restaurant", 'food', 37.7723, -25.3092],
+    ['Miradouro da Ponta do Sossego', 'nature', 37.8087, -25.1458],
+    ['Salto do Prego trail', 'nature', 37.7463, -25.2038],
+    ['Ilhéu de Vila Franca do Campo', 'nature', 37.7034, -25.4431],
+    ['Bar Caloura', 'food', 37.7063, -25.5060],
+  ],
+  madeira: [
+    ['Mercado dos Lavradores', 'food', 32.6487, -16.9041],
+    ['Zona Velha do Funchal', 'landmark', 32.6482, -16.8997],
+    ['Monte Palace Madeira', 'culture', 32.6754, -16.9028],
+    ['Armazém do Sal', 'food', 32.6482, -16.9081],
+    ['Cabo Girão Skywalk', 'nature', 32.6564, -17.0041],
+    ['Baía de Câmara de Lobos', 'landmark', 32.6489, -16.9758],
+    ['Fajã dos Padres', 'nature', 32.6571, -17.0218],
+    ['Vila do Peixe', 'food', 32.6497, -16.9764],
+    ['Pico do Arieiro', 'nature', 32.7354, -16.9288],
+    ['Balcões de Ribeiro Frio', 'nature', 32.8077, -16.8869],
+    ['Casas típicas de Santana', 'culture', 32.8024, -16.8819],
+    ['Quinta do Furão', 'food', 32.8181, -16.8814],
+    ['Floresta do Fanal', 'nature', 32.8096, -17.1440],
+    ['Piscinas Naturais do Porto Moniz', 'nature', 32.8669, -17.1667],
+    ['Praia do Seixal', 'nature', 32.8243, -17.1039],
+    ['Véu da Noiva viewpoint', 'nature', 32.8155, -17.0910],
+    ['Ponta de São Lourenço', 'nature', 32.7430, -16.7006],
+    ['Baía de Machico', 'nature', 32.7161, -16.7628],
+    ['Engenho do Norte', 'culture', 32.7739, -16.8291],
+    ['Jaca restaurant Porto da Cruz', 'food', 32.7727, -16.8280],
+  ],
+  london: [
+    ['Borough Market', 'food', 51.5055, -0.0910],
+    ['Tate Modern', 'culture', 51.5076, -0.0994],
+    ['South Bank riverside walk', 'nature', 51.5067, -0.1145],
+    ['Flat Iron Square', 'food', 51.5042, -0.0958],
+    ['Westminster Abbey', 'landmark', 51.4993, -0.1273],
+    ["St James's Park", 'nature', 51.5025, -0.1349],
+    ['National Gallery', 'culture', 51.5089, -0.1283],
+    ['Seven Dials', 'landmark', 51.5145, -0.1269],
+    ['Columbia Road Flower Market', 'experience', 51.5290, -0.0708],
+    ['Brick Lane', 'food', 51.5211, -0.0716],
+    ['Barbican Conservatory', 'nature', 51.5202, -0.0937],
+    ['Dishoom Shoreditch', 'food', 51.5244, -0.0775],
+    ['Victoria and Albert Museum', 'culture', 51.4966, -0.1722],
+    ['Hyde Park and Serpentine', 'nature', 51.5073, -0.1657],
+    ['Notting Hill backstreets', 'experience', 51.5150, -0.2050],
+    ['Goldborne Road food stops', 'food', 51.5224, -0.2104],
+  ],
+};
+
+function getOfflineSeedPlaces(destination = '') {
+  const lookup = normalizeDestinationLookup(destination);
+  const key = /azores|acores|sao miguel/.test(lookup)
+    ? 'azores'
+    : /madeira|funchal/.test(lookup)
+      ? 'madeira'
+      : /london|londres/.test(lookup)
+        ? 'london'
+        : '';
+  return (OFFLINE_PLACE_SEEDS[key] || []).map(([name, category, lat, lng]) => ({
+    name,
+    displayName: `${name}, ${destination}`,
+    type: category,
+    category,
+    coordinates: { lat, lng },
+    coordinateSource: 'curated',
+  }));
+}
+
+function normalizeDestinationLookup(value = '') {
+  return String(value)
+    .split(',')[0]
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function getCuratedDestinationKey(destination = '') {
+  const lookup = normalizeDestinationLookup(destination);
+  const direct = DESTINATION_ALIASES[lookup];
+  if (direct) return direct;
+  return Object.keys(CURATED_FIXTURE_LOADERS).find((key) => lookup.includes(key) || key.includes(lookup)) || '';
+}
+
+function findLegacyDestinationData(destination = '') {
+  const lookup = normalizeDestinationLookup(destination);
+  const canonical = DESTINATION_ALIASES[lookup] || lookup;
+  return Object.entries(destinationData).find(([key]) => canonical.includes(key) || key.includes(canonical)) || null;
+}
+
+function scaledMoney(value, ratio) {
+  return Number.isFinite(Number(value)) ? Math.round(Number(value) * ratio) : value;
+}
+
+function resizeCuratedBudget(budget, ratio) {
+  if (!budget || typeof budget !== 'object') return budget;
+  const next = clone(budget);
+  ['accommodation', 'food', 'activities', 'transport'].forEach((key) => {
+    if (!next[key]) return;
+    ['total', 'min', 'max'].forEach((field) => {
+      if (next[key][field] !== undefined) next[key][field] = scaledMoney(next[key][field], ratio);
+    });
+  });
+  const flightMin = Number(next.flights?.min) || 0;
+  const flightMax = Number(next.flights?.max) || flightMin;
+  const variableTotal = ['accommodation', 'food', 'activities', 'transport']
+    .reduce((sum, key) => sum + (Number(next[key]?.total) || 0), 0);
+  if (next.grandTotal) {
+    next.grandTotal.min = flightMin + variableTotal;
+    next.grandTotal.max = flightMax + variableTotal;
+  }
+  if (next.perPersonEstimate) {
+    next.perPersonEstimate.min = next.grandTotal?.min || next.perPersonEstimate.min;
+    next.perPersonEstimate.max = next.grandTotal?.max || next.perPersonEstimate.max;
+  }
+  return next;
+}
+
+function addCuratedEveningStop(day, dayIndex, destinationLabel) {
+  const stops = Array.isArray(day?.stops) ? day.stops.map((stop) => ({ ...stop })) : [];
+  const hasEveningStop = stops.some((stop) => {
+    const hour = Number.parseInt(String(stop.startTime || stop.time || '').split(':')[0], 10);
+    return stop.period === 'evening' || (Number.isFinite(hour) && hour >= 18);
+  });
+  const dinner = day?.meals?.dinner;
+  if (hasEveningStop || !dinner?.name) return { ...day, stops };
+
+  const fallbackCoords = stops[stops.length - 1]?.coordinates || null;
+  const dinnerStop = {
+    id: `d${dayIndex + 1}-evening-table`,
+    name: dinner.name,
+    type: `Jantar - ${dinner.cuisine || 'cozinha local'}`,
+    category: 'food',
+    description: `Jantar planeado para fechar o dia na mesma zona, sem uma deslocação desnecessária em ${destinationLabel}.`,
+    whyMatters: 'Transforma a sugestão de restaurante numa decisão prática, com horário, custo e reserva visíveis no plano.',
+    address: dinner.address || destinationLabel,
+    coordinates: dinner.coordinates || fallbackCoords,
+    startTime: '19:30',
+    time: '19:30',
+    period: 'evening',
+    duration: '90 min',
+    cost: dinner.cost || 0,
+    priceRange: dinner.priceRange || '',
+    bookingRequired: dinner.bookingRequired !== false,
+    bookingTip: 'Reserva 1-3 semanas antes quando a sala for pequena ou o dia coincidir com fim de semana.',
+    insiderTip: dinner.insiderNote || 'Confirma o primeiro ou último turno para uma sala mais calma.',
+    backupOption: 'Guarda uma segunda mesa sem pré-pagamento na mesma zona e cancela-a assim que a principal estiver confirmada.',
+    practicalNote: 'Confirma horário, política de atraso, restrições alimentares e método de pagamento.',
+    transportFromPrevious: {
+      mode: 'A pé ou transporte direto curto',
+      line: 'Ligação dentro da zona do dia',
+      duration: '15-25 min',
+      cost: 3,
+      directions: 'Segue diretamente da última visita para o jantar; não regreses ao hotel salvo se precisares de uma pausa.',
+    },
+  };
+  stops.push(dinnerStop);
+  const periods = day?.periods && typeof day.periods === 'object' ? day.periods : {};
+  return {
+    ...day,
+    stops,
+    activities: stops,
+    periods: {
+      ...periods,
+      evening: {
+        ...(periods.evening || {}),
+        timeRange: periods.evening?.timeRange || '18:00-22:00',
+        activities: [...(periods.evening?.activities || []), dinnerStop],
+      },
+    },
+  };
+}
+
+async function loadCuratedFallback(destination, requestedDays, preferences = {}) {
+  const key = getCuratedDestinationKey(destination);
+  const loader = CURATED_FIXTURE_LOADERS[key];
+  if (!loader) return null;
+
+  try {
+    const fixture = clone(await loader());
+    const originalDays = Math.max(1, fixture.days?.length || 1);
+    const { city, country } = parseDestinationParts(destination);
+    const centerArray = fixture.destination?.coordinates || getDestinationCenter(destination);
+    const center = { lat: Number(centerArray[0]), lng: Number(centerArray[1]) };
+    const currency = fixture.destination?.currency || { code: 'EUR', symbol: 'EUR' };
+    const days = (fixture.days || []).slice(0, requestedDays);
+    while (days.length < requestedDays) {
+      days.push(buildSupplementalDay(city, days.length, center, currency.symbol || currency.code || 'EUR'));
+    }
+
+    fixture.destination = {
+      ...(fixture.destination || {}),
+      city,
+      name: country ? `${city}, ${country}` : city,
+      country: country || fixture.destination?.country || '',
+      andorVerdict: `Plano de demonstração com locais específicos, tempos realistas e logística prática para ${city}.`,
+    };
+    fixture.days = days.map((day, index) => ({
+      ...addCuratedEveningStop(day, index, city),
+      dayNumber: index + 1,
+    }));
+    fixture.trip = {
+      ...(fixture.trip || {}),
+      totalDays: requestedDays,
+      tripPace: preferences.pace || fixture.trip?.tripPace || 'balanced',
+      budgetBreakdown: resizeCuratedBudget(fixture.trip?.budgetBreakdown, requestedDays / originalDays),
+    };
+    fixture.tripOverview = fixture.summary?.andorVerdict || `Roteiro prático e específico para ${city}.`;
+    fixture.currency = currency.symbol || currency.code || 'EUR';
+    fixture.metadata = {
+      ...(fixture.metadata || {}),
+      source: 'curated-demo-fallback',
+      generatedAt: new Date().toISOString(),
+      mapDataSource: 'curated-and-evaluated',
+    };
+    return fixture;
+  } catch (error) {
+    return null;
+  }
+}
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -184,6 +447,300 @@ function getDestinationCenterFromDays(days, fallback = { lat: 38.7223, lng: -9.1
     }
   }
   return fallback;
+}
+
+const FALLBACK_CURRENCY_BY_COUNTRY = [
+  { match: /japan|jap/i, symbol: '¥', code: 'JPY' },
+  { match: /united states|usa|states/i, symbol: '$', code: 'USD' },
+  { match: /united kingdom|uk|england|scotland/i, symbol: '£', code: 'GBP' },
+  { match: /indonesia|bali/i, symbol: 'Rp', code: 'IDR' },
+  { match: /morocco|marrocos/i, symbol: 'MAD', code: 'MAD' },
+  { match: /iceland|islandia|reykjavik/i, symbol: 'ISK', code: 'ISK' },
+];
+
+function getCurrencyForDestination(destination = '') {
+  const match = FALLBACK_CURRENCY_BY_COUNTRY.find((item) => item.match.test(destination));
+  return match || { symbol: '€', code: 'EUR' };
+}
+
+function toRadians(value) {
+  return (value * Math.PI) / 180;
+}
+
+function getDistanceKm(a, b) {
+  if (!a || !b) return Infinity;
+  const radius = 6371;
+  const dLat = toRadians(b.lat - a.lat);
+  const dLng = toRadians(b.lng - a.lng);
+  const lat1 = toRadians(a.lat);
+  const lat2 = toRadians(b.lat);
+  const x = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return radius * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function parseDestinationParts(destination = '') {
+  const parts = String(destination).split(',').map((part) => part.trim()).filter(Boolean);
+  return {
+    city: parts[0] || String(destination).trim() || 'Destino',
+    country: parts.slice(1).join(', ') || '',
+  };
+}
+
+function cleanPlaceName(value = '') {
+  return String(value)
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(', ');
+}
+
+function classifyPlace(item) {
+  const haystack = `${item.class || ''} ${item.type || ''} ${item.display_name || ''}`.toLowerCase();
+  if (/restaurant|cafe|food|bar|pub|market|bakery|deli/.test(haystack)) return 'food';
+  if (/museum|gallery|theatre|art|library/.test(haystack)) return 'culture';
+  if (/park|garden|beach|viewpoint|peak|nature|water/.test(haystack)) return 'nature';
+  if (/castle|church|cathedral|temple|monument|attraction|historic/.test(haystack)) return 'landmark';
+  return 'experience';
+}
+
+async function searchDestinationPlaces(query, center, country = '') {
+  try {
+    const scoped = country ? `${query}, ${country}` : query;
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(scoped)}&format=json&limit=8&addressdetails=1&dedupe=1`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Andor-Travel-App/1.0',
+        'Accept-Language': 'pt,en;q=0.9',
+      },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .map((item) => ({
+        name: cleanPlaceName(item.display_name),
+        displayName: item.display_name,
+        type: item.type || item.class || 'place',
+        category: classifyPlace(item),
+        coordinates: {
+          lat: Number.parseFloat(item.lat),
+          lng: Number.parseFloat(item.lon),
+        },
+      }))
+      .filter((place) => Number.isFinite(place.coordinates.lat) && Number.isFinite(place.coordinates.lng))
+      .filter((place) => getDistanceKm(center, place.coordinates) < 120)
+      .filter((place) => place.name && !/^unnamed/i.test(place.name));
+  } catch (error) {
+    return [];
+  }
+}
+
+function uniquePlaces(places) {
+  const seen = new Set();
+  return places.filter((place) => {
+    const key = place.name.toLowerCase().replace(/[^\w]+/g, ' ').trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildPhotoKeyword(place, destinationLabel) {
+  const category = place.category === 'food' ? 'local food restaurant'
+    : place.category === 'nature' ? 'landscape viewpoint'
+      : place.category === 'culture' ? 'museum architecture'
+        : 'landmark travel';
+  return `${place.name} ${destinationLabel} ${category}`;
+}
+
+function buildRealStop(place, index, destinationLabel, symbol) {
+  const times = ['09:00', '11:15', '14:00', '19:00', '20:30'];
+  const typeLabel = {
+    food: 'Comida - mesa local que vale planear',
+    culture: 'Cultura - visita focada com contexto',
+    nature: 'Natureza - pausa cenica mais lenta',
+    landmark: 'Marco local - lugar assinatura da rota',
+    experience: 'Experiencia - ancora local do percurso',
+  }[place.category] || 'Experiencia - ancora local do percurso';
+  const defaultCost = place.category === 'food' ? 22 : place.category === 'culture' ? 12 : 0;
+
+  return {
+    time: times[index % times.length],
+    name: place.name,
+    type: typeLabel,
+    category: place.category,
+    description: `${place.name} is the specific ${place.category || 'local'} anchor for this part of the route in ${destinationLabel}.`,
+    whyMatters: `It keeps this day specific to ${destinationLabel} and avoids an unnecessary cross-city detour.`,
+    duration: place.category === 'food' ? '75 min' : '90 min',
+    cost: defaultCost,
+    estimatedCost: defaultCost === 0 ? 'Free' : `${symbol}${defaultCost}`,
+    coordinates: { lat: place.coordinates.lat, lng: place.coordinates.lng },
+    address: place.displayName,
+    coordinateSource: place.coordinateSource || 'nominatim',
+    source: place.coordinateSource === 'curated' ? 'curated' : 'openstreetmap',
+    rating: 4.6,
+    bookingRequired: index % 4 === 1,
+    crowd: index % 3 === 0 ? 'low' : 'moderate',
+    photoKeyword: buildPhotoKeyword(place, destinationLabel),
+    backupOption: `If ${place.name} is closed or weather makes it impractical, keep the same time block and use a nearby indoor stop in this area.`,
+    practicalNote: 'Confirm current opening hours, access, and parking or transport conditions the day before.',
+    localSecret: `Usa este ponto como ancora da zona em ${destinationLabel}; guarda a morada offline antes de sair do hotel.`,
+    insiderTip: `Confirma os horarios recentes antes de sair; sitios pequenos mudam horarios com frequencia.`,
+    transportFromPrevious: {
+      mode: index === 0 ? 'Comecar na zona onde ficas' : 'A pe ou salto curto de transporte publico',
+      duration: index === 0 ? '10 min' : '12-20 min',
+      cost: index === 0 ? 0 : 2,
+      directions: index === 0 ? 'Comeca perto do alojamento.' : 'Mantem o dia num conjunto compacto antes de mudares de zona.',
+    },
+  };
+}
+
+function makeDayTitle(dayIndex, stops, cityName) {
+  const first = stops[0]?.name?.split(',')[0] || cityName;
+  const second = stops[1]?.name?.split(',')[0] || 'local streets';
+  const hooks = [
+    'Primeira Luz',
+    'Pulso Local',
+    'Horas de Mercado',
+    'Cantos Calmos',
+    'Ultima Rota Dourada',
+    'Bairro em Profundidade',
+    'Agua e Pedra',
+  ];
+  return `${hooks[dayIndex % hooks.length]}: ${first} e ${second}`;
+}
+
+function buildDestinationAwareDay(cityName, destinationLabel, dayIndex, places, center, symbol) {
+  const sliceStart = (dayIndex * 4) % Math.max(places.length, 1);
+  const selected = places.slice(sliceStart, sliceStart + 4);
+  while (selected.length < 4) {
+    const offset = selected.length + dayIndex + 1;
+    selected.push({
+      name: `${cityName} local quarter ${selected.length + 1}`,
+      displayName: destinationLabel,
+      category: selected.length === 1 ? 'food' : 'experience',
+      coordinates: {
+        lat: center.lat + Math.sin(offset) * 0.012,
+        lng: center.lng + Math.cos(offset) * 0.012,
+      },
+    });
+  }
+
+  const stops = selected.map((place, index) => buildRealStop(place, index, destinationLabel, symbol));
+  return {
+    dayNumber: dayIndex + 1,
+    title: makeDayTitle(dayIndex, stops, cityName),
+    theme: dayIndex === 0 ? 'Chegada, orientacao e primeiro bairro real' : 'Rota local compacta',
+    moodDescription: dayIndex === 0
+      ? `Uma entrada suave em ${cityName}, com estrutura suficiente para te orientares e espaco para recuperar.`
+      : `Uma rota feita com lugares reais em ${cityName}, agrupados para evitar voltas sem sentido.`,
+    transportTip: 'Mantem cada dia geograficamente compacto e usa transporte so no salto mais longo.',
+    localSecret: `Nao tentes apanhar todos os pontos famosos no mesmo dia. Escolhe o melhor conjunto em ${cityName} e deixa as ruas pequenas fazerem parte da viagem.`,
+    stops,
+    meals: {
+      breakfast: {
+        name: `${cityName} cafe de bairro`,
+        type: 'Cafe',
+        cost: symbol === '¥' ? 900 : 8,
+        mustOrder: 'Doce da casa ou pequeno-almoco local',
+        note: 'Escolhe um sitio a menos de 10 minutos da primeira paragem.',
+      },
+      lunch: {
+        name: stops.find((stop) => stop.category === 'food')?.name || `${cityName} almoco de mercado`,
+        type: 'Almoco local',
+        cost: symbol === '¥' ? 1800 : 18,
+        mustOrder: 'Prato do dia',
+        note: 'Come perto da zona da tarde para nao perderes a logistica.',
+      },
+      dinner: {
+        name: `${cityName} jantar reservado`,
+        cuisine: 'Cozinha local',
+        priceRange: symbol === '¥' ? 'JPY 3000-5000' : `${symbol}28-45`,
+        cost: symbol === '¥' ? 3600 : 34,
+        bookingRequired: dayIndex % 2 === 0,
+        insiderNote: 'Reserva o primeiro ou ultimo turno para uma sala mais calma.',
+      },
+    },
+    weather: { avgTemp: '', condition: 'Confirmar previsao', emoji: 'WX', tip: 'Confirma a meteorologia 48 horas antes.' },
+    transport: { mainMode: 'Zona caminhavel + transporte publico', apps: ['App local de transportes'], cost: 6 },
+    budgetEstimate: symbol === '¥' ? 9000 : 82,
+  };
+}
+
+export async function generateDestinationAwareFallbackItinerary(destination, numDays = 2, budget = '', preferences = {}) {
+  const requestedDays = parseRequestedDays(numDays);
+  const curated = await loadCuratedFallback(destination, requestedDays, preferences);
+  if (curated?.days?.length) return curated;
+
+  const { city, country } = parseDestinationParts(destination);
+  const destinationLabel = country ? `${city}, ${country}` : city;
+  const currency = getCurrencyForDestination(destinationLabel);
+
+  const centerGeo = await geocodeServerSide(destinationLabel, country);
+  const [fallbackLat, fallbackLng] = getDestinationCenter(destinationLabel);
+  const center = centerGeo
+    ? { lat: centerGeo.lat, lng: centerGeo.lng }
+    : { lat: fallbackLat, lng: fallbackLng };
+  const themes = [
+    `${city} landmarks`,
+    `${city} museum`,
+    `${city} market`,
+    `${city} viewpoint`,
+    `${city} old town`,
+    `${city} park`,
+    `${city} restaurant`,
+  ];
+
+  const found = getOfflineSeedPlaces(destinationLabel);
+  for (const theme of themes) {
+    if (found.length >= requestedDays * 4) break;
+    const results = await searchDestinationPlaces(theme, center, country);
+    found.push(...results);
+  }
+
+  const places = uniquePlaces(found);
+  const days = Array.from({ length: requestedDays }, (_, dayIndex) =>
+    buildDestinationAwareDay(city, destinationLabel, dayIndex, places, center, currency.symbol)
+  );
+  const originText = preferences.originCity ? `de ${preferences.originCity}` : 'do teu aeroporto';
+  const paceLabel = {
+    relaxed: 'calmo',
+    balanced: 'equilibrado',
+    intense: 'intenso',
+  }[preferences.pace] || preferences.pace || 'equilibrado';
+
+  const result = {
+    destination: {
+      name: destinationLabel,
+      city,
+      country,
+      coordinates: [center.lat, center.lng],
+      currency: { code: currency.code, symbol: currency.symbol },
+      andorVerdict: `Fallback sem IA externa, mas centrado em dados práticos e locais para ${destinationLabel}.`,
+    },
+    tripOverview: `Uma rota adaptada a ${destinationLabel}, criada com contexto local em vez de um template generico.`,
+    flights: { suggestion: `Pesquisa voos actuais para ${city} a partir ${originText} no Google Flights ou Skyscanner.`, averagePrice: 'Estimativa apenas' },
+    accommodation: { hotelName: `Base em ${city}`, type: 'Alojamento pensado por bairro', reason: 'Escolhe uma base central que mantenha os dois primeiros dias caminhaveis.' },
+    currency: currency.symbol,
+    days,
+    mustEat: [`Especialidade local em ${city}`, 'Almoco de mercado', 'Um jantar que vale reservar'],
+    contingency: { emergencyInfo: 'Confirma numeros de emergencia locais e guarda o contacto da embaixada.', unexpectedTips: 'Horarios e precos sao estimativas; confirma paragens-chave antes de viajar.' },
+    suggestions: [
+      `Mais local em ${city}`,
+      `Trocar um dia por natureza perto de ${city}`,
+      `Ajustar para ritmo ${paceLabel}`,
+    ],
+    metadata: {
+      source: 'destination-aware-fallback',
+      memoryMode: preferences.memoryMode || 'none',
+      mapDataSource: 'nominatim',
+      generatedAt: new Date().toISOString(),
+    },
+  };
+
+  return attachTripSummary(result, requestedDays, budget);
 }
 
 function buildSupplementalDay(cityName, dayIndex, center, symbol = '€') {
@@ -256,29 +813,26 @@ function attachTripSummary(result, requestedDays, budget) {
 // Generate a smart itinerary for any destination
 export function generateFallbackItinerary(destination, numDays = 2, budget = '') {
   const requestedDays = parseRequestedDays(numDays);
-  const key = destination.toLowerCase().split(',')[0].trim();
-  
-  // Check if we have pre-built data
-  for (const [k, v] of Object.entries(destinationData)) {
-    if (key.includes(k) || k.includes(key)) {
-      const result = clone(v);
-      const cityName = destination.split(',')[0].trim() || result.name || destination;
-      const center = getDestinationCenterFromDays(result.days);
-      result.destination = destination;
-      result.days = result.days.slice(0, requestedDays);
-      while (result.days.length < requestedDays) {
-        result.days.push(buildSupplementalDay(cityName, result.days.length, center, result.currency || '€'));
-      }
-      return attachTripSummary(result, requestedDays, budget);
+  const legacyEntry = findLegacyDestinationData(destination);
+
+  if (legacyEntry) {
+    const result = clone(legacyEntry[1]);
+    const cityName = destination.split(',')[0].trim() || result.name || destination;
+    const center = getDestinationCenterFromDays(result.days);
+    result.destination = destination;
+    result.days = result.days.slice(0, requestedDays);
+    while (result.days.length < requestedDays) {
+      result.days.push(buildSupplementalDay(cityName, result.days.length, center, result.currency || '€'));
     }
+    return attachTripSummary(result, requestedDays, budget);
   }
 
   // Generic fallback for unknown destinations
   const cityName = destination.split(',')[0].trim() || destination;
   
-  // Base coordinates around center point for Leaflet map mapping (mock values that look correct)
-  const baseLat = 38.72 + (Math.random() - 0.5) * 5;
-  const baseLng = -9.13 + (Math.random() - 0.5) * 5;
+  const [destinationLat, destinationLng] = getDestinationCenter(destination);
+  const baseLat = destinationLat;
+  const baseLng = destinationLng;
 
   const result = {
     destination: destination,

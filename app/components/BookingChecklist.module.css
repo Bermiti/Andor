@@ -152,8 +152,9 @@
 
 .item {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
   gap: 1rem;
   padding: 1rem;
   background: rgba(30, 41, 59, 0.3);
@@ -161,6 +162,14 @@
   border-radius: 0.5rem;
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+.itemTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  min-width: 0;
 }
 
 .item:hover {
@@ -178,6 +187,7 @@
   display: flex;
   gap: 1rem;
   flex: 1;
+  min-width: 0;
 }
 
 .checkbox {
@@ -197,6 +207,8 @@
   flex-direction: column;
   gap: 0.25rem;
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .itemTask {
@@ -238,6 +250,101 @@
 
 .deadlineText {
   letter-spacing: 0.3px;
+}
+
+.statusCluster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.statusSelect {
+  min-height: 34px;
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 8px;
+  padding: 0 0.6rem;
+  background: rgba(15, 23, 42, 0.78);
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detailsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 6px;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.62);
+  cursor: pointer;
+}
+
+.detailsButton[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.bookingFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 0.65fr);
+  gap: 0.65rem;
+  align-items: end;
+  padding-top: 0.25rem;
+}
+
+.bookingFields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.bookingFields label span {
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bookingFields input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  padding: 0 0.65rem;
+  background: rgba(15, 23, 42, 0.62);
+  color: #e2e8f0;
+  font-size: 0.82rem;
+}
+
+.bookingFields input:focus,
+.statusSelect:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.38);
+  outline-offset: 1px;
+}
+
+.notesField {
+  grid-column: 1 / -1;
+}
+
+.searchLink {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.08);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 /* Notes */
@@ -302,6 +409,32 @@
   .item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .itemTop,
+  .statusCluster {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .itemTop {
+    flex-direction: column;
+  }
+
+  .statusCluster {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .statusSelect {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .bookingFields {
+    width: 100%;
+    grid-template-columns: 1fr;
   }
 
   .deadline {

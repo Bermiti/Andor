@@ -28,7 +28,7 @@
 }
 
 .authCard {
-  background: white;
+  background: var(--surface-card);
   border-radius: 24px;
   padding: 48px;
   text-align: center;
@@ -79,7 +79,7 @@
 
 .sidebar {
   width: 280px;
-  background: white;
+  background: var(--surface-card);
   border-right: 1px solid #e2e8f0;
   padding: 24px 16px;
   display: flex;

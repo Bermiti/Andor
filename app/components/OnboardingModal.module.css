@@ -48,7 +48,7 @@
 .step h2 {
   font-size: 2rem;
   margin-bottom: 0.5rem;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-weight: 700;
 }
 

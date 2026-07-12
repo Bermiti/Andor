@@ -30,7 +30,7 @@
 }
 
 [data-theme="light"] .card {
-  background: #fff;
+  background: var(--surface-card);
   border-color: rgba(0,0,0,0.05);
   box-shadow: var(--shadow-card);
 }
@@ -115,4 +115,23 @@
     font-size: 1rem;
     line-height: 1.6;
   }
+}
+
+/* Session 8 dark testimonials */
+.card,
+[data-theme="light"] .card {
+  background: var(--surface-card);
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.20);
+}
+
+.quote,
+[data-theme="light"] .quote,
+.authorInfo h4,
+[data-theme="light"] .authorInfo h4 {
+  color: var(--text-primary);
+}
+
+.authorInfo span {
+  color: var(--text-secondary);
 }

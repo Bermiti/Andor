@@ -1,31 +1,24 @@
 import './globals.css';
-import { Outfit, Cormorant_Garamond, JetBrains_Mono } from 'next/font/google';
-import dynamic from 'next/dynamic';
+import { Playfair_Display, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ToastProvider } from './components/ToastProvider';
 import { ChatContextProvider } from './context/ChatContext';
-import CommandCenter from './components/CommandCenter';
-import CustomRequestModal from './components/CustomRequestModal';
-import NewsletterPopup from './components/NewsletterPopup';
-import EasterEgg from './components/EasterEgg';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import SplashScreen from './components/SplashScreen';
 import Script from 'next/script';
-import FloatingAiWrapper from './components/FloatingAiWrapper';
+import GlobalOverlays from './components/GlobalOverlays';
 
-const outfit = Outfit({
+const dmSans = DM_Sans({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-outfit',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-dm-sans',
   display: 'swap',
 });
 
-const cormorant = Cormorant_Garamond({
+const playfair = Playfair_Display({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  style: ['normal', 'italic'],
-  variable: '--font-cormorant',
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-playfair',
   display: 'swap',
 });
 
@@ -93,17 +86,11 @@ const jsonLdData = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt" className={`${outfit.variable} ${cormorant.variable} ${jetbrains.variable}`} suppressHydrationWarning>
+    <html lang="pt" data-scroll-behavior="smooth" className={`${dmSans.variable} ${playfair.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#0A1628" />
+        <meta name="theme-color" content="#0C0C0C" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        />
         <link rel="preconnect" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preload" as="image" href="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800&auto=format&fit=crop" imageSrcSet="" />
@@ -111,6 +98,17 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
         />
+        <Script id="register-sw" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                console.log('SW registered:', reg.scope);
+              }).catch(function(err) {
+                console.log('SW registration failed:', err);
+              });
+            });
+          }
+        `}} />
         <Script id="theme-script" strategy="beforeInteractive" dangerouslySetInnerHTML={{__html: `
           (function() {
             try {
@@ -120,19 +118,14 @@ export default function RootLayout({ children }) {
           })();
         `}} />
       </head>
-      <body>
+      <body className={`${dmSans.variable} ${playfair.variable} ${jetbrains.variable}`}>
         <LanguageProvider>
           <AuthProvider>
             <ToastProvider>
               <ChatContextProvider>
-                <SplashScreen />
-                <EasterEgg />
-                <CommandCenter />
                 <ErrorBoundary>
-                  <FloatingAiWrapper />
+                  <GlobalOverlays />
                 </ErrorBoundary>
-                <CustomRequestModal />
-                <NewsletterPopup />
                 {children}
               </ChatContextProvider>
             </ToastProvider>

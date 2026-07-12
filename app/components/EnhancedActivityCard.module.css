@@ -329,6 +329,43 @@
 }
 
 /* ── CARDS (Transport, Secret) ── */
+.plannerNotes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--b-1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.plannerNote {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--b-1);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+}
+
+.plannerNoteLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  color: var(--t-2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.plannerNote p {
+  margin: 0;
+  color: var(--t-1);
+  font-size: 12.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .transportCard,
 .secretCard {
   padding: 12px 16px;
@@ -448,6 +485,11 @@
     padding: 10px 12px;
   }
 
+  .plannerNotes {
+    grid-template-columns: 1fr;
+    padding: 10px 12px;
+  }
+
   .activityActions {
     flex-direction: column;
     gap: 6px;
@@ -456,5 +498,70 @@
   .btnSecondary {
     padding: 8px 12px;
     font-size: 12px;
+  }
+}
+
+.confirmedMark {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  color: var(--teal);
+  vertical-align: middle;
+}
+
+.activityPlanning {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.45fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid var(--b-1);
+  background: var(--surface-soft);
+}
+
+.planningField {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.planningField label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--t-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.planningField select,
+.planningField textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid var(--b-2);
+  border-radius: 6px;
+  color: var(--t-1);
+  background: var(--bg-2);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.planningField textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.planningField select:focus,
+.planningField textarea:focus {
+  border-color: var(--gold);
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+@media (max-width: 560px) {
+  .activityPlanning {
+    grid-template-columns: 1fr;
+    padding: 12px;
   }
 }

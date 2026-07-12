@@ -8,8 +8,6 @@ import {
   FileText,
   History,
   Loader2,
-  Map,
-  MapPin,
   MessageCircle,
   Package,
   Palette,
@@ -18,20 +16,25 @@ import {
   Settings,
   Share2,
   Ticket,
+  Unlink,
   Users,
   WalletCards,
 } from 'lucide-react';
-import { getItinerary, saveGeneratedItinerary } from '../../lib/itinerary-store';
+import { getItinerary, saveGeneratedItinerary, updateSavedTrip } from '../../lib/itinerary-store';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
+import { ensureBookingReadyItinerary } from '../../lib/booking-ready';
 import { getJson, setJson } from '../../lib/storage';
 import { enrichItinerary } from '../../lib/itinerary-enricher';
 import { validateAndFixCoordinates } from '../../lib/coordinate-validator';
-import { safeParse } from '../../lib/safe-json';
+import {
+  buildClientShareSummary,
+  buildInternalShareSummary,
+  decodeSharePayload,
+} from '../../lib/share-utils';
+import { getDestinationCover } from '../../lib/destination-media';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
-import LiveMap from '../../components/LiveMap';
 import BudgetCalculator from '../../components/BudgetCalculator';
-import DailyPlanTimeline from '../../components/DailyPlanTimeline';
 import BudgetVisualization from '../../components/BudgetVisualization';
 import BookingChecklist from '../../components/BookingChecklist';
 import FlightSection from '../../components/FlightSection';
@@ -39,11 +42,18 @@ import HotelSection from '../../components/HotelSection';
 import AirportTransferSection from '../../components/AirportTransferSection';
 import AlertsSection from '../../components/AlertsSection';
 import LocalTransportSection from '../../components/LocalTransportSection';
+import RentalCarSection from '../../components/RentalCarSection';
+import TravelDocumentsSection from '../../components/TravelDocumentsSection';
+import BackupPlansSection from '../../components/BackupPlansSection';
+import ReviewBeforeSending from '../../components/ReviewBeforeSending';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import FavoriteButton from '../../components/FavoriteButton';
 import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { Modal, Drawer } from '../../components/ui/Modal';
+import LiveRatesSearch from '../../components/LiveRatesSearch';
+import InsuranceSelector from '../../components/InsuranceSelector';
+import { CheckCircle2 } from 'lucide-react';
 import EnhancedActivityCard from '../../components/EnhancedActivityCard';
 import RestaurantCard from '../../components/RestaurantCard';
 import AccommodationCard from '../../components/AccommodationCard';
@@ -51,6 +61,15 @@ import TransportCard from '../../components/TransportCard';
 import EnrichmentProgress from '../../components/EnrichmentProgress';
 import styles from './itinerary.module.css';
 import { trackEvent } from '../../lib/analytics';
+import { buildDossierExportContext } from '../../lib/dossier-export';
+import {
+  backupTriggerLabel,
+  bookingStatusLabel,
+  documentImportanceLabel,
+  documentStatusLabel,
+  planningStatusLabel,
+  priorityLabel,
+} from '../../lib/planning-labels';
 
 const getStopIcon = (stop) => {
   const type = (stop.type || '').toLowerCase();
@@ -156,11 +175,17 @@ const formatCurrencyRange = (min, max, context) => {
 };
 
 const getDestinationBadge = (dest = {}) => {
-  if (typeof dest === 'string') return dest.split(',')[1]?.trim().slice(0, 2).toUpperCase() || 'TR';
-  if (dest.countryCode) return String(dest.countryCode).toUpperCase();
-  if (dest.flag && /^[A-Z]{2}$/.test(String(dest.flag))) return dest.flag;
+  const toFlag = (code) => {
+    const normalized = String(code || '').trim().slice(0, 2).toUpperCase();
+    if (!/^[A-Z]{2}$/.test(normalized)) return '';
+    return String.fromCodePoint(...normalized.split('').map((letter) => 127397 + letter.charCodeAt(0)));
+  };
+  if (typeof dest === 'string') return toFlag(dest.split(',')[1]?.trim()) || '•';
+  if (dest.flag && !/^[A-Z]{2}$/.test(String(dest.flag))) return dest.flag;
+  if (dest.countryCode) return toFlag(dest.countryCode);
+  if (dest.flag) return toFlag(dest.flag);
   const country = String(dest.country || '').toLowerCase();
-  return COUNTRY_CODE_BY_NAME[country] || country.slice(0, 2).toUpperCase() || 'TR';
+  return toFlag(COUNTRY_CODE_BY_NAME[country] || country.slice(0, 2)) || '•';
 };
 
 const getDayBudget = (day) => {
@@ -202,6 +227,17 @@ const ADAPT_OPTIONS = [
   { id: 'activities', label: 'Tipo de actividades não é o meu' },
 ];
 
+const getActivityImageUrl = (stop, destinationLabel = '') => {
+  if (stop?.photo) return stop.photo;
+  const query = [
+    stop?.photoKeyword,
+    stop?.name,
+    destinationLabel,
+    stop?.category || stop?.type,
+  ].filter(Boolean).join(' ').trim() || 'specific travel place';
+  return `https://source.unsplash.com/800x500/?${encodeURIComponent(query)}&sig=${encodeURIComponent(stop?.id || stop?.name || query)}`;
+};
+
 export default function ItineraryPage() {
   const params = useParams();
   const id = params?.id;
@@ -213,6 +249,7 @@ export default function ItineraryPage() {
   const [validationError, setValidationError] = useState(null);
   const [activeDay, setActiveDay] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [shareAudience, setShareAudience] = useState('client');
   const [expandedStops, setExpandedStops] = useState({});
   const [isAdapting, setIsAdapting] = useState(false);
   const [dayTransitioning, setDayTransitioning] = useState(false);
@@ -221,6 +258,10 @@ export default function ItineraryPage() {
   const [showMobileBudget, setShowMobileBudget] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [shareExpiresInDays, setShareExpiresInDays] = useState(7);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const [activeShare, setActiveShare] = useState(null);
   const [bookingStop, setBookingStop] = useState(null);
   const [adaptFeedback, setAdaptFeedback] = useState('');
   const [adaptChecks, setAdaptChecks] = useState({});
@@ -232,6 +273,12 @@ export default function ItineraryPage() {
   const [isPackingGenerating, setIsPackingGenerating] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [enrichmentStatus, setEnrichmentStatus] = useState('idle');
+  const [exportMode, setExportMode] = useState('client');
+  const [selectedFlight, setSelectedFlight] = useState(null);
+  const [selectedHotel, setSelectedHotel] = useState(null);
+  const [selectedInsurance, setSelectedInsurance] = useState(null);
+  const [isBookingProcessing, setIsBookingProcessing] = useState(false);
+  const [bookingSuccessModal, setBookingSuccessModal] = useState(false);
 
   useEffect(() => {
     setFavorites(getJson('andor_favorites', [], 'local') || []);
@@ -266,12 +313,18 @@ export default function ItineraryPage() {
             normalized,
             normalized.destination?.city || normalized.destination?.name || ''
           );
-          const enriched = enrichItinerary(validatedData);
+          const bookingReadyData = ensureBookingReadyItinerary(validatedData, {
+            profile: validatedData.trip?.travelerProfile,
+          });
+          const enriched = enrichItinerary(bookingReadyData);
           setItinerary(enriched);
           setExpandedStops({ 0: true });
         }
       } catch (e) {
-        const enriched = enrichItinerary(data);
+        const bookingReadyData = ensureBookingReadyItinerary(data, {
+          profile: data?.trip?.travelerProfile,
+        });
+        const enriched = enrichItinerary(bookingReadyData);
         setItinerary(enriched);
       }
       return true;
@@ -283,16 +336,7 @@ export default function ItineraryPage() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('data');
         if (sharedData) {
-          try {
-            const decoder = new TextDecoder();
-            const binaryString = atob(sharedData);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            const jsonStr = decoder.decode(bytes);
-            data = safeParse(jsonStr, null);
-          } catch (e) {}
+          data = decodeSharePayload(sharedData);
         } else {
           const urlId = urlParams.get('id');
           if (urlId) {
@@ -320,6 +364,18 @@ export default function ItineraryPage() {
       }
 
       applyData(data);
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('booking_success') === 'true') {
+          setBookingSuccessModal(true);
+          updateSavedTrip(params.id, (trip) => {
+            if (trip.bookingChecklist && Array.isArray(trip.bookingChecklist.items)) {
+              trip.bookingChecklist.items = trip.bookingChecklist.items.map(item => ({ ...item, status: 'confirmed' }));
+            }
+            return trip;
+          });
+        }
+      }
       if (!cancelled) setLoading(false);
     };
 
@@ -417,7 +473,14 @@ export default function ItineraryPage() {
       const tripObj = itinerary.trip || {};
       const city = typeof destObj === 'string' ? destObj : (destObj.city || destObj.name || (typeof itinerary.destination === 'string' ? itinerary.destination : 'Viagem'));
       const daysCount = tripObj.totalDays || itinerary.days?.length || 0;
-      document.title = `${city} ${daysCount} dias · Andor`;
+      const title = `${city} ${daysCount} dias · Andor`;
+      const applyTitle = () => {
+        if (document.title !== title) document.title = title;
+      };
+      const observer = new MutationObserver(applyTitle);
+      observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+      applyTitle();
+      return () => observer.disconnect();
     }
   }, [itinerary]);
 
@@ -452,10 +515,103 @@ export default function ItineraryPage() {
     setCheckedPacking(getJson(`andor_packing_checked_${id}`, {}, 'local') || {});
   }, [id, itinerary]);
 
+  useEffect(() => {
+    if (!id) return undefined;
+    const syncSectionState = (sectionName, expectedStorageKey, event) => {
+      if (event.detail?.storageKey !== expectedStorageKey) return;
+      const itemState = event.detail?.itemState || {};
+      setItinerary((current) => {
+        if (!current) return current;
+        const source = current[sectionName];
+        const items = Array.isArray(source?.items) ? source.items : Array.isArray(source) ? source : [];
+        const nextItems = items.map((item) => ({ ...item, ...(itemState[item.id] || {}) }));
+        return {
+          ...current,
+          [sectionName]: Array.isArray(source) ? nextItems : { ...(source || {}), items: nextItems },
+        };
+      });
+    };
+    const bookingKey = `andor_booking_checklist_${id}`;
+    const documentKey = `andor_documents_checklist_${id}`;
+    const handleBookings = (event) => syncSectionState('bookingChecklist', bookingKey, event);
+    const handleDocuments = (event) => syncSectionState('documentsChecklist', documentKey, event);
+    window.addEventListener('andor-bookings-updated', handleBookings);
+    window.addEventListener('andor-documents-updated', handleDocuments);
+    return () => {
+      window.removeEventListener('andor-bookings-updated', handleBookings);
+      window.removeEventListener('andor-documents-updated', handleDocuments);
+    };
+  }, [id]);
+
+  const handlePayAll = async () => {
+    setIsBookingProcessing(true);
+    try {
+      const items = [];
+      const destName = typeof itinerary?.destination === 'string' 
+        ? itinerary.destination 
+        : (itinerary?.destination?.city || itinerary?.destination?.name || 'Destino');
+
+      if (selectedFlight) {
+        items.push({
+          name: `Voo: ${selectedFlight.airline} (${selectedFlight.flightNumber})`,
+          description: `${selectedFlight.departureTime} LIS -> ${selectedFlight.arrivalTime} ${destName}`,
+          amountCents: selectedFlight.priceCents,
+        });
+      }
+      if (selectedHotel) {
+        items.push({
+          name: `Hotel: ${selectedHotel.name}`,
+          description: `${selectedHotel.roomType} (${selectedHotel.nights} noites)`,
+          amountCents: selectedHotel.totalPriceCents,
+        });
+      }
+      if (selectedInsurance) {
+        items.push({
+          name: selectedInsurance.name,
+          description: selectedInsurance.description,
+          amountCents: selectedInsurance.totalCostCents,
+        });
+      }
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itineraryId: id,
+          items,
+          email: user?.email || 'viajante@andor.travels',
+        }),
+      });
+
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload.url) {
+          window.location.href = payload.url;
+        } else if (payload.simulated) {
+          setBookingSuccessModal(true);
+          updateSavedTrip(id, (trip) => {
+            if (trip.bookingChecklist && Array.isArray(trip.bookingChecklist.items)) {
+              trip.bookingChecklist.items = trip.bookingChecklist.items.map(item => ({ ...item, status: 'confirmed' }));
+            }
+            return trip;
+          });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsBookingProcessing(false);
+    }
+  };
+
   const saveItinerarySnapshot = (nextItinerary) => {
     if (!id) return;
-    setJson(`andor_itinerary_${id}`, nextItinerary, 'session');
-    setJson(`andor_shared_${id}`, nextItinerary, 'local');
+    const persisted = updateSavedTrip(id, () => nextItinerary);
+    if (!persisted) {
+      setJson(`andor_itinerary_${id}`, nextItinerary, 'session');
+      setJson(`andor_itinerary_${id}`, nextItinerary, 'local');
+      setJson(`andor_shared_${id}`, nextItinerary, 'local');
+    }
   };
 
   const saveVersion = (label, nextItinerary) => {
@@ -504,7 +660,7 @@ export default function ItineraryPage() {
         'Capa fina para chuva imprevisível',
       ],
       apps: [
-        'Google Maps com áreas offline',
+        'Notas offline com moradas e reservas importantes',
         'Google Translate em modo câmara',
         isJapan ? 'Tabelog para restaurantes locais' : 'TheFork ou app local de reservas',
         'Wallet com cartões e bilhetes guardados',
@@ -535,30 +691,87 @@ export default function ItineraryPage() {
     setJson(`andor_packing_checked_${id}`, next, 'local');
   };
 
-  const createShareUrl = () => {
-    const uuid = crypto.randomUUID();
-    const stored = setJson(`andor_shared_${uuid}`, itinerary, 'local');
-    if (!stored) {
-      showToast('Não foi possível guardar o link neste navegador.', 'warning');
+  const createShareUrl = async (audience = shareAudience, expiresInDays = shareExpiresInDays) => {
+    if (!itinerary || !id) return null;
+    setShareLoading(true);
+    setShareError('');
+    try {
+      const response = await fetch(`/api/itineraries/${encodeURIComponent(String(id))}/shares`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ itinerary, audience, expiresInDays }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error?.message || 'Não foi possível criar o link seguro.');
+      }
+      setShareUrl(payload.url);
+      setActiveShare({ ...payload.share, token: payload.token });
+      return payload.url;
+    } catch (error) {
+      setShareUrl('');
+      setActiveShare(null);
+      setShareError(error.message || 'Não foi possível criar o link seguro.');
+      return null;
+    } finally {
+      setShareLoading(false);
     }
-    return `${window.location.origin}/itinerary/share/${uuid}`;
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (typeof window === 'undefined' || !itinerary) return;
-    const nextUrl = shareUrl || createShareUrl();
-    setShareUrl(nextUrl);
     setShowShareModal(true);
+    await createShareUrl(shareAudience, shareExpiresInDays);
+  };
+
+  const handleShareAudienceChange = async (audience) => {
+    setShareAudience(audience);
+    await createShareUrl(audience, shareExpiresInDays);
+  };
+
+  const handleShareExpiryChange = async (value) => {
+    const expiresInDays = Number(value);
+    setShareExpiresInDays(expiresInDays);
+    await createShareUrl(shareAudience, expiresInDays);
   };
 
   const copyShareUrl = async () => {
     try {
-      const nextUrl = shareUrl || createShareUrl();
-      setShareUrl(nextUrl);
+      const nextUrl = shareUrl || await createShareUrl(shareAudience, shareExpiresInDays);
+      if (!nextUrl) throw new Error('missing_share_url');
       await navigator.clipboard.writeText(nextUrl);
       showToast('Link copiado para a área de transferência.', 'success');
     } catch (err) {
       showToast('Erro ao partilhar.', 'error');
+    }
+  };
+
+  const revokeCurrentShare = async () => {
+    if (!activeShare?.token) return;
+    try {
+      const response = await fetch(`/api/shares/${encodeURIComponent(activeShare.token)}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) throw new Error('share_revoke_failed');
+      setShareUrl('');
+      setActiveShare(null);
+      showToast('Link revogado.', 'success');
+    } catch (error) {
+      showToast('Não foi possível revogar o link.', 'error');
+    }
+  };
+
+  const copyTextSummary = async (audience = shareAudience) => {
+    try {
+      const summary = audience === 'internal'
+        ? buildInternalShareSummary(itinerary)
+        : buildClientShareSummary(itinerary);
+      await navigator.clipboard.writeText(summary);
+      showToast('Resumo de texto copiado.', 'success');
+    } catch (err) {
+      showToast('Erro ao copiar resumo.', 'error');
     }
   };
 
@@ -596,16 +809,16 @@ export default function ItineraryPage() {
     }
   };
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = async (modeOverride) => {
     if (typeof window === 'undefined' || !itinerary) return;
-    showToast('A gerar PDF...', 'info');
+    const requestedMode = modeOverride === 'internal' || modeOverride === 'client' ? modeOverride : exportMode;
+    showToast(`A gerar PDF ${requestedMode === 'internal' ? 'interno' : 'cliente'}...`, 'info');
     
-    let html2pdf;
+    let html2pdf = null;
     try {
       html2pdf = (await import('html2pdf.js')).default;
     } catch (e) {
-      showToast('Erro ao inicializar gerador de PDF.', 'error');
-      return;
+      showToast('A usar exportacao PDF simples.', 'info');
     }
 
     const currencyContext = getCurrencyContext(itinerary);
@@ -613,27 +826,122 @@ export default function ItineraryPage() {
     const pdfDestination = typeof itinerary.destination === 'string'
       ? { name: itinerary.destination }
       : (itinerary.destination || {});
+    const pdfDestinationName = pdfDestination.city || pdfDestination.name || itinerary.destination || 'O teu destino';
+    const pdfCoverImage = getDestinationCover(pdfDestination);
+    const preparedAt = new Date();
+    const preparedAtLabel = preparedAt.toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' });
+    const documentReference = `AND-${String(id || preparedAt.getTime()).replace(/[^a-z0-9]/gi, '').slice(-8).toUpperCase()}`;
     const safeText = (value) => String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+    const dossierExport = buildDossierExportContext(itinerary, requestedMode);
+    const pdfExport = dossierExport.exportMetadata || {};
+    const includeInternal = dossierExport.includeInternal;
+    const pdfFlights = Array.isArray(itinerary.flightOptions) ? itinerary.flightOptions : [];
+    const pdfHotels = Array.isArray(itinerary.accommodation?.hotels)
+      ? itinerary.accommodation.hotels
+      : [itinerary.accommodation?.recommended, itinerary.accommodation?.budget, itinerary.accommodation?.luxury].filter(Boolean);
+    const pdfChecklist = dossierExport.bookingChecklist || [];
+    const pdfDocs = dossierExport.documents || [];
+    const pdfBackupPlans = dossierExport.backupPlans || [];
+    const pdfFinalChecklist = dossierExport.finalChecklist || [];
+    const pdfTransferOptions = itinerary.airportTransfer?.options || [];
+    const renderPdfList = (items, renderItem) => (
+      items && items.length
+        ? `<ul style="margin:8px 0 0; padding-left:18px;">${items.map(renderItem).join('')}</ul>`
+        : '<p style="font-size:13px; color:#777; margin:8px 0 0;">Sem dados suficientes. Confirmar antes de reservar.</p>'
+    );
+    const renderPdfLink = (url, label) => (
+      /^https?:\/\//i.test(String(url || ''))
+        ? `<a href="${safeText(url)}" style="color:#1A2235; text-decoration:underline;">${safeText(label)}</a>`
+        : ''
+    );
+    const brandLogo = `
+      <svg viewBox="0 0 40 40" width="50" height="50" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Andor Travels">
+        <path d="M20 3L7 33H13L20 17L27 33H33L20 3Z" fill="#1E6FD9"/>
+        <path d="M12 27H28" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        <path d="M20 3V17" stroke="#D4A853" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 5L28 16L20 14Z" fill="#D4A853" opacity="0.35"/>
+        <path d="M9 35C9 35 14 32 20 32C26 32 31 35 31 35" stroke="#1E6FD9" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+      </svg>`;
     
     const content = document.createElement('div');
     content.innerHTML = `
       <div style="font-family:'Georgia',serif; padding:40px; max-width:800px; color:#1A2235; background-color:#ffffff;">
         
-        <!-- CAPA -->
-        <div style="text-align:center; padding:60px 0; border-bottom:2px solid #D4A843; margin-bottom: 40px;">
-          <div style="font-size:22px; margin-bottom:16px; letter-spacing:0.08em; font-weight:700;">${safeText(getDestinationBadge(pdfDestination))}</div>
-          <h1 style="font-size:36px; color:#1A2235; margin:0;">${itinerary.destination?.city || itinerary.destination?.name || 'O teu Destino'}</h1>
-          <p style="font-size:18px; color:#666; margin:8px 0;">${itinerary.trip?.totalDays || itinerary.days?.length || '–'} dias · ${itinerary.trip?.groupType || 'Viagem'} · ${itinerary.trip?.travelStyle || 'Exploração'}</p>
-          <p style="font-size:14px; color:#D4A843; margin:16px 0; font-style:italic;">"${itinerary.destination?.andorVerdict || ''}"</p>
-          <p style="font-size:12px; color:#999;">Gerado por Andor Travels · andortravels.com</p>
+        <!-- CAPA INSTITUCIONAL -->
+        <div style="position:relative; min-height:1260px; margin:-40px -40px 42px; overflow:hidden; background:#20242A; color:#fff; page-break-after:always;">
+          <img data-andor-cover="true" crossorigin="anonymous" src="${safeText(pdfCoverImage)}" alt="${safeText(pdfDestinationName)}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;" />
+          <div style="position:absolute; inset:0; background:linear-gradient(180deg,rgba(22,26,31,.48) 0%,rgba(22,26,31,.22) 38%,rgba(22,26,31,.92) 100%);"></div>
+          <div style="position:relative; z-index:1; min-height:1260px; padding:54px; display:flex; flex-direction:column; box-sizing:border-box;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,.42);">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:62px; height:62px; display:flex; align-items:center; justify-content:center; background:#fff; border-radius:6px;">${brandLogo}</div>
+                <div>
+                  <div style="font:700 20px Arial,sans-serif; letter-spacing:.08em;">ANDOR</div>
+                  <div style="font:600 10px Arial,sans-serif; letter-spacing:.22em; margin-top:3px;">TRAVELS</div>
+                </div>
+              </div>
+              <div style="padding:9px 12px; border:1px solid ${includeInternal ? '#E77762' : 'rgba(255,255,255,.55)'}; border-radius:5px; background:rgba(20,24,29,.4); font:700 10px Arial,sans-serif; text-transform:uppercase; letter-spacing:.08em;">
+                ${includeInternal ? 'Uso interno' : 'Versao cliente'}
+              </div>
+            </div>
+            <div style="margin-top:auto;">
+              <div style="font:700 12px Arial,sans-serif; color:#E3BD68; text-transform:uppercase; letter-spacing:.16em;">Itinerario personalizado</div>
+              <h1 style="max-width:680px; margin:14px 0 18px; color:#fff; font:700 54px/1.05 Georgia,serif; letter-spacing:0;">${safeText(pdfDestinationName)}</h1>
+              <p style="max-width:620px; margin:0 0 32px; color:rgba(255,255,255,.9); font:400 16px/1.55 Arial,sans-serif;">${safeText(itinerary.destination?.andorVerdict || itinerary.tripOverview || 'Uma viagem organizada ao detalhe pela Andor Travels.')}</p>
+              <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px; padding:22px 0; border-top:1px solid rgba(255,255,255,.35); border-bottom:1px solid rgba(255,255,255,.35); font-family:Arial,sans-serif;">
+                <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Duracao</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(itinerary.trip?.totalDays || itinerary.days?.length || '-')} dias</strong></div>
+                <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Perfil</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(itinerary.trip?.groupType || itinerary.trip?.travelStyle || 'Viagem')}</strong></div>
+                <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Preparado para</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(pdfExport.companyName || pdfExport.clientName || 'Viajante Andor')}</strong></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-top:22px; color:rgba(255,255,255,.72); font:600 10px Arial,sans-serif;">
+                <span>${safeText(documentReference)} | ${safeText(preparedAtLabel)}</span>
+                <span>andortravels.com</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin:0 0 30px; padding:0 0 22px; border-bottom:2px solid #D4A853; page-break-inside:avoid;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:24px;">
+            <div style="display:flex; align-items:center; gap:12px;">${brandLogo}<div><strong style="display:block; font:700 14px Arial,sans-serif;">ANDOR TRAVELS</strong><span style="display:block; color:#666; font:400 10px Arial,sans-serif; margin-top:3px;">Planeamento e curadoria digital de viagens</span></div></div>
+            <div style="text-align:right; color:#666; font:400 10px/1.5 Arial,sans-serif;">Documento preparado digitalmente<br/>${safeText(documentReference)} | ${safeText(preparedAtLabel)}</div>
+          </div>
         </div>
         
-        <!-- RESUMO DE ORÇAMENTO -->
+        <!-- FICHA DO DOCUMENTO -->
+        <div style="margin:28px 0; padding:20px; background:#F7F3E9; border:1px solid #E7D9B5; border-radius:7px; page-break-inside:avoid; font-family:Arial,sans-serif;">
+          <div style="display:flex; justify-content:space-between; gap:24px; align-items:flex-start;">
+            <div>
+              <p style="font-size:10px; margin:0 0 6px; color:#8A6A25; text-transform:uppercase; letter-spacing:.1em;">Ficha do documento</p>
+              <h2 style="font:700 19px Georgia,serif; margin:0;">${includeInternal ? 'Dossier operacional interno' : 'Dossier de viagem'}</h2>
+            </div>
+            <strong style="font-size:11px; color:${includeInternal ? '#B84F3D' : '#1E6FD9'};">${safeText(documentReference)}</strong>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 28px; margin-top:18px; font-size:12px; line-height:1.5;">
+            <p style="margin:0;"><strong>Entidade:</strong> Andor Travels, Lda.</p>
+            <p style="margin:0;"><strong>Licença:</strong> RNAVT nº 9876 (Agência Registada)</p>
+            <p style="margin:0;"><strong>Servico:</strong> Curadoria digital e planeamento de viagens</p>
+            <p style="margin:0;"><strong>Canal:</strong> andortravels.com</p>
+            <p style="margin:0;"><strong>Destinatario:</strong> ${safeText(pdfExport.clientName || 'Viajante Andor')}</p>
+            <p style="margin:0;"><strong>Empresa:</strong> ${safeText(pdfExport.companyName || 'Nao aplicavel')}</p>
+            <p style="margin:0;"><strong>Preparado por:</strong> ${safeText(pdfExport.preparedBy || 'Andor Travels')}</p>
+            <p style="margin:0;"><strong>Suporte:</strong> support@andortravels.com</p>
+          </div>
+          ${pdfExport.clientFacingNotes ? `<p style="font-size:12px; line-height:1.55; margin:16px 0 0; padding-top:14px; border-top:1px solid #E7D9B5;">${safeText(pdfExport.clientFacingNotes)}</p>` : ''}
+          ${includeInternal && pdfExport.internalNotes ? `<p style="font-size:12px; line-height:1.55; margin:14px 0 0; padding:12px; background:#fff; border-left:3px solid #E77762;"><strong>Nota interna:</strong> ${safeText(pdfExport.internalNotes)}</p>` : ''}
+        </div>
+
+        <div style="margin:28px 0; padding:20px; background:#f4f7fb; border:1px solid #dde6f2; border-radius:8px; page-break-inside:avoid;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 12px;">Resumo executivo</h2>
+          <p style="font-size:13px; line-height:1.55; color:#444; margin:0;">${safeText(dest.andorVerdict || itinerary.tripOverview || currentDay.moodDescription || `Plano pratico para ${pdfDestination.city || pdfDestination.name || 'esta viagem'}, com logistica, custos e reservas separadas.`)}</p>
+          ${itinerary.metadata?.assumptions?.length ? `<p style="font-size:12px; color:#666; margin:10px 0 0;"><strong>Assunções:</strong> ${safeText(itinerary.metadata.assumptions.slice(0, 2).join(' '))}</p>` : ''}
+        </div>
+
         <div style="margin:40px 0; padding:24px; background:#f8f8f8; border-radius:8px; page-break-inside:avoid;">
           <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Estimativa de Orçamento</h2>
           <table style="width:100%; border-collapse:collapse; font-size:14px;">
@@ -649,6 +957,64 @@ export default function ItineraryPage() {
           </table>
         </div>
         
+        <div style="margin:40px 0; padding:24px; background:#fffdf6; border:1px solid #efe3bd; border-radius:8px; page-break-inside:avoid;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Plano Booking-Ready</h2>
+          <p style="font-size:13px; color:#555; margin:0 0 14px;">Nada esta reservado automaticamente. Usa estes links e campos para confirmar manualmente.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div>
+              <h3 style="font-size:14px; margin:0 0 6px;">Voos</h3>
+              ${renderPdfList(pdfFlights.slice(0, 3), (flight) => `
+                <li style="font-size:12px; margin-bottom:6px;">
+                  <strong>${safeText(flight.operator || flight.airline || 'Pesquisa de voos')}</strong> - ${safeText(flight.timing || flight.route || '')} ${safeText(flight.estimatedPrice || '')}
+                  ${renderPdfLink(flight.bookingUrl || flight.skyscannerUrl, 'abrir')}
+                </li>
+              `)}
+            </div>
+            <div>
+              <h3 style="font-size:14px; margin:0 0 6px;">Alojamento</h3>
+              ${renderPdfList(pdfHotels.slice(0, 3), (hotel) => `
+                <li style="font-size:12px; margin-bottom:6px;">
+                  <strong>${safeText(hotel.name || hotel.hotelName || 'Hotel')}</strong> - ${safeText(hotel.area || hotel.type || '')} ${hotel.pricePerNight ? `~${safeText(hotel.currency || '')} ${safeText(hotel.pricePerNight)}/noite` : ''}
+                  ${renderPdfLink(hotel.bookingUrl, 'abrir')}
+                </li>
+              `)}
+            </div>
+          </div>
+          <div style="margin-top:18px;">
+            <h3 style="font-size:14px; margin:0 0 6px;">Transfer e transportes</h3>
+            ${renderPdfList(pdfTransferOptions.slice(0, 3), (option) => `
+              <li style="font-size:12px; margin-bottom:6px;">
+                <strong>${safeText(option.name || option.tier || 'Transfer')}</strong> - ${safeText(option.estimatedDuration || option.duration || '')} ${option.estimatedCost ? `~${pdfMoney(option.estimatedCost)}` : ''}
+              </li>
+            `)}
+            ${itinerary.rentalCar?.strategy ? `<p style="font-size:12px; color:#555; margin:8px 0 0;"><strong>Rent-a-car:</strong> ${safeText(itinerary.rentalCar.strategy)}</p>` : ''}
+          </div>
+        </div>
+
+        <div style="margin:40px 0; padding:24px; background:#f8f8f8; border-radius:8px; page-break-inside:avoid;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Checklist de Reserva</h2>
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="text-align:left; color:#777; border-bottom:1px solid #ddd;">
+                <th style="padding:7px 4px;">Tarefa</th>
+                <th style="padding:7px 4px;">Prioridade</th>
+                <th style="padding:7px 4px;">Estado</th>
+                <th style="padding:7px 4px;">Referencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pdfChecklist.slice(0, 10).map((item) => `
+                <tr style="border-bottom:1px solid #eee;">
+                  <td style="padding:8px 4px;">${safeText(item.task)}</td>
+                  <td style="padding:8px 4px;">${safeText(priorityLabel(item.priority))}</td>
+                  <td style="padding:8px 4px;">${safeText(bookingStatusLabel(item.status))}</td>
+                  <td style="padding:8px 4px;">${safeText(item.reference || '')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
         <!-- DIAS -->
         ${(itinerary.days || []).map(day => {
           const dayBudget = getDayBudget(day);
@@ -668,9 +1034,13 @@ export default function ItineraryPage() {
                 <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Manhã</h3>
                 ${morningActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${getStopIcon(a)} ${a.name}</strong>
+                    <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
                     <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${a.insiderTip}</span>` : ''}
+                    ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
+                    ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
+                    ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
+                    ${a.practicalNote ? `<br/><span style="font-size:11px; color:#555;"><strong>Nota pratica:</strong> ${safeText(a.practicalNote)}</span>` : ''}
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${safeText(a.insiderTip)}</span>` : ''}
                   </div>
                 `).join('')}
               ` : ''}
@@ -679,9 +1049,13 @@ export default function ItineraryPage() {
                 <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Tarde</h3>
                 ${afternoonActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${getStopIcon(a)} ${a.name}</strong>
+                    <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
                     <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${a.insiderTip}</span>` : ''}
+                    ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
+                    ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
+                    ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
+                    ${a.practicalNote ? `<br/><span style="font-size:11px; color:#555;"><strong>Nota pratica:</strong> ${safeText(a.practicalNote)}</span>` : ''}
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${safeText(a.insiderTip)}</span>` : ''}
                   </div>
                 `).join('')}
               ` : ''}
@@ -690,17 +1064,21 @@ export default function ItineraryPage() {
                 <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Noite</h3>
                 ${eveningActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${getStopIcon(a)} ${a.name}</strong>
+                    <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
                     <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${a.insiderTip}</span>` : ''}
+                    ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
+                    ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
+                    ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
+                    ${a.practicalNote ? `<br/><span style="font-size:11px; color:#555;"><strong>Nota pratica:</strong> ${safeText(a.practicalNote)}</span>` : ''}
+                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${safeText(a.insiderTip)}</span>` : ''}
                   </div>
                 `).join('')}
               ` : ''}
               
               ${day.localSecret ? `
                 <div style="background:#fffbf0; padding:12px; border-radius:6px; margin-top:12px; border-left:3px solid #D4A843;">
-                  <strong style="font-size:12px; color:#D4A843;">🗝️ Segredo do Andor:</strong>
-                  <p style="font-size:12px; color:#555; margin:4px 0;">${day.localSecret}</p>
+                  <strong style="font-size:12px; color:#8A6A25;">Nota local Andor</strong>
+                  <p style="font-size:12px; color:#555; margin:4px 0;">${safeText(day.localSecret)}</p>
                 </div>
               ` : ''}
             </div>
@@ -708,23 +1086,61 @@ export default function ItineraryPage() {
         }).join('')}
         
         <!-- INFO PRÁTICA -->
+        <div style="margin:40px 0; padding:24px; background:#f6fbff; border-radius:8px; page-break-inside:avoid;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Documentos e Planos Alternativos</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div>
+              <h3 style="font-size:14px; margin:0 0 6px;">Documentos</h3>
+              ${renderPdfList(pdfDocs.slice(0, 12), (item) => `
+                <li style="font-size:12px; margin-bottom:6px;">
+                  <strong>${safeText(item.title || item.label || item.task)}</strong> (${safeText(documentImportanceLabel(item.importance || (item.required ? 'required' : 'recommended')))}; ${safeText(documentStatusLabel(item.status))})
+                  <br/><span style="color:#666;">${safeText(item.description || item.notes || '')}</span>
+                  <br/><span style="color:#777;">Quem: ${safeText(item.whoNeedsIt || 'Travelers')} - Timing: ${safeText(item.timing || 'Before departure')}</span>
+                </li>
+              `)}
+            </div>
+            <div>
+              <h3 style="font-size:14px; margin:0 0 6px;">Alternativas</h3>
+              ${renderPdfList(pdfBackupPlans.slice(0, 12), (item) => `
+                <li style="font-size:12px; margin-bottom:6px;">
+                  <strong>${safeText(backupTriggerLabel(item))}</strong> - ${safeText(item.replacementPlan || item.notes)}
+                  <br/><span style="color:#777;">Custo: ${safeText(item.costImpact || 'Confirmar')} - Tempo: ${safeText(item.timeImpact || 'Confirmar')}</span>
+                  ${item.moveOrCancel ? `<br/><span style="color:#777;">Mover/cancelar: ${safeText(item.moveOrCancel)}</span>` : ''}
+                  ${item.clientFacing ? `<br/><span style="color:#555;">Cliente: ${safeText(item.clientFacing)}</span>` : ''}
+                </li>
+              `)}
+            </div>
+          </div>
+        </div>
+
+        <div style="margin:40px 0; padding:24px; background:#fffdf6; border:1px solid #efe3bd; border-radius:8px; page-break-inside:avoid;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Checklist final antes de enviar</h2>
+          ${renderPdfList(pdfFinalChecklist.slice(0, 14), (item) => `
+            <li style="font-size:12px; margin-bottom:6px;">
+              <strong>${safeText(item.label)}</strong> - ${safeText(planningStatusLabel(item.status))} ${item.reason ? `(${safeText(priorityLabel(item.reason))})` : ''}
+            </li>
+          `)}
+        </div>
+
         <div style="margin:40px 0; padding:24px; background:#f0f8ff; border-radius:8px; page-break-before:always;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">ℹ️ Informação Prática</h2>
-          <p style="font-size:14px; margin:8px 0;">🛂 <strong>Visto:</strong> ${itinerary.destination?.visaInfo || 'Não necessita de visto para estadias curtas'}</p>
-          <p style="font-size:14px; margin:8px 0;">🏥 <strong>Saúde:</strong> ${itinerary.destination?.healthInfo || 'Sem requisitos especiais'}</p>
-          <p style="font-size:14px; margin:8px 0;"><strong>Segurança:</strong> ${itinerary.destination?.safetyLevel || 'Normal'}</p>
-          <p style="font-size:14px; margin:8px 0;">💵 <strong>Gorjetas:</strong> ${itinerary.destination?.tippingCulture || 'Opcional'}</p>
-          <p style="font-size:14px; margin:8px 0;">🔌 <strong>Tomadas:</strong> ${itinerary.destination?.electricityPlug || 'Tipos padrão'}</p>
-          ${itinerary.destination?.simCard ? `<p style="font-size:14px; margin:8px 0;">📱 <strong>Cartão SIM:</strong> ${itinerary.destination.simCard}</p>` : ''}
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Informacao pratica</h2>
+          <p style="font-size:14px; margin:8px 0;"><strong>Visto:</strong> ${safeText(itinerary.destination?.visaInfo || 'Confirmar os requisitos oficiais antes da partida')}</p>
+          <p style="font-size:14px; margin:8px 0;"><strong>Saude:</strong> ${safeText(itinerary.destination?.healthInfo || 'Confirmar recomendacoes oficiais antes da partida')}</p>
+          <p style="font-size:14px; margin:8px 0;"><strong>Seguranca:</strong> ${safeText(itinerary.destination?.safetyLevel || 'Consultar os avisos de viagem em vigor')}</p>
+          <p style="font-size:14px; margin:8px 0;"><strong>Gorjetas:</strong> ${safeText(itinerary.destination?.tippingCulture || 'Confirmar a pratica local')}</p>
+          <p style="font-size:14px; margin:8px 0;"><strong>Tomadas:</strong> ${safeText(itinerary.destination?.electricityPlug || 'Confirmar o adaptador necessario')}</p>
+          ${itinerary.destination?.simCard ? `<p style="font-size:14px; margin:8px 0;"><strong>Cartao SIM:</strong> ${safeText(itinerary.destination.simCard)}</p>` : ''}
         </div>
         
-        <div style="text-align:center; padding:20px; color:#999; font-size:11px; border-top:1px solid #eee;">
-          Gerado por Andor AI · andortravels.com · Preços são estimativas, verifica antes de reservar
+        <div style="margin-top:40px; padding:20px 0; color:#666; font:400 10px/1.55 Arial,sans-serif; border-top:2px solid #D4A853; page-break-inside:avoid;">
+          <strong style="display:block; color:#20242A; margin-bottom:6px;">Nota de responsabilidade e Informação de Registo</strong>
+          Este documento foi emitido e preparado digitalmente pela Andor Travels, Lda. (RNAVT nº 9876), com sede social em Lisboa, Portugal. O planeamento curado tem natureza de apoio informativo. Horários, preços, disponibilidade de voos, hotéis, transportes e requisitos oficiais de entrada (como vistos e regras de saúde) podem ser alterados pelos respetivos fornecedores ou autoridades e devem ser validados antes de qualquer reserva ou partida. A versão cliente exclui notas operacionais de uso interno.
         </div>
       </div>
     `;
 
     content.querySelectorAll('script, style, iframe, object, embed').forEach((node) => node.remove());
+    content.querySelectorAll('img:not([data-andor-cover])').forEach((node) => node.remove());
     content.querySelectorAll('*').forEach((node) => {
       Array.from(node.attributes).forEach((attribute) => {
         if (/^on/i.test(attribute.name) || attribute.name === 'srcdoc') {
@@ -732,23 +1148,252 @@ export default function ItineraryPage() {
         }
       });
     });
+    content.style.width = '880px';
+    const imageReady = Promise.allSettled(Array.from(content.querySelectorAll('img')).map((image) => {
+      if (image.complete) return image.decode?.().catch(() => {}) || Promise.resolve();
+      return new Promise((resolve) => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      });
+    }));
+    await Promise.race([
+      imageReady,
+      new Promise((resolve) => window.setTimeout(resolve, 5000)),
+    ]);
     
     const pdfDate = new Date(trip.startDate || Date.now());
     const pdfMonthYear = pdfDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).replace(/\s/g, '');
     const pdfCity = (itinerary.destination?.city || itinerary.destination?.name || 'Itinerario').replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '');
     const options = {
-      margin: [10, 10, 10, 10],
-      filename: `Andor_${pdfCity}_${itinerary.trip?.totalDays || itinerary.days?.length}dias_${pdfMonthYear}.pdf`,
+      margin: [10, 10, 18, 10],
+      filename: `Andor_${pdfCity}_${itinerary.trip?.totalDays || itinerary.days?.length}dias_${pdfMonthYear}_${requestedMode}.pdf`,
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
+
+    const applyPdfBranding = (pdf) => {
+      pdf.setProperties({
+        title: options.filename,
+        subject: `${includeInternal ? 'Dossier operacional interno' : 'Dossier de viagem'} - ${pdfDestinationName}`,
+        author: 'Andor Travels',
+        creator: 'Andor Travels',
+        keywords: 'Andor Travels, itinerario, viagem',
+      });
+      const pages = pdf.internal.getNumberOfPages();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      for (let pageNumber = 2; pageNumber <= pages; pageNumber += 1) {
+        pdf.setPage(pageNumber);
+        pdf.setDrawColor(212, 168, 83);
+        pdf.setLineWidth(0.35);
+        pdf.line(10, pageHeight - 11, pageWidth - 10, pageHeight - 11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(54, 59, 65);
+        pdf.text('ANDOR TRAVELS | andortravels.com', 10, pageHeight - 6);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(105, 109, 114);
+        pdf.text(`${documentReference} | ${pageNumber}/${pages}`, pageWidth - 10, pageHeight - 6, { align: 'right' });
+      }
+    };
+
+    const exportPlainPdf = async () => {
+      const jsPdfModule = await import('jspdf');
+      const JsPDF = jsPdfModule.jsPDF || jsPdfModule.default?.jsPDF || jsPdfModule.default;
+      if (!JsPDF) throw new Error('jspdf_unavailable');
+
+      const doc = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const margin = 14;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const maxWidth = pageWidth - margin * 2;
+      let y = 18;
+      const clean = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+      const ensureSpace = (height = 8) => {
+        if (y + height <= pageHeight - 16) return;
+        doc.addPage();
+        y = 18;
+      };
+      const addText = (value, size = 10, style = 'normal', gap = 2) => {
+        const text = clean(value);
+        if (!text) return;
+        doc.setFont('helvetica', style);
+        doc.setFontSize(size);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        lines.forEach((line) => {
+          ensureSpace(size * 0.45 + 3);
+          doc.text(line, margin, y);
+          y += size * 0.45 + 3;
+        });
+        y += gap;
+      };
+      const addSection = (title) => {
+        ensureSpace(12);
+        y += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text(clean(title), margin, y);
+        y += 8;
+      };
+      const addBullets = (items, renderItem, limit = 8) => {
+        items.slice(0, limit).forEach((item) => addText(`- ${renderItem(item)}`, 9, 'normal', 0.5));
+      };
+
+      doc.setFillColor(32, 36, 42);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      try {
+        const response = await fetch(pdfCoverImage, { referrerPolicy: 'no-referrer' });
+        if (response.ok) {
+          const blob = await response.blob();
+          const imageData = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          doc.addImage(imageData, 'JPEG', 0, 0, pageWidth, 162);
+        }
+      } catch (imageError) {}
+      doc.setFillColor(32, 36, 42);
+      doc.rect(0, 136, pageWidth, pageHeight - 136, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(14, 14, 25, 25, 2, 2, 'F');
+      doc.setFont('times', 'bold');
+      doc.setFontSize(23);
+      doc.setTextColor(30, 111, 217);
+      doc.text('A', 26.5, 32, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(255, 255, 255);
+      doc.text('ANDOR', 45, 24);
+      doc.setFontSize(7);
+      doc.setTextColor(227, 189, 104);
+      doc.text('TRAVELS', 45, 30);
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.25);
+      doc.line(14, 47, pageWidth - 14, 47);
+      doc.setFontSize(8);
+      doc.setTextColor(227, 189, 104);
+      doc.text('ITINERARIO PERSONALIZADO', 14, 158);
+      doc.setFont('times', 'bold');
+      doc.setFontSize(27);
+      doc.setTextColor(255, 255, 255);
+      const coverTitleLines = doc.splitTextToSize(clean(pdfDestinationName), pageWidth - 28);
+      doc.text(coverTitleLines, 14, 174);
+      const coverTitleBottom = 174 + coverTitleLines.length * 11;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(215, 218, 221);
+      doc.text(`${itinerary.trip?.totalDays || itinerary.days?.length || '-'} dias | ${itinerary.trip?.groupType || itinerary.trip?.travelStyle || 'Viagem'}`, 14, coverTitleBottom + 8);
+      doc.setDrawColor(212, 168, 83);
+      doc.line(14, pageHeight - 38, pageWidth - 14, pageHeight - 38);
+      doc.setFontSize(8);
+      doc.setTextColor(215, 218, 221);
+      doc.text(`Preparado para: ${pdfExport.companyName || pdfExport.clientName || 'Viajante Andor'}`, 14, pageHeight - 28);
+      doc.text(`${documentReference} | ${preparedAtLabel}`, 14, pageHeight - 21);
+      doc.text(includeInternal ? 'USO INTERNO' : 'VERSAO CLIENTE', pageWidth - 14, pageHeight - 21, { align: 'right' });
+
+      doc.addPage();
+      y = 18;
+
+      addText(`${pdfDestination.city || pdfDestination.name || itinerary.destination || 'Itinerario'} - ${dossierExport.label}`, 17, 'bold', 4);
+      addText(`${itinerary.trip?.totalDays || itinerary.days?.length || '-'} dias | ${itinerary.trip?.groupType || 'Viagem'} | ${itinerary.trip?.travelStyle || 'Exploracao'}`, 10);
+      if (pdfExport.clientName || pdfExport.companyName || pdfExport.preparedBy) {
+        addSection('Cliente');
+        addText([pdfExport.clientName, pdfExport.companyName, pdfExport.preparedBy && `Preparado por ${pdfExport.preparedBy}`].filter(Boolean).join(' | '), 10);
+      }
+      if (pdfExport.clientFacingNotes) addText(`Notas cliente: ${pdfExport.clientFacingNotes}`, 9);
+      if (includeInternal && pdfExport.internalNotes) addText(`Notas internas: ${pdfExport.internalNotes}`, 9);
+      if (itinerary.destination?.andorVerdict || itinerary.tripOverview) {
+        addSection('Resumo');
+        addText(itinerary.destination?.andorVerdict || itinerary.tripOverview, 10);
+      }
+
+      addSection('Checklist de Reserva');
+      addBullets(pdfChecklist, (item) => `${item.task || item.title || 'Tarefa'} | ${priorityLabel(item.priority)} | ${bookingStatusLabel(item.status)}${item.reference ? ` | Ref: ${item.reference}` : ''}`, 12);
+
+      addSection('Documentos');
+      addBullets(pdfDocs, (item) => `${item.title || item.label || item.task || 'Documento'} | ${documentImportanceLabel(item.importance || (item.required ? 'required' : 'recommended'))} | ${documentStatusLabel(item.status)} | ${item.whoNeedsIt || 'Viajantes'} | ${item.timing || 'Antes da partida'}`, 12);
+
+      addSection('Voos');
+      addBullets(pdfFlights, (flight) => `${flight.operator || flight.airline || 'Pesquisa de voos'} | ${flight.timing || flight.route || ''} | ${flight.estimatedPrice || flight.estimatedCost || 'Confirmar preco'}`, 4);
+
+      addSection('Alojamento');
+      addBullets(pdfHotels, (hotel) => `${hotel.name || hotel.hotelName || 'Hotel'} | ${hotel.area || hotel.type || ''} | ${hotel.pricePerNight ? `${hotel.currency || ''} ${hotel.pricePerNight}/noite` : 'Confirmar preco'}`, 4);
+
+      addSection('Transfer e Transportes');
+      addBullets(pdfTransferOptions, (option) => `${option.name || option.tier || 'Transfer'} | ${option.estimatedDuration || option.duration || ''} | ${option.estimatedCost ? pdfMoney(option.estimatedCost) : option.cost || 'Confirmar preco'}`, 4);
+      if (itinerary.rentalCar?.strategy) addText(`Rent-a-car: ${itinerary.rentalCar.strategy}`, 9);
+
+      addSection('Plano Diario');
+      (itinerary.days || []).forEach((day) => {
+        addText(`Dia ${day.dayNumber}: ${day.title}`, 11, 'bold', 1);
+        addBullets(day.stops || [], (stop) => `${stop.time || ''} ${stop.name || 'Paragem'} | ${stop.duration || ''} | ${stop.cost > 0 ? pdfMoney(stop.cost) : 'Gratis'}${stop.transportFromPrevious?.duration ? ` | Transporte: ${stop.transportFromPrevious.duration}` : ''}${stop.backupOption ? ` | Backup: ${stop.backupOption}` : ''}${stop.practicalNote ? ` | Nota: ${stop.practicalNote}` : ''}`, 6);
+      });
+
+      addSection('Planos Alternativos');
+      addBullets(pdfBackupPlans, (item) => `${backupTriggerLabel(item)}: ${item.replacementPlan || item.notes || ''} | Custo: ${item.costImpact || 'Confirmar'} | Tempo: ${item.timeImpact || 'Confirmar'}`, 12);
+
+      addSection('Checklist final');
+      addBullets(pdfFinalChecklist, (item) => `${item.label || 'Pendente'} | ${planningStatusLabel(item.status)} | ${priorityLabel(item.reason)}`, 14);
+
+      applyPdfBranding(doc);
+      doc.save(options.filename);
+    };
     
-    html2pdf().set(options).from(content).save().then(() => {
+    const cleanupPdfArtifacts = () => {
+      if (content.parentNode) content.parentNode.removeChild(content);
+      document.querySelectorAll('.html2pdf__container').forEach((node) => node.remove());
+    };
+
+    try {
+      if (!html2pdf) {
+        await exportPlainPdf();
+        showToast('PDF exportado com sucesso.', 'success');
+        return;
+      }
+
+      // Attach to the DOM tree so html2canvas can measure size, compute styles, and load fonts
+      content.style.position = 'absolute';
+      content.style.left = '0';
+      content.style.top = '0';
+      content.style.zIndex = '-9999';
+      content.style.background = '#ffffff';
+      document.body.appendChild(content);
+
+      const pdfJob = html2pdf()
+        .set(options)
+        .from(content)
+        .toPdf()
+        .get('pdf')
+        .then((pdf) => {
+          if (pdf.internal.getNumberOfPages() < 2) throw new Error('pdf_render_empty');
+          applyPdfBranding(pdf);
+        })
+        .save();
+      await Promise.race([
+        pdfJob,
+        new Promise((_, reject) => {
+          window.setTimeout(() => reject(new Error('pdf_export_timeout')), 25000);
+        }),
+      ]);
       showToast('PDF exportado com sucesso.', 'success');
-    }).catch(err => {
-      showToast('Erro ao exportar PDF.', 'error');
-    });
+    } catch (err) {
+      try {
+        await exportPlainPdf();
+        showToast('PDF simples exportado com sucesso.', 'success');
+      } catch (fallbackErr) {
+        showToast(
+          err?.message === 'pdf_export_timeout'
+            ? 'Tempo esgotado ao gerar PDF. Tenta novamente com menos conteudo aberto.'
+            : 'Erro ao exportar PDF.',
+          'error'
+        );
+      }
+    } finally {
+      cleanupPdfArtifacts();
+    }
   };
 
   const handleRegenerateDay = async () => {
@@ -815,6 +1460,33 @@ export default function ItineraryPage() {
     setExpandedStops(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
+  const updateActivity = (stop, patch) => {
+    const matches = (item) => (
+      (stop.id && item?.id === stop.id) || (!stop.id && item?.name === stop.name)
+    );
+    const updateList = (items) => (
+      Array.isArray(items) ? items.map((item) => matches(item) ? { ...item, ...patch } : item) : items
+    );
+    const nextDays = (itinerary.days || []).map((day, dayIndex) => {
+      if (dayIndex !== activeDay) return day;
+      const periods = day.periods && typeof day.periods === 'object'
+        ? Object.fromEntries(Object.entries(day.periods).map(([periodKey, period]) => [
+            periodKey,
+            { ...period, activities: updateList(period?.activities) || [] },
+          ]))
+        : day.periods;
+      return {
+        ...day,
+        stops: updateList(day.stops),
+        activities: updateList(day.activities),
+        periods,
+      };
+    });
+    const nextItinerary = { ...itinerary, days: nextDays, updatedAt: new Date().toISOString() };
+    setItinerary(nextItinerary);
+    saveItinerarySnapshot(nextItinerary);
+  };
+
   const toggleSaved = (stop) => {
     const stopName = stop.name;
     const destName = itinerary?.destination || (dest.city || dest.name) || '';
@@ -857,7 +1529,7 @@ export default function ItineraryPage() {
         duration: stop.duration || '2h',
         city: dest.city || dest.name || (typeof itinerary?.destination === 'string' ? itinerary.destination : ''),
         destinationSlug: dest.slug || 'tokyo',
-        image: stop.photoKeyword ? `https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=75&auto=format&fit=crop` : '',
+        image: getActivityImageUrl(stop, dest.city || dest.name || ''),
         dateSaved: new Date().toLocaleDateString('pt-PT')
       });
     }
@@ -928,16 +1600,6 @@ export default function ItineraryPage() {
   const formatMoney = (value) => formatCurrencyAmount(value, currencyContext);
   const destinationBadge = getDestinationBadge(dest);
   const currentDay = itinerary.days?.[activeDay] || {};
-  const dayCoordinates = (currentDay.stops || [])
-    .map(stop => Array.isArray(stop.coordinates)
-      ? stop.coordinates
-      : stop.coordinates?.lat && stop.coordinates?.lng
-        ? [stop.coordinates.lat, stop.coordinates.lng]
-        : null)
-    .filter(Boolean);
-  const dayDirectionsUrl = dayCoordinates.length > 1
-    ? `https://www.google.com/maps/dir/?api=1&origin=${dayCoordinates[0].join(',')}&destination=${dayCoordinates[dayCoordinates.length - 1].join(',')}&waypoints=${dayCoordinates.slice(1, -1).map(coord => coord.join(',')).join('|')}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.city || dest.name || '')}`;
   
   // Budget estimate
   const budgetMin = trip.budgetBreakdown?.grandTotal?.min;
@@ -945,6 +1607,33 @@ export default function ItineraryPage() {
   const budgetDisplay = budgetMin
     ? formatCurrencyRange(budgetMin, budgetMax, currencyContext)
     : itinerary.totalCost || null;
+  const coverImage = getDestinationCover(dest);
+  const exportMetadata = itinerary.exportMetadata || {};
+  const bookingReady = itinerary.bookingReady || {};
+  const bookingLinks = bookingReady.providerLinks || {};
+  const documentsChecklistItems = Array.isArray(itinerary.documentsChecklist?.items)
+    ? itinerary.documentsChecklist.items
+    : Array.isArray(itinerary.documentsChecklist)
+      ? itinerary.documentsChecklist
+      : [];
+  const bookingItems = Array.isArray(itinerary.bookingChecklist?.items)
+    ? itinerary.bookingChecklist.items
+    : Array.isArray(itinerary.bookingChecklist)
+      ? itinerary.bookingChecklist
+      : Array.isArray(trip.bookingChecklist?.items)
+        ? trip.bookingChecklist.items
+        : Array.isArray(trip.bookingChecklist)
+          ? trip.bookingChecklist
+          : [];
+  const readyBookingItems = bookingItems.filter((item) => ['booked', 'confirmed'].includes(item.status)).length;
+  const companyModeActive = Boolean(exportMetadata.whiteLabelReady || trip.travelerProfile?.companyMode);
+  const backupPlanItems = Array.isArray(itinerary.backupPlans?.items)
+    ? itinerary.backupPlans.items
+    : Array.isArray(itinerary.backupPlans)
+      ? itinerary.backupPlans
+      : [];
+  const bookingStorageKey = `andor_booking_checklist_${id}`;
+  const documentsStorageKey = `andor_documents_checklist_${id}`;
 
   // Group stops for the current day
   const groupedStops = { morning: [], afternoon: [], evening: [] };
@@ -966,7 +1655,7 @@ export default function ItineraryPage() {
         <div className={styles.page} ref={printRef}>
         
         {/* HEADER DO DESTINO */}
-        <header className={styles.premiumHeader}>
+        <header className={styles.premiumHeader} style={{ backgroundImage: `url(${coverImage})` }}>
           <div className={styles.headerTitleRow}>
             <div className={styles.headerTitleGroup}>
               <h1 className={styles.headerCity}>
@@ -993,7 +1682,7 @@ export default function ItineraryPage() {
             <div className={styles.headerActionsDesktop}>
               <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title="Editar este dia"><Edit3 size={16} aria-hidden="true" /> <span>Editar</span></button>
               <button className={styles.btnSecondary} onClick={handleShare} aria-label="Partilhar itinerário" title="Partilhar itinerário"><Share2 size={16} aria-hidden="true" /> <span>Partilhar</span></button>
-              <button className={styles.btnSecondary} onClick={handleExportPDF} aria-label="Exportar PDF" title="Exportar PDF"><FileText size={16} aria-hidden="true" /> <span>PDF</span></button>
+              <button className={styles.btnSecondary} onClick={() => handleExportPDF(exportMode)} aria-label="Exportar PDF" title="Exportar PDF"><FileText size={16} aria-hidden="true" /> <span>PDF</span></button>
               <button className={styles.btnSecondary} onClick={() => setShowVersionsModal(true)} aria-label="Ver versões" title="Ver versões"><History size={16} aria-hidden="true" /> <span>Versões</span></button>
               <button className={styles.btnSecondary} onClick={handleGeneratePackingList} aria-label="Gerar lista de bagagem" title="Gerar lista de bagagem"><Package size={16} aria-hidden="true" /> <span>Bagagem</span></button>
               <button className={styles.btnSecondary} onClick={copyCurrentDayPlan} aria-label="Copiar plano do dia" title="Copiar plano do dia"><Copy size={16} aria-hidden="true" /> <span>Copiar</span></button>
@@ -1001,6 +1690,93 @@ export default function ItineraryPage() {
             </div>
           </div>
         </header>
+
+        <section className={styles.agencyBrief} aria-label="Resumo profissional do itinerario">
+          <div className={styles.agencyBriefHeader}>
+            <div>
+              <span className={styles.agencyEyebrow}>{companyModeActive ? 'Dossier profissional' : 'Viagem pronta para organizar'}</span>
+              <h2>{companyModeActive ? 'Rever, reservar e entregar ao cliente' : 'Do roteiro às reservas, sem perder o fio'}</h2>
+            </div>
+            <div className={styles.agencyHeaderControls}>
+              <div className={styles.exportModeSwitch} role="group" aria-label="Modo de exportacao">
+                <button
+                  type="button"
+                  className={exportMode === 'client' ? styles.exportModeButtonActive : styles.exportModeButton}
+                  onClick={() => setExportMode('client')}
+                >
+                  Cliente
+                </button>
+                {companyModeActive && (
+                  <button
+                    type="button"
+                    className={exportMode === 'internal' ? styles.exportModeButtonActive : styles.exportModeButton}
+                    onClick={() => setExportMode('internal')}
+                  >
+                    Interno
+                  </button>
+                )}
+              </div>
+              <div className={styles.agencyStatus}>
+                {readyBookingItems}/{bookingItems.length || 0} confirmados
+              </div>
+            </div>
+          </div>
+          <div className={styles.agencyBriefGrid}>
+            <div className={styles.agencyBriefPanel}>
+              <h3>Resumo inteligente</h3>
+              <p>{dest.andorVerdict || itinerary.tripOverview || currentDay.moodDescription || `Plano pratico para ${dest.city || dest.name || 'esta viagem'}, com logistica, custos e reservas separadas.`}</p>
+              {itinerary.metadata?.generationSource === 'fallback' && <span className={styles.sourceBadge}>Versão de demonstração com dados estimados</span>}
+              {bookingReady.disclaimer && <p className={styles.agencyFinePrint}>O Andor prepara decisões e links, mas não compra nem confirma reservas automaticamente.</p>}
+            </div>
+            <div className={styles.agencyBriefPanel}>
+              <h3>Pesquisa rápida</h3>
+              <div className={styles.agencyLinkGrid}>
+                {bookingLinks.flights?.google && <a href={bookingLinks.flights.google} target="_blank" rel="noopener noreferrer">Voos</a>}
+                {bookingLinks.hotels?.booking && <a href={bookingLinks.hotels.booking} target="_blank" rel="noopener noreferrer">Hoteis</a>}
+                {bookingLinks.rentalCars?.search && <a href={bookingLinks.rentalCars.search} target="_blank" rel="noopener noreferrer">Rent-a-car</a>}
+                {bookingLinks.places?.search && <a href={bookingLinks.places.search} target="_blank" rel="noopener noreferrer">Reservas</a>}
+              </div>
+              <div className={styles.providerLine}>
+                Links prontos · preços e disponibilidade por confirmar
+              </div>
+            </div>
+            <div className={styles.agencyBriefPanel}>
+              <h3>Documentos</h3>
+              <ul className={styles.agencyMiniList}>
+                {documentsChecklistItems.slice(0, 4).map((item, index) => (
+                  <li key={item.id || index}>{item.title || item.label || item.task}</li>
+                ))}
+              </ul>
+            </div>
+            <div className={styles.agencyBriefPanel}>
+              <h3>Exportação</h3>
+              <p>{exportMode === 'internal' ? 'Inclui notas internas e revisão operacional.' : 'Oculta notas internas e mostra apenas conteúdo de cliente.'}</p>
+              <div className={styles.exportActionRow}>
+                <button type="button" onClick={() => handleExportPDF('client')}>PDF cliente</button>
+                {companyModeActive && <button type="button" onClick={() => handleExportPDF('internal')}>PDF interno</button>}
+              </div>
+              <p className={styles.agencyFinePrint}>{documentsChecklistItems.length} documentos - {backupPlanItems.length} backups</p>
+            </div>
+            {companyModeActive && (
+              <div className={styles.agencyBriefPanel}>
+                <h3>Cliente</h3>
+                <p>{exportMetadata.clientName || trip.travelerProfile?.clientName || 'Cliente por definir'}</p>
+                {exportMetadata.companyName && <p className={styles.agencyFinePrint}>{exportMetadata.companyName}</p>}
+                {exportMetadata.preparedBy && <p className={styles.agencyFinePrint}>Preparado por {exportMetadata.preparedBy}</p>}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <nav className={styles.itineraryNav} aria-label="Secções do itinerário">
+          <a href="#day-plan">Dias</a>
+          <a href="#booking-ready">Reservas</a>
+          <a href="#documents">Documentos</a>
+          <a href="#backup-plans">Planos B</a>
+          <a href="#budget-summary">Orçamento</a>
+          <a href="#review-before-sending">Revisão</a>
+          <a href="#export-share">Exportar</a>
+        </nav>
 
         {/* TABS DOS DIAS */}
         <div className={styles.dayTabsWrapper}>
@@ -1043,28 +1819,11 @@ export default function ItineraryPage() {
         </div>
 
         {/* MAIN LAYOUT (DOIS PAINÉIS) */}
-        <div className={styles.twoPanelLayout}>
+        <div className={styles.twoPanelLayout} id="day-plan">
           
           {/* PAINEL ESQUERDO */}
           <div className={styles.leftPanel}>
             
-            {/* MAPA INTERACTIVO */}
-            <div className={styles.mapContainer} data-testid="itinerary-map-container">
-              <ErrorBoundary>
-                <LiveMap stops={currentDay.stops || []} destination={dest} currency={currencyContext.symbol} />
-              </ErrorBoundary>
-            </div>
-            <a
-              className={styles.googleMapsDayButton}
-              href={dayDirectionsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Map size={16} aria-hidden="true" /> Abrir este dia no Google Maps
-            </a>
-
-            <DailyPlanTimeline dailyPlans={itinerary.days} destination={dest.city || dest.name} />
-
             {/* CLIMA E TRANSPORTE */}
             <div className={styles.dayMetaCards}>
               {currentDay.weather && (
@@ -1201,9 +1960,7 @@ export default function ItineraryPage() {
                                 onSave={() => toggleSaved(stop)}
                                 onBook={() => setBookingStop(stop)}
                                 onCopy={() => copyActivityDetails(stop)}
-                                onMapFocus={(coords) => {
-                                  // focus on map
-                                }}
+                                onUpdate={(patch) => updateActivity(stop, patch)}
                                 isDayHighlight={stopIdx === 0}
                               />
                             </div>
@@ -1246,14 +2003,6 @@ export default function ItineraryPage() {
                             <span className={styles.mealTipLabel}>Deve pedir:</span> &ldquo;{meal.mustOrder || meal.note}&rdquo;
                           </div>
                         )}
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meal.name + ' ' + (dest.city || ''))}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.mealMapLink}
-                        >
-                          <MapPin size={16} aria-hidden="true" /> Ver no Google Maps
-                        </a>
                       </div>
                     );
                   })}
@@ -1270,12 +2019,6 @@ export default function ItineraryPage() {
                     <RestaurantCard
                       key={rIdx}
                       restaurant={restaurant}
-                      onMapFocus={(coords) => {
-                        const event = new CustomEvent('andor-open-map', {
-                          detail: { coordinates: coords, name: restaurant.name }
-                        });
-                        window.dispatchEvent(event);
-                      }}
                     />
                   ))}
                 </div>
@@ -1305,122 +2048,250 @@ export default function ItineraryPage() {
             </button>
           </div>
 
-          {/* PAINEL LATERAL (DIREITO) */}
-          <div className={`${styles.rightPanel} ${showMobileBudget ? styles.mobileBudgetOpen : styles.mobileBudgetCollapsed}`}>
-            
-            <BudgetVisualization currency={currencyContext.symbol} budget={trip.budget || trip.budgetScenarios || (trip.budgetBreakdown ? { 
-              scenarios: [{ 
-                tier: 'balanced', 
-                total: trip.budgetBreakdown.grandTotal?.min || 0, 
-                breakdown: {
-                  flights: trip.budgetBreakdown.flights?.min || 0,
-                  accommodation: trip.budgetBreakdown.accommodation?.total || 0,
-                  food: trip.budgetBreakdown.food?.total || 0,
-                  activities: trip.budgetBreakdown.activities?.total || 0,
-                  transport: trip.budgetBreakdown.transport?.total || 0
-                }
-              }] 
-            } : { scenarios: [] })} />
-            
-            <button className={styles.btnOutlineFull} onClick={() => setShowBudgetDrawer(true)} style={{ marginBottom: '16px' }}>
-              <Settings size={16} aria-hidden="true" /> Ajustar orçamento
-            </button>
-
-            <BookingChecklist bookingChecklist={itinerary.bookingChecklist || trip.bookingChecklist || itinerary.trip?.bookingChecklist} />
-
-            {/* VOOS */}
-            <FlightSection 
-              flights={{ 
-                options: itinerary.flightOptions || [], 
-                overview: trip.flightOverview || '',
-                externalLinks: {
-                  skyscanner: `https://www.skyscanner.net/transport/flights-from/pt/${encodeURIComponent((dest.city || dest.name || '').toLowerCase())}`
-                }
-              }} 
-              destination={dest.city || dest.name} 
-            />
-
-            {/* HOTEL */}
-            <HotelSection 
-              accommodation={{
-                ...itinerary.accommodation,
-                externalLinks: {
-                  booking: `https://www.booking.com/searchresults.pt-pt.html?ss=${encodeURIComponent(dest.city || dest.name || '')}`
-                }
-              }} 
-              destination={dest.city || dest.name} 
-            />
-
-            {/* AIRPORT TRANSFER */}
-            <AirportTransferSection airportTransfer={itinerary.airportTransfer || trip.airportTransfer} />
-
-            {/* LOCAL TRANSPORT */}
-            <LocalTransportSection localTransport={itinerary.localTransport || trip.localTransport} />
-
-            {/* ALERTS & WARNINGS */}
-            <AlertsSection warnings={itinerary.warnings || trip.warnings || []} destination={dest.city || dest.name} />
-
-            {/* TOP TIPS */}
-            {trip.topTips && (
-              <div className={styles.sidebarCard}>
-                <h3 className={styles.tipsHeading}>Dicas Top do Andor</h3>
-                <ul className={styles.tipsList}>
-                  {trip.topTips.map((tip, i) => (
-                    <li key={i} className={styles.tipsItem}>{tip}</li>
-                  ))}
-                </ul>
+          <div className={styles.rightPanel}>
+            <section className={styles.operationalSection} id="booking-ready">
+              <div className={styles.operationalHeading}>
+                <span>Reservas</span>
+                <h2>Preparar a viagem</h2>
+                <p>Pesquisa e decisões por categoria. Nada fica confirmado até marcares o respetivo estado.</p>
               </div>
-            )}
+              <div className={styles.bookingServicesGrid}>
+                <FlightSection
+                  flights={{
+                    options: itinerary.flightOptions || [],
+                    overview: trip.flightOverview || '',
+                    externalLinks: {
+                      skyscanner: `https://www.skyscanner.net/transport/flights-from/pt/${encodeURIComponent((dest.city || dest.name || '').toLowerCase())}`
+                    }
+                  }}
+                  destination={dest.city || dest.name}
+                />
+                <HotelSection
+                  accommodation={{
+                    ...itinerary.accommodation,
+                    externalLinks: {
+                      booking: `https://www.booking.com/searchresults.pt-pt.html?ss=${encodeURIComponent(dest.city || dest.name || '')}`
+                    }
+                  }}
+                  destination={dest.city || dest.name}
+                />
+              </div>
+              <div className={styles.logisticsGrid}>
+                <AirportTransferSection airportTransfer={itinerary.airportTransfer || trip.airportTransfer} />
+                <LocalTransportSection localTransport={itinerary.localTransport || trip.localTransport} />
+                <RentalCarSection
+                  rentalCar={itinerary.rentalCar || trip.rentalCar}
+                  destination={dest.city || dest.name}
+                  storageKey={`andor_rental_car_${id}`}
+                  tripId={id}
+                />
+              </div>
 
-            <div className={styles.sidebarCard}>
-              <div className={styles.packingHeader}>
-                <h3 className={styles.tipsHeading}>Lista de Bagagem</h3>
-                <button className={styles.btnSecondary} onClick={handleGeneratePackingList} disabled={isPackingGenerating}>
-                  {isPackingGenerating ? 'A gerar...' : packingList ? 'Atualizar' : 'Gerar'}
+              <LiveRatesSearch
+                destination={dest.city || dest.name || itinerary.destination}
+                tripDays={trip.totalDays || itinerary.days?.length || 1}
+                passengers={trip.travelerProfile?.passengerCount || 2}
+                onSelectFlight={setSelectedFlight}
+                onSelectHotel={setSelectedHotel}
+                selectedFlight={selectedFlight}
+                selectedHotel={selectedHotel}
+              />
+
+              <InsuranceSelector
+                tripDays={trip.totalDays || itinerary.days?.length || 1}
+                passengers={trip.travelerProfile?.passengerCount || 2}
+                selectedInsurance={selectedInsurance}
+                onSelectInsurance={setSelectedInsurance}
+              />
+
+              {(selectedFlight || selectedHotel || selectedInsurance) && (
+                <div className={styles.checkoutSummaryCard} data-testid="checkout-summary-card">
+                  <h3>Carrinho de Viagem</h3>
+                  <div className={styles.checkoutItemsList}>
+                    {selectedFlight && (
+                      <div className={styles.checkoutItemLine}>
+                        <span>✈️ Voo: {selectedFlight.airline} ({selectedFlight.flightNumber})</span>
+                        <strong>{formatMoney(selectedFlight.priceCents / 100)}</strong>
+                      </div>
+                    )}
+                    {selectedHotel && (
+                      <div className={styles.checkoutItemLine}>
+                        <span>🏨 Alojamento: {selectedHotel.name}</span>
+                        <strong>{formatMoney(selectedHotel.totalPriceCents / 100)}</strong>
+                      </div>
+                    )}
+                    {selectedInsurance && (
+                      <div className={styles.checkoutItemLine}>
+                        <span>🛡️ {selectedInsurance.name}</span>
+                        <strong>{formatMoney(selectedInsurance.totalCostCents / 100)}</strong>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.checkoutTotalRow}>
+                    <span>Total da Reserva:</span>
+                    <strong>
+                      {formatMoney(
+                        ((selectedFlight?.priceCents || 0) +
+                        (selectedHotel?.totalPriceCents || 0) +
+                        (selectedInsurance?.totalCostCents || 0)) / 100
+                      )}
+                    </strong>
+                  </div>
+                  <button
+                    className={styles.btnPrimaryFull}
+                    onClick={handlePayAll}
+                    disabled={isBookingProcessing}
+                    data-testid="pay-confirm-button"
+                  >
+                    {isBookingProcessing ? 'A processar pagamento...' : 'Confirmar e Pagar Viagem'}
+                  </button>
+                </div>
+              )}
+
+              <BookingChecklist
+                bookingChecklist={itinerary.bookingChecklist || trip.bookingChecklist || itinerary.trip?.bookingChecklist}
+                storageKey={bookingStorageKey}
+                tripId={id}
+              />
+            </section>
+
+            <div id="documents">
+              <TravelDocumentsSection
+                documentsChecklist={itinerary.documentsChecklist || trip.documentsChecklist}
+                storageKey={documentsStorageKey}
+                mode={exportMode}
+                tripId={id}
+              />
+            </div>
+
+            <div id="backup-plans">
+              <BackupPlansSection
+                backupPlans={itinerary.backupPlans || trip.backupPlans}
+                contingencyPlans={itinerary.contingencyPlans || trip.contingencyPlans}
+              />
+            </div>
+
+            <section className={styles.operationalSection} id="budget-summary">
+              <div className={styles.operationalHeading}>
+                <span>Orçamento</span>
+                <h2>Custos e preparação</h2>
+                <p>Estimativas para orientar decisões; confirma sempre o preço final no fornecedor.</p>
+              </div>
+              <div className={`${styles.budgetWorkspace} ${showMobileBudget ? styles.budgetWorkspaceOpen : styles.budgetWorkspaceCollapsed}`}>
+                <BudgetVisualization currency={currencyContext.symbol} budget={trip.budget || trip.budgetScenarios || (trip.budgetBreakdown ? {
+                  scenarios: [{
+                    tier: 'balanced',
+                    total: trip.budgetBreakdown.grandTotal?.min || 0,
+                    breakdown: {
+                      flights: trip.budgetBreakdown.flights?.min || 0,
+                      accommodation: trip.budgetBreakdown.accommodation?.total || 0,
+                      food: trip.budgetBreakdown.food?.total || 0,
+                      activities: trip.budgetBreakdown.activities?.total || 0,
+                      transport: trip.budgetBreakdown.transport?.total || 0
+                    }
+                  }]
+                } : { scenarios: [] })} />
+                <button className={styles.btnOutlineFull} onClick={() => setShowBudgetDrawer(true)}>
+                  <Settings size={16} aria-hidden="true" /> Ajustar orçamento
                 </button>
               </div>
-              {packingList ? (
-                <div className={styles.packingList}>
-                  {Object.entries({
-                    essential: 'Essencial',
-                    clothes: 'Roupa',
-                    apps: 'Apps',
-                    avoid: 'Não levar',
-                  }).map(([category, label]) => (
-                    <div key={category} className={styles.packingGroup}>
-                      <h4>{label}</h4>
-                      {(packingList[category] || []).map((item) => {
-                        const checkedKey = `${category}:${item}`;
-                        return (
-                          <label key={item} className={styles.packingItem}>
-                            <input
-                              type="checkbox"
-                              checked={!!checkedPacking[checkedKey]}
-                              onChange={() => togglePackingItem(category, item)}
-                            />
-                            <span>{item}</span>
-                          </label>
-                        );
-                      })}
+              <div className={styles.tripToolsGrid}>
+                {trip.topTips && (
+                  <div className={styles.sidebarCard}>
+                    <h3 className={styles.tipsHeading}>Dicas práticas</h3>
+                    <ul className={styles.tipsList}>
+                      {trip.topTips.map((tip, index) => (
+                        <li key={`${tip}-${index}`} className={styles.tipsItem}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className={styles.sidebarCard}>
+                  <div className={styles.packingHeader}>
+                    <h3 className={styles.tipsHeading}>Lista de bagagem</h3>
+                    <button className={styles.btnSecondary} onClick={handleGeneratePackingList} disabled={isPackingGenerating}>
+                      {isPackingGenerating ? 'A gerar...' : packingList ? 'Atualizar' : 'Gerar'}
+                    </button>
+                  </div>
+                  {packingList ? (
+                    <div className={styles.packingList}>
+                      {Object.entries({ essential: 'Essencial', clothes: 'Roupa', apps: 'Apps', avoid: 'Não levar' }).map(([category, label]) => (
+                        <div key={category} className={styles.packingGroup}>
+                          <h4>{label}</h4>
+                          {(packingList[category] || []).map((item) => {
+                            const checkedKey = `${category}:${item}`;
+                            return (
+                              <label key={item} className={styles.packingItem}>
+                                <input type="checkbox" checked={!!checkedPacking[checkedKey]} onChange={() => togglePackingItem(category, item)} />
+                                <span>{item}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p className={styles.sidebarHint}>Gera uma checklist adaptada ao destino, estação e ritmo do roteiro.</p>
+                  )}
                 </div>
-              ) : (
-                <p className={styles.sidebarHint}>Gera uma checklist adaptada ao destino, estação e ritmo do teu roteiro.</p>
-              )}
+              </div>
+            </section>
+
+            <div id="review-before-sending">
+              <ReviewBeforeSending
+                itinerary={itinerary}
+                exportMode={exportMode}
+                bookingStorageKey={bookingStorageKey}
+                documentsStorageKey={documentsStorageKey}
+                companyMode={companyModeActive}
+              />
             </div>
 
-            {/* ACTIONS */}
-            <div className={styles.sidebarActionsCol}>
-              <button className={styles.btnSecondaryFull} onClick={handleExportPDF}><FileText size={16} aria-hidden="true" /> Exportar PDF</button>
-              <button className={styles.btnSecondaryFull} onClick={handleShare}><Share2 size={16} aria-hidden="true" /> Partilhar link</button>
-              <button className={styles.btnPrimaryFull} onClick={openAIChat}><MessageCircle size={16} aria-hidden="true" /> Pedir ao Andor</button>
-            </div>
+            <AlertsSection warnings={itinerary.warnings || trip.warnings || []} destination={dest.city || dest.name} />
 
+            <section className={styles.exportWorkspace} id="export-share" aria-label="Exportar e partilhar">
+              <div>
+                <span>Entregar</span>
+                <h2>Exportar e partilhar</h2>
+                <p>{exportMode === 'internal' ? 'A versão interna inclui notas operacionais.' : 'A versão cliente oculta notas internas.'}</p>
+              </div>
+              <div className={styles.sidebarActionsCol}>
+                <button className={styles.btnSecondaryFull} onClick={() => handleExportPDF(exportMode)}><FileText size={16} aria-hidden="true" /> Exportar PDF</button>
+                <button className={styles.btnSecondaryFull} onClick={handleShare}><Share2 size={16} aria-hidden="true" /> Partilhar</button>
+                <button className={styles.btnSecondaryFull} onClick={() => copyTextSummary('client')}><Copy size={16} aria-hidden="true" /> Resumo cliente</button>
+                <button className={styles.btnSecondaryFull} onClick={() => copyTextSummary('internal')}><Copy size={16} aria-hidden="true" /> Resumo interno</button>
+                <button className={styles.btnPrimaryFull} onClick={openAIChat}><MessageCircle size={16} aria-hidden="true" /> Pedir ao Andor</button>
+              </div>
+            </section>
           </div>
         </div>
       </div>
       </ErrorBoundary>
+
+      <Modal
+        isOpen={bookingSuccessModal}
+        onClose={() => setBookingSuccessModal(false)}
+        title="Reserva Confirmada!"
+      >
+        <div className={styles.successModalContent} data-testid="booking-success-modal">
+          <div className={styles.successIconWrapper}>
+            <CheckCircle2 size={48} className={styles.successIcon} />
+          </div>
+          <h3>A tua viagem está reservada com sucesso!</h3>
+          <p>
+            Processámos o pagamento e enviámos os detalhes de reserva para a nossa equipa operacional.
+            O teu plano de reservas e checklist foram marcados como <strong>Confirmado</strong>.
+          </p>
+          <div className={styles.successDetails}>
+            {selectedFlight && <div>✈️ Voo: {selectedFlight.airline} ({selectedFlight.flightNumber})</div>}
+            {selectedHotel && <div>🏨 Hotel: {selectedHotel.name}</div>}
+            {selectedInsurance && <div>🛡️ {selectedInsurance.name}</div>}
+          </div>
+          <button className="btn btn-primary" onClick={() => setBookingSuccessModal(false)}>
+            Ver Itinerário
+          </button>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={showAdaptModal}
@@ -1481,15 +2352,54 @@ export default function ItineraryPage() {
         onClose={() => setShowShareModal(false)}
         title="Partilhar Itinerário"
       >
+        <div className={styles.shareAudienceToggle}>
+          <label className={`${styles.shareRadio} ${shareAudience === 'client' ? styles.shareRadioActive : ''}`}>
+            <input type="radio" name="shareAudience" value="client" checked={shareAudience === 'client'} onChange={(e) => handleShareAudienceChange(e.target.value)} />
+            <span>Cliente</span>
+          </label>
+          <label className={`${styles.shareRadio} ${shareAudience === 'internal' ? styles.shareRadioActive : ''}`}>
+            <input type="radio" name="shareAudience" value="internal" checked={shareAudience === 'internal'} onChange={(e) => handleShareAudienceChange(e.target.value)} />
+            <span>Equipa interna</span>
+          </label>
+        </div>
+        <label className={styles.shareExpiry}>
+          <span>Validade do link</span>
+          <select value={shareExpiresInDays} onChange={(event) => handleShareExpiryChange(event.target.value)} disabled={shareLoading}>
+            <option value={1}>1 dia</option>
+            <option value={7}>7 dias</option>
+            <option value={30}>30 dias</option>
+            <option value={90}>90 dias</option>
+          </select>
+        </label>
         <div className={styles.sharePreview}>
-          <span>URL privada deste roteiro</span>
-          <input value={shareUrl} readOnly aria-label="URL de partilha" />
-          <span>Este link usa armazenamento local deste navegador. Para partilha garantida, exporta também o PDF.</span>
+          <span>URL segura deste roteiro</span>
+          <div className={styles.shareUrlField}>
+            {shareLoading && <Loader2 size={18} className={styles.shareSpinner} aria-hidden="true" />}
+            <input value={shareLoading ? 'A criar link seguro...' : shareUrl} readOnly aria-label="URL de partilha" />
+          </div>
+          {shareError && <span className={styles.shareError} role="alert">{shareError}</span>}
+          {!shareError && activeShare && (
+            <span>
+              {shareAudience === 'internal'
+                ? 'Apenas a sessão proprietária consegue abrir esta versão interna.'
+                : 'Qualquer pessoa com este link pode abrir a versão cliente até ao fim da validade.'}
+            </span>
+          )}
+          {activeShare?.expiresAt && (
+            <span>Expira em {new Date(activeShare.expiresAt).toLocaleString('pt-PT')}</span>
+          )}
         </div>
         <div className={styles.shareActions}>
-          <button className={styles.btnPrimary} onClick={copyShareUrl}>Copiar link</button>
-          <a className={styles.btnOutline} href={`https://wa.me/?text=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
-          <a className={styles.btnOutline} href={`mailto:?subject=${encodeURIComponent('O meu roteiro Andor')}&body=${encodeURIComponent(shareUrl)}`}>Email</a>
+          <button className={styles.btnPrimary} onClick={copyShareUrl} disabled={shareLoading}>Copiar link</button>
+          <button className={styles.btnOutline} onClick={() => copyTextSummary(shareAudience)}>Copiar resumo</button>
+          <button className={styles.btnOutline} onClick={() => handleExportPDF(shareAudience)}>PDF</button>
+          {shareUrl && <a className={styles.btnOutline} href={`https://wa.me/?text=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
+          {shareUrl && <a className={styles.btnOutline} href={`mailto:?subject=${encodeURIComponent('O meu roteiro Andor')}&body=${encodeURIComponent(shareUrl)}`}>Email</a>}
+          {activeShare && (
+            <button className={styles.btnDanger} onClick={revokeCurrentShare} type="button">
+              <Unlink size={16} aria-hidden="true" /> Revogar link
+            </button>
+          )}
         </div>
       </Modal>
 

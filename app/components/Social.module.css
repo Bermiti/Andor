@@ -283,7 +283,7 @@
 
 /* Filters Panel Styles */
 .filtersWrapper {
-  background: white;
+  background: var(--surface-card);
   border-radius: var(--radius-2xl);
   padding: var(--space-6);
   margin-bottom: var(--space-8);
@@ -337,7 +337,7 @@
   font-family: var(--font-body);
   font-size: var(--text-sm);
   outline: none;
-  background: white;
+  background: var(--surface-card);
   color: var(--navy);
   transition: all var(--transition-fast);
 }
@@ -512,7 +512,7 @@
 }
 
 .compareFloatingBtn:hover {
-  background: white;
+  background: var(--surface-card);
   transform: translateY(-1px);
 }
 
@@ -548,7 +548,7 @@
 }
 
 .compareModalContent {
-  background: white;
+  background: var(--surface-card);
   width: 100%;
   max-width: 900px;
   border-radius: var(--radius-3xl);

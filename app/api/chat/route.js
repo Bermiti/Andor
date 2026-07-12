@@ -127,7 +127,6 @@ TRANSPORT KNOWLEDGE:
 APPLICATION ACTIONS INTEGRATION:
 You can perform actions by appending at the end of your response:
 - [ACTION:save_itinerary] - Save current itinerary
-- [ACTION:open_map:lat,lng] - Center map on coordinates
 - [ACTION:add_favorites:slug] - Add to favorites
 - [ACTION:compare_destinations] - Compare destinations
 

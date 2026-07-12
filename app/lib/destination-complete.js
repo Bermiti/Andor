@@ -141,7 +141,7 @@ export const destinationData = {
       transport: 'JR Pass, IC Card (Suica/Pasmo), rede de metrô excepcional',
       language: 'Inglês limitado; apps de tradução essenciais',
       safety: 'Extremamente seguro, crime quase inexistente',
-      bestApps: 'Google Maps, Tabelog (restaurantes), Hyperdia (trens)',
+      bestApps: 'Tabelog (restaurantes), Hyperdia (trens), app local de metro',
     },
   },
 
@@ -263,7 +263,7 @@ export const destinationData = {
       transport: 'RATP (metrô/ônibus), bicicleta Vélib',
       language: 'Francês, inglês limitado; educado falar francês primeiro',
       safety: 'Seguro, mas cartécias em metrôs à noite',
-      bestApps: 'RATP App, Google Maps, TripAdvisor',
+      bestApps: 'RATP App, Citymapper, TripAdvisor',
     },
   },
 
@@ -378,7 +378,7 @@ export const destinationData = {
       transport: 'Motocicleta alugada é melhor; não dirija em Ubud',
       language: 'Indonésio/Balinês, inglês comum em turismo',
       safety: 'Seguro em geral, mas cuidado com moto e buzs',
-      bestApps: 'Google Maps, GrabBike, booking.com',
+      bestApps: 'GrabBike, app local de transportes, booking.com',
     },
   },
 };

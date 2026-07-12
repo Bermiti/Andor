@@ -1,6 +1,7 @@
 'use client';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Image from 'next/image';
+import { Compass, FileText, Search, Sparkles, WalletCards } from 'lucide-react';
 import styles from './HomeHero.module.css';
 
 const destinations = ['Tóquio', 'Paris', 'Nova Iorque', 'Roma', 'Lisboa', 'Bali'];
@@ -44,23 +45,20 @@ const bgImages = [
   'https://images.unsplash.com/photo-1504150558240-0b4fd8946624?q=80&w=800&auto=format&fit=crop'
 ];
 
-const chatSequence = [
+const salesChatSequence = [
   { type: 'user', text: 'Vou a Paris em Outubro com a minha namorada. 5 dias.' },
-  { type: 'ai', text: 'Fantástico! Paris no outono é mágico. Qual é o orçamento aproximado?' },
-  { type: 'user', text: 'Cerca de 1500€ para os dois, sem voos.' },
-  { type: 'ai', text: 'Perfeito. A desenhar um itinerário romântico e equilibrado: cafés em Le Marais, jantar no Sena e passeios artísticos...' }
+  { type: 'ai', text: 'Perfeito. Vou equilibrar bairros bonitos, reservas prioritárias e deslocações curtas.' },
+  { type: 'user', text: 'Orçamento de 1500€ para os dois, sem voos.' },
+  { type: 'ai', text: 'A criar um plano de 5 dias com custos por dia, reservas importantes e PDF para partilhar.' }
 ];
 
 export default function HomeHero({ onOpenWizard }) {
   const [destIndex, setDestIndex] = useState(0);
   const [query, setQuery] = useState('');
-  const [travelDate, setTravelDate] = useState('');
-  const [travelers, setTravelers] = useState('2');
   const [isFocused, setIsFocused] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState('');
   const [selectedDestinationName, setSelectedDestinationName] = useState('');
   const [chatStep, setChatStep] = useState(1);
-  const dateInputRef = useRef(null);
   const displayDestination = selectedDestinationName || destinations[destIndex];
 
   const filteredDestinations = useMemo(() => {
@@ -95,7 +93,7 @@ export default function HomeHero({ onOpenWizard }) {
 
   // Animate Chat Sequence
   useEffect(() => {
-    if (chatStep >= chatSequence.length) return;
+    if (chatStep >= salesChatSequence.length) return;
     
     const delays = [1000, 2000, 1500, 2500]; // simulate typing delays
     const timer = setTimeout(() => {
@@ -107,11 +105,9 @@ export default function HomeHero({ onOpenWizard }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    setIsFocused(false);
     if (onOpenWizard) {
-      onOpenWizard(query, 1, {
-        dates: { start: travelDate, end: '', flexible: false },
-        travelers: { adults: Math.max(1, Number.parseInt(travelers, 10) || 2), children: 0 },
-      });
+      onOpenWizard(query, 1);
     }
   };
 
@@ -121,7 +117,6 @@ export default function HomeHero({ onOpenWizard }) {
     setSelectedDestinationName(destination.city === 'Tokyo' ? 'Tóquio' : destination.city);
     setSelectedPhoto(`${destinationPhotos[destination.slug]}?auto=format&fit=crop&w=2200&q=85`);
     setIsFocused(false);
-    window.setTimeout(() => dateInputRef.current?.focus(), 80);
   };
 
   const renderHighlighted = (name) => {
@@ -151,7 +146,7 @@ export default function HomeHero({ onOpenWizard }) {
               height={600}
               className={styles.gridImg}
               style={{ animationDelay: `-${i * 2}s` }}
-              priority={i < 3}
+              loading={i < 6 ? 'eager' : 'lazy'}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               quality={75}
             />
@@ -167,7 +162,7 @@ export default function HomeHero({ onOpenWizard }) {
 
       <div className={styles.container}>
         <div className={styles.contentLeft}>
-          <div className="animate-fade-in-up">
+          <div>
             <h1 className={styles.title}>
               Descobre <br/>
               <span 
@@ -181,11 +176,17 @@ export default function HomeHero({ onOpenWizard }) {
                 }}
               >
                 {displayDestination}
-              </span>
+              </span>{' '}
+              com um concierge AI
             </h1>
             <p className={styles.subtitle}>
-              Bem-vindo à Andor, onde te ajudamos a planear viagens à tua maneira. Desde os voos e hotéis até à descoberta dos melhores restaurantes e roteiros. Diz-nos para onde queres ir, e nós planeamos a viagem de acordo com as tuas preferências!
+              Transforma uma ideia vaga num roteiro pronto a usar: dias estruturados, orçamento, reservas importantes e um dossier bonito para levar ou enviar.
             </p>
+            <div className={styles.statsBar} aria-label="Provas do produto">
+              <span><Sparkles size={14} aria-hidden="true" /> Plano em minutos</span>
+              <span><WalletCards size={14} aria-hidden="true" /> Orçamento claro</span>
+              <span><FileText size={14} aria-hidden="true" /> PDF partilhável</span>
+            </div>
 
             <form onSubmit={handleSearch} className={`${styles.searchForm} ${isFocused ? styles.focused : ''}`} data-testid="home-search-form">
               <div className={`${styles.fieldShell} ${styles.destinationShell}`}>
@@ -193,10 +194,7 @@ export default function HomeHero({ onOpenWizard }) {
                   Destino
                 </label>
                 <div className={styles.searchField}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  </svg>
+                  <Search size={22} aria-hidden="true" />
                   <input 
                     id="home-destination-input"
                     type="text" 
@@ -209,7 +207,7 @@ export default function HomeHero({ onOpenWizard }) {
                       setIsFocused(true);
                     }}
                     onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
+                    onBlur={() => window.setTimeout(() => setIsFocused(false), 120)}
                     className={styles.searchInput}
                     aria-label="Destino"
                     aria-expanded={isFocused && filteredDestinations.length > 0}
@@ -244,36 +242,8 @@ export default function HomeHero({ onOpenWizard }) {
               </div>
 
               <div className={styles.formControls}>
-                <label className={styles.fieldShell}>
-                  <span className={styles.fieldLabel}>Partida</span>
-                  <input
-                    ref={dateInputRef}
-                    type="date"
-                    value={travelDate}
-                    onChange={(event) => setTravelDate(event.target.value)}
-                    className={styles.compactInput}
-                    aria-label="Data de partida"
-                    data-testid="home-date-input"
-                  />
-                </label>
-                <label className={styles.fieldShell}>
-                  <span className={styles.fieldLabel}>Viajantes</span>
-                  <select
-                    value={travelers}
-                    onChange={(event) => setTravelers(event.target.value)}
-                    className={styles.compactInput}
-                    aria-label="Viajantes"
-                    data-testid="home-travellers-input"
-                  >
-                    <option value="1">1 viajante</option>
-                    <option value="2">2 viajantes</option>
-                    <option value="3">3 viajantes</option>
-                    <option value="4">4 viajantes</option>
-                    <option value="5">5+ viajantes</option>
-                  </select>
-                </label>
-                <button type="submit" className={styles.searchButton} data-testid="home-explore-button">
-                  Planear viagem
+                <button type="submit" className={styles.searchButton} onClick={handleSearch} data-testid="home-explore-button">
+                  Criar roteiro
                 </button>
               </div>
 
@@ -288,7 +258,7 @@ export default function HomeHero({ onOpenWizard }) {
           <div className={`${styles.chatShowcase} glass`}>
             <div className={styles.chatHeader}>
               <div className={styles.chatAvatar}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12 2.1 7.1"/></svg>
+                <Compass size={18} aria-hidden="true" />
               </div>
               <div className={styles.chatHeaderInfo}>
                 <h4>Andor Concierge</h4>
@@ -296,12 +266,12 @@ export default function HomeHero({ onOpenWizard }) {
               </div>
             </div>
             <div className={styles.chatBody}>
-              {chatSequence.slice(0, chatStep).map((msg, i) => (
+              {salesChatSequence.slice(0, chatStep).map((msg, i) => (
                 <div key={i} className={`${styles.chatMsg} ${msg.type === 'ai' ? styles.msgAi : styles.msgUser}`}>
                   {msg.text}
                 </div>
               ))}
-              {chatStep < chatSequence.length && chatSequence[chatStep].type === 'ai' && (
+              {chatStep < salesChatSequence.length && salesChatSequence[chatStep].type === 'ai' && (
                 <div className={`${styles.chatMsg} ${styles.msgAi} ${styles.typing}`}>
                   <span className={styles.dot}></span><span className={styles.dot}></span><span className={styles.dot}></span>
                 </div>

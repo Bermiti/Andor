@@ -15,6 +15,7 @@ create table if not exists public.profiles (
 create table if not exists public.itineraries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
+  owner_key text,
   destination text not null,
   destination_city text,
   destination_country text,
@@ -31,6 +32,11 @@ create table if not exists public.itineraries (
   updated_at timestamptz default now()
 );
 
+alter table public.itineraries add column if not exists owner_key text;
+update public.itineraries
+set owner_key = 'supabase:' || user_id::text
+where owner_key is null and user_id is not null;
+
 create unique index if not exists itineraries_share_token_idx on public.itineraries(share_token);
 create index if not exists itineraries_user_id_created_at_idx on public.itineraries(user_id, created_at desc);
 
@@ -42,6 +48,36 @@ create table if not exists public.itinerary_versions (
   itinerary jsonb not null,
   created_at timestamptz default now()
 );
+
+create table if not exists public.itinerary_shares (
+  id uuid primary key default gen_random_uuid(),
+  source_key text not null,
+  owner_key text not null,
+  token_hash text not null unique,
+  audience text not null check (audience in ('client', 'internal')),
+  payload jsonb not null,
+  expires_at timestamptz not null,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now(),
+  last_accessed_at timestamptz
+);
+
+create index if not exists itinerary_shares_owner_source_idx
+  on public.itinerary_shares(owner_key, source_key, created_at desc);
+create index if not exists itinerary_shares_expiry_idx
+  on public.itinerary_shares(expires_at) where revoked_at is null;
+
+create table if not exists public.trip_ledgers (
+  trip_key text not null,
+  owner_key text not null,
+  ledger jsonb not null default '{"participants":[],"expenses":[]}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (trip_key, owner_key)
+);
+
+create index if not exists trip_ledgers_owner_updated_idx
+  on public.trip_ledgers(owner_key, updated_at desc);
 
 create table if not exists public.newsletter_subscribers (
   id uuid primary key default gen_random_uuid(),
@@ -71,6 +107,8 @@ create table if not exists public.custom_requests (
 alter table public.profiles enable row level security;
 alter table public.itineraries enable row level security;
 alter table public.itinerary_versions enable row level security;
+alter table public.itinerary_shares enable row level security;
+alter table public.trip_ledgers enable row level security;
 alter table public.newsletter_subscribers enable row level security;
 alter table public.custom_requests enable row level security;
 
@@ -82,16 +120,17 @@ drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
 
 drop policy if exists "itineraries_select_own_or_shared" on public.itineraries;
-create policy "itineraries_select_own_or_shared" on public.itineraries for select using (user_id is null or auth.uid() = user_id);
+drop policy if exists "itineraries_select_own" on public.itineraries;
+create policy "itineraries_select_own" on public.itineraries for select using (auth.uid() = user_id);
 drop policy if exists "itineraries_insert_own" on public.itineraries;
-create policy "itineraries_insert_own" on public.itineraries for insert with check (user_id is null or auth.uid() = user_id);
+create policy "itineraries_insert_own" on public.itineraries for insert with check (auth.uid() = user_id);
 drop policy if exists "itineraries_update_own" on public.itineraries;
 create policy "itineraries_update_own" on public.itineraries for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 drop policy if exists "versions_select_own" on public.itinerary_versions;
-create policy "versions_select_own" on public.itinerary_versions for select using (user_id is null or auth.uid() = user_id);
+create policy "versions_select_own" on public.itinerary_versions for select using (auth.uid() = user_id);
 drop policy if exists "versions_insert_own" on public.itinerary_versions;
-create policy "versions_insert_own" on public.itinerary_versions for insert with check (user_id is null or auth.uid() = user_id);
+create policy "versions_insert_own" on public.itinerary_versions for insert with check (auth.uid() = user_id);
 
 drop policy if exists "newsletter_insert_anyone" on public.newsletter_subscribers;
 create policy "newsletter_insert_anyone" on public.newsletter_subscribers for insert with check (true);

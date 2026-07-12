@@ -89,16 +89,6 @@ export default function MealsSection({ meals, day }) {
                 )}
 
                 <div className={styles.mealActions}>
-                  {meal.googleMapsUrl && (
-                    <a
-                      href={meal.googleMapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.actionBtn}
-                    >
-                      Ver no Mapa
-                    </a>
-                  )}
                   {meal.bookingUrl && (
                     <a
                       href={meal.bookingUrl}

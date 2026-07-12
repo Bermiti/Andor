@@ -3,7 +3,33 @@
 // pre-built community itineraries by slug.
 
 import { safeParse } from './safe-json';
-import { getJson, setJson } from './storage';
+import { getJson, setJson, removeItem } from './storage';
+import { deriveTripStatus } from './trip-lifecycle';
+
+const TRIP_DATA_VERSION = 3;
+
+export function migrateTripData(trip) {
+  if (!trip) return null;
+
+  let migrated = { ...trip };
+  const currentVersion = migrated.dataVersion || 1;
+
+  if (currentVersion < 2) {
+    migrated.tripStatus = migrated.tripStatus || 'draft';
+    migrated.lastUpdated = migrated.lastUpdated || migrated.savedAt || new Date().toISOString();
+  }
+
+  if (currentVersion < 3) {
+    migrated.lifecycle = migrated.lifecycle || {};
+    if (!migrated.lifecycle.status) {
+      migrated.lifecycle.status = deriveTripStatus(migrated);
+    }
+    migrated.shareConfig = migrated.shareConfig || { visibility: 'private' };
+  }
+
+  migrated.dataVersion = TRIP_DATA_VERSION;
+  return migrated;
+}
 
 export function unwrapGeneratedItinerary(response) {
   if (!response || typeof response !== 'object') return response;
@@ -337,7 +363,7 @@ export function saveGeneratedItinerary(itinerary) {
   const normalizedInput = unwrapGeneratedItinerary(itinerary);
   const id = normalizedInput?.id || 'gen-' + Date.now();
   const savedAt = new Date().toISOString();
-  const stored = { ...normalizedInput, id, createdAt: normalizedInput?.createdAt || savedAt, savedAt: normalizedInput?.savedAt || savedAt };
+  const stored = migrateTripData({ ...normalizedInput, id, createdAt: normalizedInput?.createdAt || savedAt, savedAt: normalizedInput?.savedAt || savedAt, lastUpdated: savedAt });
   setJson(`andor_itinerary_${id}`, stored, 'session');
   setJson(`andor_itinerary_${id}`, stored, 'local');
   setJson(`andor_shared_${id}`, stored, 'local');
@@ -354,16 +380,128 @@ export function saveGeneratedItinerary(itinerary) {
 
 export function getItinerary(id) {
   // Session edits win so regenerated community trips survive refreshes.
-  const stored = getJson(`andor_itinerary_${id}`, null, 'session');
-  if (stored) return enrichItineraryData(stored);
+  let stored = getJson(`andor_itinerary_${id}`, null, 'session');
+  if (stored) return enrichItineraryData(migrateTripData(stored));
 
-  const persisted = getJson(`andor_itinerary_${id}`, null, 'local');
-  if (persisted) return enrichItineraryData(persisted);
+  let persisted = getJson(`andor_itinerary_${id}`, null, 'local');
+  if (persisted) return enrichItineraryData(migrateTripData(persisted));
 
   const community = communityItineraries[id];
-  if (community) return enrichItineraryData(community);
+  if (community) return enrichItineraryData(migrateTripData(community));
 
   return null;
+}
+
+export function updateSavedTrip(id, updater) {
+  if (!id || typeof window === 'undefined') return null;
+
+  let trip = getJson(`andor_itinerary_${id}`, null, 'local')
+    || getJson(`andor_itinerary_${id}`, null, 'session')
+    || communityItineraries[id]
+    || null;
+  if (!trip) return null;
+
+  trip = migrateTripData(trip);
+  const updated = updater(trip);
+  if (!updated || typeof updated !== 'object') return null;
+
+  updated.lastUpdated = new Date().toISOString();
+  updated.lifecycle = updated.lifecycle || {};
+  updated.lifecycle.status = deriveTripStatus(updated);
+
+  setJson(`andor_itinerary_${id}`, updated, 'session');
+  setJson(`andor_itinerary_${id}`, updated, 'local');
+  setJson(`andor_shared_${id}`, updated, 'local');
+
+  const savedTrips = getJson('andor_saved_trips', [], 'local') || [];
+  const summary = normalizeTripForJourney(updated, id);
+  if (summary) {
+    const idx = savedTrips.findIndex(t => t.id === id);
+    if (idx !== -1) {
+      savedTrips[idx] = summary;
+    } else {
+      savedTrips.unshift(summary);
+    }
+    setJson('andor_saved_trips', savedTrips.slice(0, 30), 'local');
+  }
+
+  return updated;
+}
+
+export function deleteSavedTrip(id) {
+  if (!id || typeof window === 'undefined') return false;
+
+  removeItem(`andor_itinerary_${id}`, 'local');
+  removeItem(`andor_itinerary_${id}`, 'session');
+  removeItem(`andor_shared_${id}`, 'local');
+  removeItem(`andor_itinerary_versions_${id}`, 'local');
+  removeItem(`andor_booking_checklist_${id}`, 'local');
+  removeItem(`andor_documents_checklist_${id}`, 'local');
+  removeItem(`andor_rental_car_${id}`, 'local');
+  removeItem(`andor_packing_${id}`, 'local');
+  removeItem(`andor_packing_checked_${id}`, 'local');
+
+  const savedTrips = getJson('andor_saved_trips', [], 'local') || [];
+  const deduped = savedTrips.filter((trip) => trip?.id !== id);
+  setJson('andor_saved_trips', deduped, 'local');
+
+  return true;
+}
+
+export function duplicateSavedTrip(id, newName) {
+  const trip = getItinerary(id);
+  if (!trip) return null;
+
+  const newId = 'gen-' + Date.now();
+  const duplicated = {
+    ...trip,
+    id: newId,
+    title: newName || `${trip.title || 'Viagem'} (Cópia)`,
+    createdAt: new Date().toISOString(),
+    savedAt: new Date().toISOString(),
+    lastUpdated: new Date().toISOString(),
+  };
+
+  saveGeneratedItinerary(duplicated);
+  return newId;
+}
+
+export function renameSavedTrip(id, newName) {
+  return updateSavedTrip(id, (trip) => {
+    return { ...trip, title: newName };
+  });
+}
+
+export function getTripOperationalSummary(trip) {
+  if (!trip) return null;
+
+  const bookingItems = trip.bookingChecklist?.items || [];
+  const requiredDocs = (trip.documentsChecklist?.items || []).filter(d => d.importance === 'required');
+  const backupPlans = trip.backupPlans?.items || [];
+
+  const bookingsReady = bookingItems.filter(i => ['booked', 'confirmed'].includes(i.status)).length;
+  const docsReady = requiredDocs.filter(d => ['ready', 'uploaded_confirmed', 'not_applicable'].includes(d.status)).length;
+
+  return {
+    status: trip.lifecycle?.status || deriveTripStatus(trip),
+    bookings: {
+      total: bookingItems.length,
+      ready: bookingsReady,
+      missing: bookingItems.length - bookingsReady,
+      isComplete: bookingItems.length > 0 && bookingsReady === bookingItems.length
+    },
+    documents: {
+      required: requiredDocs.length,
+      ready: docsReady,
+      missing: requiredDocs.length - docsReady,
+      isComplete: requiredDocs.length === 0 || docsReady === requiredDocs.length
+    },
+    backups: {
+      total: backupPlans.length,
+      isHealthy: backupPlans.length >= 8
+    },
+    lastUpdated: trip.lastUpdated || trip.savedAt
+  };
 }
 
 function getStorageEntries(kind) {
@@ -388,12 +526,22 @@ function getStorageEntries(kind) {
 
 function getDestinationLabel(itinerary) {
   if (!itinerary) return 'Viagem';
-  if (typeof itinerary.destination === 'string') return itinerary.destination;
-  return [
-    itinerary.destination?.city,
-    itinerary.destination?.name,
-    itinerary.destination?.country,
-  ].filter(Boolean).join(', ') || itinerary.title || 'Viagem';
+  const parts = typeof itinerary.destination === 'string'
+    ? itinerary.destination.split(',')
+    : [
+        itinerary.destination?.city,
+        itinerary.destination?.name,
+        itinerary.destination?.country,
+      ].filter(Boolean);
+
+  const cleanParts = parts
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .filter((part, index, list) => (
+      list.findIndex((candidate) => candidate.toLowerCase() === part.toLowerCase()) === index
+    ));
+
+  return cleanParts.join(', ') || itinerary.title || 'Viagem';
 }
 
 function getTripTotalCost(itinerary) {
@@ -412,16 +560,24 @@ export function normalizeTripForJourney(itinerary, fallbackId = null) {
 
   const days = Array.isArray(itinerary.days) ? itinerary.days : [];
   const trip = itinerary.trip || {};
+  const destination = getDestinationLabel(itinerary);
+  const title = itinerary.title
+    ? getDestinationLabel({ destination: itinerary.title })
+    : itinerary.title;
 
   return {
     ...itinerary,
     id,
-    destination: getDestinationLabel(itinerary),
+    title,
+    destination,
     days,
     daysCount: itinerary.daysCount || trip.totalDays || days.length || null,
     style: itinerary.style || trip.travelStyle || trip.groupType || null,
     totalCost: getTripTotalCost(itinerary),
     savedAt: itinerary.savedAt || itinerary.createdAt || new Date().toISOString(),
+    lastUpdated: itinerary.lastUpdated || itinerary.savedAt || new Date().toISOString(),
+    lifecycle: itinerary.lifecycle || { status: deriveTripStatus(itinerary) },
+    operationalStatus: getTripOperationalSummary(itinerary),
     viewHref: `/itinerary/${id}`,
   };
 }
@@ -430,9 +586,35 @@ export function getStoredJourneyTrips() {
   if (typeof window === 'undefined') return [];
 
   const byId = new Map();
+  const getTripSignature = (trip) => {
+    const firstDay = Array.isArray(trip.days) ? trip.days[0] : null;
+    const firstStop = Array.isArray(firstDay?.stops) ? firstDay.stops[0] : null;
+    return [
+      String(trip.destination || '').toLowerCase(),
+      String(trip.daysCount || trip.days?.length || '').toLowerCase(),
+      String(trip.style || '').toLowerCase(),
+      String(trip.totalCost || '').toLowerCase(),
+      String(firstDay?.title || '').toLowerCase(),
+      String(firstStop?.name || '').toLowerCase(),
+    ].join('|');
+  };
+  const getTripDisplayKey = (trip) => {
+    const normalizeKey = (value) => String(value || '').trim().toLowerCase();
+    const destinationKey = normalizeKey(trip.destination);
+    const titleKey = normalizeKey(trip.title);
+
+    if (!destinationKey) return titleKey || trip.id;
+    if (!titleKey || titleKey === destinationKey || titleKey.includes(destinationKey)) {
+      return destinationKey;
+    }
+
+    return `${destinationKey}|${titleKey}`;
+  };
+
   const addTrip = (trip, fallbackId = null) => {
     const normalized = normalizeTripForJourney(trip, fallbackId);
     if (!normalized) return;
+
     byId.set(normalized.id, {
       ...byId.get(normalized.id),
       ...normalized,
@@ -440,15 +622,33 @@ export function getStoredJourneyTrips() {
   };
 
   const savedTrips = getJson('andor_saved_trips', [], 'local') || [];
-  savedTrips.forEach((trip) => addTrip(trip));
+  savedTrips.forEach((trip) => addTrip(migrateTripData(trip)));
 
   const user = getJson('andor_user', null, 'local');
-  (user?.trips || []).forEach((trip) => addTrip(trip));
+  (user?.trips || []).forEach((trip) => addTrip(migrateTripData(trip)));
 
-  getStorageEntries('local').forEach(([id, trip]) => addTrip(trip, id));
-  getStorageEntries('session').forEach(([id, trip]) => addTrip(trip, id));
+  getStorageEntries('local').forEach(([id, trip]) => addTrip(migrateTripData(trip), id));
+  getStorageEntries('session').forEach(([id, trip]) => addTrip(migrateTripData(trip), id));
 
-  return Array.from(byId.values())
+  const bySignature = new Map();
+  Array.from(byId.values()).forEach((trip) => {
+    const signature = getTripSignature(trip);
+    const existing = bySignature.get(signature);
+    if (!existing || new Date(trip.savedAt || 0) > new Date(existing.savedAt || 0)) {
+      bySignature.set(signature, trip);
+    }
+  });
+
+  const byDisplay = new Map();
+  Array.from(bySignature.values()).forEach((trip) => {
+    const key = getTripDisplayKey(trip);
+    const existing = byDisplay.get(key);
+    if (!existing || new Date(trip.savedAt || 0) > new Date(existing.savedAt || 0)) {
+      byDisplay.set(key, trip);
+    }
+  });
+
+  return Array.from(byDisplay.values())
     .sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0))
     .slice(0, 30);
 }

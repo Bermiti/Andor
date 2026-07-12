@@ -321,7 +321,7 @@
 }
 
 [data-theme="light"] .activityCard {
-  background: #fff;
+  background: var(--surface-card);
 }
 
 [data-theme="light"] .activityName,

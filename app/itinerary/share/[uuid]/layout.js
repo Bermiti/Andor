@@ -1,6 +1,12 @@
 export const metadata = {
   title: 'Itinerário Partilhado · Andor',
   description: 'Vê este itinerário de viagem incrível gerado por inteligência artificial no Andor.',
+  referrer: 'no-referrer',
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
   openGraph: {
     title: 'Itinerário Partilhado · Andor',
     description: 'Vê este itinerário de viagem incrível gerado por inteligência artificial no Andor.',

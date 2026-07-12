@@ -158,6 +158,33 @@
   border-color: rgba(26, 34, 53, 0.12);
 }
 
+/* Keep the editorial system readable even when the global theme is light. */
+[data-theme="light"] .page {
+  background: linear-gradient(135deg, #0c0c0c 0%, #141414 58%, #101010 100%);
+  color: #f0ede8;
+}
+
+[data-theme="light"] .hero h1,
+[data-theme="light"] .featureCard h2,
+[data-theme="light"] .summaryCard strong,
+[data-theme="light"] .cta h2 {
+  color: #f0ede8;
+}
+
+[data-theme="light"] .hero p,
+[data-theme="light"] .featureCard p,
+[data-theme="light"] .summaryCard p,
+[data-theme="light"] .cta p {
+  color: #b8b1aa;
+}
+
+[data-theme="light"] .summaryCard,
+[data-theme="light"] .featureCard,
+[data-theme="light"] .cta {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 @media (max-width: 900px) {
   .hero,
   .featureGrid {

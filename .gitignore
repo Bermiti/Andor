@@ -21,6 +21,7 @@
 
 # production
 /build
+/.andor/
 
 # misc
 .DS_Store
@@ -44,3 +45,5 @@ next-env.d.ts
 
 # test results
 /test-results/
+/tmp/
+/output/

@@ -516,25 +516,6 @@
   animation: pulseLoading 1.5s infinite;
 }
 
-/* Inline maps */
-.inlineMapWrapper {
-  margin-top: 10px;
-}
-
-.mapLinkBtn {
-  display: inline-block;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--gold);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.mapLinkBtn:hover {
-  color: var(--gold-light);
-  text-decoration: underline;
-}
-
 /* Animations */
 @keyframes fadeInUp {
   from {

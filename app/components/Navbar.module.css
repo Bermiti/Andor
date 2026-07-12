@@ -271,7 +271,7 @@
   display: block;
   width: 20px;
   height: 2px;
-  background: #ffffff;
+  background: var(--surface-card);
   border-radius: var(--radius-full);
   transition: all var(--transition-base);
 }
@@ -786,5 +786,123 @@
   .commandBtn,
   .themeTogglePill {
     display: none !important;
+  }
+}
+
+/* Session 8 editorial navigation */
+.navbar,
+.navbar.scrolled {
+  position: sticky;
+  top: 0;
+  min-height: 64px;
+  padding: 0;
+  background: rgba(12, 12, 12, 0.85);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.inner {
+  height: 64px;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--color-primary);
+}
+
+.logo:hover {
+  color: var(--color-primary);
+}
+
+.link {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.link:hover,
+.linkActive {
+  color: var(--text-primary);
+}
+
+.link::after {
+  bottom: 8px;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+.linkActive::after {
+  width: 100%;
+}
+
+.linkActive::before,
+.linkDark,
+.logoDark {
+  display: none;
+}
+
+.loginBtn,
+.dashboardBtn,
+.langPill {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.dashboardBtn,
+.langPill,
+.userMenu,
+.loginBtnMobile,
+.userMenuItemMobile,
+.mobileThemeToggle,
+.mobileLangItem {
+  background: var(--surface-elevated);
+  border-color: rgba(255,255,255,0.10);
+}
+
+.ctaBtn,
+.ctaBtnMobile,
+.userAvatar,
+.themeToggleSlider,
+.themeToggleSliderLight {
+  background: var(--color-primary);
+  color: #0C0C0C;
+  box-shadow: none;
+}
+
+.userMenu {
+  border-radius: 8px;
+}
+
+.mobileToggle span {
+  background: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .navbar,
+  .navbar.scrolled {
+    min-height: 56px;
+  }
+
+  .inner {
+    height: 56px;
+  }
+
+  .links {
+    background: rgba(12,12,12,0.98);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding-top: 80px;
+  }
+
+  .link {
+    font-size: 18px;
   }
 }

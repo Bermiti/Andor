@@ -170,7 +170,7 @@ export const ITINERARY_SCHEMA = {
       },
     ],
     
-    usefulApps: ['string'], // e.g., ["Citymapper", "Google Maps"]
+    usefulApps: ['string'], // e.g., ["Citymapper", "Local transit app"]
     areasTowalk: ['string'], // e.g., ["Baixa district", "Belém"]
     areasToAvoidCar: ['string'], // e.g., ["Narrow streets of Alfama"]
     generalTips: ['string'],
@@ -195,7 +195,7 @@ export const ITINERARY_SCHEMA = {
               duration: 'string', // e.g., "1 hour"
               description: 'string',
               location: 'string', // Area where it is
-              coords: { lat: 'number', lng: 'number' }, // Optional GPS
+              coords: { lat: 'number', lng: 'number' }, // Optional coordinates
               cost: 'number', // Estimated cost in euros
               reservationNeeded: 'boolean',
               tips: ['string'],

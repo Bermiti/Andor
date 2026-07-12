@@ -40,7 +40,7 @@ export default function PricingPage() {
     },
     {
       q: "Como funciona a exportação de PDF no plano Pro?",
-      a: "No plano Pro, recebes um PDF premium completo, formatado para impressão ou leitura em dispositivos móveis, com mapas detalhados, endereços, direções passo a passo e as notas de segredos locais do Andor."
+      a: "No plano Pro, recebes um PDF premium completo, formatado para impressão ou leitura em dispositivos móveis, com endereços, prioridades de reserva, custos e notas de segredos locais do Andor."
     },
     {
       q: "O que é o suporte a multi-clientes no plano Agency?",

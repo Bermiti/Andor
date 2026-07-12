@@ -1178,7 +1178,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: white;
+  background: var(--surface-card);
   transition: transform 0.2s;
 }
 .toggleSwitch:checked::after {
@@ -1244,5 +1244,472 @@
     min-width: 36px;
     min-height: 36px;
     font-size: 0.85rem;
+  }
+}
+
+/* Product-quality planner states */
+.calendarDayDisabled,
+.calendarDayDisabled:hover {
+  color: var(--t-3);
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.draftStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  margin: -8px 0 20px;
+  padding: 7px 10px;
+  border: 1px solid var(--b-2);
+  border-radius: 6px;
+  color: var(--t-2);
+  background: var(--surface-soft);
+  font-size: 0.76rem;
+}
+
+.draftStatus span,
+.draftStatus button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.draftStatus button {
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 0;
+  color: var(--gold-light);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.flexibleDuration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid var(--b-gold);
+  border-radius: 8px;
+  background: var(--gold-dim);
+}
+
+.flexibleDuration > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.flexibleDuration strong {
+  color: var(--t-1);
+  font-size: 0.92rem;
+}
+
+.flexibleDuration span:not(.stepperValue) {
+  color: var(--t-2);
+  font-size: 0.78rem;
+}
+
+.flexibleDuration .stepper {
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.flexibleDuration .stepBtn {
+  width: 40px;
+  height: 40px;
+}
+
+.flexibleDuration .stepperValue {
+  min-width: 64px;
+  font-size: 0.95rem;
+}
+
+.assumptionsBox {
+  margin-top: 16px;
+  padding: 16px;
+  border-left: 3px solid var(--gold);
+  background: var(--surface-soft);
+}
+
+.assumptionsBox strong {
+  color: var(--t-1);
+  font-size: 0.88rem;
+}
+
+.assumptionsBox ul {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--t-2);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.generationError {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(201, 76, 76, 0.5);
+  border-radius: 8px;
+  color: #f2b1b1;
+  background: rgba(201, 76, 76, 0.1);
+}
+
+.generationError strong {
+  color: #ffd2d2;
+}
+
+.generationError p {
+  margin: 4px 0 10px;
+  color: var(--t-2);
+  font-size: 0.84rem;
+}
+
+.generationError button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(201, 76, 76, 0.55);
+  border-radius: 6px;
+  color: var(--t-1);
+  background: var(--surface-raised);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fakeProgressBar {
+  width: 45%;
+  animation: plannerProgress 1.8s ease-in-out infinite;
+}
+
+@keyframes plannerProgress {
+  0% { transform: translateX(-120%); }
+  55% { transform: translateX(90%); }
+  100% { transform: translateX(240%); }
+}
+
+@media (max-width: 768px) {
+  .draftStatus {
+    align-items: flex-start;
+    margin-top: -4px;
+  }
+
+  .draftStatus span {
+    max-width: 200px;
+  }
+
+  .flexibleDuration {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .flexibleDuration .stepper {
+    justify-content: space-between;
+  }
+
+  .assumptionsBox,
+  .generationError {
+    padding: 14px;
+  }
+}
+
+/* Session 8 conversational wizard */
+.wizardOverlay {
+  background: rgba(12,12,12,0.98);
+}
+
+.wizardBgMask {
+  background: linear-gradient(to top, rgba(12,12,12,0.96), rgba(12,12,12,0.78));
+}
+
+.wizardContainer {
+  width: min(1040px, calc(100vw - 48px));
+  min-height: min(82vh, 820px);
+  max-height: calc(100vh - 48px);
+  border-radius: 12px;
+  background: rgba(20,20,20,0.92);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 16px 40px rgba(0,0,0,0.32);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+
+.progressBar {
+  background: var(--color-primary);
+}
+
+.wizardContent {
+  gap: 24px;
+}
+
+.progressPills {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 48px 8px 0;
+}
+
+.progressPill {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.03);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.progressPillActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #0C0C0C;
+}
+
+.progressPillDone {
+  color: var(--color-primary);
+  border-color: rgba(201,168,76,0.28);
+}
+
+.stepTitle {
+  font-size: 32px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.stepSubtitle {
+  max-width: 720px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.contextCard,
+.followUpBox,
+.questionBlock,
+.estimateGrid > div {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.contextCard {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.contextCard strong,
+.followUpTitle,
+.questionBlock h3 {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.contextCard span,
+.choiceCard span,
+.estimateGrid span {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.choiceCard {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 96px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.choiceCard:hover {
+  border-color: rgba(201,168,76,0.34);
+  background: rgba(255,255,255,0.06);
+}
+
+.choiceCardActive {
+  border-color: var(--color-primary);
+  background: rgba(201,168,76,0.12);
+}
+
+.choiceCard strong {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.followUpBox,
+.questionBlock {
+  margin-top: 18px;
+}
+
+.followUpBox label {
+  display: grid;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.textInput {
+  min-height: 48px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  padding: 0 14px;
+  font-size: 16px;
+}
+
+.twoColumnFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.textArea {
+  min-height: 92px;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.45;
+  font-family: inherit;
+}
+
+.textArea::placeholder,
+.textInput::placeholder {
+  color: rgba(255,255,255,0.38);
+}
+
+.destToggle,
+.calendarContainer,
+.travelersBox,
+.sliderSection,
+.collapsibleSection,
+.summaryCard {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.destToggle.active,
+.badgeActive,
+.calendarDayStart,
+.calendarDayEnd,
+.nextBtn,
+.submitBtn {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #0C0C0C !important;
+  box-shadow: none !important;
+}
+
+.styleCard {
+  border-radius: 12px;
+}
+
+.styleCard.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+}
+
+.selectedMask {
+  background: linear-gradient(to bottom, rgba(12,12,12,0.18), rgba(12,12,12,0.78)) !important;
+}
+
+.rangeSlider::-webkit-slider-thumb {
+  background: var(--color-primary);
+}
+
+.toggleSwitch:checked {
+  background: var(--color-primary);
+}
+
+.summaryCard {
+  margin-top: 0;
+}
+
+.summaryTitle {
+  color: var(--color-primary);
+}
+
+.estimateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.estimateGrid > div {
+  display: grid;
+  gap: 6px;
+}
+
+.estimateGrid strong {
+  color: var(--text-primary);
+}
+
+.wizardFooter {
+  margin-top: auto;
+  border-top-color: rgba(255,255,255,0.08);
+}
+
+.backBtn {
+  border-color: rgba(255,255,255,0.10);
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .wizardContainer {
+    width: 100%;
+    max-height: none;
+    min-height: 100dvh;
+  }
+
+  .progressPills {
+    display: flex;
+    overflow-x: auto;
+    margin-right: 44px;
+    padding-bottom: 4px;
+  }
+
+  .progressPill {
+    padding: 0 12px;
+  }
+
+  .styleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .optionGrid,
+  .estimateGrid,
+  .statsBoxGrid {
+    grid-template-columns: 1fr;
   }
 }

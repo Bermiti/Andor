@@ -14,10 +14,10 @@ export default function MapPreview() {
   return (
     <section className={styles.mapSection} id="explore">
       <div className={styles.header}>
-        <span className="section-label">🗺️ Smart Navigation</span>
-        <h2 className="section-title">Your route, optimized and guided</h2>
+        <span className="section-label">Day Planning</span>
+        <h2 className="section-title">Your day, structured and easy to follow</h2>
         <p className="section-subtitle mx-auto">
-          Turn your itinerary into a GPS-guided experience with real-time directions, audio guides, and seamless stop transitions.
+          Turn a loose list of ideas into a realistic day with clear timing, nearby stops, and practical transitions.
         </p>
       </div>
 
@@ -28,7 +28,7 @@ export default function MapPreview() {
 
           <div className={styles.activeIndicator}>
             <span className={styles.activeDot}></span>
-            <span className={styles.activeText}>Live Navigation</span>
+            <span className={styles.activeText}>Day Flow</span>
           </div>
 
           {/* Route line SVG */}
@@ -67,7 +67,7 @@ export default function MapPreview() {
         </div>
 
         <div className={styles.timeline}>
-          <h3 className={styles.timelineTitle}>📋 Today's Route</h3>
+          <h3 className={styles.timelineTitle}>Today's Flow</h3>
           {stops.map((stop, i) => (
             <div key={i} className={styles.timelineItem}>
               <div className={styles.timelineLine}>

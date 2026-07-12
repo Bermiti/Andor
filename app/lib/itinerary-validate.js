@@ -22,6 +22,7 @@ export const DESTINATION_BOUNDS = {
   porto: { latMin: 41.0, latMax: 41.3, lngMin: -8.8, lngMax: -8.45, center: { lat: 41.1579, lng: -8.6291 } },
   madrid: { latMin: 40.25, latMax: 40.6, lngMin: -3.9, lngMax: -3.45, center: { lat: 40.4168, lng: -3.7038 } },
   berlin: { latMin: 52.35, latMax: 52.7, lngMin: 13.1, lngMax: 13.65, center: { lat: 52.5200, lng: 13.4050 } },
+  reykjavik: { latMin: 64.0, latMax: 64.25, lngMin: -22.1, lngMax: -21.7, center: { lat: 64.1466, lng: -21.9426 } },
 };
 
 const DESTINATION_DEFAULTS = {
@@ -41,6 +42,7 @@ const DESTINATION_DEFAULTS = {
   porto: { country: 'Portugal', countryCode: 'PT', flag: 'PT', timezone: 'Europe/Lisbon', currency: { code: 'EUR', symbol: 'EUR' } },
   madrid: { country: 'Spain', countryCode: 'ES', flag: 'ES', timezone: 'Europe/Madrid', currency: { code: 'EUR', symbol: 'EUR' } },
   berlin: { country: 'Germany', countryCode: 'DE', flag: 'DE', timezone: 'Europe/Berlin', currency: { code: 'EUR', symbol: 'EUR' } },
+  reykjavik: { country: 'Iceland', countryCode: 'IS', flag: 'IS', timezone: 'Atlantic/Reykjavik', currency: { code: 'ISK', symbol: 'ISK' } },
   'new york': { country: 'United States', countryCode: 'US', flag: 'US', timezone: 'America/New_York', currency: { code: 'USD', symbol: 'USD' } },
   newyork: { country: 'United States', countryCode: 'US', flag: 'US', timezone: 'America/New_York', currency: { code: 'USD', symbol: 'USD' } },
   nyc: { country: 'United States', countryCode: 'US', flag: 'US', timezone: 'America/New_York', currency: { code: 'USD', symbol: 'USD' } },

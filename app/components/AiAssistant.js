@@ -362,13 +362,6 @@ export default function AiAssistant() {
       }
     }
 
-    // 2. Intent detection fallbacks (coordinates)
-    let coords = null;
-    const arrayMatch = text.match(/\[\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s+\]/) || text.match(/\[\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/);
-    if (arrayMatch) {
-      coords = [parseFloat(arrayMatch[1]), parseFloat(arrayMatch[2])];
-    }
-
     const parsedHotels = [];
     const parsedFlights = [];
     const parsedRestaurants = [];
@@ -391,31 +384,6 @@ export default function AiAssistant() {
         });
       }
     }
-
-    const renderInlineMap = (lat, lng) => {
-      const bbox = `${lng - 0.01},${lat - 0.01},${lng + 0.01},${lat + 0.01}`;
-      const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${lat}%2C${lng}`;
-      return (
-        <div className={styles.inlineMapWrapper}>
-          <iframe
-            width="100%"
-            height="180"
-            frameBorder="0"
-            scrolling="no"
-            src={embedUrl}
-            style={{ border: '1px solid rgba(212, 168, 67, 0.3)', borderRadius: '8px', marginTop: '8px' }}
-          ></iframe>
-          <a 
-            href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={styles.mapLinkBtn}
-          >
-            🗺️ Abrir no Google Maps
-          </a>
-        </div>
-      );
-    };
 
     // Inline cards regex parser
     const parts = text.split(/(\[HOTEL:[^\]]+\]|\[RESTAURANT:[^\]]+\]|\[FLIGHT:[^\]]+\])/g);
@@ -476,12 +444,12 @@ export default function AiAssistant() {
                 </div>
                 <p className={styles.cardText}>{note}</p>
                 <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`}
+                  href={`https://www.google.com/search?q=${encodeURIComponent(name)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.cardActionLink}
                 >
-                  Ver no Google Maps →
+                  Ver detalhes →
                 </a>
               </div>
             );
@@ -514,8 +482,6 @@ export default function AiAssistant() {
           }
           return null;
         })}
-
-        {coords && renderInlineMap(coords[0], coords[1])}
 
         {parsedHotels.map((hotel, idx) => (
           <div key={`p-hotel-${idx}`} className={styles.inlineCard}>

@@ -53,8 +53,14 @@ test.describe('Sprint 1 itinerary acceptance', () => {
     await day2Btn.click();
     await expect(page.locator('h2', { hasText: 'Shibuya Pulse' })).toBeVisible();
 
-    // Verify activity cards render (look for an action button present in stop cards)
-    await expect(page.locator('text=Ver no Mapa').first()).toBeVisible();
+    // Verify activity cards render without relying on map actions.
+    const firstActivityCard = page.getByTestId('activity-card').first();
+    await expect(firstActivityCard).toBeVisible();
+    const saveAction = firstActivityCard.locator('button:has-text("Guardar"), button:has-text("Guardado")').first();
+    if (!(await saveAction.isVisible().catch(() => false))) {
+      await firstActivityCard.locator('button').first().click();
+    }
+    await expect(saveAction).toBeVisible();
 
     // Save/Favourite an activity: set `andor_favorites` in localStorage and verify UI reflects it after reload
     const firstStop = tokyo.days[0].stops[0];
@@ -77,13 +83,8 @@ test.describe('Sprint 1 itinerary acceptance', () => {
     await day1Btn.click();
     await expect(day1Btn).toBeVisible();
 
-    // Map renders or graceful fallback - check for leaflet container
-    const leafletCount = await page.locator('.leaflet-container').count();
-    if (leafletCount === 0) {
-      test.info().annotations.push({ type: 'manual', description: 'Leaflet container not found; manual verification required for map rendering.' });
-    } else {
-      expect(leafletCount).toBeGreaterThan(0);
-    }
+    // Map surface was intentionally removed from itinerary pages.
+    await expect(page.locator('.leaflet-container')).toHaveCount(0);
 
     // Malformed shared itinerary: navigate to bad payload
     const badPayload = Buffer.from('this is not json').toString('base64');

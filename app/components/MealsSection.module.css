@@ -156,7 +156,7 @@
 }
 
 [data-theme="light"] .mealCard {
-  background: #fff;
+  background: var(--surface-card);
   border-color: rgba(0, 0, 0, 0.1);
 }
 

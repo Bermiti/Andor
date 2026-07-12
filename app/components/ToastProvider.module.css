@@ -21,7 +21,7 @@
   border: 1px solid var(--b-2);
   border-left: 4px solid var(--sky);
   border-radius: var(--control-radius, 8px);
-  background: rgba(13, 18, 29, 0.92);
+  background: #1C1C1C;
   color: var(--t-1);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
   backdrop-filter: blur(18px);
@@ -88,35 +88,35 @@
 }
 
 .success {
-  border-left-color: var(--teal);
+  border-left-color: var(--color-success);
 }
 
 .success .toastIcon {
-  background: color-mix(in srgb, var(--teal) 22%, transparent);
-  color: var(--teal);
+  background: color-mix(in srgb, var(--color-success) 22%, transparent);
+  color: var(--color-success);
 }
 
 .error {
-  border-left-color: var(--coral);
+  border-left-color: var(--color-error);
 }
 
 .error .toastIcon,
 .warning .toastIcon {
-  background: color-mix(in srgb, var(--coral) 20%, transparent);
-  color: var(--coral);
+  background: color-mix(in srgb, var(--color-error) 20%, transparent);
+  color: var(--color-error);
 }
 
 .warning {
-  border-left-color: var(--gold);
+  border-left-color: var(--color-warning);
 }
 
 .warning .toastIcon {
-  background: color-mix(in srgb, var(--gold) 22%, transparent);
-  color: var(--gold);
+  background: color-mix(in srgb, var(--color-warning) 22%, transparent);
+  color: var(--color-warning);
 }
 
 .info {
-  border-left-color: var(--sky);
+  border-left-color: var(--color-primary);
 }
 
 @keyframes toastEnter {

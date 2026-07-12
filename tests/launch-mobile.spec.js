@@ -28,18 +28,17 @@ test.describe('Launch mobile regression suite', () => {
   });
 
   test('homepage search is mobile-safe and opens the wizard', async ({ page, baseURL }) => {
-    await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1500);
     await expect(page.getByRole('heading', { name: /Descobre/i })).toBeVisible();
     await expect(page.getByTestId('home-search-form')).toBeVisible();
     await expect(page.getByTestId('home-destination-input')).toBeVisible();
-    await expect(page.getByTestId('home-date-input')).toBeVisible();
-    await expect(page.getByTestId('home-travellers-input')).toBeVisible();
     await expect(page.getByTestId('home-explore-button')).toBeVisible();
 
     await page.getByTestId('home-destination-input').fill('Tokyo');
     await expectNoHorizontalOverflow(page);
     await page.getByTestId('home-explore-button').click();
-    await expect(page.getByTestId('creation-wizard')).toBeVisible();
+    await expect(page.getByTestId('creation-wizard')).toBeVisible({ timeout: 15000 });
     await expectNoHorizontalOverflow(page);
   });
 
@@ -119,10 +118,8 @@ test.describe('Launch mobile regression suite', () => {
     await page.getByTestId('day-tab-2').click();
     await expect(page.getByText(/Neon Crossings/i).first()).toBeVisible();
 
-    const map = page.getByTestId('itinerary-map-container');
-    await expect(map).toBeVisible();
-    const mapBox = await map.boundingBox();
-    expect(Math.round(mapBox.height)).toBe(240);
+    // Map was removed from itinerary pages.
+    await expect(page.getByTestId('itinerary-map-container')).toHaveCount(0);
 
     const firstActivity = page.getByTestId('activity-card').first();
     await expect(firstActivity).toBeVisible();

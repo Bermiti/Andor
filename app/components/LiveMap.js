@@ -338,8 +338,10 @@ export default function LiveMap({ stops = [], destination = {}, currency = '€'
 
   useEffect(() => {
     const handleFlyTo = (e) => {
-      const { lat, lng } = e.detail;
-      if (mapInstanceRef.current) {
+      const coordinates = parseCoordinates(e.detail?.coordinates ?? e.detail);
+      const lat = Number(coordinates?.lat);
+      const lng = Number(coordinates?.lng);
+      if (mapInstanceRef.current && Number.isFinite(lat) && Number.isFinite(lng)) {
         mapInstanceRef.current.flyTo([lat, lng], 15, { animate: true, duration: 1.5 });
       }
     };

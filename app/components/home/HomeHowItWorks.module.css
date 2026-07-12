@@ -54,7 +54,7 @@
 }
 
 [data-theme="light"] .stepIcon {
-  background: #fff;
+  background: var(--surface-card);
   border-color: rgba(0,0,0,0.1);
   box-shadow: 0 0 0 8px var(--bg-0); /* Matches light theme bg */
 }
@@ -136,4 +136,28 @@
   .stepNum {
     font-size: 2.5rem;
   }
+}
+
+/* Session 8 dark home flow */
+.stepIcon,
+[data-theme="light"] .stepIcon {
+  background: var(--surface-card);
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 8px var(--color-background);
+}
+
+.iconActive {
+  background: var(--color-primary);
+  color: #0C0C0C;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 8px var(--color-background), 0 8px 24px rgba(0,0,0,0.28);
+}
+
+.stepTitle,
+[data-theme="light"] .stepTitle {
+  color: var(--text-primary);
+}
+
+.stepDesc {
+  color: var(--text-secondary);
 }

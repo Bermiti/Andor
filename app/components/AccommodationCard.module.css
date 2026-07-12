@@ -4,6 +4,9 @@
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -20,11 +23,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .hotelIcon {
   width: 32px;
   height: 32px;
+  flex: 0 0 32px;
   background: var(--bg-elevated);
   border: 1px solid var(--b-1);
   border-radius: 8px;
@@ -47,9 +52,11 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .name {
+  min-width: 0;
   font-size: 14px;
   font-weight: 700;
   color: var(--t-1);
@@ -60,6 +67,7 @@
 }
 
 .sourceBadge {
+  flex-shrink: 0;
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -103,6 +111,7 @@
   color: var(--t-2);
   margin: 0;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .footer {
@@ -111,6 +120,8 @@
   align-items: center;
   border-top: 1px solid var(--b-1);
   padding-top: 8px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .priceSection {
@@ -143,6 +154,7 @@
   font-weight: 600;
   text-decoration: none;
   transition: all 200ms;
+  flex-shrink: 0;
 }
 
 .bookBtn:hover {

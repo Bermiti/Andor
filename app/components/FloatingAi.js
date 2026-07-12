@@ -414,18 +414,7 @@ export default function FloatingAi() {
   const checkAndExecuteActions = (text) => {
     if (!text) return;
     
-    // 1. [ACTION:open_map:lat,lng]
-    const mapMatch = text.match(/\[ACTION:open_map:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\]/);
-    if (mapMatch) {
-      const lat = parseFloat(mapMatch[1]);
-      const lng = parseFloat(mapMatch[2]);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        window.dispatchEvent(new CustomEvent('andor-open-map', { detail: { lat, lng } }));
-        showToast('📍 A centrar o mapa na localização...');
-      }
-    }
-
-    // 2. [ACTION:save_itinerary]
+    // 1. [ACTION:save_itinerary]
     if (text.includes('[ACTION:save_itinerary]')) {
       const jsonMatch = text.match(/\{[\s\S]*?"destination"[\s\S]*?\}/);
       if (jsonMatch) {
@@ -444,7 +433,7 @@ export default function FloatingAi() {
       }
     }
 
-    // 3. [ACTION:add_favorites:slug]
+    // 2. [ACTION:add_favorites:slug]
     const favMatch = text.match(/\[ACTION:add_favorites:([^\]]+)\]/);
     if (favMatch) {
       const slug = favMatch[1];
@@ -927,19 +916,6 @@ export default function FloatingAi() {
       }
     }
 
-    // 2. Intent detection fallbacks
-    // Detect coordinates: e.g. [35.6762, 139.6503] or "lat: 35.6, lng: 139.6"
-    let coords = null;
-    const arrayMatch = text.match(/\[\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s+\]/) || text.match(/\[\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/);
-    if (arrayMatch) {
-      coords = [parseFloat(arrayMatch[1]), parseFloat(arrayMatch[2])];
-    } else {
-      const phraseMatch = text.match(/(?:lat|latitude)\s*[:=]?\s*(-?\d+(?:\.\d+)?)\s*,?\s*(?:lng|lon|longitude)\s*[:=]?\s*(-?\d+(?:\.\d+)?)/i);
-      if (phraseMatch) {
-        coords = [parseFloat(phraseMatch[1]), parseFloat(phraseMatch[2])];
-      }
-    }
-
     // Enhanced dynamic card parsing
     const parsedHotels = [];
     const parsedFlights = [];
@@ -1033,33 +1009,6 @@ export default function FloatingAi() {
       }
     }
 
-    const renderInlineMap = (lat, lng) => {
-      const bbox = `${lng - 0.01},${lat - 0.01},${lng + 0.01},${lat + 0.01}`;
-      const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${lat}%2C${lng}`;
-      return (
-        <div className={styles.inlineMapWrapper}>
-          <iframe
-            width="100%"
-            height="180"
-            frameBorder="0"
-            scrolling="no"
-            marginHeight="0"
-            marginWidth="0"
-            src={embedUrl}
-            style={{ border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px', marginTop: '8px' }}
-          ></iframe>
-          <a 
-            href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={styles.mapLinkBtn}
-          >
-            🗺️ Abrir no Google Maps
-          </a>
-        </div>
-      );
-    };
-
     // 3. Inline cards regex parser
     const parts = text.split(/(\[HOTEL:[^\]]+\]|\[RESTAURANT:[^\]]+\]|\[FLIGHT:[^\]]+\])/g);
     
@@ -1121,12 +1070,12 @@ export default function FloatingAi() {
                 </div>
                 <p className={styles.cardText}>{note}</p>
                 <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`}
+                  href={`https://www.google.com/search?q=${encodeURIComponent(name)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.cardActionLink}
                 >
-                  Ver no Google Maps →
+                  Ver detalhes →
                 </a>
               </div>
             );
@@ -1161,9 +1110,6 @@ export default function FloatingAi() {
           
           return null;
         })}
-
-        {/* Intent-based Widgets */}
-        {coords && renderInlineMap(coords[0], coords[1])}
 
         {/* Parsed Hotels */}
         {parsedHotels.map((hotel, idx) => (
@@ -1221,13 +1167,13 @@ export default function FloatingAi() {
               </div>
             </div>
             <p className={styles.cardText}>"{rest.desc}"</p>
-            <a 
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rest.name)}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent(rest.name)}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={styles.cardActionLink}
             >
-              Ver no Google Maps →
+              Ver detalhes →
             </a>
           </div>
         ))}

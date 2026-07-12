@@ -2,13 +2,12 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import styles from './ActivityCard.module.css';
-import { MapPin, Navigation, Lightbulb, Calendar, Bookmark, Map } from 'lucide-react';
+import { MapPin, Navigation, Lightbulb, Calendar, Bookmark } from 'lucide-react';
 
 export default function ActivityCard({
   activity,
   index,
   period,
-  onMapFocus,
   onSave,
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -20,16 +19,19 @@ export default function ActivityCard({
     evening: '#8B5CF6',
   };
 
-  const photoKeyword = activity?.photoKeyword || activity?.type || 'travel';
-  const photoUrl = `https://source.unsplash.com/400x200/?${photoKeyword}&sig=${activity?.id || index}`;
-  const photoFullUrl = `https://source.unsplash.com/800x300/?${photoKeyword}&sig=${activity?.id || index}-full`;
+  const photoKeyword = [
+    activity?.photoKeyword,
+    activity?.name,
+    activity?.address,
+    activity?.category || activity?.type,
+  ].filter(Boolean).join(' ').trim() || 'specific travel place';
+  const imageQuery = encodeURIComponent(photoKeyword);
+  const photoUrl = activity?.photo || `https://source.unsplash.com/400x200/?${imageQuery}&sig=${encodeURIComponent(activity?.id || activity?.name || index)}`;
+  const photoFullUrl = activity?.photo || `https://source.unsplash.com/800x300/?${imageQuery}&sig=${encodeURIComponent(`${activity?.id || activity?.name || index}-full`)}`;
 
   const handleExpandClick = (e) => {
     e.stopPropagation();
     setExpanded(!expanded);
-    if (!expanded && onMapFocus && activity?.coordinates) {
-      onMapFocus(activity.coordinates);
-    }
   };
 
   return (
@@ -37,9 +39,6 @@ export default function ActivityCard({
       className={`${styles.activityCard} ${expanded ? styles.expanded : ''}`}
       onClick={() => {
         setExpanded(!expanded);
-        if (!expanded && onMapFocus && activity?.coordinates) {
-          onMapFocus(activity.coordinates);
-        }
       }}
     >
       {/* COLLAPSED STATE */}
@@ -229,17 +228,6 @@ export default function ActivityCard({
 
         {/* Action buttons */}
         <div className={styles.activityActions}>
-          {activity?.coordinates && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${activity.coordinates[0]},${activity.coordinates[1]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${styles.btnSecondary}`}
-            >
-              <Map size={14} style={{ marginRight: 6 }} />
-              Ver no Mapa
-            </a>
-          )}
           {activity?.bookingRequired && activity?.bookingUrl && (
             <a
               href={activity.bookingUrl}

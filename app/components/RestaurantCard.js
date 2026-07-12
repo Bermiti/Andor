@@ -3,7 +3,7 @@
 import styles from './RestaurantCard.module.css';
 import { MapPin, Utensils, Star, Bookmark } from 'lucide-react';
 
-export default function RestaurantCard({ restaurant, onMapFocus }) {
+export default function RestaurantCard({ restaurant }) {
   if (!restaurant) return null;
 
   const { name, cuisine, rating, priceLevel, address, hours, mustTry, source } = restaurant;
@@ -44,17 +44,6 @@ export default function RestaurantCard({ restaurant, onMapFocus }) {
     if (src === 'foursquare') return 'Foursquare';
     if (src === 'opentripmap') return 'OpenTripMap';
     return 'Estimativa';
-  };
-
-  const handleOpenMap = (e) => {
-    e.stopPropagation();
-    if (onMapFocus && restaurant.coordinates) {
-      onMapFocus(restaurant.coordinates);
-    } else {
-      // fallback: open google maps search
-      const q = encodeURIComponent(`${name} ${address || ''}`);
-      window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank');
-    }
   };
 
   return (
@@ -102,9 +91,6 @@ export default function RestaurantCard({ restaurant, onMapFocus }) {
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.btnSecondary} onClick={handleOpenMap}>
-          <MapPin size={14} /> Ver no Mapa
-        </button>
         <button className={styles.btnIcon} aria-label="Guardar restaurante">
           <Bookmark size={14} />
         </button>

@@ -1,0 +1,298 @@
+.section,
+.empty {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: var(--space-5);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.title {
+  margin: 0;
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.progress {
+  min-width: 70px;
+  border: 1px solid rgba(212, 168, 67, 0.26);
+  border-radius: 8px;
+  background: rgba(212, 168, 67, 0.08);
+  padding: 0.5rem 0.65rem;
+  text-align: center;
+  color: var(--gold);
+}
+
+.progress strong,
+.progress span {
+  display: block;
+}
+
+.progress strong {
+  font-size: 1rem;
+}
+
+.progress span {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  margin-top: 0.1rem;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.groupHeader small {
+  margin-left: auto;
+  color: inherit;
+}
+
+.required {
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.recommended {
+  color: #fde68a;
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.optional {
+  color: #bfdbfe;
+  border-color: rgba(59, 130, 246, 0.28);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.items {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.item {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.item.ready {
+  border-color: rgba(34, 197, 94, 0.32);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.itemTop {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.itemText {
+  min-width: 0;
+}
+
+.itemTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.item h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.item p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.internalBadge {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.statusSelect,
+.notesField input {
+  min-height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 0 var(--space-3);
+  font: inherit;
+}
+
+.statusSelect {
+  max-width: 150px;
+}
+
+.statusActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.detailsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  cursor: pointer;
+}
+
+.detailsButton[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.statusSelect:focus,
+.notesField input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.metaGrid div {
+  min-width: 0;
+}
+
+.metaGrid dt,
+.notesField span {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metaGrid dd {
+  margin: 0.2rem 0 0;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.notesField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.notesField input {
+  width: 100%;
+}
+
+.source {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  color: var(--text-secondary) !important;
+  font-size: 0.76rem !important;
+}
+
+.source svg {
+  color: var(--gold);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .header,
+  .itemTop {
+    flex-direction: column;
+  }
+
+  .progress,
+  .statusSelect {
+    width: 100%;
+    max-width: none;
+  }
+
+  .statusActions {
+    width: 100%;
+  }
+
+  .statusActions .statusSelect {
+    flex: 1;
+  }
+}

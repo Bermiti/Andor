@@ -35,8 +35,8 @@ export default function LoginModal({ isOpen, onClose }) {
         setLoading(false);
         return;
       }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters.');
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters.');
         setLoading(false);
         return;
       }
@@ -122,6 +122,7 @@ export default function LoginModal({ isOpen, onClose }) {
               className={styles.input}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              minLength={isRegister ? 8 : 1}
             />
           </div>
 
