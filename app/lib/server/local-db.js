@@ -8,7 +8,12 @@ import { createIdentifier } from './security';
 let database = null;
 
 function databasePath() {
-  const configured = process.env.ANDOR_SQLITE_PATH;
+  const configured = process.env.ANDOR_SQLITE_PATH?.trim();
+  if (process.env.NODE_ENV === 'production' && !configured) {
+    throw new Error(
+      'Durable persistence is not configured. Set Supabase credentials or an explicit ANDOR_SQLITE_PATH for a persistent self-hosted deployment.'
+    );
+  }
   return configured ? resolve(configured) : join(process.cwd(), '.andor', 'andor.sqlite');
 }
 

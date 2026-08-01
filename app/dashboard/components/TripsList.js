@@ -28,7 +28,7 @@ export default function TripsList() {
         <div className={styles.emptyIcon}>✈️</div>
         <h3>You haven't saved any trips yet</h3>
         <p>Go to the home page, generate an itinerary with AI and click "Save Itinerary"!</p>
-        <a href="/#planner" className={styles.emptyBtn}>Generate Itinerary</a>
+        <a href="/?wizard=true" className={styles.emptyBtn}>Generate Itinerary</a>
       </div>
     );
   }

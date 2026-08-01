@@ -5,14 +5,12 @@ import Navbar from '../components/Navbar';
 import WorldMap from './components/WorldMap';
 import TripsList from './components/TripsList';
 import ExpenseSplitter from './components/ExpenseSplitter';
-import TravelBuddies from './components/TravelBuddies';
 import styles from './dashboard.module.css';
 
 const tabs = [
   { id: 'map', label: '🗺️ World Map', icon: '🗺️' },
   { id: 'trips', label: '✈️ Trips', icon: '✈️' },
   { id: 'expenses', label: '💰 Expenses', icon: '💰' },
-  { id: 'buddies', label: '🤝 Travel Buddies', icon: '🤝' },
 ];
 
 export default function Dashboard() {
@@ -96,7 +94,6 @@ export default function Dashboard() {
             {activeTab === 'map' && <WorldMap />}
             {activeTab === 'trips' && <TripsList />}
             {activeTab === 'expenses' && <ExpenseSplitter />}
-            {activeTab === 'buddies' && <TravelBuddies />}
           </div>
         </main>
       </div>

@@ -1,6 +1,7 @@
 import { generateFallbackAdaptedDay } from '../../lib/fallback-adapt';
 import { apiError, cleanInteger, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
+import { AI_MODELS } from '../../lib/server/ai-models';
 
 export async function POST(req) {
   try {
@@ -163,7 +164,7 @@ Use this exact structure for the day object:
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: AI_MODELS.groq,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: `Regenerate day ${dayNumber} according to constraints and user feedback.` }
@@ -208,7 +209,7 @@ Use this exact structure for the day object:
         const { z } = await import('zod');
 
         const { object } = await generateObject({
-          model: google('gemini-1.5-pro'),
+          model: google(AI_MODELS.google),
           schema: z.object({
             dayNumber: z.number(),
             title: z.string(),

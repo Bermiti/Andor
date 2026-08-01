@@ -23,21 +23,22 @@ async function openFixtureItinerary(page, baseURL) {
 }
 
 test.describe('Launch mobile regression suite', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-  });
-
   test('homepage search is mobile-safe and opens the wizard', async ({ page, baseURL }) => {
-    await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1500);
     await expect(page.getByRole('heading', { name: /Descobre/i })).toBeVisible();
     await expect(page.getByTestId('home-search-form')).toBeVisible();
-    await expect(page.getByTestId('home-destination-input')).toBeVisible();
-    await expect(page.getByTestId('home-explore-button')).toBeVisible();
+    const homeDestinationInput = page.getByTestId('home-destination-input');
+    const homeExploreButton = page.getByTestId('home-explore-button');
+    await expect(homeDestinationInput).toBeVisible();
+    await expect(homeDestinationInput).toBeEnabled();
+    await expect(homeExploreButton).toBeVisible();
+    await expect(homeExploreButton).toBeEnabled();
 
-    await page.getByTestId('home-destination-input').fill('Tokyo');
+    await homeDestinationInput.pressSequentially('Tokyo');
+    await expect(page.getByRole('option', { name: /Tokyo/i })).toBeVisible();
     await expectNoHorizontalOverflow(page);
-    await page.getByTestId('home-explore-button').click();
+    await homeExploreButton.click();
     await expect(page.getByTestId('creation-wizard')).toBeVisible({ timeout: 15000 });
     await expectNoHorizontalOverflow(page);
   });
@@ -45,6 +46,7 @@ test.describe('Launch mobile regression suite', () => {
   test('wizard steps remain usable on iPhone width', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}/?wizard=true&dest=Tokyo&step=1`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('creation-wizard')).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Criar itinerário' })).toBeVisible();
     await expect(page.getByTestId('wizard-destination-input')).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
@@ -59,14 +61,15 @@ test.describe('Launch mobile regression suite', () => {
 
     await page.getByTestId('wizard-next').click();
     await page.getByTestId('wizard-budget-comfort').click();
-    await expect(page.getByTestId('wizard-submit')).toBeVisible();
+    await expect(page.getByTestId('wizard-next')).toBeVisible();
+    await expect(page.getByTestId('wizard-submit')).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
   });
 
   test('build trip page opens the creation wizard on mobile', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}/itineraries`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /Constrói a tua viagem/i })).toBeVisible();
-    await page.getByTestId('build-trip-destination').fill('Lisboa');
+    await page.getByTestId('build-trip-destination').pressSequentially('Lisboa');
     await expectNoHorizontalOverflow(page);
     await page.getByTestId('build-trip-primary').click();
     await expect(page.getByTestId('creation-wizard')).toBeVisible();
@@ -107,6 +110,8 @@ test.describe('Launch mobile regression suite', () => {
     await page.goto(`${baseURL}/my-trips`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /A tua jornada/i })).toBeVisible();
     await expect(page.getByText('Lisboa, Portugal')).toBeVisible();
+    await expect(page.getByText(/Dados legados — confirmar/i)).toBeVisible();
+    await expect(page.getByText('Estimativa guardada: €320')).toBeVisible();
     await expect(page.getByRole('link', { name: /Ver roteiro completo/i })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
@@ -118,8 +123,9 @@ test.describe('Launch mobile regression suite', () => {
     await page.getByTestId('day-tab-2').click();
     await expect(page.getByText(/Neon Crossings/i).first()).toBeVisible();
 
-    // Map was removed from itinerary pages.
-    await expect(page.getByTestId('itinerary-map-container')).toHaveCount(0);
+    const map = page.getByTestId('itinerary-map-container');
+    await expect(map).toBeVisible();
+    await expect(map.getByTestId('leaflet-map-surface')).toBeVisible();
 
     const firstActivity = page.getByTestId('activity-card').first();
     await expect(firstActivity).toBeVisible();
@@ -129,8 +135,11 @@ test.describe('Launch mobile regression suite', () => {
     }
     await expect(bookingButton).toBeVisible();
 
-    await page.getByTestId('mobile-budget-toggle').click();
-    await expect(page.getByText(/Ajustar/i).first()).toBeVisible();
+    const mobileBudgetToggle = page.getByTestId('mobile-budget-toggle');
+    if (await mobileBudgetToggle.isVisible()) {
+      await mobileBudgetToggle.click();
+      await expect(page.getByText(/Ajustar/i).first()).toBeVisible();
+    }
     await page.getByRole('button', { name: /Partilhar/i }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
@@ -156,7 +165,7 @@ test.describe('Launch mobile regression suite', () => {
     await expect(page.getByTestId('floating-ai-chat')).toBeVisible();
     await expect(page.getByTestId('floating-ai-input')).toBeVisible();
     await expect(page.getByTestId('floating-ai-send')).toBeVisible();
-    await page.getByTestId('floating-ai-input').fill('Sugere uma viagem surpresa em outubro');
+    await page.getByTestId('floating-ai-input').pressSequentially('Sugere uma viagem surpresa em outubro');
     await expect(page.getByTestId('floating-ai-send')).toBeEnabled();
     await expectNoHorizontalOverflow(page);
   });

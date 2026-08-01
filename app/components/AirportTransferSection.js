@@ -12,7 +12,7 @@ export default function AirportTransferSection({ airportTransfer }) {
     return (
       <div className={styles.empty}>
         <div className={styles.emptyIcon}>TR</div>
-        <p>Informações de transferência a carregar...</p>
+        <p>Sem dados de fornecedor para o transfer. Confirma opções e horários numa fonte oficial.</p>
       </div>
     );
   }

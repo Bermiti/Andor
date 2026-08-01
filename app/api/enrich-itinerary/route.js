@@ -9,8 +9,18 @@ export async function POST(req) {
       return apiError('MALFORMED_JSON', 'Falta o objeto "itinerary" no corpo do pedido.', 400, false);
     }
 
+    if (process.env.ANDOR_DISABLE_EXTERNAL_ENRICHMENT === '1') {
+      return NextResponse.json({
+        enriched: false,
+        source: 'external-enrichment-disabled',
+        days: body.itinerary.days || [],
+        transport: null,
+        accommodation: null,
+      });
+    }
+
     const { itinerary } = body;
-    const destinationCity = itinerary.destination?.city || itinerary.destination?.name || 'Lisboa';
+    const destinationCity = itinerary.destination?.city || itinerary.destination?.name || '';
     const country = itinerary.destination?.country || '';
     const startDate = itinerary.trip?.startDate || '';
 
@@ -28,9 +38,8 @@ export async function POST(req) {
             try {
               const enrichedAct = await enrichActivityData(act.name, destinationCity, country);
               act.description = enrichedAct.description || act.description;
-              act.hours = enrichedAct.hours || act.hours || '09:00 - 18:00';
-              act.cost = act.cost ?? (enrichedAct.fee || 0);
-              act.rating = enrichedAct.rating || act.rating || 4.5;
+              act.hours = enrichedAct.hours || act.hours;
+              act.cost = act.cost ?? enrichedAct.fee;
               if (enrichedAct.thumbnail) {
                 act.photo = enrichedAct.thumbnail;
               }
@@ -50,8 +59,8 @@ export async function POST(req) {
           try {
             const enrichedStop = await enrichActivityData(stop.name, destinationCity, country);
             stop.description = enrichedStop.description || stop.description;
-            stop.hours = enrichedStop.hours || stop.hours || '09:00 - 18:00';
-            stop.cost = stop.cost ?? (enrichedStop.fee || 0);
+            stop.hours = enrichedStop.hours || stop.hours;
+            stop.cost = stop.cost ?? enrichedStop.fee;
             if (enrichedStop.thumbnail) {
               stop.photo = enrichedStop.thumbnail;
             }
@@ -64,13 +73,14 @@ export async function POST(req) {
         }
       }
 
-      // 2. Enrich restaurants for lunch/dinner using day coordinates
-      // Default to city center coordinates if not specified
-      const lat = day.stops?.[0]?.coordinates?.[0] || itinerary.destination?.coordinates?.[0] || 38.7223;
-      const lng = day.stops?.[0]?.coordinates?.[1] || itinerary.destination?.coordinates?.[1] || -9.1393;
+      const coordinates = day.stops?.[0]?.coordinates || itinerary.destination?.coordinates;
+      const lat = Array.isArray(coordinates) ? coordinates[0] : coordinates?.lat ?? coordinates?.latitude;
+      const lng = Array.isArray(coordinates) ? coordinates[1] : coordinates?.lng ?? coordinates?.lon ?? coordinates?.longitude;
 
       try {
-        const restaurants = await enrichRestaurantsData(lat, lng, destinationCity);
+        const restaurants = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
+          ? await enrichRestaurantsData(Number(lat), Number(lng), destinationCity)
+          : [];
         day.enrichedRestaurants = restaurants;
       } catch (err) {
         console.error(`Failed to enrich restaurants for day ${dayIndex + 1}:`, err);
@@ -83,7 +93,7 @@ export async function POST(req) {
     // 3. Enrich transport flights
     let transportResult = null;
     try {
-      const fromCity = body.preferences?.departureCity || 'Lisboa';
+      const fromCity = body.preferences?.departureCity || '';
       transportResult = await enrichTransportData(fromCity, destinationCity, startDate);
     } catch (err) {
       console.error('Failed to enrich transport:', err);
@@ -96,15 +106,7 @@ export async function POST(req) {
       enriched: true,
       days: enrichedDays,
       transport: transportResult,
-      accommodation: {
-        recommendedArea: 'Centro da Cidade',
-        whyRecommended: 'Excelente acesso a transportes e proximidade a pé para a maioria das atrações sugeridas.',
-        hotels: [
-          { name: 'Andor Boutique Stay', stars: 4, rating: 9.2, pricePerNight: '€95', description: 'Boutique hotel charmoso com pequeno-almoço artesanal incluído.', source: 'estimated' },
-          { name: 'City Center Hostel', stars: 3, rating: 8.8, pricePerNight: '€35', description: 'Design hostel limpo e moderno, ideal para viajantes individuais e jovens casais.', source: 'estimated' },
-          { name: 'The Grand Palace Hotel', stars: 5, rating: 9.6, pricePerNight: '€220', description: 'Estadia de luxo com spa completo, bar no rooftop e vistas deslumbrantes.', source: 'estimated' }
-        ]
-      }
+      accommodation: null,
     });
   } catch (error) {
     console.error('Enrichment route error:', error);

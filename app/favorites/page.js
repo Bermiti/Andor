@@ -34,19 +34,7 @@ export default function FavoritesPage() {
           setFavDestinations([]);
         }
       } else {
-        // Fallback demo destination if none favorited yet to make page alive
-        const demoDest = [
-          {
-            slug: 'tokyo',
-            city: 'Tokyo',
-            country: 'Japão',
-            flag: '🇯🇵',
-            image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=75&auto=format&fit=crop',
-            dateSaved: new Date().toLocaleDateString('pt-PT')
-          }
-        ];
-        localStorage.setItem('andor_favorite_destinations', JSON.stringify(demoDest));
-        setFavDestinations(demoDest);
+        setFavDestinations([]);
       }
 
       // Load activities
@@ -58,22 +46,7 @@ export default function FavoritesPage() {
           setFavActivities([]);
         }
       } else {
-        // Fallback demo activities
-        const demoActs = [
-          {
-            id: 'shibuya-crossing',
-            name: 'Shibuya Crossing',
-            type: 'Icónico',
-            cost: 'Grátis',
-            duration: '30min',
-            city: 'Tokyo',
-            destinationSlug: 'tokyo',
-            image: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&q=75&auto=format&fit=crop',
-            dateSaved: new Date().toLocaleDateString('pt-PT')
-          }
-        ];
-        localStorage.setItem('andor_favorite_activities', JSON.stringify(demoActs));
-        setFavActivities(demoActs);
+        setFavActivities([]);
       }
 
       // Load itineraries
@@ -105,30 +78,7 @@ export default function FavoritesPage() {
       if (storedItins.length > 0) {
         setFavItineraries(storedItins);
       } else {
-        // Demo itinerary
-        const demoItins = [
-          {
-            id: 'demo-tokyo-5d',
-            destination: 'Tokyo, Japão',
-            daysCount: 5,
-            style: 'Cultural',
-            createdDate: new Date().toLocaleDateString('pt-PT'),
-            totalCost: '€1.480',
-            score: 94,
-            season: 'Setembro'
-          },
-          {
-            id: 'demo-paris-5d',
-            destination: 'Paris, França',
-            daysCount: 5,
-            style: 'Romance/Cultura',
-            createdDate: new Date().toLocaleDateString('pt-PT'),
-            totalCost: '€1.800',
-            score: 96,
-            season: 'Abril'
-          }
-        ];
-        setFavItineraries(demoItins);
+        setFavItineraries([]);
       }
       setLoaded(true);
     };
@@ -217,14 +167,12 @@ export default function FavoritesPage() {
   };
 
   const getTripNotes = (trip) => {
-    const destination = String(trip.destination || '').toLowerCase();
-    if (destination.includes('tokyo') || destination.includes('jap')) {
-      return ['✅ Visa-free', '✅ Very safe', '⚠️ Cash still useful', '🔌 Adaptor req.'];
-    }
-    if (destination.includes('paris') || destination.includes('fran')) {
-      return ['✅ Visa-free', '✅ Card friendly', '⚠️ Book museums', '🔌 Same plug EU'];
-    }
-    return ['✅ Easy entry', '✅ Good value', '⚠️ Check season', '🔌 Confirm plug'];
+    return [
+      'Verificar requisitos oficiais de entrada',
+      'Consultar recomendações oficiais de segurança',
+      'Confirmar meios de pagamento aceites',
+      'Confirmar tomadas e adaptador',
+    ];
   };
 
   // Group activities by destination city
@@ -364,7 +312,7 @@ export default function FavoritesPage() {
                 <MapPin size={48} strokeWidth={1.5} className={styles.emptySvg} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
                 <h3>Nenhum destino nos favoritos</h3>
                 <p>Navega pelas páginas de destinos individuais ou conversa com o Andor para guardares os teus locais favoritos.</p>
-                <a href="/#destinos" className={styles.ctaExplore}>
+                <a href="/destinations" className={styles.ctaExplore}>
                   Descobrir Destinos
                 </a>
               </div>
@@ -389,17 +337,20 @@ export default function FavoritesPage() {
                           <div className={styles.actInfo}>
                             <h3 className={styles.actName}>{act.name}</h3>
                             <div className={styles.actMeta}>
-                              <span>⏱️ {act.duration}</span>
-                              <span>💰 {act.cost}</span>
+                              {act.duration && <span>⏱️ {act.duration}</span>}
+                              {act.cost && <span>💰 {act.cost}</span>}
+                              {!act.duration && !act.cost && <span>Detalhes não indicados</span>}
                             </div>
                             <p className={styles.destDate}>Guardado em {act.dateSaved}</p>
                             <div className={styles.actActions}>
-                              <a
-                                href={`/itinerary/${act.destinationSlug || 'tokyo'}#activity-${encodeURIComponent(act.name)}`}
-                                className={styles.secondaryBtn}
-                              >
-                                Ver no itinerário
-                              </a>
+                              {act.itineraryId && (
+                                <a
+                                  href={`/itinerary/${act.itineraryId}#activity-${encodeURIComponent(act.name)}`}
+                                  className={styles.secondaryBtn}
+                                >
+                                  Ver no itinerário
+                                </a>
+                              )}
                               <button
                                   onClick={() => requestRemove(act.id, 'act')}
                                   className={styles.removeBtn}
@@ -452,13 +403,13 @@ export default function FavoritesPage() {
                       <div>
                         <h3 className={styles.itinTitle}>{itin.destination}</h3>
                         <p className={styles.itinSubtitle}>
-                          {itin.daysCount || itin.days?.length || 5} dias · Estilo {itin.style || 'Custom'}
+                          {itin.daysCount || itin.days?.length || '—'} dias · Estilo {itin.style || 'Não indicado'}
                         </p>
                       </div>
                     </div>
                     <div className={styles.itinMeta}>
-                      <span>Custo Est.: {itin.totalCost || '€1.480'}</span>
-                      <span>Criado: {itin.createdDate || itin.savedAt ? new Date(itin.createdDate || itin.savedAt).toLocaleDateString('pt-PT') : new Date().toLocaleDateString('pt-PT')}</span>
+                      <span>{itin.totalCost ? `Custo estimado: ${itin.totalCost}` : 'Custo não calculado'}</span>
+                      <span>{itin.createdDate || itin.savedAt ? `Criado: ${new Date(itin.createdDate || itin.savedAt).toLocaleDateString('pt-PT')}` : 'Data não disponível'}</span>
                     </div>
                     <div className={styles.itinActions}>
                       <a href={`/itinerary/${itin.id}`} className={styles.primaryBtn}>
@@ -502,11 +453,11 @@ export default function FavoritesPage() {
             <div className={styles.compareTable}>
               {compareTrips.map((trip) => (
                 <article key={trip.id} className={styles.compareColumn}>
-                  <h3>{getTripCountryFlag(trip)} {getTripCity(trip)} <span>{trip.daysCount || trip.days?.length || 5} dias</span></h3>
-                  <p className={styles.comparePrice}>{trip.totalCost || '€1.480'}<small>/pessoa</small></p>
-                  <p>{trip.season || 'Melhor época'}</p>
-                  <p>Andor Score: <strong>{trip.score || 94}</strong></p>
-                  <p>{trip.style || 'Cultura/Food'}</p>
+                  <h3>{getTripCountryFlag(trip)} {getTripCity(trip)} <span>{trip.daysCount || trip.days?.length || '—'} dias</span></h3>
+                  <p className={styles.comparePrice}>{trip.totalCost || 'Custo não calculado'}{trip.totalCost && <small>/pessoa</small>}</p>
+                  <p>{trip.season || 'Época não indicada'}</p>
+                  <p>{Number.isFinite(Number(trip.score)) ? <>Andor Score: <strong>{trip.score}</strong></> : 'Sem score verificado'}</p>
+                  <p>{trip.style || 'Estilo não indicado'}</p>
                   <ul>
                     {getTripNotes(trip).map((note) => <li key={note}>{note}</li>)}
                   </ul>

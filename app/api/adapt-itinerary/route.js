@@ -1,6 +1,7 @@
 import { generateFallbackAdaptedDay } from '../../lib/fallback-adapt';
 import { apiError, cleanInteger, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
+import { AI_MODELS } from '../../lib/server/ai-models';
 
 export async function POST(req) {
   try {
@@ -61,7 +62,7 @@ export async function POST(req) {
         `;
 
         const { text } = await generateText({
-          model: google('gemini-1.5-pro'),
+          model: google(AI_MODELS.google),
           prompt: systemPrompt,
         });
         

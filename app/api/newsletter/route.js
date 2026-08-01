@@ -26,10 +26,18 @@ export async function POST(req) {
     },
   });
 
+  if (!result.ok) {
+    return apiError(
+      'PERSISTENCE_UNAVAILABLE',
+      'A subscrição não foi guardada. Tenta novamente mais tarde.',
+      503,
+      true
+    );
+  }
+
   return Response.json({
     ok: true,
     provider: result.provider,
     id: result.id || null,
-    fallback: !result.ok,
   });
 }

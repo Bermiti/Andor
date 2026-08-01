@@ -4,6 +4,62 @@ import { useEffect, useState } from 'react';
 import styles from './EnhancedActivityCard.module.css';
 import { MapPin, Navigation, Lightbulb, Calendar, Bookmark, Clock, Users, AlertCircle, Copy, CheckCircle2, StickyNote } from 'lucide-react';
 
+const VERIFIED_LOCATION_SOURCES = new Set(['nominatim', 'curated']);
+const AUTHORITATIVE_RATING_SOURCES = new Set([
+  'booking',
+  'booking.com',
+  'foursquare',
+  'google',
+  'google places',
+  'google_places',
+  'tripadvisor',
+  'yelp',
+]);
+
+function normalizeSource(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function formatSourceLabel(value) {
+  return String(value || '')
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getSourcedRating(activity) {
+  const rawRating = activity?.rating;
+  const rating = typeof rawRating === 'number'
+    ? rawRating
+    : Number.parseFloat(String(rawRating || '').replace(',', '.'));
+  const rawSource = activity?.ratingSource || activity?.reviewSource;
+  const source = normalizeSource(rawSource);
+
+  if (!Number.isFinite(rating) || rating <= 0 || rating > 10) return null;
+  if (!AUTHORITATIVE_RATING_SOURCES.has(source)) return null;
+
+  return {
+    value: String(rawRating).trim().replace(',', '.'),
+    source: formatSourceLabel(rawSource),
+  };
+}
+
+function currencyLabel(currency) {
+  if (typeof currency === 'string') return currency.trim();
+  return String(currency?.symbol || currency?.code || '').trim();
+}
+
+function formatCost(value, currency) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 0 || value === '0') return 'Grátis';
+  if (typeof value === 'string' && /^(free|gr[aá]tis)$/i.test(value.trim())) return 'Grátis';
+  if (typeof value === 'number') {
+    const label = currencyLabel(currency);
+    return Number.isFinite(value) && label ? `${label} ${value}` : null;
+  }
+  return String(value).trim() || null;
+}
+
 /**
  * ENHANCED ACTIVITY CARD
  * 
@@ -47,11 +103,13 @@ export default function EnhancedActivityCard({
     evening: '#8B5CF6',
   };
 
-  const isVerified = (
-    activity?.enrichmentSource &&
-    activity.enrichmentSource !== 'ai' &&
-    activity.enrichmentSource !== 'estimated'
-  ) || ['nominatim', 'curated'].includes(activity?.coordinateSource);
+  const hasVerifiedLocation = VERIFIED_LOCATION_SOURCES.has(normalizeSource(activity?.coordinateSource));
+  const sourcedRating = getSourcedRating(activity);
+  const costDisplay = formatCost(activity?.cost, activity?.currency);
+  const transportCostDisplay = formatCost(
+    activity?.transportFromPrevious?.cost,
+    activity?.transportFromPrevious?.currency || activity?.currency
+  );
 
   const buildImageQuery = () => {
     const raw = [
@@ -76,7 +134,8 @@ export default function EnhancedActivityCard({
 
   // Energy level indicator
   const getEnergyLevel = (act) => {
-    const energyRequired = act.energyRequired || 50;
+    const energyRequired = Number(act?.energyRequired);
+    if (!Number.isFinite(energyRequired)) return null;
     if (energyRequired >= 75) return { label: 'Muito intenso', color: '#EF4444', icon: '⚡' };
     if (energyRequired >= 50) return { label: 'Activo', color: '#F59E0B', icon: '✨' };
     if (energyRequired >= 25) return { label: 'Moderado', color: '#3B82F6', icon: '😌' };
@@ -87,7 +146,8 @@ export default function EnhancedActivityCard({
 
   // Crowd level
   const getCrowdLevel = (act) => {
-    const crowd = act.crowd || act.crowdLevel || 'medium';
+    const crowd = act?.crowd || act?.crowdLevel;
+    if (!crowd) return null;
     const c = String(crowd).toLowerCase();
     if (c.includes('low') || c.includes('baix')) return { label: 'Tranquilo', color: '#10B981' };
     if (c.includes('high') || c.includes('alt') || c.includes('muito')) return { label: 'Muito movimentado', color: '#EF4444' };
@@ -97,7 +157,7 @@ export default function EnhancedActivityCard({
   const crowd = getCrowdLevel(activity);
   const practicalDetails = [
     activity?.bestTime && { label: 'Melhor hora', value: activity.bestTime },
-    {
+    (typeof activity?.bookingRequired === 'boolean' || activity?.bookingTip) && {
       label: 'Reserva',
       value: activity?.bookingRequired
         ? activity?.bookingTip || 'Recomendada antes de fechar o resto do dia.'
@@ -156,14 +216,11 @@ export default function EnhancedActivityCard({
             {activity?.duration && (
               <span className={styles.metaPill}>⏱️ {activity.duration}</span>
             )}
-            <span className={styles.metaPill}>
-              💰{' '}
-              {activity?.cost === 0 || activity?.cost === '0' || activity?.cost === 'Grátis'
-                ? 'Grátis'
-                : typeof activity?.cost === 'number' ? `€${activity.cost}` : activity?.cost || 'Grátis'}
-            </span>
-            {activity?.rating && (
-              <span className={styles.metaPill}>⭐ {activity.rating}</span>
+            {costDisplay && (
+              <span className={styles.metaPill}>Custo estimado: {costDisplay}</span>
+            )}
+            {sourcedRating && (
+              <span className={styles.metaPill}>⭐ {sourcedRating.value} ({sourcedRating.source})</span>
             )}
           </div>
         </div>
@@ -210,12 +267,14 @@ export default function EnhancedActivityCard({
             {isDayHighlight && (
               <div className={styles.highlightBadge}>⭐ Destaque do dia</div>
             )}
-            <div className={styles.sourceTag}>
-              {isVerified ? (
-                <span className={styles.tagReal}>Dados verificados</span>
-              ) : (
-                <span className={styles.tagEstimated}>Sugestao Andor</span>
+            <div
+              className={styles.sourceTag}
+              style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 }}
+            >
+              {hasVerifiedLocation && (
+                <span className={styles.tagReal}>Localização verificada</span>
               )}
+              <span className={styles.tagEstimated}>Detalhes estimados</span>
             </div>
           </div>
 
@@ -273,28 +332,29 @@ export default function EnhancedActivityCard({
                 {activity.duration}
               </span>
             )}
-            <span className={styles.infoPill}>
-              💰{' '}
-              {activity?.cost === 0 || activity?.cost === '0' || activity?.cost === 'Grátis'
-                ? 'Grátis'
-                : typeof activity?.cost === 'number' ? `€${activity.cost}` : activity?.cost || 'Grátis'}
-            </span>
-            <span className={styles.infoPill}>
-              ⭐ {activity?.rating || '4.5'}
-            </span>
-            <span
-              className={styles.infoPill}
-              style={{ color: crowd.color, borderColor: crowd.color }}
-            >
-              <Users size={12} />
-              {crowd.label}
-            </span>
-            <span
-              className={styles.infoPill}
-              style={{ color: energy.color }}
-            >
-              {energy.icon} {energy.label}
-            </span>
+            {costDisplay && (
+              <span className={styles.infoPill}>Custo estimado: {costDisplay}</span>
+            )}
+            {sourcedRating && (
+              <span className={styles.infoPill}>⭐ {sourcedRating.value} ({sourcedRating.source})</span>
+            )}
+            {crowd && (
+              <span
+                className={styles.infoPill}
+                style={{ color: crowd.color, borderColor: crowd.color }}
+              >
+                <Users size={12} />
+                {crowd.label}
+              </span>
+            )}
+            {energy && (
+              <span
+                className={styles.infoPill}
+                style={{ color: energy.color }}
+              >
+                {energy.icon} {energy.label}
+              </span>
+            )}
             {activity?.hours && (
               <span className={styles.infoPill}>
                 🕐 {activity.hours}
@@ -330,12 +390,7 @@ export default function EnhancedActivityCard({
                 </div>
                 <div className={styles.transportMeta}>
                   <span>{activity.transportFromPrevious.duration}</span>
-                  <span>
-                    {activity.transportFromPrevious.cost === 0 ||
-                    activity.transportFromPrevious.cost === '0'
-                      ? 'Grátis'
-                      : `€${activity.transportFromPrevious.cost}`}
-                  </span>
+                  {transportCostDisplay && <span>Custo estimado: {transportCostDisplay}</span>}
                 </div>
                 {activity.transportFromPrevious.directions && (
                   <div className={styles.transportDirections}>

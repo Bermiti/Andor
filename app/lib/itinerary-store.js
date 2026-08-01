@@ -56,6 +56,11 @@ export function enrichItineraryData(itinerary) {
     return null;
   }
 
+  // Persistence hydration is shape-only. Provider/API enrichment happens in
+  // dedicated flows; stored values must never gain synthetic coordinates,
+  // costs, tips, or venue facts merely because they were read from storage.
+  return enriched;
+
   const coordsLookup = {
     // Lisbon
     'padaria da graça': { lat: 38.7180, lng: -9.1305 },
@@ -387,7 +392,16 @@ export function getItinerary(id) {
   if (persisted) return enrichItineraryData(migrateTripData(persisted));
 
   const community = communityItineraries[id];
-  if (community) return enrichItineraryData(migrateTripData(community));
+  if (community) {
+    return enrichItineraryData(migrateTripData({
+      ...community,
+      metadata: {
+        ...(community.metadata || {}),
+        source: 'curated-demo',
+        generationSource: 'fallback',
+      },
+    }));
+  }
 
   return null;
 }
@@ -526,13 +540,14 @@ function getStorageEntries(kind) {
 
 function getDestinationLabel(itinerary) {
   if (!itinerary) return 'Viagem';
-  const parts = typeof itinerary.destination === 'string'
-    ? itinerary.destination.split(',')
+  const rawParts = typeof itinerary.destination === 'string'
+    ? [itinerary.destination]
     : [
         itinerary.destination?.city,
         itinerary.destination?.name,
         itinerary.destination?.country,
       ].filter(Boolean);
+  const parts = rawParts.flatMap((part) => String(part || '').split(','));
 
   const cleanParts = parts
     .map((part) => String(part || '').trim())
@@ -545,11 +560,34 @@ function getDestinationLabel(itinerary) {
 }
 
 function getTripTotalCost(itinerary) {
-  const budget = itinerary?.trip?.budgetBreakdown?.grandTotal;
+  const breakdown = itinerary?.trip?.budgetBreakdown;
+  const budget = breakdown?.grandTotal;
   if (itinerary?.totalCost) return itinerary.totalCost;
   if (itinerary?.trip?.totalCost) return itinerary.trip.totalCost;
-  if (budget?.min && budget?.max) return `€${budget.min}-${budget.max}`;
-  if (budget?.min) return `€${budget.min}+`;
+
+  const currencyValue = breakdown?.currency
+    || itinerary?.trip?.currency
+    || itinerary?.destination?.currency
+    || itinerary?.currency;
+  const currencyCode = typeof currencyValue === 'object'
+    ? String(currencyValue?.code || '').toUpperCase()
+    : String(currencyValue || '').toUpperCase();
+  const explicitSymbol = typeof currencyValue === 'object' ? currencyValue?.symbol : '';
+  const currencySymbols = { EUR: '€', GBP: '£', JPY: '¥', USD: '$' };
+  const symbol = explicitSymbol || currencySymbols[currencyCode] || '';
+  const formatAmount = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return null;
+    const formatted = number.toLocaleString('pt-PT', { maximumFractionDigits: 2 });
+    if (symbol) return `${symbol}${formatted}`;
+    if (currencyCode) return `${currencyCode} ${formatted}`;
+    return `${formatted} (moeda por confirmar)`;
+  };
+
+  const minimum = formatAmount(budget?.min);
+  const maximum = formatAmount(budget?.max);
+  if (minimum && maximum) return `${minimum}–${maximum}`;
+  if (minimum) return `${minimum}+`;
   return null;
 }
 

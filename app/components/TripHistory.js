@@ -137,9 +137,31 @@ function getStopCount(trip) {
 }
 
 function getTripOverview(trip) {
-  return trip.tripOverview ||
-    trip.description ||
-    'Roteiro guardado, pronto para abrir, ajustar e transformar numa viagem real.';
+  const overviewSource = String(
+    trip.tripOverviewSource || trip.descriptionSource || trip.metadata?.overviewSource || ''
+  ).toLowerCase();
+
+  if (['provider', 'provider-api', 'official', 'user-confirmed'].includes(overviewSource)) {
+    return trip.tripOverview || trip.description;
+  }
+
+  return 'Proposta guardada. Confirma locais, horários, custos e disponibilidade nas fontes oficiais antes de viajar.';
+}
+
+function getTripProvenanceLabel(trip) {
+  const source = String(
+    trip.metadata?.generationSource || trip.generationSource || trip.source || ''
+  ).toLowerCase();
+
+  if (trip.metadata?.isDemo || source.includes('fallback') || source.includes('curated-demo')) {
+    return 'Demonstração — confirmar';
+  }
+
+  if (source.includes('gemini') || source.includes('groq') || source.includes('anthropic') || source.includes('ai')) {
+    return 'Proposta IA — confirmar';
+  }
+
+  return 'Dados legados — confirmar';
 }
 
 function TripCard({ trip, t, status = 'planned', featured = false, onRequestDelete, onOpenExpenses }) {
@@ -152,6 +174,7 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
   const savedLabel = formatTripDate(trip.savedAt);
   const stopCount = getStopCount(trip);
   const overview = getTripOverview(trip);
+  const provenanceLabel = getTripProvenanceLabel(trip);
   const toneLabel = status === 'completed' ? 'Memória guardada' : 'Próxima aventura';
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -184,7 +207,7 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
     if (!opStatus) return null;
     if (opStatus.status === 'ready_to_travel') return <span className={`${styles.opBadge} ${styles.opReady}`}><CheckCircle size={12}/> Pronto a Viajar</span>;
     if (opStatus.status === 'ready_to_send') return <span className={`${styles.opBadge} ${styles.opSend}`}><CheckCircle size={12}/> Pronto a Enviar</span>;
-    if (opStatus.bookings?.missing > 0) return <span className={`${styles.opBadge} ${styles.opMissing}`}><AlertCircle size={12}/> Faltam Reservas ({opStatus.bookings.missing})</span>;
+    if (opStatus.bookings?.missing > 0) return <span className={`${styles.opBadge} ${styles.opMissing}`}><AlertCircle size={12}/> Confirmar ({opStatus.bookings.missing})</span>;
     return <span className={`${styles.opBadge} ${styles.opDraft}`}>{opStatus.status === 'draft' ? 'Rascunho' : opStatus.status}</span>;
   };
 
@@ -224,7 +247,7 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
 
       <div className={styles.tripBody}>
         <div className={styles.tripTopline}>
-          <span className={styles.tripKicker}>{toneLabel}</span>
+          <span className={styles.tripKicker}>{toneLabel} · {provenanceLabel}</span>
           <div className={styles.tripToplineRight}>
             {renderOpBadge()}
             {savedLabel && (
@@ -252,9 +275,9 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
             </span>
           ) : null}
           {trip.totalCost ? (
-            <span className={styles.metaTag}>
+            <span className={styles.metaTag} title="Valor guardado como estimativa, sem confirmação de fornecedor">
               <WalletCards size={14} />
-              {trip.totalCost}
+              Estimativa guardada: {trip.totalCost}
             </span>
           ) : null}
           {trip.style ? (
@@ -379,7 +402,7 @@ export default function TripHistory({ trips = [], visitedCountries = [] }) {
     { id: 'planned', label: 'Próximas', count: planned.length },
     { id: 'drafts', label: 'Rascunhos', count: drafts.length },
     { id: 'company', label: 'Cliente', count: company.length },
-    { id: 'missingBookings', label: 'Faltam Reservas', count: missingBookings.length },
+    { id: 'missingBookings', label: 'Confirmações pendentes', count: missingBookings.length },
     { id: 'readyToSend', label: 'Pronto a Enviar', count: readyToSend.length },
     { id: 'readyToTravel', label: 'Pronto a Viajar', count: readyToTravel.length },
     { id: 'completed', label: t('completed'), count: completed.length },

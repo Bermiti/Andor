@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'tests',
@@ -9,10 +9,41 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
     actionTimeout: 10000,
   },
+  projects: [
+    {
+      name: 'chromium-desktop',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
+    },
+    {
+      name: 'mobile-webkit',
+      use: { ...devices['iPhone 13'], viewport: { width: 375, height: 812 } },
+    },
+  ],
   webServer: {
-    command: 'npm run start',
+    command: 'npm run build && npm run start',
     port: 3000,
-    timeout: 120000,
-    reuseExistingServer: true,
+    timeout: 180000,
+    reuseExistingServer: false,
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_SUPABASE_URL: '',
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: '',
+      SUPABASE_SECRET_KEY: '',
+      SUPABASE_SERVICE_ROLE_KEY: '',
+      GOOGLE_GENERATIVE_AI_API_KEY: '',
+      GROQ_API_KEY: '',
+      ANTHROPIC_API_KEY: '',
+      OPENTRIPMAP_API_KEY: '',
+      FOURSQUARE_API_KEY: '',
+      AMADEUS_API_KEY: '',
+      AMADEUS_API_SECRET: '',
+      FLIGHTS_PROVIDER_SEARCH_URL: '',
+      HOTELS_PROVIDER_SEARCH_URL: '',
+      RENTAL_CARS_PROVIDER_SEARCH_URL: '',
+      PLACES_PROVIDER_SEARCH_URL: '',
+      ANDOR_DISABLE_EXTERNAL_ENRICHMENT: '1',
+      ANDOR_SQLITE_PATH: 'test-results/e2e/andor.sqlite',
+    },
   },
 });

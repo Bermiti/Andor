@@ -56,20 +56,20 @@ export default function Footer() {
           {/* Coluna 3: Destinos */}
           <div className={styles.column}>
             <h4 className={styles.columnTitle}>Destinos</h4>
-            <a href="/#destinos" className={styles.columnLink}>Europa</a>
-            <a href="/#destinos" className={styles.columnLink}>Ásia</a>
-            <a href="/#destinos" className={styles.columnLink}>Américas</a>
-            <a href="/#destinos" className={styles.columnLink}>África</a>
-            <a href="/#destinos" className={styles.columnLink}>Oceania</a>
+            <a href="/destinations" className={styles.columnLink}>Europa</a>
+            <a href="/destinations" className={styles.columnLink}>Ásia</a>
+            <a href="/destinations" className={styles.columnLink}>Américas</a>
+            <a href="/destinations" className={styles.columnLink}>África</a>
+            <a href="/destinations" className={styles.columnLink}>Oceania</a>
           </div>
 
-          {/* Coluna 4: Empresa */}
+          {/* Coluna 4: Conta */}
           <div className={styles.column}>
-            <h4 className={styles.columnTitle}>Empresa</h4>
+            <h4 className={styles.columnTitle}>Conta</h4>
             <a href="/profile" className={styles.columnLink}>Perfil</a>
             <a href="/my-trips" className={styles.columnLink}>Viagens guardadas</a>
             <a href="/favorites" className={styles.columnLink}>Favoritos</a>
-            <a href="mailto:hello@andortravels.com" className={styles.columnLink}>Contacto</a>
+            <a href="/pricing" className={styles.columnLink}>Estado do produto</a>
           </div>
         </div>
 
@@ -77,9 +77,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className={styles.bottom}>
-          <span className={styles.copyright}>
-            © {currentYear} Andor Travels · <a href="/privacy" className={styles.legalLink}>Privacidade</a> · <a href="/terms" className={styles.legalLink}>Termos</a>
-          </span>
+          <span className={styles.copyright}>© {currentYear} Andor · Produto em pré-lançamento</span>
         </div>
       </div>
     </footer>

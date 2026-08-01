@@ -9,6 +9,16 @@
   gap: var(--space-7);
 }
 
+.sourceNotice {
+  padding: var(--space-4);
+  border: 1px solid var(--b-gold);
+  border-radius: var(--r-md);
+  background: rgba(212, 168, 67, 0.08);
+  color: var(--t-2);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
 /* ---- Profile Summary Card ---- */
 .profileCard {
   background: var(--bg-2);

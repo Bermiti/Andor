@@ -117,6 +117,7 @@ export default function Navbar() {
               href="/#concierge"
               className={styles.link}
               onClick={(e) => {
+                e.preventDefault();
                 setIsMobileMenuOpen(false);
                 // Open AI drawer directly
                 window.dispatchEvent(new Event('open-ai-chat'));

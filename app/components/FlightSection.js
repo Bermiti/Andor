@@ -3,6 +3,18 @@
 import styles from './FlightSection.module.css';
 import TransportCard from './TransportCard';
 
+function currencyLabel(value) {
+  if (typeof value === 'string') return value.trim();
+  return String(value?.symbol || value?.code || '').trim();
+}
+
+function formatEstimate(value, currency) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'string') return value.trim() || null;
+  const label = currencyLabel(currency);
+  return Number.isFinite(value) && label ? `${label} ${value}` : null;
+}
+
 /**
  * PHASE 11.3: FlightSection Component
  * Displays 3-tier flight options (economical/balanced/comfortable)
@@ -54,6 +66,10 @@ export default function FlightSection({ flights, destination }) {
           if (option.operator || option.timing || option.source === 'amadeus' || option.source === 'estimated') {
             return <TransportCard key={idx} transportOption={option} />;
           }
+          const estimatedCost = formatEstimate(
+            option.estimatedCost,
+            option.currency || flights.currency || destination?.currency
+          );
           return (
             <div key={idx} className={`${styles.card} ${styles[`tier_${option.tier}`]}`}>
               {/* Badge */}
@@ -64,12 +80,14 @@ export default function FlightSection({ flights, destination }) {
               </div>
 
               {/* Price - Main Focus */}
-              <div className={styles.priceSection}>
-                <div className={styles.price}>
-                  €{option.estimatedCost}
-                  <span className={styles.priceSubtext}>por pessoa</span>
+              {estimatedCost && (
+                <div className={styles.priceSection}>
+                  <div className={styles.price}>
+                    ~{estimatedCost}
+                    <span className={styles.priceSubtext}>estimativa por pessoa</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Key Details */}
               <div className={styles.details}>
@@ -83,7 +101,7 @@ export default function FlightSection({ flights, destination }) {
                 </div>
                 {option.airlinesRecommended && (
                   <div className={styles.detail}>
-                    <span className={styles.label}>Companhias:</span>
+                    <span className={styles.label}>Companhias sugeridas (por confirmar):</span>
                     <span className={styles.value}>{option.airlinesRecommended.join(', ')}</span>
                   </div>
                 )}
@@ -126,6 +144,10 @@ export default function FlightSection({ flights, destination }) {
           );
         })}
       </div>
+
+      {flights.options.length === 0 && (
+        <p className={styles.empty}>Sem tarifas de fornecedor. Usa os links acima para pesquisar preços e disponibilidade atuais.</p>
+      )}
 
       {/* Disclaimer */}
       {flights.disclaimer && (

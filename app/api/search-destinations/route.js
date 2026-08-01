@@ -1,5 +1,6 @@
 import { hasProviderKey, cleanString } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
+import { AI_MODELS } from '../../lib/server/ai-models';
 
 const SYSTEM_PROMPT = `You are a travel destination recommender AI.
 The user will describe their ideal trip (e.g., "I want to go skiing", "Beach under 1000 euros").
@@ -39,7 +40,7 @@ export async function POST(req) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: AI_MODELS.groq,
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: prompt }
@@ -66,7 +67,10 @@ export async function POST(req) {
             // fallback if it failed parsing
           }
           
-          return Response.json({ destinations: parsed });
+          return Response.json({
+            destinations: parsed,
+            metadata: { source: 'groq', estimates: true },
+          });
         }
       } catch (e) {
         logger.warn('search-destinations:groq_failed', e);
@@ -98,13 +102,10 @@ export async function POST(req) {
     scoredDestinations.sort((a, b) => b.matchScore - a.matchScore || b.score - a.score);
     const bestMatches = scoredDestinations.slice(0, 10).filter(r => r.matchScore > 0);
 
-    // Provide default fallback if no matches found so it never looks broken
-    const finalResults = bestMatches.length > 0 ? bestMatches : scoredDestinations.slice(0, 4);
-    
-    // Simulate thinking time for fallback to look like an AI
-    await new Promise(r => setTimeout(r, 1500));
-    
-    return Response.json({ destinations: finalResults });
+    return Response.json({
+      destinations: bestMatches,
+      metadata: { source: 'curated-demo', estimates: true, isDemo: true },
+    });
 
   } catch (error) {
     logger.error('search-destinations:unhandled', error);

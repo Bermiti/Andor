@@ -606,7 +606,13 @@ export default function CreationWizard({
   const estimatedTotal = budgetPerDay * getDaysCount() * (travelers.adults + travelers.children);
 
   return (
-    <div className={styles.wizardOverlay} data-testid="creation-wizard">
+    <div
+      className={styles.wizardOverlay}
+      data-testid="creation-wizard"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Criar itinerário"
+    >
       {bgImage && <div className={styles.wizardBg} style={{ backgroundImage: `url(${bgImage})` }}></div>}
       <div className={styles.wizardBgMask}></div>
 
@@ -1555,7 +1561,7 @@ export default function CreationWizard({
                     (step === 2 && companyMode && !clientName.trim()) ||
                     (step === 3 && stylesList.length === 0)
                   }
-                  data-testid={step === 4 ? 'wizard-submit' : 'wizard-next'}
+                  data-testid="wizard-next"
                 >
                   Continuar &rarr;
                 </button>

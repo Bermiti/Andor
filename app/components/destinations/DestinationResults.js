@@ -7,6 +7,7 @@ export default function DestinationResults({
   recommendations = [],
   userProfile = '',
   wizardData = {},
+  metadata = null,
   onEditPreferences,
   onPlanTrip
 }) {
@@ -70,6 +71,11 @@ export default function DestinationResults({
 
   return (
     <div className={styles.container}>
+      <div className={styles.sourceNotice} role="note">
+        {metadata?.isDemo
+          ? 'Versão de demonstração editorial: estes resultados não foram calculados por um fornecedor AI e preços, épocas e scores não estão verificados.'
+          : 'Sugestões geradas por IA: compatibilidade, orçamento e melhor época são estimativas. Confirma requisitos e dados atuais em fontes oficiais.'}
+      </div>
       {/* ═══════════ PROFILE SUMMARY CARD ═══════════ */}
       <div className={styles.profileCard}>
         <div className={styles.profileHeader}>
@@ -133,7 +139,7 @@ export default function DestinationResults({
                 <div className={`${styles.scoreBadge} ${scoreClass(item.score)}`}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <span>{item.score}%</span>
-                    <span className={styles.scoreLabel}>{t('scoreLabel') || 'compatível'}</span>
+                    <span className={styles.scoreLabel}>compat. estimada</span>
                   </div>
                 </div>
 
@@ -160,11 +166,13 @@ export default function DestinationResults({
                     <span className={styles.metaLabel}>{t('idealDuration') || 'Duração'}</span>
                     <span className={styles.metaValue}>{item.idealDuration}</span>
                   </div>
-                  <div className={styles.metaItem}>
-                    <span className={styles.metaIcon}>💰</span>
-                    <span className={styles.metaLabel}>{t('estimatedBudget') || 'Orçamento'}</span>
-                    <span className={styles.metaValue}>{item.estimatedBudget}</span>
-                  </div>
+                  {item.estimatedBudget && (
+                    <div className={styles.metaItem}>
+                      <span className={styles.metaIcon}>💰</span>
+                      <span className={styles.metaLabel}>{t('estimatedBudget') || 'Orçamento estimado'}</span>
+                      <span className={styles.metaValue}>{item.estimatedBudget}</span>
+                    </div>
+                  )}
                   <div className={styles.metaItem}>
                     <span className={styles.metaIcon}>☀️</span>
                     <span className={styles.metaLabel}>{t('bestTime') || 'Melhor Altura'}</span>

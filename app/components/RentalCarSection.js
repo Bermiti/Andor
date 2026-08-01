@@ -19,16 +19,16 @@ function normalizeRentalCar(rentalCar = {}, destination = '') {
     ? 'yes'
     : rentalCar.recommended === false
       ? 'no'
-      : rentalCar.recommendation || 'maybe';
+      : rentalCar.recommendation || 'unknown';
 
   return {
     recommended,
-    strategy: rentalCar.strategy || rentalCar.reason || `Use rent-a-car only when it clearly improves regional days around ${destination || 'the destination'}.`,
-    pickup: rentalCar.pickup || rentalCar.pickupLocation || 'Airport pickup if driving immediately; city pickup after car-free city days.',
-    dropoff: rentalCar.dropoff || rentalCar.dropoffLocation || rentalCar.pickup || 'Return where it avoids city-center parking and last-day stress.',
-    estimatedCost: rentalCar.estimatedCost || rentalCar.priceRange || 'Check live rates',
-    insuranceNote: rentalCar.insuranceNote || 'Verify excess, deposit, mileage, and card requirements before booking.',
-    parkingNote: rentalCar.parkingNote || 'Check hotel parking, tolls, low-emission zones, and old-town restrictions.',
+    strategy: rentalCar.strategy || rentalCar.reason || '',
+    pickup: rentalCar.pickup || rentalCar.pickupLocation || '',
+    dropoff: rentalCar.dropoff || rentalCar.dropoffLocation || rentalCar.pickup || '',
+    estimatedCost: rentalCar.estimatedCost || rentalCar.priceRange || '',
+    insuranceNote: rentalCar.insuranceNote || '',
+    parkingNote: rentalCar.parkingNote || '',
     usefulFor: Array.isArray(rentalCar.usefulFor) ? rentalCar.usefulFor : [],
     searchLinks: rentalCar.searchLinks || {},
     bookingStatus: rentalCar.bookingStatus || 'not_started',
@@ -41,7 +41,7 @@ function normalizeRentalCar(rentalCar = {}, destination = '') {
 function getRecommendationCopy(value) {
   if (value === 'yes') return { label: 'Recomendado', tone: 'yes' };
   if (value === 'no') return { label: 'Nao recomendado', tone: 'no' };
-  return { label: 'Talvez', tone: 'maybe' };
+  return { label: 'Por avaliar', tone: 'maybe' };
 }
 
 export default function RentalCarSection({ rentalCar, destination, storageKey, tripId }) {
@@ -101,22 +101,15 @@ export default function RentalCarSection({ rentalCar, destination, storageKey, t
         </span>
       </div>
 
-      <p className={styles.strategy}>{normalized.strategy}</p>
+      {normalized.strategy && <p className={styles.strategy}>{normalized.strategy}</p>}
 
-      <div className={styles.metaGrid}>
-        <div>
-          <span>Pickup</span>
-          <strong>{normalized.pickup}</strong>
+      {(normalized.pickup || normalized.dropoff || normalized.estimatedCost) && (
+        <div className={styles.metaGrid}>
+          {normalized.pickup && <div><span>Pickup</span><strong>{normalized.pickup}</strong></div>}
+          {normalized.dropoff && <div><span>Dropoff</span><strong>{normalized.dropoff}</strong></div>}
+          {normalized.estimatedCost && <div><span>Custo estimado</span><strong>{normalized.estimatedCost}</strong></div>}
         </div>
-        <div>
-          <span>Dropoff</span>
-          <strong>{normalized.dropoff}</strong>
-        </div>
-        <div>
-          <span>Custo</span>
-          <strong>{normalized.estimatedCost}</strong>
-        </div>
-      </div>
+      )}
 
       {normalized.usefulFor.length > 0 && (
         <div className={styles.usefulFor}>
@@ -126,16 +119,16 @@ export default function RentalCarSection({ rentalCar, destination, storageKey, t
         </div>
       )}
 
-      <div className={styles.notes}>
-        <div>
+      {(normalized.insuranceNote || normalized.parkingNote) && <div className={styles.notes}>
+        {normalized.insuranceNote && <div>
           <ShieldCheck size={15} aria-hidden="true" />
           <span>{normalized.insuranceNote}</span>
-        </div>
-        <div>
+        </div>}
+        {normalized.parkingNote && <div>
           <CheckCircle2 size={15} aria-hidden="true" />
           <span>{normalized.parkingNote}</span>
-        </div>
-      </div>
+        </div>}
+      </div>}
 
       <div className={styles.bookingFields}>
         <label>

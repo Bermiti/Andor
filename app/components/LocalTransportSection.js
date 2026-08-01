@@ -12,7 +12,7 @@ export default function LocalTransportSection({ localTransport }) {
     return (
       <div className={styles.empty}>
         <div className={styles.emptyIcon}>MT</div>
-        <p>Informações de transportes a carregar...</p>
+        <p>Sem dados de fornecedor para transportes locais. Consulta o operador oficial do destino.</p>
       </div>
     );
   }

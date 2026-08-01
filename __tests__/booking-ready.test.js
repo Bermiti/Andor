@@ -1,57 +1,53 @@
 import { describe, expect, test } from 'vitest';
-import { generateFallbackItinerary } from '../app/lib/fallback-ai';
 import { validateAndNormalize } from '../app/lib/itinerary-validate';
 import { ensureBookingReadyItinerary } from '../app/lib/booking-ready';
 import { enrichItinerary } from '../app/lib/itinerary-enricher';
 import { buildDossierExportContext } from '../app/lib/dossier-export';
 
-describe('booking-ready itinerary normalization', () => {
-  test('adds booking-ready sections to fallback itineraries', () => {
-    const fallback = generateFallbackItinerary('Lisbon, Portugal', 3, 'comfort');
-    const validation = validateAndNormalize(fallback);
-    const itinerary = ensureBookingReadyItinerary(validation.normalized, {
-      profile: {
-        originCity: 'Porto',
-        travelers: 2,
-        budgetIncludesFlights: 'unknown',
+function validItinerary(overrides = {}) {
+  return {
+    destination: {
+      city: 'Tokyo',
+      country: 'Japan',
+      coordinates: [35.6762, 139.6503],
+      currency: { code: 'JPY', symbol: 'JPY' },
+    },
+    trip: { totalDays: 1 },
+    days: [
+      {
+        title: 'Senso-ji and Shibuya',
+        stops: [
+          { name: 'Senso-ji', coordinates: { lat: 35.7148, lng: 139.7967 } },
+          { name: 'Shibuya Crossing', coordinates: { lat: 35.6595, lng: 139.7005 } },
+        ],
       },
+    ],
+    ...overrides,
+  };
+}
+
+function normalized(input) {
+  const validation = validateAndNormalize(input);
+  expect(validation.fatal).toBe(false);
+  return validation.normalized;
+}
+
+describe('booking-ready trust boundary', () => {
+  test('adds search links and manual checklists without synthetic inventory', () => {
+    const itinerary = ensureBookingReadyItinerary(normalized(validItinerary()), {
+      profile: { originCity: 'Lisbon', travelers: 2 },
     });
 
     expect(itinerary.bookingReady.status).toBe('manual_confirmation_required');
     expect(itinerary.bookingReady.providerLinks.flights.google).toContain('google.com');
-    expect(itinerary.flightOptions.length).toBeGreaterThan(0);
-    expect(itinerary.accommodation.hotels.length).toBeGreaterThanOrEqual(3);
-    expect(itinerary.airportTransfer.options.length).toBeGreaterThanOrEqual(3);
-    expect(itinerary.localTransport.apps.length).toBeGreaterThan(0);
-    expect(itinerary.documentsChecklist.items.length).toBeGreaterThan(0);
-    expect(itinerary.documentsChecklist.items[0]).toMatchObject({
-      title: expect.any(String),
-      importance: expect.stringMatching(/required|recommended|optional/),
-      whoNeedsIt: expect.any(String),
-      timing: expect.any(String),
-      status: expect.stringMatching(/not_started|needed|ready|uploaded_confirmed|not_applicable/),
-      sourceReason: expect.any(String),
-    });
-    expect(itinerary.backupPlans.items.length).toBeGreaterThanOrEqual(8);
-    expect(itinerary.backupPlans.items[0]).toMatchObject({
-      trigger: expect.any(String),
-      replacementPlan: expect.any(String),
-      costImpact: expect.any(String),
-      timeImpact: expect.any(String),
-      moveOrCancel: expect.any(String),
-      clientFacing: expect.any(String),
-    });
-    expect(itinerary.bookingChecklist.items.some((item) => item.category === 'flights')).toBe(true);
-  });
-
-  test('keeps every generated booking task manual by default', () => {
-    const fallback = generateFallbackItinerary('Tokyo, Japan', 2, 'premium');
-    const validation = validateAndNormalize(fallback);
-    const itinerary = ensureBookingReadyItinerary(validation.normalized, {
-      profile: { originCity: 'Lisbon', travelers: 2 },
-    });
-
+    expect(itinerary.flightOptions).toEqual([]);
+    expect(itinerary.accommodation.hotels).toEqual([]);
+    expect(itinerary.airportTransfer).toBeNull();
+    expect(itinerary.localTransport).toBeNull();
     expect(itinerary.bookingChecklist.items.length).toBeGreaterThan(4);
+    expect(itinerary.documentsChecklist.items.length).toBeGreaterThan(0);
+    expect(itinerary.backupPlans.items).toEqual([]);
+
     itinerary.bookingChecklist.items.forEach((item) => {
       expect(item.status).toBe('not_started');
       expect(item.reference).toBe('');
@@ -59,122 +55,125 @@ describe('booking-ready itinerary normalization', () => {
     });
   });
 
-  test('adds company approval and export metadata when company mode is enabled', () => {
-    const fallback = generateFallbackItinerary('Paris, France', 2, 'comfort');
-    const validation = validateAndNormalize(fallback);
-    const itinerary = ensureBookingReadyItinerary(validation.normalized, {
+  test('rejects payload fields that self-assert provider provenance', () => {
+    const itinerary = ensureBookingReadyItinerary(normalized(validItinerary({
+      flightOptions: [
+        { operator: 'Provider flight', source: 'amadeus', price: { total: 300 } },
+        { operator: 'AI estimate', source: 'estimated', estimatedPrice: 'EUR 200' },
+      ],
+      accommodation: {
+        hotels: [
+          { name: 'Provider hotel', source: 'provider' },
+          { name: 'Generated hotel', source: 'ai' },
+        ],
+      },
+      airportTransfer: {
+        source: 'provider',
+        options: [{ name: 'Provider transfer', source: 'provider' }],
+      },
+      localTransport: {
+        source: 'provider-api',
+        options: [{ name: 'Provider pass', source: 'provider-api' }],
+      },
+    })));
+
+    expect(itinerary.flightOptions).toEqual([]);
+    expect(itinerary.accommodation.hotels).toEqual([]);
+    expect(itinerary.airportTransfer).toBeNull();
+    expect(itinerary.localTransport).toBeNull();
+  });
+
+  test('adds company approval metadata without generating company scenarios', () => {
+    const itinerary = ensureBookingReadyItinerary(normalized(validItinerary()), {
       profile: {
         companyMode: true,
         clientName: 'Avery Client',
         companyName: 'Northstar Consulting',
-        preparedBy: 'Andor Concierge',
+        preparedBy: 'Planner',
       },
     });
 
-    expect(itinerary.exportMetadata.whiteLabelReady).toBe(true);
-    expect(itinerary.exportMetadata.clientName).toBe('Avery Client');
+    expect(itinerary.exportMetadata).toMatchObject({
+      whiteLabelReady: true,
+      clientName: 'Avery Client',
+      companyName: 'Northstar Consulting',
+      preparedBy: 'Planner',
+    });
     expect(itinerary.bookingChecklist.items.some((item) => item.id === 'client-approval')).toBe(true);
-    expect(itinerary.documentsChecklist.items.some((item) => item.id === 'approval')).toBe(true);
-    expect(itinerary.documentsChecklist.items.some((item) => item.id === 'company_budget_approval')).toBe(true);
-    expect(itinerary.documentsChecklist.items.some((item) => item.id === 'client_itinerary_approval')).toBe(true);
     expect(itinerary.documentsChecklist.items.some((item) => item.id === 'internal_review' && item.audience === 'internal')).toBe(true);
-    expect(itinerary.backupPlans.items.some((item) => item.id === 'company_schedule_change')).toBe(true);
+    expect(itinerary.backupPlans.items).toEqual([]);
   });
 
-  test('adds rental-car document reminders and no-car backup when driving is recommended', () => {
-    const fallback = generateFallbackItinerary('Madeira, Portugal', 5, 'comfort');
-    const validation = validateAndNormalize(fallback);
-    const itinerary = ensureBookingReadyItinerary(validation.normalized, {
-      profile: {
-        originCity: 'Porto',
-        transportPreference: 'rental car for regional days',
-      },
+  test('adds rental-car verification tasks only from an explicit traveler preference', () => {
+    const itinerary = ensureBookingReadyItinerary(normalized(validItinerary()), {
+      profile: { transportPreference: 'rental car for regional days' },
     });
     const documentIds = itinerary.documentsChecklist.items.map((item) => item.id);
 
     expect(itinerary.rentalCar.recommended).toBe(true);
-    expect(documentIds).toContain('driver_license');
-    expect(documentIds).toContain('international_driving_permit');
-    expect(documentIds).toContain('rental_car_confirmation');
-    expect(documentIds).toContain('rental_car_insurance');
-    expect(documentIds).toContain('parking_tolls_low_emission');
-    expect(itinerary.backupPlans.items.some((item) => item.id === 'no_rental_car')).toBe(true);
+    expect(documentIds).toEqual(expect.arrayContaining([
+      'driver_license',
+      'international_driving_permit',
+      'rental_car_confirmation',
+      'rental_car_insurance',
+      'parking_tolls_low_emission',
+    ]));
+    expect(itinerary.rentalCar.estimatedCost).toBeNull();
   });
 
-  test('normalizes text-only backup plans into structured backup items', () => {
-    const fallback = generateFallbackItinerary('Lisbon, Portugal', 2, 'comfort');
-    const validation = validateAndNormalize({
-      ...fallback,
-      backupPlans: ['Move everything indoors if it rains.'],
-      contingencyPlans: {
-        rainyDay: 'Use museums and covered markets.',
-        delayRecovery: 'Move the first evening walk after dinner.',
-      },
+  test('preserves explicit text and contingency backup plans without inventing impacts', () => {
+    const itinerary = ensureBookingReadyItinerary(normalized(validItinerary({
+      backupPlans: ['Move the outdoor stop indoors if it rains.'],
+      contingencyPlans: { rainyDay: 'Use the museum already saved by the traveler.' },
+    })));
+
+    expect(itinerary.backupPlans.items[0]).toMatchObject({
+      id: 'backup-1',
+      replacementPlan: 'Move the outdoor stop indoors if it rains.',
+      costImpact: '',
+      timeImpact: '',
     });
-    const itinerary = ensureBookingReadyItinerary(validation.normalized);
-
-    expect(itinerary.backupPlans.items.some((item) => item.id === 'backup-note-1')).toBe(true);
-    expect(itinerary.backupPlans.items.find((item) => item.id === 'bad_weather').replacementPlan).toContain('museums');
-    expect(itinerary.contingencyPlans.rainyDay).toContain('museums');
+    expect(itinerary.backupPlans.items.find((item) => item.id === 'bad_weather').replacementPlan).toContain('museum');
   });
 
-  test('builds client and internal export contexts without leaking internal notes', () => {
-    const fallback = generateFallbackItinerary('Tokyo, Japan', 3, 'premium');
-    const validation = validateAndNormalize(fallback);
-    const itinerary = ensureBookingReadyItinerary(validation.normalized, {
+  test('builds client/internal exports without leaking internal notes', () => {
+    const itinerary = ensureBookingReadyItinerary(normalized(validItinerary({
+      backupPlans: [{ id: 'rain', trigger: 'Rain', replacementPlan: 'Use saved indoor stop.' }],
+    })), {
       profile: {
         companyMode: true,
         clientName: 'Avery Client',
         clientFacingNotes: 'Client can see this note.',
-        internalNotes: 'Margin and supplier caveats stay private.',
+        internalNotes: 'Supplier caveats stay private.',
       },
     });
     const clientExport = buildDossierExportContext(itinerary, 'client');
     const internalExport = buildDossierExportContext(itinerary, 'internal');
 
     expect(clientExport.documents.length).toBeGreaterThan(0);
-    expect(clientExport.backupPlans.length).toBeGreaterThan(0);
+    expect(clientExport.backupPlans).toHaveLength(1);
     expect(clientExport.internalNotes).toBe('');
     expect(clientExport.exportMetadata.internalNotes).toBe('');
     expect(clientExport.documents.some((item) => item.id === 'internal_review')).toBe(false);
-    expect(internalExport.internalNotes).toContain('supplier caveats');
+    expect(internalExport.internalNotes).toContain('Supplier caveats');
     expect(internalExport.documents.some((item) => item.id === 'internal_review')).toBe(true);
   });
 
-  test('keeps booking-ready fields after itinerary enrichment', () => {
-    const fallback = generateFallbackItinerary('Lisbon, Portugal', 2, 'comfort');
-    const validation = validateAndNormalize(fallback);
-    const bookingReady = ensureBookingReadyItinerary(validation.normalized, {
-      profile: {
-        originCity: 'Porto',
-        companyMode: true,
-        clientName: 'Avery Client',
-      },
+  test('shape enrichment preserves booking fields and does not synthesize stop facts', () => {
+    const bookingReady = ensureBookingReadyItinerary(normalized(validItinerary()), {
+      profile: { originCity: 'Lisbon' },
     });
     const enriched = enrichItinerary(bookingReady);
+    const firstStop = enriched.days[0].stops[0];
 
     expect(enriched.bookingReady.status).toBe('manual_confirmation_required');
     expect(enriched.bookingChecklist.items.length).toBeGreaterThan(4);
-    expect(enriched.documentsChecklist.items.length).toBeGreaterThan(0);
-    expect(enriched.flightOptions.length).toBeGreaterThan(0);
-    expect(enriched.exportMetadata.clientName).toBe('Avery Client');
-  });
-
-  test('keeps structured day logistics after itinerary enrichment', () => {
-    const fallback = generateFallbackItinerary('Tokyo, Japan', 3, 'comfort');
-    const validation = validateAndNormalize(fallback);
-    const bookingReady = ensureBookingReadyItinerary(validation.normalized, {
-      profile: { originCity: 'Lisbon', travelers: 2 },
-    });
-    const enriched = enrichItinerary(bookingReady);
-    const firstDay = enriched.days[0];
-
-    expect(firstDay.periods.morning.activities.length).toBeGreaterThan(0);
-    expect(firstDay.periods.afternoon.activities.length).toBeGreaterThan(0);
-    expect(firstDay.stops[0].period).toBe('morning');
-    expect(firstDay.stops[0].transportFromPrevious.duration).toBeTruthy();
-    expect(firstDay.stops[0].photoKeyword).toContain(firstDay.stops[0].name);
-    expect(firstDay.stops[0].backupOption).toBeTruthy();
-    expect(firstDay.stops[0].practicalNote).toBeTruthy();
+    expect(enriched.flightOptions).toEqual([]);
+    expect(firstStop.period).toBe('morning');
+    expect(firstStop.transportFromPrevious).toBeNull();
+    expect(firstStop.cost).toBeNull();
+    expect(firstStop.duration).toBe('');
+    expect(firstStop.photoKeyword).toBe('');
+    expect(firstStop.insiderTip).toBe('');
   });
 });

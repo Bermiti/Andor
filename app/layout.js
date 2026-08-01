@@ -32,17 +32,17 @@ const jetbrains = JetBrains_Mono({
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://andor.travels'),
   title: {
-    default: 'Andor — O Teu Concierge de Viagens AI',
+    default: 'Andor — Planeador de Viagens com IA',
     template: '%s · Andor'
   },
-  description: 'Andor é um concierge de viagens inteligente com inteligência artificial. Planeia, adapta e guia a tua aventura em tempo real com itinerários premium e recomendações locais.',
+  description: 'Andor ajuda a criar e adaptar planos de viagem com IA. Preços, disponibilidade e requisitos devem ser confirmados nos fornecedores e fontes oficiais.',
   keywords: 'viagens, roteiro de viagem, planear viagem, inteligência artificial, itinerários personalizados, turismo de luxo',
   manifest: '/manifest.json',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Andor — O Teu Concierge de Viagens AI',
+    title: 'Andor — Planeador de Viagens com IA',
     description: 'Planeia, adapta e explora com o planeador de viagens inteligente movido a IA.',
     url: '/',
     siteName: 'Andor Travels',
@@ -59,29 +59,19 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Andor — O Teu Concierge de Viagens AI',
-    description: 'Roteiros de viagens personalizados e recomendações exclusivas gerados por IA em segundos.',
+    title: 'Andor — Planeador de Viagens com IA',
+    description: 'Planos de viagem personalizados com estimativas claramente identificadas.',
     images: ['https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80&fit=crop'],
-    creator: '@andortravels'
   }
 };
 
 const jsonLdData = {
   "@context": "https://schema.org",
-  "@type": "TravelAgency",
+  "@type": "WebApplication",
   "name": "Andor Travels",
-  "description": "Concierge de viagens inteligente com inteligência artificial. Planeia itinerários de luxo personalizados em segundos.",
+  "applicationCategory": "TravelApplication",
+  "description": "Aplicação de planeamento de viagens assistido por inteligência artificial.",
   "url": "https://andor.travels",
-  "priceRange": "$$",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Lisboa",
-    "addressCountry": "PT"
-  },
-  "sameAs": [
-    "https://twitter.com/andortravels",
-    "https://github.com/Bermiti/Andor"
-  ]
 };
 
 export default function RootLayout({ children }) {
@@ -98,17 +88,15 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
         />
-        <Script id="register-sw" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
-          if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').then(function(reg) {
-                console.log('SW registered:', reg.scope);
-              }).catch(function(err) {
-                console.log('SW registration failed:', err);
+        {process.env.NODE_ENV === 'production' && (
+          <Script id="register-sw" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function() {});
               });
-            });
-          }
-        `}} />
+            }
+          `}} />
+        )}
         <Script id="theme-script" strategy="beforeInteractive" dangerouslySetInnerHTML={{__html: `
           (function() {
             try {

@@ -325,7 +325,7 @@ export default function AiAssistant() {
         const andorItinerary = JSON.parse(jsonMatch[0]);
         const city = andorItinerary.destination?.city || "Destino";
         const days = andorItinerary.trip?.totalDays || andorItinerary.days?.length || 3;
-        const budgetMin = andorItinerary.trip?.totalBudgetEstimate?.min || 200;
+        const budgetMin = andorItinerary.trip?.totalBudgetEstimate?.min || null;
 
         const handleViewItinerary = () => {
           const legacyFormat = convertAndorToLegacy(andorItinerary);
@@ -344,7 +344,7 @@ export default function AiAssistant() {
               <span className={styles.itineraryIcon}>✨</span>
               <div>
                 <h4 className={styles.itineraryTitle}>Itinerário Criado</h4>
-                <p className={styles.itinerarySub}>🗾 {city} · {days} dias · €{budgetMin} est</p>
+                <p className={styles.itinerarySub}>🗾 {city} · {days} dias{budgetMin ? ` · €${budgetMin} est.` : ''}</p>
               </div>
             </div>
             <div className={styles.itineraryActions}>
@@ -362,30 +362,7 @@ export default function AiAssistant() {
       }
     }
 
-    const parsedHotels = [];
-    const parsedFlights = [];
-    const parsedRestaurants = [];
-
-    // Parse hotels inline
-    if (text.toLowerCase().includes('hotel') && !text.includes('[HOTEL:')) {
-      const matches = text.match(/(?:hotel|hostel|resort)\s+([A-Z][a-zA-Zãõáéíóúçñ\s\-]{3,30})/gi);
-      if (matches) {
-        matches.forEach(m => {
-          const name = m.trim();
-          if (!parsedHotels.some(h => h.name.toLowerCase() === name.toLowerCase()) && name.length > 5) {
-            parsedHotels.push({
-              name,
-              rating: "⭐⭐⭐⭐",
-              location: "Recomendado",
-              price: "~€120/noite",
-              desc: "Alojamento selecionado para a tua viagem."
-            });
-          }
-        });
-      }
-    }
-
-    // Inline cards regex parser
+    // Render only structured suggestions explicitly returned by the assistant.
     const parts = text.split(/(\[HOTEL:[^\]]+\]|\[RESTAURANT:[^\]]+\]|\[FLIGHT:[^\]]+\])/g);
     
     return (
@@ -396,9 +373,8 @@ export default function AiAssistant() {
           if (part.startsWith('[HOTEL:')) {
             const inner = part.slice(7, -1).split('|');
             const name = inner[0]?.trim();
-            const rating = inner[1]?.trim() || '4.8';
-            const price = inner[2]?.trim() || '—';
-            const why = inner[3]?.trim() || 'Alojamento selecionado.';
+            const price = inner[2]?.trim() || null;
+            const why = inner[3]?.trim() || 'Sugestão gerada por IA; confirma os detalhes no fornecedor.';
             return (
               <div key={idx} className={styles.inlineCard}>
                 <div className={styles.inlineCardHeader}>
@@ -406,8 +382,7 @@ export default function AiAssistant() {
                   <div style={{ flex: 1 }}>
                     <h5 className={styles.cardName}>{name}</h5>
                     <div className={styles.cardMeta}>
-                      <span className={styles.cardRating}>★ {rating}</span>
-                      <span className={styles.cardPrice}>{price}</span>
+                      {price && <span className={styles.cardPrice}>Estimativa: {price}</span>}
                     </div>
                   </div>
                 </div>
@@ -427,9 +402,8 @@ export default function AiAssistant() {
           if (part.startsWith('[RESTAURANT:')) {
             const inner = part.slice(12, -1).split('|');
             const name = inner[0]?.trim();
-            const rating = inner[1]?.trim() || '4.7';
-            const price = inner[2]?.trim() || '—';
-            const note = inner[3]?.trim() || 'Especialidade local recomendada.';
+            const price = inner[2]?.trim() || null;
+            const note = inner[3]?.trim() || 'Sugestão gerada por IA; confirma os detalhes numa fonte atual.';
             return (
               <div key={idx} className={styles.inlineCard}>
                 <div className={styles.inlineCardHeader}>
@@ -437,8 +411,7 @@ export default function AiAssistant() {
                   <div style={{ flex: 1 }}>
                     <h5 className={styles.cardName}>{name}</h5>
                     <div className={styles.cardMeta}>
-                      <span className={styles.cardRating}>★ {rating}</span>
-                      <span className={styles.cardPrice}>{price}</span>
+                      {price && <span className={styles.cardPrice}>Estimativa: {price}</span>}
                     </div>
                   </div>
                 </div>
@@ -459,13 +432,13 @@ export default function AiAssistant() {
             const inner = part.slice(8, -1).split('|');
             const route = inner[0]?.trim() || 'Rota';
             const airline = inner[1]?.trim() || 'Companhia';
-            const price = inner[2]?.trim() || '—';
-            const tip = inner[3]?.trim() || 'Dica de voo.';
+            const price = inner[2]?.trim() || null;
+            const tip = inner[3]?.trim() || 'Confirma horários, escalas e disponibilidade no fornecedor.';
             return (
               <div key={idx} className={styles.inlineFlightCard}>
                 <div className={styles.flightHeader}>
                   <span className={styles.flightBadge}>✈️ Sugestão de Voo</span>
-                  <span className={styles.flightPrice}>{price}</span>
+                  {price && <span className={styles.flightPrice}>Estimativa: {price}</span>}
                 </div>
                 <h5 className={styles.flightRoute}>{route}</h5>
                 <p className={styles.flightDetails}>{airline} • {tip}</p>
@@ -483,29 +456,6 @@ export default function AiAssistant() {
           return null;
         })}
 
-        {parsedHotels.map((hotel, idx) => (
-          <div key={`p-hotel-${idx}`} className={styles.inlineCard}>
-            <div className={styles.inlineCardHeader}>
-              <span className={styles.cardEmoji}>🏨</span>
-              <div style={{ flex: 1 }}>
-                <h5 className={styles.cardName}>{hotel.name}</h5>
-                <div className={styles.cardMeta}>
-                  <span className={styles.cardRating}>{hotel.rating}</span>
-                  <span> · {hotel.location} · {hotel.price}</span>
-                </div>
-              </div>
-            </div>
-            <p className={styles.cardText}>"{hotel.desc}"</p>
-            <a 
-              href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(hotel.name)}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className={styles.cardActionLink}
-            >
-              Ver no Booking.com →
-            </a>
-          </div>
-        ))}
       </div>
     );
   };
@@ -523,7 +473,7 @@ export default function AiAssistant() {
         <span className="section-label">💬 AI Assistant</span>
         <h2 className="section-title">O teu companheiro de viagem, sempre disponível</h2>
         <p className="section-subtitle mx-auto">
-          Conversa naturalmente para planeares a tua próxima aventura. O Andor compreende o contexto, pesquisa na internet e sugere itinerários fantásticos em tempo real.
+          Conversa naturalmente para planeares a tua próxima aventura. Usa as sugestões como ponto de partida e confirma informação sensível ao tempo em fontes oficiais.
         </p>
       </div>
 
@@ -535,7 +485,7 @@ export default function AiAssistant() {
               <div className={styles.chatName}>Assistente Andor</div>
               <div className={styles.chatStatus}>
                 <span className={styles.chatStatusDot}></span>
-                Online — Com tecnologia IA em tempo real
+                Assistente de planeamento — preços e disponibilidade não confirmados
               </div>
             </div>
             {messages.length > 0 && (

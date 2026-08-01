@@ -136,31 +136,26 @@ const DESTINATIONS = {
   },
 };
 
-function titleFromSlug(slug) {
-  return slug
-    .split('-')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ') || 'This Destination';
-}
-
-function fallbackDestination(slug) {
-  const name = titleFromSlug(slug);
-  return {
-    ...DESTINATIONS.paris,
-    name,
-    country: 'Curated by Andor',
-    flag: '✦',
-    score: 8.9,
-    verdict: `${name} works best with a slower route, local food anchors, and one honest skip list before the itinerary gets too crowded.`,
-  };
-}
-
 export default function DestinationPage() {
   const params = useParams();
   const slug = String(params?.slug || 'paris').toLowerCase();
   const currentMonth = MONTHS[new Date().getMonth()];
-  const data = useMemo(() => DESTINATIONS[slug] || fallbackDestination(slug), [slug]);
+  const data = useMemo(() => DESTINATIONS[slug] || null, [slug]);
+  const [heroFailed, setHeroFailed] = useState(false);
+
+  if (!data) {
+    return (
+      <main className={styles.main}>
+        <section className={styles.section}>
+          <p className={styles.eyebrow}>Conteúdo indisponível</p>
+          <h1>Este guia de destino ainda não foi publicado.</h1>
+          <p>Não vamos substituir este destino por informação de outra cidade. Podes criar um plano de demonstração e confirmar depois os detalhes em fontes oficiais.</p>
+          <Link href="/destinations">Voltar aos destinos</Link>
+        </section>
+      </main>
+    );
+  }
+
   const scorePercent = Math.round(Number(data.score || 0) * 10);
   const monthWeather = data.weather?.[currentMonth] || data.weather?.May || {
     label: `${currentMonth} in ${data.name}`,
@@ -168,7 +163,6 @@ export default function DestinationPage() {
     stats: 'Mild conditions · variable rain · easy walking pace',
     tip: 'Check the forecast one week out and keep one flexible indoor swap in the plan.',
   };
-  const [heroFailed, setHeroFailed] = useState(false);
 
   return (
     <div className={styles.container}>
@@ -189,7 +183,7 @@ export default function DestinationPage() {
           <div className={styles.heroContent}>
             <div className={styles.scoreBadge} tabIndex={0}>
               <span className={styles.scoreValue}>{data.score}</span>
-              <span className={styles.scoreLabel}>Andor Score</span>
+              <span className={styles.scoreLabel}>Score demonstrativo</span>
               <div className={styles.scorePopover} role="tooltip">
                 <strong>Andor Score: {scorePercent}/100 for {currentMonth}</strong>
                 <div className={styles.scoreComponents}>
@@ -213,6 +207,9 @@ export default function DestinationPage() {
       </section>
 
       <main className={styles.main}>
+        <div className={styles.editorialNotice} role="note">
+          Guia editorial de demonstração. Scores, clima, preços e recomendações não são dados ao vivo; confirma tudo o que possa mudar em fontes oficiais.
+        </div>
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <p className={styles.eyebrow}>Timing intelligence</p>

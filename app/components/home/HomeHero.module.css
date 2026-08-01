@@ -348,6 +348,26 @@
   line-height: 1.5;
 }
 
+@media (min-width: 621px) {
+  .searchForm {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .destinationShell {
+    grid-column: 1;
+  }
+
+  .formControls {
+    display: block;
+    grid-column: 2;
+  }
+
+  .formHint {
+    grid-column: 1 / -1;
+  }
+}
+
 [data-theme="light"] .fieldLabel,
 [data-theme="light"] .formHint {
   color: var(--text-secondary);

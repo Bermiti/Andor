@@ -1,12 +1,13 @@
 'use client';
 
 import styles from './RestaurantCard.module.css';
-import { MapPin, Utensils, Star, Bookmark } from 'lucide-react';
+import { MapPin, Utensils, Star } from 'lucide-react';
 
 export default function RestaurantCard({ restaurant }) {
   if (!restaurant) return null;
 
   const { name, cuisine, rating, priceLevel, address, hours, mustTry, source } = restaurant;
+  const hasSourcedRating = source === 'foursquare' && Number.isFinite(Number(rating));
 
   // Generate stars based on rating
   const renderStars = (ratingVal) => {
@@ -65,10 +66,12 @@ export default function RestaurantCard({ restaurant }) {
         </div>
       </div>
 
-      <div className={styles.ratingRow}>
-        <div className={styles.stars}>{renderStars(rating)}</div>
-        <span className={styles.ratingNumber}>{rating || '4.5'}</span>
-      </div>
+      {hasSourcedRating && (
+        <div className={styles.ratingRow}>
+          <div className={styles.stars}>{renderStars(rating)}</div>
+          <span className={styles.ratingNumber}>{rating} · Foursquare</span>
+        </div>
+      )}
 
       <div className={styles.body}>
         {address && (
@@ -90,11 +93,6 @@ export default function RestaurantCard({ restaurant }) {
         )}
       </div>
 
-      <div className={styles.actions}>
-        <button className={styles.btnIcon} aria-label="Guardar restaurante">
-          <Bookmark size={14} />
-        </button>
-      </div>
     </div>
   );
 }

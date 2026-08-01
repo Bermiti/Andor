@@ -471,10 +471,13 @@ function evaluateItinerary(data, testCase) {
         result.fatal.push(`${label} coordinates outside ${testCase.destination} bounds`);
       }
 
-      const rating = Number(activity.rating);
-      if (!Number.isFinite(rating) || rating < 4.0 || rating > 5.0) {
-        activityScore -= 0.5;
-        result.failures.push(`${label} rating must be between 4.0 and 5.0`);
+      if (activity.rating !== undefined && activity.rating !== null && activity.rating !== '') {
+        const rating = Number(activity.rating);
+        const ratingSource = String(activity.ratingSource || activity.reviewSource || '').trim();
+        if (!Number.isFinite(rating) || rating <= 0 || rating > 10 || !ratingSource) {
+          activityScore -= 0.5;
+          result.failures.push(`${label} rating must be valid and include ratingSource`);
+        }
       }
       if (isGenericText(activity.insiderTip)) {
         activityScore -= 0.5;

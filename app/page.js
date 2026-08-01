@@ -45,7 +45,7 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      document.title = "Andor · O teu Concierge de Viagens AI";
+      document.title = "Andor · Planeador de Viagens com IA";
       const params = new URLSearchParams(window.location.search);
       if (params.get('wizard') === 'true') {
         const dest = params.get('dest') || '';

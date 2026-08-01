@@ -62,7 +62,7 @@ export default function CustomRequestModal() {
 
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(body.message || 'Nao foi possivel enviar o pedido.');
+        throw new Error(body.error?.message || 'Não foi possível enviar o pedido.');
       }
 
       setSubmittedRequest(body.request || null);
@@ -77,7 +77,7 @@ export default function CustomRequestModal() {
         provider: body.provider,
       });
     } catch (error) {
-      showToast(error.message || 'Nao foi possivel enviar o pedido.', 'error');
+      showToast(error.message || 'Não foi possível enviar o pedido.', 'error');
     } finally {
       setLoading(false);
     }

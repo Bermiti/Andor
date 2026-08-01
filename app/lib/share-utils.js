@@ -48,7 +48,7 @@ export function decodeSharePayload(encoded) {
 }
 
 const formatCurrencyAmount = (value, currencyContext) => {
-  if (value === undefined || value === null || value === '') return 'Grátis';
+  if (value === undefined || value === null || value === '') return 'Por confirmar';
   if (typeof value === 'string') {
     if (/free|gr[aá]tis/i.test(value)) return 'Grátis';
     if (/[€$£¥]|JPY|USD|GBP|EUR|IDR|MAD/i.test(value)) return value;

@@ -1056,17 +1056,18 @@
   }
 
   .tripGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .tripCardFeatured {
     grid-column: span 1;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .tripCardFeatured .tripCover {
+    width: 100%;
     min-height: 240px;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: auto;
   }
 }
 
@@ -1108,6 +1109,10 @@
   .tripTopline {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .tripActions {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1266,3 +1271,17 @@
 .opReady { background: rgba(76,175,122,0.15); color: #2e7d32; border: 1px solid rgba(76,175,122,0.3); }
 .opSend { background: rgba(31,103,121,0.15); color: #1f6779; border: 1px solid rgba(31,103,121,0.3); }
 .opMissing { background: rgba(255,152,0,0.15); color: #e65100; border: 1px solid rgba(255,152,0,0.3); }
+
+@media (max-width: 720px) {
+  .dashboardControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .searchBar,
+  .searchBar input,
+  .sortSelect {
+    width: 100%;
+    min-width: 0;
+  }
+}

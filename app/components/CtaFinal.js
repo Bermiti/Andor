@@ -84,7 +84,7 @@ export default function CtaFinal() {
             A tua próxima aventura está a uma mensagem de distância
           </h2>
           <p className={styles.subtitle}>
-          Sem cartão de crédito. Sem compromissos. Cancelamento livre.
+            Cria e ajusta um plano. Confirma sempre preços, disponibilidade e requisitos nas fontes oficiais.
           </p>
 
           <div className={styles.buttons}>
@@ -93,7 +93,7 @@ export default function CtaFinal() {
               className={styles.primaryBtn}
               onClick={handleOpenAuth}
             >
-              Começar Grátis →
+              Começar a Planear →
             </button>
             <button 
               type="button" 
@@ -105,9 +105,9 @@ export default function CtaFinal() {
           </div>
 
           <div className={styles.trustSignals}>
-            <span>Dados seguros</span>
-            <span>4.9/5 de 2.400+ utilizadores</span>
-            <span>120+ países</span>
+            <span>Sem pagamentos no Andor</span>
+            <span>Estimativas identificadas</span>
+            <span>Reservas feitas nos fornecedores</span>
           </div>
         </div>
       </div>

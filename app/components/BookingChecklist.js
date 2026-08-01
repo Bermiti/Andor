@@ -8,6 +8,7 @@ import { BOOKING_STATUS_OPTIONS, priorityLabel } from '../lib/planning-labels';
 import styles from './BookingChecklist.module.css';
 
 const COMPLETE_STATUSES = new Set(['booked', 'confirmed']);
+const MARKED_STATUSES = new Set(['selected', 'booked', 'confirmed']);
 
 function normalizePriority(priority) {
   if (['critical', 'high', 'medium', 'low'].includes(priority)) return priority;
@@ -95,7 +96,7 @@ export default function BookingChecklist({ bookingChecklist, storageKey, tripId 
   const handleToggle = (item) => {
     const current = getValue(item, 'status') || 'not_started';
     updateItem(item.id, {
-      status: COMPLETE_STATUSES.has(current) ? 'not_started' : 'confirmed',
+      status: MARKED_STATUSES.has(current) ? 'not_started' : 'selected',
     });
   };
 
@@ -145,6 +146,7 @@ export default function BookingChecklist({ bookingChecklist, storageKey, tripId 
               {priorityItems.map((item) => {
                 const status = getValue(item, 'status') || 'not_started';
                 const isCompleted = COMPLETE_STATUSES.has(status);
+                const isMarked = MARKED_STATUSES.has(status);
 
                 return (
                   <div
@@ -155,10 +157,10 @@ export default function BookingChecklist({ bookingChecklist, storageKey, tripId 
                       <div className={styles.itemContent}>
                         <input
                           type="checkbox"
-                          checked={isCompleted}
+                          checked={isMarked}
                           onChange={() => handleToggle(item)}
                           className={styles.checkbox}
-                          aria-label={item.task}
+                          aria-label={`Selecionar tarefa: ${item.task}`}
                         />
                         <div className={styles.itemText}>
                           <div className={styles.itemTask}>{item.task}</div>

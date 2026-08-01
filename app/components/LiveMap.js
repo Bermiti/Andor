@@ -12,6 +12,13 @@ export default function LiveMap({ stops = [], destination = {}, currency = '€'
   
   const [mapType, setMapType] = useState('map'); // 'map' or 'satellite'
 
+  const escapeHtml = (value) => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
   const parseCoordinates = (value) => {
     if (Array.isArray(value) && value.length >= 2) {
       const lat = Number(value[0]);
@@ -27,7 +34,7 @@ export default function LiveMap({ stops = [], destination = {}, currency = '€'
   };
 
   const formatCost = (value) => {
-    if (value === undefined || value === null || value === '') return 'Grátis';
+    if (value === undefined || value === null || value === '') return 'Não indicado';
     if (typeof value === 'string') {
       if (/free|gr[aá]tis/i.test(value)) return 'Grátis';
       if (/[€$£¥]|JPY|USD|GBP|EUR|IDR|MAD/i.test(value)) return value;
@@ -263,8 +270,8 @@ export default function LiveMap({ stops = [], destination = {}, currency = '€'
               <div class="${styles.clusterStopItem}">
                 <span class="${styles.clusterStopNum}">${s.originalIndex + 1}</span>
                 <div>
-                  <strong>${s.name}</strong>
-                  <span class="${styles.popupTime}">(${s.time})</span>
+                  <strong>${escapeHtml(s.name)}</strong>
+                  ${s.time ? `<span class="${styles.popupTime}">(${escapeHtml(s.time)})</span>` : ''}
                 </div>
               </div>
             `;
@@ -273,20 +280,25 @@ export default function LiveMap({ stops = [], destination = {}, currency = '€'
           const photoUrl = getCategoryPhoto(mainStop);
           const badgeText = getTypeBadge(mainStop.type);
           popupContent += `
-            <img src="${photoUrl}" width="260" height="100" loading="lazy" decoding="async" class="${styles.popupPhoto}" alt="${mainStop.name}" />
+            <img src="${photoUrl}" width="260" height="100" loading="lazy" decoding="async" class="${styles.popupPhoto}" alt="${escapeHtml(mainStop.name)}" />
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
               <span style="font-size: 9px; font-weight: 700; background-color: ${markerColor}; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">${badgeText}</span>
-              <span class="${styles.popupTime}" style="margin-bottom: 0;">${mainStop.time || mainStop.period || ''}</span>
+              <span class="${styles.popupTime}" style="margin-bottom: 0;">${escapeHtml(mainStop.time || mainStop.period || '')}</span>
             </div>
-            <h4 class="${styles.popupName}">${mainStop.name}</h4>
+            <h4 class="${styles.popupName}">${escapeHtml(mainStop.name)}</h4>
             <div class="${styles.popupMetaRow}">
-              <span>${mainStop.duration || '90 min'}</span>
-              <span>${mainStop.cost !== undefined ? formatCost(mainStop.cost) : formatCost(mainStop.estimatedCost || 'Grátis')}</span>
-              ${mainStop.rating ? `<span>Rating ${mainStop.rating}</span>` : ''}
+              ${mainStop.duration ? `<span>${escapeHtml(mainStop.duration)}</span>` : ''}
+              ${mainStop.cost !== undefined || mainStop.estimatedCost !== undefined
+                ? `<span>Custo estimado: ${escapeHtml(formatCost(mainStop.cost ?? mainStop.estimatedCost))}</span>`
+                : '<span>Custo não indicado</span>'}
             </div>
-            ${mainStop.transportFromPrevious?.duration ? `<div class="${styles.popupType}">Como chegar: ${mainStop.transportFromPrevious.duration}</div>` : ''}
+            ${mainStop.transportFromPrevious?.duration ? `<div class="${styles.popupType}">Como chegar: ${escapeHtml(mainStop.transportFromPrevious.duration)}</div>` : ''}
             <div class="popupSource" style="font-size: 10px; margin-top: 4px; margin-bottom: 4px; color: #aaa;">
-              ${mainStop.coordinateSource === 'nominatim' ? '📍 Dados reais (Nominatim)' : '🤖 Dados estimados'}
+              ${mainStop.coordinateSource === 'nominatim'
+                ? 'Localização verificada · detalhes estimados'
+                : mainStop.coordinateSource === 'curated'
+                  ? 'Localização de referência · detalhes estimados'
+                  : 'Localização e detalhes estimados'}
             </div>
             <div class="${styles.popupActions}">
               <a href="#activity-${mainStop.originalIndex}" class="${styles.popupMapBtn}">Ver detalhes</a>

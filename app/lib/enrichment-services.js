@@ -1,352 +1,261 @@
 /**
- * Services for fetching real data to enrich itineraries.
- * Gracefully falls back to mock/structured data if API keys are missing.
+ * Provider-backed itinerary enrichment.
+ *
+ * Missing providers return missing data. They must never synthesize a plausible
+ * rating, price, opening time, venue, flight, or availability result.
  */
 
-// Helper to fetch JSON with timeout
 async function fetchWithTimeout(url, options = {}, timeout = 5000) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
-/**
- * Enriches a single activity using Wikipedia Summary API and OpenTripMap
- */
-export async function enrichActivityData(activityName, destinationCity, country = '') {
+function hasUsableKey(value, placeholder) {
+  return Boolean(value && value !== placeholder && !value.startsWith('cola_aqui'));
+}
+
+function parseCoordinates(value) {
+  if (Array.isArray(value) && value.length >= 2) {
+    const lat = Number(value[0]);
+    const lng = Number(value[1]);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  }
+  if (value && typeof value === 'object') {
+    const lat = Number(value.lat ?? value.latitude);
+    const lng = Number(value.lng ?? value.lon ?? value.longitude);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  }
+  return null;
+}
+
+export async function enrichActivityData(activityName, destinationCity) {
   const result = {
     name: activityName,
-    description: '',
+    description: null,
     thumbnail: null,
     wikipediaUrl: null,
-    source: 'estimated',
-    rating: 4.5,
-    hours: '09:00 - 18:00',
-    fee: 'Grátis'
+    source: 'unavailable',
+    rating: null,
+    hours: null,
+    fee: null,
   };
 
-  // 1. Query Wikipedia (free, no key needed)
-  // Try Portuguese Wikipedia first, fallback to English
-  const wikiTitles = [activityName, `${activityName} (${destinationCity})`, activityName.replace(/\s+/g, '_')];
-  
+  const wikiTitles = [
+    activityName,
+    destinationCity ? `${activityName} (${destinationCity})` : null,
+    String(activityName || '').replace(/\s+/g, '_'),
+  ].filter(Boolean);
+
   for (const lang of ['pt', 'en']) {
     for (const title of wikiTitles) {
       try {
         const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-        const res = await fetchWithTimeout(url, {
-          headers: { 'User-Agent': 'Andor-Travel-App/1.0 (contact@andor.travel)' }
+        const response = await fetchWithTimeout(url, {
+          headers: { 'User-Agent': 'Andor-Travel-App/1.0 (contact@andor.travel)' },
         }, 3000);
+        if (!response.ok) continue;
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.extract) {
-            result.description = data.extract;
-            result.thumbnail = data.thumbnail?.source || null;
-            result.wikipediaUrl = data.content_urls?.desktop?.page || null;
-            result.source = 'wikipedia';
-            break;
-          }
+        const data = await response.json();
+        if (data.extract) {
+          result.description = data.extract;
+          result.thumbnail = data.thumbnail?.source || null;
+          result.wikipediaUrl = data.content_urls?.desktop?.page || null;
+          result.source = 'wikipedia';
+          break;
         }
-      } catch (e) {
-        // ignore and try next
+      } catch (error) {
+        // Try the next public source without inventing replacement data.
       }
     }
     if (result.description) break;
   }
 
-  // 2. OpenTripMap Enrichment (if key is set)
-  const otmKey = process.env.OPENTRIPMAP_API_KEY;
-  if (otmKey && otmKey !== '5ae2e3...' && !otmKey.startsWith('cola_aqui')) {
-    try {
-      // Find OTM details if possible
-      // We can do a name search:
-      const searchUrl = `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(destinationCity)}&apikey=${otmKey}`;
-      const searchRes = await fetchWithTimeout(searchUrl);
-      if (searchRes.ok) {
-        const cityData = await searchRes.json();
-        if (cityData.lat && cityData.lon) {
-          const placesUrl = `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${cityData.lon}&lat=${cityData.lat}&name=${encodeURIComponent(activityName)}&limit=1&apikey=${otmKey}`;
-          const placesRes = await fetchWithTimeout(placesUrl);
-          if (placesRes.ok) {
-            const places = await placesRes.json();
-            if (places.features && places.features.length > 0) {
-              const xid = places.features[0].properties.xid;
-              const detailsUrl = `https://api.opentripmap.com/0.1/en/places/xid/${xid}?apikey=${otmKey}`;
-              const detailsRes = await fetchWithTimeout(detailsUrl);
-              if (detailsRes.ok) {
-                const details = await detailsRes.json();
-                if (details.info) {
-                  result.fee = details.admission || result.fee;
-                  result.hours = details.opening_hours || result.hours;
-                  if (!result.description && details.wikipedia_extracts?.text) {
-                    result.description = details.wikipedia_extracts.text;
-                    result.source = 'opentripmap';
-                  }
-                  if (!result.thumbnail && details.preview?.source) {
-                    result.thumbnail = details.preview.source;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('OTM activity enrichment failed:', err);
-    }
-  }
+  const openTripMapKey = process.env.OPENTRIPMAP_API_KEY;
+  if (!destinationCity || !hasUsableKey(openTripMapKey, '5ae2e3...')) return result;
 
-  // 3. Fallback mock generation if description is still empty
-  if (!result.description) {
-    const templates = [
-      `Um ponto turístico icônico em ${destinationCity}, imperdível para quem quer conhecer a história e a cultura local.`,
-      `Local de grande interesse histórico e arquitetônico em ${destinationCity}, oferecendo uma atmosfera única e ótimas oportunidades para fotos.`,
-      `Uma das atrações mais recomendadas de ${destinationCity}, ideal para visitar com calma e apreciar os detalhes locais.`,
-    ];
-    result.description = templates[Math.floor(Math.random() * templates.length)];
-    result.fee = Math.random() > 0.5 ? '€5 – €12' : 'Grátis';
+  try {
+    const cityResponse = await fetchWithTimeout(
+      `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(destinationCity)}&apikey=${openTripMapKey}`
+    );
+    if (!cityResponse.ok) return result;
+
+    const city = await cityResponse.json();
+    if (!Number.isFinite(Number(city.lat)) || !Number.isFinite(Number(city.lon))) return result;
+
+    const placesResponse = await fetchWithTimeout(
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${city.lon}&lat=${city.lat}&name=${encodeURIComponent(activityName)}&limit=1&apikey=${openTripMapKey}`
+    );
+    if (!placesResponse.ok) return result;
+
+    const places = await placesResponse.json();
+    const xid = places.features?.[0]?.properties?.xid;
+    if (!xid) return result;
+
+    const detailsResponse = await fetchWithTimeout(
+      `https://api.opentripmap.com/0.1/en/places/xid/${xid}?apikey=${openTripMapKey}`
+    );
+    if (!detailsResponse.ok) return result;
+
+    const details = await detailsResponse.json();
+    result.source = 'opentripmap';
+    result.fee = details.admission || null;
+    result.hours = details.opening_hours || null;
+    result.description = result.description || details.wikipedia_extracts?.text || null;
+    result.thumbnail = result.thumbnail || details.preview?.source || null;
+    result.wikipediaUrl = result.wikipediaUrl || details.wikipedia || null;
+  } catch (error) {
+    // Return only the fields a provider already supplied.
   }
 
   return result;
 }
 
-/**
- * Enriches nearby restaurants around specific coordinates
- */
-export async function enrichRestaurantsData(lat, lng, destinationCity) {
-  const fallbackRestaurants = [
-    {
-      name: 'Tasca do Bairro',
-      cuisine: 'Tradicional / Local',
-      rating: 4.6,
-      priceLevel: '€€',
-      address: 'Centro Histórico',
-      hours: '12:00 - 23:00',
-      mustTry: 'Especialidade da casa',
-      source: 'estimated'
-    },
-    {
-      name: 'O Bistrô da Esquina',
-      cuisine: 'Moderna / Fusão',
-      rating: 4.4,
-      priceLevel: '€€€',
-      address: 'Rua Principal',
-      hours: '19:00 - 23:30',
-      mustTry: 'Menu de degustação',
-      source: 'estimated'
-    },
-    {
-      name: 'Cantinho Verde',
-      cuisine: 'Vegetariana / Saudável',
-      rating: 4.5,
-      priceLevel: '€',
-      address: 'Próximo ao Parque',
-      hours: '11:30 - 20:00',
-      mustTry: 'Salada da época e sumos naturais',
-      source: 'estimated'
-    }
-  ];
+export async function enrichRestaurantsData(lat, lng) {
+  const coordinates = parseCoordinates({ lat, lng });
+  if (!coordinates) return [];
 
-  const otmKey = process.env.OPENTRIPMAP_API_KEY;
-  const fsqKey = process.env.FOURSQUARE_API_KEY;
-
-  // 1. Try Foursquare Places API first (if key is set)
-  if (fsqKey && fsqKey !== 'fsq3...' && !fsqKey.startsWith('cola_aqui')) {
+  const foursquareKey = process.env.FOURSQUARE_API_KEY;
+  if (hasUsableKey(foursquareKey, 'fsq3...')) {
     try {
-      const url = `https://api.foursquare.com/v3/places/search?query=restaurant&ll=${lat},${lng}&radius=1000&categories=13000&sort=RATING&limit=3`;
-      const res = await fetchWithTimeout(url, {
-        headers: {
-          'Authorization': fsqKey,
-          'Accept': 'application/json'
-        }
+      const url = `https://api.foursquare.com/v3/places/search?query=restaurant&ll=${coordinates.lat},${coordinates.lng}&radius=1000&categories=13000&sort=RATING&limit=3`;
+      const response = await fetchWithTimeout(url, {
+        headers: { Authorization: foursquareKey, Accept: 'application/json' },
       }, 3000);
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
-          return data.results.map((r, i) => {
-            let priceSymbol = '€';
-            if (r.price === 1) priceSymbol = '€';
-            else if (r.price === 2) priceSymbol = '€€';
-            else if (r.price === 3) priceSymbol = '€€€';
-            else if (r.price === 4) priceSymbol = '€€€€';
-
-            return {
-              name: r.name,
-              cuisine: r.categories?.[0]?.name || 'Restaurante',
-              rating: r.rating ? (r.rating / 2).toFixed(1) : (4.0 + (i * 0.2)).toFixed(1),
-              priceLevel: priceSymbol,
-              address: r.location?.address || 'Nas proximidades',
-              hours: '12:00 - 22:30',
-              mustTry: 'Prato principal recomendado pelos clientes',
-              source: 'foursquare'
-            };
-          });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.results) && data.results.length > 0) {
+          return data.results.map((restaurant) => ({
+            name: restaurant.name,
+            cuisine: restaurant.categories?.[0]?.name || null,
+            rating: Number.isFinite(Number(restaurant.rating))
+              ? (Number(restaurant.rating) / 2).toFixed(1)
+              : null,
+            priceLevel: Number.isInteger(restaurant.price) && restaurant.price > 0
+              ? '€'.repeat(Math.min(4, restaurant.price))
+              : null,
+            address: restaurant.location?.formatted_address
+              || restaurant.location?.address
+              || null,
+            hours: restaurant.hours?.display || null,
+            mustTry: null,
+            source: 'foursquare',
+          }));
         }
       }
-    } catch (e) {
-      console.error('Foursquare restaurant enrichment failed:', e);
+    } catch (error) {
+      // Continue to the next configured provider.
     }
   }
 
-  // 2. Try OpenTripMap foods search
-  if (otmKey && otmKey !== '5ae2e3...' && !otmKey.startsWith('cola_aqui')) {
-    try {
-      const radiusUrl = `https://api.opentripmap.com/0.1/en/places/radius?radius=1000&lon=${lng}&lat=${lat}&kinds=foods&rate=2&limit=3&apikey=${otmKey}`;
-      const radiusRes = await fetchWithTimeout(radiusUrl);
-      if (radiusRes.ok) {
-        const data = await radiusRes.json();
-        if (data.features && data.features.length > 0) {
-          const results = [];
-          for (const feature of data.features.slice(0, 3)) {
-            const xid = feature.properties.xid;
-            const detailsRes = await fetchWithTimeout(`https://api.opentripmap.com/0.1/en/places/xid/${xid}?apikey=${otmKey}`);
-            if (detailsRes.ok) {
-              const details = await detailsRes.json();
-              results.push({
-                name: details.name || 'Restaurante Local',
-                cuisine: details.kinds?.split(',').find(k => k !== 'foods' && k !== 'restaurants') || 'Culinária Local',
-                rating: (4.0 + Math.random() * 0.9).toFixed(1),
-                priceLevel: Math.random() > 0.6 ? '€€€' : '€€',
-                address: details.address?.road || 'Nas proximidades',
-                hours: details.opening_hours || '12:00 - 22:30',
-                mustTry: 'Especialidade local recomendada',
-                source: 'opentripmap'
-              });
-            }
-          }
-          if (results.length > 0) return results;
-        }
-      }
-    } catch (e) {
-      console.error('OTM restaurant enrichment failed:', e);
+  const openTripMapKey = process.env.OPENTRIPMAP_API_KEY;
+  if (!hasUsableKey(openTripMapKey, '5ae2e3...')) return [];
+
+  try {
+    const radiusUrl = `https://api.opentripmap.com/0.1/en/places/radius?radius=1000&lon=${coordinates.lng}&lat=${coordinates.lat}&kinds=foods&rate=2&limit=3&apikey=${openTripMapKey}`;
+    const radiusResponse = await fetchWithTimeout(radiusUrl);
+    if (!radiusResponse.ok) return [];
+
+    const radiusData = await radiusResponse.json();
+    const features = Array.isArray(radiusData.features) ? radiusData.features.slice(0, 3) : [];
+    const results = [];
+    for (const feature of features) {
+      const xid = feature.properties?.xid;
+      if (!xid) continue;
+      const detailsResponse = await fetchWithTimeout(
+        `https://api.opentripmap.com/0.1/en/places/xid/${xid}?apikey=${openTripMapKey}`
+      );
+      if (!detailsResponse.ok) continue;
+
+      const details = await detailsResponse.json();
+      if (!details.name) continue;
+      results.push({
+        name: details.name,
+        cuisine: details.kinds?.split(',').find((kind) => !['foods', 'restaurants'].includes(kind)) || null,
+        rating: null,
+        priceLevel: null,
+        address: details.address?.road || details.address?.city || null,
+        hours: details.opening_hours || null,
+        mustTry: null,
+        source: 'opentripmap',
+      });
     }
+    return results;
+  } catch (error) {
+    return [];
   }
-
-  // City-specific premium customization for mock data
-  const city = destinationCity.toLowerCase();
-  if (city.includes('tokyo') || city.includes('tóquio') || city.includes('japan')) {
-    return [
-      { name: 'Sushi-zanmai Asakusa', cuisine: 'Sushi / Sashimi', rating: 4.6, priceLevel: '€€', address: 'Asakusa, Tokyo', hours: '11:00 - 22:00', mustTry: 'Sashimi de Atum Gordo (Otoro)', source: 'estimated' },
-      { name: 'Ramen Ichiran Shibuya', cuisine: 'Tonkotsu Ramen', rating: 4.5, priceLevel: '€', address: 'Shibuya, Tokyo', hours: '24h', mustTry: 'Ramen Tonkotsu Clássico', source: 'estimated' },
-      { name: 'Gonpachi Nishi-Azabu', cuisine: 'Izakaya / Grelhados', rating: 4.4, priceLevel: '€€€', address: 'Roppongi, Tokyo', hours: '17:00 - 02:00', mustTry: 'Espetadas de Yakitori e Tempura', source: 'estimated' }
-    ];
-  } else if (city.includes('lisbon') || city.includes('lisboa')) {
-    return [
-      { name: 'Cervejaria Ramiro', cuisine: 'Marisco Tradicional', rating: 4.7, priceLevel: '€€€', address: 'Intendente, Lisboa', hours: '12:00 - 00:00', mustTry: 'Amêijoas à Bulhão Pato e Prego no Pão', source: 'estimated' },
-      { name: 'Tasca do Chico', cuisine: 'Petiscos & Fado', rating: 4.3, priceLevel: '€', address: 'Bairro Alto, Lisboa', hours: '19:00 - 02:00', mustTry: 'Chouriço Assado e Caldo Verde', source: 'estimated' },
-      { name: 'Taberna da Rua das Flores', cuisine: 'Petiscos Portugueses Modernos', rating: 4.5, priceLevel: '€€', address: 'Chiado, Lisboa', hours: '12:00 - 23:00', mustTry: 'Iscas de cebolada ou peixe do dia grelhado', source: 'estimated' }
-    ];
-  } else if (city.includes('paris')) {
-    return [
-      { name: 'Le Relais de l\'Entrecôte', cuisine: 'Bife com Batata Frita', rating: 4.5, priceLevel: '€€€', address: 'St-Germain-des-Prés, Paris', hours: '12:00 - 23:00', mustTry: 'Bife com molho secreto e batatas fritas', source: 'estimated' },
-      { name: 'Bouillon Chartier', cuisine: 'Clássica Francesa de Taberna', rating: 4.2, priceLevel: '€', address: 'Grands Boulevards, Paris', hours: '11:30 - 00:00', mustTry: 'Confit de Canard (Pato) e Escargots', source: 'estimated' },
-      { name: 'L\'As du Fallafel', cuisine: 'Médio Oriente / Falafel', rating: 4.6, priceLevel: '€', address: 'Le Marais, Paris', hours: '11:00 - 23:00', mustTry: 'Falafel Especial no Pão Pita', source: 'estimated' }
-    ];
-  }
-
-  return fallbackRestaurants;
 }
 
-/**
- * Enriches transport using Skyscanner/Google Flights search templates and optional Amadeus API.
- */
 export async function enrichTransportData(fromCity, toCity, date) {
-  const formattedDate = date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
+  const dateSuffix = /^\d{4}-\d{2}-\d{2}$/.test(String(date || '')) ? ` em ${date}` : '';
+  const query = `Voos de ${fromCity || 'origem por definir'} para ${toCity || 'destino por definir'}${dateSuffix}`;
+  const googleFlightsUrl = `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
   const result = {
-    overview: `Pesquisa de voos de ${fromCity} para ${toCity} para a data ${formattedDate}`,
-    skyscannerUrl: `https://www.skyscanner.pt/transport/flights/${encodeURIComponent(fromCity.slice(0,3).toLowerCase())}/${encodeURIComponent(toCity.slice(0,3).toLowerCase())}/${formattedDate.replace(/-/g, '')}/`,
-    googleFlightsUrl: `https://www.google.com/travel/flights?q=Voos%20de%20${encodeURIComponent(fromCity)}%20para%20${encodeURIComponent(toCity)}%20em%20${formattedDate}`,
-    options: [
-      {
-        operator: 'Companhia Principal (Direto)',
-        type: 'flight',
-        timing: '09:15 → 12:45',
-        duration: '3h 30m',
-        stops: 'Direto',
-        estimatedPrice: '€120 – €180',
-        bookingUrl: `https://www.google.com/travel/flights?q=Voos%20de%20${encodeURIComponent(fromCity)}%20para%20${encodeURIComponent(toCity)}%20em%20${formattedDate}`,
-        source: 'estimated'
-      },
-      {
-        operator: 'Companhia Low-Cost (Escala / Económico)',
-        type: 'flight',
-        timing: '06:00 → 13:20',
-        duration: '7h 20m',
-        stops: '1 escala (MAD)',
-        estimatedPrice: '€65 – €90',
-        bookingUrl: `https://www.skyscanner.pt/transport/flights/${encodeURIComponent(fromCity.slice(0,3).toLowerCase())}/${encodeURIComponent(toCity.slice(0,3).toLowerCase())}/${formattedDate.replace(/-/g, '')}/`,
-        source: 'estimated'
-      }
-    ]
+    overview: 'Pesquisa externa disponível; preços e disponibilidade não foram consultados.',
+    skyscannerUrl: 'https://www.skyscanner.pt/transport/voos/',
+    googleFlightsUrl,
+    options: [],
   };
 
   const amadeusKey = process.env.AMADEUS_API_KEY;
   const amadeusSecret = process.env.AMADEUS_API_SECRET;
-  
-  if (amadeusKey && amadeusSecret && amadeusKey !== '' && !amadeusKey.startsWith('cola_aqui')) {
-    try {
-      // 1. Fetch Amadeus Auth Token
-      const tokenUrl = 'https://test.api.amadeus.com/v1/security/oauth2/token';
-      const tokenParams = new URLSearchParams();
-      tokenParams.append('grant_type', 'client_credentials');
-      tokenParams.append('client_id', amadeusKey);
-      tokenParams.append('client_secret', amadeusSecret);
+  const hasIataCodes = /^[A-Z]{3}$/i.test(String(fromCity || ''))
+    && /^[A-Z]{3}$/i.test(String(toCity || ''));
+  const hasDate = /^\d{4}-\d{2}-\d{2}$/.test(String(date || ''));
+  if (!hasUsableKey(amadeusKey, '') || !amadeusSecret || !hasIataCodes || !hasDate) return result;
 
-      const tokenRes = await fetchWithTimeout(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: tokenParams
-      }, 3000);
+  const baseUrl = (process.env.AMADEUS_API_BASE_URL || 'https://test.api.amadeus.com').replace(/\/$/, '');
+  try {
+    const tokenParams = new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: amadeusKey,
+      client_secret: amadeusSecret,
+    });
+    const tokenResponse = await fetchWithTimeout(`${baseUrl}/v1/security/oauth2/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenParams,
+    }, 3000);
+    if (!tokenResponse.ok) return result;
 
-      if (tokenRes.ok) {
-        const tokenData = await tokenRes.json();
-        const accessToken = tokenData.access_token;
+    const { access_token: accessToken } = await tokenResponse.json();
+    if (!accessToken) return result;
+    const offersUrl = `${baseUrl}/v2/shopping/flight-offers?originLocationCode=${fromCity.toUpperCase()}&destinationLocationCode=${toCity.toUpperCase()}&departureDate=${date}&adults=1&max=2`;
+    const offersResponse = await fetchWithTimeout(offersUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }, 3000);
+    if (!offersResponse.ok) return result;
 
-        // 2. Fetch Flight Offers
-        // We need 3-letter IATA codes. Let's make a basic lookup or guess the first 3 letters.
-        const originIata = fromCity.slice(0,3).toUpperCase();
-        const destIata = toCity.slice(0,3).toUpperCase();
-
-        const flightsUrl = `https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=${originIata}&destinationLocationCode=${destIata}&departureDate=${formattedDate}&adults=1&max=2`;
-        const flightsRes = await fetchWithTimeout(flightsUrl, {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        }, 3000);
-
-        if (flightsRes.ok) {
-          const flightsData = await flightsRes.json();
-          if (flightsData.data && flightsData.data.length > 0) {
-            result.options = flightsData.data.map(offer => {
-              const itinerary = offer.itineraries[0];
-              const segment = itinerary.segments[0];
-              const carrierCode = segment.carrierCode;
-              const price = offer.price.total;
-
-              return {
-                operator: `${carrierCode} Airlines`,
-                type: 'flight',
-                timing: `${segment.departure.at.split('T')[1].slice(0,5)} → ${itinerary.segments[itinerary.segments.length - 1].arrival.at.split('T')[1].slice(0,5)}`,
-                duration: itinerary.duration.replace('PT', '').toLowerCase(),
-                stops: itinerary.segments.length === 1 ? 'Direto' : `${itinerary.segments.length - 1} escala(s)`,
-                estimatedPrice: `€${Math.round(price)}`,
-                bookingUrl: result.googleFlightsUrl,
-                source: 'amadeus'
-              };
-            });
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Amadeus flight enrichment failed:', e);
-    }
+    const offers = await offersResponse.json();
+    result.options = (offers.data || []).map((offer) => {
+      const itinerary = offer.itineraries?.[0];
+      const segments = itinerary?.segments || [];
+      const first = segments[0];
+      const last = segments[segments.length - 1];
+      return {
+        operator: first?.carrierCode ? `Carrier ${first.carrierCode}` : null,
+        type: 'flight',
+        timing: first?.departure?.at && last?.arrival?.at
+          ? `${first.departure.at.split('T')[1]?.slice(0, 5)} → ${last.arrival.at.split('T')[1]?.slice(0, 5)}`
+          : null,
+        duration: itinerary?.duration?.replace('PT', '').toLowerCase() || null,
+        stops: segments.length ? Math.max(0, segments.length - 1) : null,
+        estimatedPrice: offer.price?.total && offer.price?.currency
+          ? `${offer.price.currency} ${offer.price.total}`
+          : null,
+        bookingUrl: googleFlightsUrl,
+        source: baseUrl === 'https://api.amadeus.com' ? 'amadeus' : 'amadeus-test',
+      };
+    });
+    result.overview = result.options.length
+      ? `Ofertas recebidas do ambiente ${baseUrl === 'https://api.amadeus.com' ? 'de produção' : 'de teste'} da Amadeus.`
+      : result.overview;
+  } catch (error) {
+    // Preserve the external search links and an empty result set.
   }
 
   return result;

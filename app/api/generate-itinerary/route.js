@@ -1,6 +1,5 @@
-import { generateDestinationAwareFallbackItinerary, generateFallbackItinerary } from '../../lib/fallback-ai';
+import { generateDestinationAwareFallbackItinerary } from '../../lib/fallback-ai';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
-import PHASE11_ENHANCED_SYSTEM_PROMPT from '../../lib/phase11-2-enhanced-prompt';
 import { validateAndFixCoordinates, getDestinationCenter } from '../../lib/coordinate-validator';
 import { geocodeServerSide } from '../../lib/geocoding';
 import { validateAllDayTitles, isBannedDayTitle, suggestDayTitle } from '../../lib/day-title-validator';
@@ -8,6 +7,7 @@ import { apiError, cleanInteger, cleanList, cleanLocale, cleanString, hasProvide
 import { logger } from '../../lib/logger';
 import { createItineraryRecord } from '../../lib/supabase/db';
 import { ensureBookingReadyItinerary } from '../../lib/booking-ready';
+import { AI_MODELS } from '../../lib/server/ai-models';
 
 const DESTINATION_CURRENCY_HINTS = [
   { match: /tokyo|kyoto|osaka|japan/i, code: 'JPY', symbol: 'JPY' },
@@ -175,7 +175,7 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
     throw new Error('Generated itinerary is not an object');
   }
 
-  const fallbackDestination = requestedDestination || 'Lisbon';
+  const fallbackDestination = requestedDestination || '';
   const destination = typeof itinerary.destination === 'object'
     ? { ...itinerary.destination }
     : { city: itinerary.destination || fallbackDestination };
@@ -232,19 +232,21 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
       period.activities = activities.slice(0, 4).map((activity, activityIndex) => {
         const nextActivity = { ...activity, period: periodKey };
         nextActivity.id = nextActivity.id || `d${dayIndex + 1}-${periodKey}-${activityIndex + 1}`;
-        nextActivity.name = nextActivity.name || `Local ${activityIndex + 1}`;
-        nextActivity.type = nextActivity.type || nextActivity.category || 'experience';
-        nextActivity.duration = nextActivity.duration || '90 min';
-        nextActivity.cost = typeof nextActivity.cost === 'number' ? nextActivity.cost : parseMoneyValue(nextActivity.estimatedCost, 0);
+        nextActivity.name = nextActivity.name || `Paragem ${activityIndex + 1}`;
+        nextActivity.type = nextActivity.type || nextActivity.category || 'atividade';
+        nextActivity.duration = nextActivity.duration || '';
+        nextActivity.cost = typeof nextActivity.cost === 'number'
+          ? nextActivity.cost
+          : nextActivity.estimatedCost === undefined || nextActivity.estimatedCost === null
+            ? null
+            : parseMoneyValue(nextActivity.estimatedCost, null);
         nextActivity.currency = nextActivity.currency || destinationCurrency.code;
-        nextActivity.address = nextActivity.address || destination.city;
-        if (!Array.isArray(nextActivity.coordinates)) {
-          nextActivity.coordinates = [centerLat, centerLng];
-        }
-        nextActivity.bookingRequired = Boolean(nextActivity.bookingRequired);
-        nextActivity.crowd = nextActivity.crowd || 'medium';
-        nextActivity.insiderTip = nextActivity.insiderTip || nextActivity.localTip || `Vai cedo e confirma horários no próprio dia.`;
-        nextActivity.photoKeyword = nextActivity.photoKeyword || `${nextActivity.name} ${destination.city}`;
+        nextActivity.address = nextActivity.address || '';
+        nextActivity.coordinates = Array.isArray(nextActivity.coordinates) ? nextActivity.coordinates : null;
+        nextActivity.bookingRequired = typeof nextActivity.bookingRequired === 'boolean' ? nextActivity.bookingRequired : null;
+        nextActivity.crowd = nextActivity.crowd || '';
+        nextActivity.insiderTip = nextActivity.insiderTip || nextActivity.localTip || '';
+        nextActivity.photoKeyword = nextActivity.photoKeyword || '';
         allActivities.push(nextActivity);
         return nextActivity;
       });
@@ -262,9 +264,9 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
     nextDay.stops = allActivities.slice(0, 4);
     nextDay.activities = nextDay.stops;
     nextDay.meals = nextDay.meals || {};
-    nextDay.localSecret = nextDay.localSecret || `Pergunta ao staff do hotel qual é a rua onde eles jantariam numa noite livre.`;
-    nextDay.weather = nextDay.weather || { avgTemp: '18°C', condition: 'Variável', emoji: '🌤️', tip: 'Leva uma camada leve.' };
-    nextDay.transport = nextDay.transport || { mainMode: 'A pé + transporte público', apps: ['App local de transportes'], cost: 8 };
+    nextDay.localSecret = nextDay.localSecret || '';
+    nextDay.weather = nextDay.weather || null;
+    nextDay.transport = nextDay.transport || null;
     return nextDay;
   });
 
@@ -294,13 +296,14 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
         if (hasValidAiCoords) {
           act.coordinateSource = 'ai';
         } else {
-          act.coordinates = [centerLat, centerLng];
-          act.coordinateSource = 'centroid';
+          act.coordinates = null;
+          act.coordinateSource = 'unavailable';
         }
       }
     } catch (err) {
       console.error(`Error geocoding activity ${act.name}:`, err);
-      act.coordinateSource = 'centroid';
+      act.coordinates = null;
+      act.coordinateSource = 'unavailable';
     }
   }
 
@@ -309,9 +312,9 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
     destination,
     trip: {
       totalDays: Number(requestedDays) || itinerary.trip?.totalDays || repairedDays.length,
-      travelStyle: itinerary.trip?.travelStyle || 'cultural',
-      groupType: itinerary.trip?.groupType || 'casal',
-      budgetTier: itinerary.trip?.budgetTier || 'comfort',
+      travelStyle: itinerary.trip?.travelStyle || '',
+      groupType: itinerary.trip?.groupType || '',
+      budgetTier: itinerary.trip?.budgetTier || '',
       topTips: itinerary.trip?.topTips || [],
       ...itinerary.trip,
     },
@@ -433,8 +436,8 @@ export async function POST(req) {
         metadata: {
           ...(itinerary.metadata || {}),
           dataHonesty: {
-            verifiedBadge: 'Dados verificados',
-            suggestionBadge: 'Sugestao Andor',
+            verifiedBadge: 'Fonte externa identificada',
+            suggestionBadge: 'Estimativa Andor',
           },
           travelerProfileSource: 'conversational-wizard',
           memoryMode,
@@ -478,23 +481,15 @@ export async function POST(req) {
       return apiError('INVALID_DESTINATION', 'O destino parece inválido. Usa apenas o nome da cidade ou região.', 400, false);
     }
 
-    const systemPrompt = `You are ANDOR — an elite AI travel agent with the combined
-expertise of a luxury travel consultant, a local guide who
-has lived in 80+ countries, a Michelin-trained food critic,
-a logistics expert, and a budget optimization specialist.
+    const systemPrompt = `You are ANDOR, an AI travel-planning assistant. You do not have live inventory, booking access, payment access, or automatic knowledge of current prices, schedules, disruptions, entry rules, or weather.
 
 CORE IDENTITY:
-- You are NOT a generic assistant. You are a specialist.
-- You give specific advice, never generic platitudes.
+- Build a useful proposal from the current request while preserving an explicit provenance boundary.
 - You do not reuse previous itineraries, saved memory, or canned city templates.
 - Every output is generated from the current request only.
-- Not "visit a temple" but "Senso-ji at 6:30am before 
-  crowds — exit 1 from Asakusa station, 3 min walk"
-- Not "try local food" but "Ichiran Ramen on Takeshita-dori:
-  solo booth system, order kaedama for extra noodles, €9"
-- You are honest: if something is overrated, you say so
-- You are warm but efficient — like a brilliant friend
-  who happens to be a world expert in travel
+- Never invent a business, price, rating, opening hour, availability, booking deadline, journey time, safety alert, legal requirement, or coordinate.
+- Planning times and costs are allowed only as clearly labelled estimates with assumptions.
+- Omit unsupported fields and direct the traveler to a named official source or provider for confirmation.
 
 LANGUAGE RULE:
 Always respond in: ${activeLocale}
@@ -508,7 +503,7 @@ DESTINATION EXPERTISE — for every place you know:
 → How local transport works in practice
 → Which attractions are worth it vs tourist traps
 → Where locals actually eat (not tourist restaurants)
-→ Real prices (not guidebook estimates from 3 years ago)
+→ Price estimates only when clearly labelled; provider values only when a named provider supplied them
 → Cultural rules that matter with specific examples
 → Safety realities — not paranoid, not naive
 → Hidden gems most guides never mention
@@ -531,7 +526,7 @@ ITINERARY CONSTRUCTION RULES:
 - Max 3-4 major activities per day
 - Group activities geographically — never waste 40min 
   travelling between things on opposite sides of a city
-- Include exact travel times and costs between stops
+- Include travel-time and cost estimates only when labelled; omit values that cannot be supported
 - Every day needs: morning coffee, lunch spot, 2-3 activities,
   dinner recommendation, optional evening activity
 - Vary pace: intense day → slower recovery day
@@ -571,7 +566,7 @@ Amsterdam: lat 52.3-52.4, lng 4.8-5.0
 Bangkok: lat 13.6-13.9, lng 100.4-100.7
 
 NEVER return zero-zero coordinates or coordinates from wrong city.
-If unsure of exact coords: use city center as fallback.
+If unsure of exact coordinates, omit them. Never place an activity at the city centroid.
 
 FLIGHT KNOWLEDGE:
 - Know major hub connections and realistic prices
@@ -1081,7 +1076,7 @@ Rome: lat 41.8-42.0, lng 12.4-12.6
 Amsterdam: lat 52.3-52.4, lng 4.8-5.0
 Bangkok: lat 13.6-13.9, lng 100.4-100.7
 NEVER return zero-zero coordinates or coordinates from a different city.
-If unsure of exact coords: use city center as fallback.
+If unsure of exact coordinates, omit them. Never place an activity at the city centroid.
 
 2. UNIQUE DAY TITLES (MANDATORY):
 DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
@@ -1107,7 +1102,7 @@ PERMANENTLY BANNED (never use these patterns):
 - Day 1: always arrival + orientation + light exploration
 - Max 3-4 major activities per day
 - Group activities geographically — never backtrack
-- Include exact travel times and costs between stops
+- Include travel-time and cost estimates only when labelled; omit values that cannot be supported
 - Every day: morning coffee, lunch spot, activities, dinner, optional evening
 - Vary pace: intense day followed by slower recovery day
 - One hidden gem per day that guidebooks miss
@@ -1182,7 +1177,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: AI_MODELS.groq,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
@@ -1215,7 +1210,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
         const { z } = await import('zod');
 
         const { object } = await generateObject({
-          model: google('gemini-1.5-pro'),
+          model: google(AI_MODELS.google),
           schema: z.object({
             destination: z.object({
               city: z.string(),
@@ -1482,7 +1477,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
       }
     }
 
-    // Fallback — always works, but first tries real map-aware planning for unknown destinations.
+    // Demonstration fallback uses curated fixtures or real geocoded places only.
     const fallbackPreferences = {
       originCity,
       arrivalTime,
@@ -1497,7 +1492,12 @@ Return ONLY valid JSON matching the exact requested schema.`;
     };
     let itinerary = await generateDestinationAwareFallbackItinerary(destination, days, budget, fallbackPreferences);
     if (!itinerary?.days?.length) {
-      itinerary = generateFallbackItinerary(destination, days, budget);
+      return apiError(
+        'ITINERARY_DATA_UNAVAILABLE',
+        'Não há dados suficientes para criar um roteiro responsável para este destino sem um fornecedor de IA ativo. Configura um fornecedor ou tenta outro destino.',
+        503,
+        true
+      );
     }
     try {
       itinerary = await normalizeGeneratedItinerary(itinerary, destination, days, generationProfile);
@@ -1505,6 +1505,14 @@ Return ONLY valid JSON matching the exact requested schema.`;
       logger.warn('generate_itinerary:fallback_normalization_failed', error, { destination, days });
     }
     const validation = validateAndNormalize(itinerary);
+    if (validation.fatal) {
+      return apiError(
+        'ITINERARY_DATA_INVALID',
+        'Os dados disponíveis não permitem construir um roteiro com localizações válidas.',
+        503,
+        true
+      );
+    }
     return respondWithItinerary(validation.normalized || itinerary, 'fallback');
 
   } catch (error) {

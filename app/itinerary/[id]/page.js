@@ -51,14 +51,12 @@ import FavoriteButton from '../../components/FavoriteButton';
 import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { Modal, Drawer } from '../../components/ui/Modal';
-import LiveRatesSearch from '../../components/LiveRatesSearch';
-import InsuranceSelector from '../../components/InsuranceSelector';
-import { CheckCircle2 } from 'lucide-react';
 import EnhancedActivityCard from '../../components/EnhancedActivityCard';
 import RestaurantCard from '../../components/RestaurantCard';
 import AccommodationCard from '../../components/AccommodationCard';
 import TransportCard from '../../components/TransportCard';
 import EnrichmentProgress from '../../components/EnrichmentProgress';
+import LiveMap from '../../components/LiveMap';
 import styles from './itinerary.module.css';
 import { trackEvent } from '../../lib/analytics';
 import { buildDossierExportContext } from '../../lib/dossier-export';
@@ -144,7 +142,7 @@ const getCurrencyContext = (itinerary) => {
 };
 
 const formatCurrencyAmount = (value, context = { code: 'EUR', symbol: '€' }) => {
-  if (value === undefined || value === null || value === '') return 'Grátis';
+  if (value === undefined || value === null || value === '') return 'Por confirmar';
   const currency = typeof context === 'string'
     ? { code: normalizeCurrencyCode(context), symbol: CURRENCY_SYMBOLS[normalizeCurrencyCode(context)] || context }
     : context;
@@ -274,11 +272,6 @@ export default function ItineraryPage() {
   const [compactMode, setCompactMode] = useState(false);
   const [enrichmentStatus, setEnrichmentStatus] = useState('idle');
   const [exportMode, setExportMode] = useState('client');
-  const [selectedFlight, setSelectedFlight] = useState(null);
-  const [selectedHotel, setSelectedHotel] = useState(null);
-  const [selectedInsurance, setSelectedInsurance] = useState(null);
-  const [isBookingProcessing, setIsBookingProcessing] = useState(false);
-  const [bookingSuccessModal, setBookingSuccessModal] = useState(false);
 
   useEffect(() => {
     setFavorites(getJson('andor_favorites', [], 'local') || []);
@@ -364,18 +357,6 @@ export default function ItineraryPage() {
       }
 
       applyData(data);
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('booking_success') === 'true') {
-          setBookingSuccessModal(true);
-          updateSavedTrip(params.id, (trip) => {
-            if (trip.bookingChecklist && Array.isArray(trip.bookingChecklist.items)) {
-              trip.bookingChecklist.items = trip.bookingChecklist.items.map(item => ({ ...item, status: 'confirmed' }));
-            }
-            return trip;
-          });
-        }
-      }
       if (!cancelled) setLoading(false);
     };
 
@@ -405,7 +386,7 @@ export default function ItineraryPage() {
           body: JSON.stringify({
             itinerary,
             preferences: {
-              departureCity: 'Lisboa'
+              departureCity: itinerary.trip?.departureCity || itinerary.preferences?.departureCity || ''
             }
           })
         });
@@ -542,67 +523,6 @@ export default function ItineraryPage() {
       window.removeEventListener('andor-documents-updated', handleDocuments);
     };
   }, [id]);
-
-  const handlePayAll = async () => {
-    setIsBookingProcessing(true);
-    try {
-      const items = [];
-      const destName = typeof itinerary?.destination === 'string' 
-        ? itinerary.destination 
-        : (itinerary?.destination?.city || itinerary?.destination?.name || 'Destino');
-
-      if (selectedFlight) {
-        items.push({
-          name: `Voo: ${selectedFlight.airline} (${selectedFlight.flightNumber})`,
-          description: `${selectedFlight.departureTime} LIS -> ${selectedFlight.arrivalTime} ${destName}`,
-          amountCents: selectedFlight.priceCents,
-        });
-      }
-      if (selectedHotel) {
-        items.push({
-          name: `Hotel: ${selectedHotel.name}`,
-          description: `${selectedHotel.roomType} (${selectedHotel.nights} noites)`,
-          amountCents: selectedHotel.totalPriceCents,
-        });
-      }
-      if (selectedInsurance) {
-        items.push({
-          name: selectedInsurance.name,
-          description: selectedInsurance.description,
-          amountCents: selectedInsurance.totalCostCents,
-        });
-      }
-
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          itineraryId: id,
-          items,
-          email: user?.email || 'viajante@andor.travels',
-        }),
-      });
-
-      if (res.ok) {
-        const payload = await res.json();
-        if (payload.url) {
-          window.location.href = payload.url;
-        } else if (payload.simulated) {
-          setBookingSuccessModal(true);
-          updateSavedTrip(id, (trip) => {
-            if (trip.bookingChecklist && Array.isArray(trip.bookingChecklist.items)) {
-              trip.bookingChecklist.items = trip.bookingChecklist.items.map(item => ({ ...item, status: 'confirmed' }));
-            }
-            return trip;
-          });
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsBookingProcessing(false);
-    }
-  };
 
   const saveItinerarySnapshot = (nextItinerary) => {
     if (!id) return;
@@ -799,7 +719,7 @@ export default function ItineraryPage() {
       const lines = [
         `${getDayEmoji(day)} Dia ${activeDay + 1}: ${day.title}`,
         day.moodDescription || null,
-        ...(day.stops || []).map((stop, index) => `${index + 1}. ${stop.name} · ${stop.duration || '2h'} · ${stop.cost !== undefined ? formatCurrencyAmount(stop.cost, currencyContext) : formatCurrencyAmount(stop.estimatedCost || 'Grátis', currencyContext)}`),
+        ...(day.stops || []).map((stop, index) => `${index + 1}. ${stop.name}${stop.duration ? ` · ${stop.duration}` : ''} · ${formatCurrencyAmount(stop.cost ?? stop.estimatedCost, currencyContext)}`),
         day.localSecret ? `Segredo do Andor: ${day.localSecret}` : null,
       ].filter(Boolean);
       await navigator.clipboard.writeText(lines.join('\n'));
@@ -849,6 +769,23 @@ export default function ItineraryPage() {
     const pdfBackupPlans = dossierExport.backupPlans || [];
     const pdfFinalChecklist = dossierExport.finalChecklist || [];
     const pdfTransferOptions = itinerary.airportTransfer?.options || [];
+    const pdfBudget = itinerary.trip?.budgetBreakdown || {};
+    const pdfBudgetRows = [
+      ['Voos', pdfBudget.flights?.min, pdfBudget.flights?.max],
+      ['Alojamento', pdfBudget.accommodation?.total],
+      ['Refeições', pdfBudget.food?.total],
+      ['Atividades', pdfBudget.activities?.total],
+      ['Transportes', pdfBudget.transport?.total],
+    ].filter(([, min, max]) => Number(min) > 0 || Number(max) > 0);
+    const pdfBudgetHtml = pdfBudgetRows.length
+      ? `<div style="margin:40px 0; padding:24px; background:#f8f8f8; border-radius:8px; page-break-inside:avoid;">
+          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Estimativa de orçamento</h2>
+          <table style="width:100%; border-collapse:collapse; font-size:14px;">
+            ${pdfBudgetRows.map(([label, min, max]) => `<tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">${label}</td><td style="text-align:right; padding:8px 0;">~${max ? formatCurrencyRange(min, max, currencyContext) : pdfMoney(min)}</td></tr>`).join('')}
+          </table>
+          <p style="font-size:11px; color:#777;">Valores de planeamento, não tarifas ou disponibilidade de fornecedor.</p>
+        </div>`
+      : '';
     const renderPdfList = (items, renderItem) => (
       items && items.length
         ? `<ul style="margin:8px 0 0; padding-left:18px;">${items.map(renderItem).join('')}</ul>`
@@ -892,7 +829,7 @@ export default function ItineraryPage() {
             <div style="margin-top:auto;">
               <div style="font:700 12px Arial,sans-serif; color:#E3BD68; text-transform:uppercase; letter-spacing:.16em;">Itinerario personalizado</div>
               <h1 style="max-width:680px; margin:14px 0 18px; color:#fff; font:700 54px/1.05 Georgia,serif; letter-spacing:0;">${safeText(pdfDestinationName)}</h1>
-              <p style="max-width:620px; margin:0 0 32px; color:rgba(255,255,255,.9); font:400 16px/1.55 Arial,sans-serif;">${safeText(itinerary.destination?.andorVerdict || itinerary.tripOverview || 'Uma viagem organizada ao detalhe pela Andor Travels.')}</p>
+               <p style="max-width:620px; margin:0 0 32px; color:rgba(255,255,255,.9); font:400 16px/1.55 Arial,sans-serif;">${safeText(itinerary.destination?.andorVerdict || itinerary.tripOverview || 'Uma proposta de planeamento criada no Andor e sujeita a confirmação.')}</p>
               <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px; padding:22px 0; border-top:1px solid rgba(255,255,255,.35); border-bottom:1px solid rgba(255,255,255,.35); font-family:Arial,sans-serif;">
                 <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Duracao</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(itinerary.trip?.totalDays || itinerary.days?.length || '-')} dias</strong></div>
                 <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Perfil</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(itinerary.trip?.groupType || itinerary.trip?.travelStyle || 'Viagem')}</strong></div>
@@ -923,14 +860,14 @@ export default function ItineraryPage() {
             <strong style="font-size:11px; color:${includeInternal ? '#B84F3D' : '#1E6FD9'};">${safeText(documentReference)}</strong>
           </div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 28px; margin-top:18px; font-size:12px; line-height:1.5;">
-            <p style="margin:0;"><strong>Entidade:</strong> Andor Travels, Lda.</p>
-            <p style="margin:0;"><strong>Licença:</strong> RNAVT nº 9876 (Agência Registada)</p>
-            <p style="margin:0;"><strong>Servico:</strong> Curadoria digital e planeamento de viagens</p>
-            <p style="margin:0;"><strong>Canal:</strong> andortravels.com</p>
+            <p style="margin:0;"><strong>Aplicação:</strong> Andor</p>
+            <p style="margin:0;"><strong>Natureza:</strong> Proposta informativa de planeamento</p>
+            <p style="margin:0;"><strong>Servico:</strong> Organização digital de informação de viagem</p>
+            <p style="margin:0;"><strong>Estado:</strong> Pré-lançamento</p>
             <p style="margin:0;"><strong>Destinatario:</strong> ${safeText(pdfExport.clientName || 'Viajante Andor')}</p>
             <p style="margin:0;"><strong>Empresa:</strong> ${safeText(pdfExport.companyName || 'Nao aplicavel')}</p>
-            <p style="margin:0;"><strong>Preparado por:</strong> ${safeText(pdfExport.preparedBy || 'Andor Travels')}</p>
-            <p style="margin:0;"><strong>Suporte:</strong> support@andortravels.com</p>
+            <p style="margin:0;"><strong>Preparado por:</strong> ${safeText(pdfExport.preparedBy || 'Utilizador Andor')}</p>
+            <p style="margin:0;"><strong>Reservas:</strong> Não processadas pelo Andor</p>
           </div>
           ${pdfExport.clientFacingNotes ? `<p style="font-size:12px; line-height:1.55; margin:16px 0 0; padding-top:14px; border-top:1px solid #E7D9B5;">${safeText(pdfExport.clientFacingNotes)}</p>` : ''}
           ${includeInternal && pdfExport.internalNotes ? `<p style="font-size:12px; line-height:1.55; margin:14px 0 0; padding:12px; background:#fff; border-left:3px solid #E77762;"><strong>Nota interna:</strong> ${safeText(pdfExport.internalNotes)}</p>` : ''}
@@ -942,20 +879,7 @@ export default function ItineraryPage() {
           ${itinerary.metadata?.assumptions?.length ? `<p style="font-size:12px; color:#666; margin:10px 0 0;"><strong>Assunções:</strong> ${safeText(itinerary.metadata.assumptions.slice(0, 2).join(' '))}</p>` : ''}
         </div>
 
-        <div style="margin:40px 0; padding:24px; background:#f8f8f8; border-radius:8px; page-break-inside:avoid;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Estimativa de Orçamento</h2>
-          <table style="width:100%; border-collapse:collapse; font-size:14px;">
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Voos</td><td style="text-align:right; padding:8px 0;">~${formatCurrencyRange(itinerary.trip?.budgetBreakdown?.flights?.min || 0, itinerary.trip?.budgetBreakdown?.flights?.max || 0, currencyContext)}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Alojamento</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.accommodation?.total || 0)}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Refeições</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.food?.total || 0)}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Actividades</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.activities?.total || 0)}</td></tr>
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:8px 0;">Transportes</td><td style="text-align:right; padding:8px 0;">~${pdfMoney(itinerary.trip?.budgetBreakdown?.transport?.total || 0)}</td></tr>
-            <tr style="border-top:2px solid #D4A843; font-weight:bold;">
-              <td style="padding:12px 0;">TOTAL ESTIMADO</td>
-              <td style="text-align:right; padding:12px 0; color:#D4A843;">~${formatCurrencyRange(itinerary.trip?.budgetBreakdown?.grandTotal?.min || 0, itinerary.trip?.budgetBreakdown?.grandTotal?.max || 0, currencyContext)}</td>
-            </tr>
-          </table>
-        </div>
+        ${pdfBudgetHtml}
         
         <div style="margin:40px 0; padding:24px; background:#fffdf6; border:1px solid #efe3bd; border-radius:8px; page-break-inside:avoid;">
           <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Plano Booking-Ready</h2>
@@ -1035,7 +959,7 @@ export default function ItineraryPage() {
                 ${morningActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
                     <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
-                    <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
+                    <br/><span style="font-size:12px; color:#888;">${[a.address, a.duration, a.cost === 0 ? 'Grátis' : a.cost > 0 ? pdfMoney(a.cost) : 'Custo por confirmar'].filter(Boolean).join(' · ')}</span>
                     ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
                     ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
                     ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
@@ -1050,7 +974,7 @@ export default function ItineraryPage() {
                 ${afternoonActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
                     <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
-                    <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
+                    <br/><span style="font-size:12px; color:#888;">${[a.address, a.duration, a.cost === 0 ? 'Grátis' : a.cost > 0 ? pdfMoney(a.cost) : 'Custo por confirmar'].filter(Boolean).join(' · ')}</span>
                     ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
                     ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
                     ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
@@ -1065,7 +989,7 @@ export default function ItineraryPage() {
                 ${eveningActivities.map(a => `
                   <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
                     <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
-                    <br/><span style="font-size:12px; color:#888;">${a.address || ''} · ${a.duration || '2h'} · ${a.cost > 0 ? pdfMoney(a.cost) : 'Grátis'}</span>
+                    <br/><span style="font-size:12px; color:#888;">${[a.address, a.duration, a.cost === 0 ? 'Grátis' : a.cost > 0 ? pdfMoney(a.cost) : 'Custo por confirmar'].filter(Boolean).join(' · ')}</span>
                     ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
                     ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
                     ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
@@ -1133,8 +1057,8 @@ export default function ItineraryPage() {
         </div>
         
         <div style="margin-top:40px; padding:20px 0; color:#666; font:400 10px/1.55 Arial,sans-serif; border-top:2px solid #D4A853; page-break-inside:avoid;">
-          <strong style="display:block; color:#20242A; margin-bottom:6px;">Nota de responsabilidade e Informação de Registo</strong>
-          Este documento foi emitido e preparado digitalmente pela Andor Travels, Lda. (RNAVT nº 9876), com sede social em Lisboa, Portugal. O planeamento curado tem natureza de apoio informativo. Horários, preços, disponibilidade de voos, hotéis, transportes e requisitos oficiais de entrada (como vistos e regras de saúde) podem ser alterados pelos respetivos fornecedores ou autoridades e devem ser validados antes de qualquer reserva ou partida. A versão cliente exclui notas operacionais de uso interno.
+          <strong style="display:block; color:#20242A; margin-bottom:6px;">Nota de responsabilidade</strong>
+          Este documento foi preparado na aplicação Andor e tem natureza exclusivamente informativa. Não constitui uma reserva, venda, aconselhamento legal, médico ou de segurança. Horários, preços, disponibilidade e requisitos oficiais devem ser confirmados diretamente nos fornecedores e autoridades competentes antes de qualquer pagamento ou partida. A versão cliente exclui notas operacionais de uso interno.
         </div>
       </div>
     `;
@@ -1525,10 +1449,15 @@ export default function ItineraryPage() {
         id: stopName.toLowerCase().replace(/\s+/g, '-'),
         name: stopName,
         type: stop.type || 'Actividade',
-        cost: stop.cost !== undefined ? formatCurrencyAmount(stop.cost, getCurrencyContext(itinerary)) : formatCurrencyAmount(stop.estimatedCost || 'Grátis', getCurrencyContext(itinerary)),
-        duration: stop.duration || '2h',
+        cost: stop.cost !== undefined
+          ? formatCurrencyAmount(stop.cost, getCurrencyContext(itinerary))
+          : stop.estimatedCost !== undefined
+            ? formatCurrencyAmount(stop.estimatedCost, getCurrencyContext(itinerary))
+            : null,
+        duration: stop.duration || null,
         city: dest.city || dest.name || (typeof itinerary?.destination === 'string' ? itinerary.destination : ''),
-        destinationSlug: dest.slug || 'tokyo',
+        itineraryId: id,
+        destinationSlug: dest.slug || null,
         image: getActivityImageUrl(stop, dest.city || dest.name || ''),
         dateSaved: new Date().toLocaleDateString('pt-PT')
       });
@@ -1666,12 +1595,16 @@ export default function ItineraryPage() {
                 <span className={styles.headerMetaChip}>
                   <CalendarDays size={16} aria-hidden="true" /> {trip.totalDays || itinerary.days?.length || '–'} dias
                 </span>
-                <span className={styles.headerMetaChip}>
-                  <Users size={16} aria-hidden="true" /> {trip.groupType || 'Casal'}
-                </span>
-                <span className={styles.headerMetaChip}>
-                  <Palette size={16} aria-hidden="true" /> {trip.travelStyle || 'Cultural'}
-                </span>
+                {trip.groupType && (
+                  <span className={styles.headerMetaChip}>
+                    <Users size={16} aria-hidden="true" /> {trip.groupType}
+                  </span>
+                )}
+                {trip.travelStyle && (
+                  <span className={styles.headerMetaChip}>
+                    <Palette size={16} aria-hidden="true" /> {trip.travelStyle}
+                  </span>
+                )}
                 {budgetDisplay && (
                   <span className={styles.headerMetaChipGold}>
                     <WalletCards size={16} aria-hidden="true" /> {budgetDisplay}
@@ -1724,8 +1657,11 @@ export default function ItineraryPage() {
           <div className={styles.agencyBriefGrid}>
             <div className={styles.agencyBriefPanel}>
               <h3>Resumo inteligente</h3>
-              <p>{dest.andorVerdict || itinerary.tripOverview || currentDay.moodDescription || `Plano pratico para ${dest.city || dest.name || 'esta viagem'}, com logistica, custos e reservas separadas.`}</p>
-              {itinerary.metadata?.generationSource === 'fallback' && <span className={styles.sourceBadge}>Versão de demonstração com dados estimados</span>}
+              <p>{dest.andorVerdict || itinerary.tripOverview || currentDay.moodDescription || `Proposta de organização para ${dest.city || dest.name || 'esta viagem'}, sujeita a confirmação.`}</p>
+              {itinerary.metadata?.generationSource === 'fallback' && <span className={styles.sourceBadge}>Versão de demonstração — confirmar todos os detalhes</span>}
+              {itinerary.metadata?.generationSource && itinerary.metadata.generationSource !== 'fallback' && (
+                <span className={styles.sourceBadge}>Proposta gerada por IA — preços, horários e disponibilidade por confirmar</span>
+              )}
               {bookingReady.disclaimer && <p className={styles.agencyFinePrint}>O Andor prepara decisões e links, mas não compra nem confirma reservas automaticamente.</p>}
             </div>
             <div className={styles.agencyBriefPanel}>
@@ -1823,6 +1759,14 @@ export default function ItineraryPage() {
           
           {/* PAINEL ESQUERDO */}
           <div className={styles.leftPanel}>
+
+            <div className={styles.mapContainer} data-testid="itinerary-map-container">
+              <LiveMap
+                stops={currentDay.stops || []}
+                destination={dest}
+                currency={currencyContext.symbol}
+              />
+            </div>
             
             {/* CLIMA E TRANSPORTE */}
             <div className={styles.dayMetaCards}>
@@ -1830,7 +1774,7 @@ export default function ItineraryPage() {
                 <div className={styles.metaCard}>
                   <span className={styles.metaIcon}>WX</span>
                   <div>
-                    <div className={styles.metaLabel}>Clima</div>
+                    <div className={styles.metaLabel}>Clima estimado · confirmar previsão</div>
                     <div className={styles.metaValue}>{currentDay.weather.avgTemp} · {currentDay.weather.condition}</div>
                     {currentDay.weather.tip && (
                       <div className={styles.metaValueSub}>{currentDay.weather.tip}</div>
@@ -1842,7 +1786,7 @@ export default function ItineraryPage() {
                 <div className={styles.metaCard}>
                   <span className={styles.metaIcon}><Route size={18} aria-hidden="true" /></span>
                   <div>
-                    <div className={styles.metaLabel}>Transporte do Dia</div>
+                    <div className={styles.metaLabel}>Plano de transporte · confirmar rota</div>
                     <div className={styles.metaValue}>
                       {currentDay.transport.mainMode || currentDay.transport.mainRecommendation}
                     </div>
@@ -1893,21 +1837,25 @@ export default function ItineraryPage() {
                     </div>
                   )}
                   <div className={styles.synopsisStats}>
-                    <div className={`${styles.synopsisStatBadge} ${
-                      String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? styles.energyRelaxed :
-                      String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? styles.energyIntense :
-                      styles.energyModerate
-                    }`}>
-                      {String(currentDay.energyLevel || '').toLowerCase().includes('relax') ? 'Ritmo leve' :
-                       String(currentDay.energyLevel || '').toLowerCase().includes('intense') ? 'Ritmo intenso' :
-                       'Ritmo moderado'}
-                    </div>
-                    <div className={styles.synopsisStatBadge}>
-                      {currentDay.estimatedDistance || (activeDay === 0 ? '4 km' : activeDay % 2 === 0 ? '8 km' : '6 km')} a pé
-                    </div>
-                    <div className={styles.synopsisStatBadge}>
-                      ~{formatMoney(getDayBudget(currentDay))} est.
-                    </div>
+                    {currentDay.energyLevel && (
+                      <div className={`${styles.synopsisStatBadge} ${
+                        String(currentDay.energyLevel).toLowerCase().includes('relax') ? styles.energyRelaxed :
+                        String(currentDay.energyLevel).toLowerCase().includes('intense') ? styles.energyIntense :
+                        styles.energyModerate
+                      }`}>
+                        {String(currentDay.energyLevel).toLowerCase().includes('relax') ? 'Ritmo leve' :
+                         String(currentDay.energyLevel).toLowerCase().includes('intense') ? 'Ritmo intenso' :
+                         'Ritmo moderado'}
+                      </div>
+                    )}
+                    {currentDay.estimatedDistance && (
+                      <div className={styles.synopsisStatBadge}>{currentDay.estimatedDistance} a pé</div>
+                    )}
+                    {getDayBudget(currentDay) > 0 && (
+                      <div className={styles.synopsisStatBadge}>
+                        ~{formatMoney(getDayBudget(currentDay))} est.
+                      </div>
+                    )}
                     {enrichmentStatus !== 'complete' && enrichmentStatus !== 'idle' && (
                       <EnrichmentProgress status={enrichmentStatus} />
                     )}
@@ -1975,7 +1923,7 @@ export default function ItineraryPage() {
             {/* REFEIÇÕES DO DIA */}
             {currentDay.meals && (
               <div className={styles.mealsSection}>
-                <h3 className={styles.sectionTitle}>Refeições do Dia</h3>
+                <h3 className={styles.sectionTitle}>Sugestões de refeições · confirmar local e disponibilidade</h3>
                 <div className={styles.mealsGrid}>
                   {['breakfast', 'lunch', 'dinner'].map(mealType => {
                     const meal = currentDay.meals[mealType];
@@ -1990,13 +1938,15 @@ export default function ItineraryPage() {
                     const mealCostDisplay = mealPriceRange && !/^[A-Z]{3}$|^[€$£¥]+$/.test(mealPriceRange)
                       ? mealPriceRange
                       : formatMoney(meal.cost);
+                    const mealSource = String(meal.source || meal.providerSource || '').toLowerCase();
+                    const providerBackedMeal = ['foursquare', 'provider', 'provider-api', 'user-confirmed'].includes(mealSource);
                     return (
                       <div key={mealType} className={`${styles.mealCard} ${borderClass[mealType]}`}>
                         <div className={styles.mealHeader}>{icons[mealType]}</div>
                         <div className={styles.mealName}>{meal.name}</div>
                         <div className={styles.mealMeta}>
                           {meal.cuisine || meal.type}
-                          <span className={styles.mealCost}> · {mealCostDisplay}</span>
+                          <span className={styles.mealCost}> · {mealCostDisplay}{mealCostDisplay !== 'Por confirmar' && !providerBackedMeal ? ' (estimativa)' : ''}</span>
                         </div>
                         {(meal.mustOrder || meal.note) && (
                           <div className={styles.mealTip}>
@@ -2013,7 +1963,7 @@ export default function ItineraryPage() {
             {/* RESTAURANTES ENRIQUECIDOS NAS PROXIMIDADES */}
             {currentDay.enrichedRestaurants && currentDay.enrichedRestaurants.length > 0 && (
               <div className={styles.mealsSection}>
-                <h3 className={styles.sectionTitle}>Restaurantes Recomendados (Dados Reais)</h3>
+                <h3 className={styles.sectionTitle}>Sugestões de restaurantes próximos</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                   {currentDay.enrichedRestaurants.map((restaurant, rIdx) => (
                     <RestaurantCard
@@ -2030,7 +1980,7 @@ export default function ItineraryPage() {
               <div className={styles.localSecretCard}>
                 <div className={styles.localSecretIcon}>Nota</div>
                 <div className={styles.localSecretContent}>
-                  <h4 className={styles.localSecretTitle}>Segredo Local do Andor</h4>
+                  <h4 className={styles.localSecretTitle}>Sugestão local por confirmar</h4>
                   <p>{currentDay.localSecret}</p>
                   {currentDay.culturalNote && <p className={styles.culturalNote}><em>Nota Cultural:</em> {currentDay.culturalNote}</p>}
                 </div>
@@ -2061,7 +2011,8 @@ export default function ItineraryPage() {
                     options: itinerary.flightOptions || [],
                     overview: trip.flightOverview || '',
                     externalLinks: {
-                      skyscanner: `https://www.skyscanner.net/transport/flights-from/pt/${encodeURIComponent((dest.city || dest.name || '').toLowerCase())}`
+                      googleFlights: bookingLinks.flights?.google,
+                      skyscanner: bookingLinks.flights?.skyscanner,
                     }
                   }}
                   destination={dest.city || dest.name}
@@ -2070,7 +2021,9 @@ export default function ItineraryPage() {
                   accommodation={{
                     ...itinerary.accommodation,
                     externalLinks: {
-                      booking: `https://www.booking.com/searchresults.pt-pt.html?ss=${encodeURIComponent(dest.city || dest.name || '')}`
+                      booking: bookingLinks.hotels?.booking,
+                      googleHotels: bookingLinks.hotels?.googleHotels,
+                      airbnb: bookingLinks.hotels?.airbnb,
                     }
                   }}
                   destination={dest.city || dest.name}
@@ -2086,67 +2039,6 @@ export default function ItineraryPage() {
                   tripId={id}
                 />
               </div>
-
-              <LiveRatesSearch
-                destination={dest.city || dest.name || itinerary.destination}
-                tripDays={trip.totalDays || itinerary.days?.length || 1}
-                passengers={trip.travelerProfile?.passengerCount || 2}
-                onSelectFlight={setSelectedFlight}
-                onSelectHotel={setSelectedHotel}
-                selectedFlight={selectedFlight}
-                selectedHotel={selectedHotel}
-              />
-
-              <InsuranceSelector
-                tripDays={trip.totalDays || itinerary.days?.length || 1}
-                passengers={trip.travelerProfile?.passengerCount || 2}
-                selectedInsurance={selectedInsurance}
-                onSelectInsurance={setSelectedInsurance}
-              />
-
-              {(selectedFlight || selectedHotel || selectedInsurance) && (
-                <div className={styles.checkoutSummaryCard} data-testid="checkout-summary-card">
-                  <h3>Carrinho de Viagem</h3>
-                  <div className={styles.checkoutItemsList}>
-                    {selectedFlight && (
-                      <div className={styles.checkoutItemLine}>
-                        <span>✈️ Voo: {selectedFlight.airline} ({selectedFlight.flightNumber})</span>
-                        <strong>{formatMoney(selectedFlight.priceCents / 100)}</strong>
-                      </div>
-                    )}
-                    {selectedHotel && (
-                      <div className={styles.checkoutItemLine}>
-                        <span>🏨 Alojamento: {selectedHotel.name}</span>
-                        <strong>{formatMoney(selectedHotel.totalPriceCents / 100)}</strong>
-                      </div>
-                    )}
-                    {selectedInsurance && (
-                      <div className={styles.checkoutItemLine}>
-                        <span>🛡️ {selectedInsurance.name}</span>
-                        <strong>{formatMoney(selectedInsurance.totalCostCents / 100)}</strong>
-                      </div>
-                    )}
-                  </div>
-                  <div className={styles.checkoutTotalRow}>
-                    <span>Total da Reserva:</span>
-                    <strong>
-                      {formatMoney(
-                        ((selectedFlight?.priceCents || 0) +
-                        (selectedHotel?.totalPriceCents || 0) +
-                        (selectedInsurance?.totalCostCents || 0)) / 100
-                      )}
-                    </strong>
-                  </div>
-                  <button
-                    className={styles.btnPrimaryFull}
-                    onClick={handlePayAll}
-                    disabled={isBookingProcessing}
-                    data-testid="pay-confirm-button"
-                  >
-                    {isBookingProcessing ? 'A processar pagamento...' : 'Confirmar e Pagar Viagem'}
-                  </button>
-                </div>
-              )}
 
               <BookingChecklist
                 bookingChecklist={itinerary.bookingChecklist || trip.bookingChecklist || itinerary.trip?.bookingChecklist}
@@ -2267,31 +2159,6 @@ export default function ItineraryPage() {
         </div>
       </div>
       </ErrorBoundary>
-
-      <Modal
-        isOpen={bookingSuccessModal}
-        onClose={() => setBookingSuccessModal(false)}
-        title="Reserva Confirmada!"
-      >
-        <div className={styles.successModalContent} data-testid="booking-success-modal">
-          <div className={styles.successIconWrapper}>
-            <CheckCircle2 size={48} className={styles.successIcon} />
-          </div>
-          <h3>A tua viagem está reservada com sucesso!</h3>
-          <p>
-            Processámos o pagamento e enviámos os detalhes de reserva para a nossa equipa operacional.
-            O teu plano de reservas e checklist foram marcados como <strong>Confirmado</strong>.
-          </p>
-          <div className={styles.successDetails}>
-            {selectedFlight && <div>✈️ Voo: {selectedFlight.airline} ({selectedFlight.flightNumber})</div>}
-            {selectedHotel && <div>🏨 Hotel: {selectedHotel.name}</div>}
-            {selectedInsurance && <div>🛡️ {selectedInsurance.name}</div>}
-          </div>
-          <button className="btn btn-primary" onClick={() => setBookingSuccessModal(false)}>
-            Ver Itinerário
-          </button>
-        </div>
-      </Modal>
 
       <Modal
         isOpen={showAdaptModal}

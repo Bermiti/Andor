@@ -18,6 +18,7 @@ export default function DestinationsPage() {
   const [wizardData, setWizardData] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [userProfile, setUserProfile] = useState('');
+  const [recommendationMetadata, setRecommendationMetadata] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingTip, setLoadingTip] = useState(0);
   const resultsRef = useRef(null);
@@ -86,6 +87,7 @@ export default function DestinationsPage() {
       
       setRecommendations(result.destinations || []);
       setUserProfile(result.userProfile || '');
+      setRecommendationMetadata(result.metadata || { source: 'unknown', estimates: true });
       setPagePhase('results');
 
       // Scroll to top of results
@@ -98,6 +100,7 @@ export default function DestinationsPage() {
       setPagePhase('results');
       setRecommendations([]);
       setUserProfile('');
+      setRecommendationMetadata(null);
     }
   }, [locale]);
 
@@ -158,7 +161,7 @@ export default function DestinationsPage() {
                   <div className={styles.trustAvatar} style={{ background: 'linear-gradient(135deg, #00C9A7, #4AE8C8)' }}>✦</div>
                 </div>
                 <span className={styles.trustText}>
-                  Roteiro, orçamento e reservas no mesmo fluxo
+                  Roteiro, estimativas e checklist de pesquisa no mesmo fluxo
                 </span>
               </div>
             </div>
@@ -220,6 +223,7 @@ export default function DestinationsPage() {
               recommendations={recommendations}
               userProfile={userProfile}
               wizardData={wizardData}
+              metadata={recommendationMetadata}
               onEditPreferences={handleEditPreferences}
               onPlanTrip={handlePlanTrip}
             />

@@ -11,12 +11,11 @@ export default function CommandCenter() {
   const router = useRouter();
 
   const commands = [
-    { id: 'plan', title: 'New Trip', icon: '✈️', description: 'Generate a new AI itinerary', action: () => router.push('/#planner') },
+    { id: 'plan', title: 'New Trip', icon: '✈️', description: 'Open the itinerary planner', action: () => router.push('/?wizard=true') },
     { id: 'dash', title: 'Dashboard', icon: '🗺️', description: 'View your saved trips and stats', action: () => router.push('/dashboard') },
-    { id: 'community', title: 'Explore Community', icon: '🌍', description: 'Discover trips from other travelers', action: () => router.push('/#community') },
+    { id: 'destinations', title: 'Explore Destinations', icon: '🌍', description: 'Browse destination ideas', action: () => router.push('/destinations') },
     { id: 'expenses', title: 'Split Expenses', icon: '💰', description: 'Manage group costs', action: () => router.push('/dashboard#expenses') },
-    { id: 'buddies', title: 'Find Partners', icon: '🤝', description: 'Connect with other travelers', action: () => router.push('/dashboard#buddies') },
-    { id: 'profile', title: 'My Profile', icon: '👤', description: 'Edit your traveler profile', action: () => router.push('/dashboard#profile') },
+    { id: 'profile', title: 'My Profile', icon: '👤', description: 'Edit your traveler profile', action: () => router.push('/profile') },
   ];
 
   const filtered = query 

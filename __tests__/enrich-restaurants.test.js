@@ -14,15 +14,12 @@ describe('Restaurant Enrichment Service', () => {
     process.env = originalEnv;
   });
 
-  test('falls back to custom city mock data if API keys are missing', async () => {
-    // Ensure keys are undefined/mock default
+  test('returns no restaurants when providers are unavailable', async () => {
     process.env.FOURSQUARE_API_KEY = 'fsq3...';
     process.env.OPENTRIPMAP_API_KEY = '5ae2e3...';
 
     const results = await enrichRestaurantsData(35.6762, 139.6503, 'Tokyo');
-    expect(results).toHaveLength(3);
-    expect(results[0].source).toBe('estimated');
-    expect(results[0].name).toContain('Sushi');
+    expect(results).toEqual([]);
   });
 
   test('uses Foursquare API if key is present and fetch succeeds', async () => {

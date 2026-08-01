@@ -1,6 +1,7 @@
 import { hasProviderKey, cleanString } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
 import { destinationsData } from '../../lib/destinations';
+import { AI_MODELS } from '../../lib/server/ai-models';
 
 const SYSTEM_PROMPT = `You are ANDOR — an elite AI travel agent and luxury travel consultant.
 Analyze the user's travel preferences questionnaire and recommend the best matching destinations.
@@ -68,7 +69,7 @@ Idioma de resposta (locale): "${locale}"`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: AI_MODELS.groq,
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: userPrompt }
@@ -85,7 +86,10 @@ Idioma de resposta (locale): "${locale}"`;
           if (content) {
             const parsed = safeCleanAndParseJson(content);
             if (parsed.destinations && Array.isArray(parsed.destinations)) {
-              return Response.json(parsed);
+              return Response.json({
+                ...parsed,
+                metadata: { source: 'groq', estimates: true },
+              });
             }
           }
         }
@@ -101,7 +105,7 @@ Idioma de resposta (locale): "${locale}"`;
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const anthropic = new Anthropic({ apiKey: anthropicKey });
         const response = await anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
+          model: AI_MODELS.anthropic,
           max_tokens: 4000,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: userPrompt }]
@@ -111,7 +115,10 @@ Idioma de resposta (locale): "${locale}"`;
         if (content) {
           const parsed = safeCleanAndParseJson(content);
           if (parsed.destinations && Array.isArray(parsed.destinations)) {
-            return Response.json(parsed);
+            return Response.json({
+              ...parsed,
+              metadata: { source: 'anthropic', estimates: true },
+            });
           }
         }
       } catch (e) {
@@ -133,7 +140,7 @@ Idioma de resposta (locale): "${locale}"`;
       ? `Perfil del viajero con ${profile.travelers || 2} personas saliendo de ${profile.departureCity || 'ciudad por defecto'} en ${profile.travelMonth || 'flexible'}.`
       : isFrench
       ? `Profil de voyageur avec ${profile.travelers || 2} personnes au départ de ${profile.departureCity || 'ville par défaut'} en ${profile.travelMonth || 'flexible'}.`
-      : `Perfil de viajante correspondente a ${profile.travelers || 2} pessoas com partida de ${profile.departureCity || 'Lisboa'} em ${profile.travelMonth || 'setembro'}.`;
+      : `Perfil de viajante para ${profile.travelers || 'número não indicado de'} pessoas, com partida de ${profile.departureCity || 'local não indicado'} e datas ${profile.travelMonth || 'flexíveis'}.`;
 
     const mappedDestinations = destinationsData.slice(0, 10).map((d) => {
       let explanation = d.description;
@@ -164,7 +171,7 @@ Idioma de resposta (locale): "${locale}"`;
         explanation: explanation,
         tags: d.tags || [],
         idealDuration: idealDuration,
-        estimatedBudget: d.price || '€1000',
+        estimatedBudget: d.price || null,
         bestTime: bestTime,
         strengths: strengths,
         consideration: null
@@ -173,7 +180,8 @@ Idioma de resposta (locale): "${locale}"`;
 
     return Response.json({
       userProfile: userProfileText,
-      destinations: mappedDestinations
+      destinations: mappedDestinations,
+      metadata: { source: 'curated-demo', estimates: true, isDemo: true },
     });
 
   } catch (error) {

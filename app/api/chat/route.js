@@ -3,6 +3,7 @@ import { buildChatSystemPrompt } from '../../lib/phase11-2-chat-prompt';
 // Anthropic SDK is loaded dynamically below to avoid Turbopack resolution issues
 import { cleanLocale, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
+import { AI_MODELS } from '../../lib/server/ai-models';
 
 const SYSTEM_PROMPT = `You are ANDOR — an elite AI travel agent with the combined
 expertise of a luxury travel consultant, a local guide who
@@ -33,7 +34,7 @@ DESTINATION EXPERTISE — for every place you know:
 → How local transport works in practice
 → Which attractions are worth it vs tourist traps
 → Where locals actually eat (not tourist restaurants)
-→ Real prices (not guidebook estimates from 3 years ago)
+→ Price-planning guidance only when the user or a named provider supplied the values
 → Cultural rules that matter with specific examples
 → Safety realities — not paranoid, not naive
 → Hidden gems most guides never mention
@@ -55,7 +56,7 @@ ITINERARY CONSTRUCTION RULES:
 - Max 3-4 major activities per day
 - Group activities geographically — never waste 40min 
   travelling between things on opposite sides of a city
-- Include exact travel times and costs between stops
+- Include travel times and costs only when they were supplied; otherwise mark them for confirmation
 - Every day needs: morning coffee, lunch spot, 2-3 activities,
   dinner recommendation, optional evening activity
 - Vary pace: intense day → slower recovery day
@@ -95,11 +96,11 @@ Amsterdam: lat 52.3-52.4, lng 4.8-5.0
 Bangkok: lat 13.6-13.9, lng 100.4-100.7
 
 NEVER return zero-zero coordinates or coordinates from wrong city.
-If unsure of exact coords: use city center as fallback.
+If unsure of exact coordinates, omit them and say that geocoding is required.
 
 FLIGHT KNOWLEDGE:
-- Know major hub connections and realistic prices
-- Recommend booking windows (6-8w Europe, 3-4m long-haul)
+- Discuss routes without inventing current connections or prices
+- Treat booking windows as general planning guidance, never current availability
 - Flag best airlines per route with specific reasons
 - Note baggage policy differences when relevant
 - Always add: "Verify current prices on Skyscanner/Google Flights"
@@ -137,7 +138,7 @@ RESPONSE FORMAT RULES:
 - Be decisive. Never hedge unnecessarily.
 
 WHAT YOU NEVER DO:
-- Never say "I don't have real-time data" — work with what you know
+- Say clearly when current provider data is unavailable and point to the right official source
 - Never give generic advice — give specific advice
 - Never recommend the obvious tourist trap as a highlight
 - Never forget the user's context from earlier in the conversation`;
@@ -163,12 +164,7 @@ export async function POST(req) {
     const userLocale = cleanLocale(body.locale);
     
     // PHASE 11.2: Build context-aware prompt
-    let activeSystemPrompt;
-    if (destination) {
-      activeSystemPrompt = buildChatSystemPrompt(destination, itinerary, userLocale);
-    } else {
-      activeSystemPrompt = `${SYSTEM_PROMPT}\n\nAlways respond in: ${userLocale === 'pt-BR' ? 'Brazilian Portuguese' : 'European Portuguese'}.`;
-    }
+    let activeSystemPrompt = buildChatSystemPrompt(destination, itinerary, userLocale);
     activeSystemPrompt += `\n\nAFTER EVERY RESPONSE, on a new final line add exactly:\nSUGGESTIONS: [chip1] | [chip2] | [chip3]\nThe 3 suggestions must be the most natural follow-up to exactly what you just said. Keep each chip under 30 characters.`;
 
     const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
@@ -179,7 +175,7 @@ export async function POST(req) {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const anthropic = new Anthropic({ apiKey: anthropicKey });
         const stream = await anthropic.messages.stream({
-          model: 'claude-sonnet-4-20250514',
+          model: AI_MODELS.anthropic,
           max_tokens: 4000,
           system: activeSystemPrompt,
           messages: cleanMessages
@@ -225,7 +221,7 @@ export async function POST(req) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: AI_MODELS.groq,
             messages: [
               { role: 'system', content: activeSystemPrompt },
               ...cleanMessages,
@@ -279,7 +275,7 @@ export async function POST(req) {
     }
 
     // Fallback — smart pre-built responses
-    const reply = generateChatResponse(lastMessage);
+    const reply = `VERSÃO DE DEMONSTRAÇÃO — sem fornecedor AI ativo. Confirma preços, disponibilidade e recomendações em fontes atuais.\n\n${generateChatResponse(lastMessage)}`;
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {

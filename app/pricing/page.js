@@ -1,285 +1,79 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { trackEvent } from '../lib/analytics';
 import styles from './pricing.module.css';
 
 export default function PricingPage() {
-  const [isYearly, setIsYearly] = useState(false);
-  const [activeFaq, setActiveFaq] = useState(null);
-
   useEffect(() => {
-    document.title = "Preços · Andor Travels";
-    trackEvent('page_view', { page: 'pricing' });
+    document.title = 'Acesso pré-lançamento · Andor';
+    trackEvent('page_view', { page: 'pricing', release_stage: 'prelaunch' });
   }, []);
 
-  const toggleBilling = () => {
-    const nextVal = !isYearly;
-    setIsYearly(nextVal);
-    trackEvent('pricing_toggle', { billing_cycle: nextVal ? 'yearly' : 'monthly' });
-  };
-
-  const toggleFaq = (index) => {
-    setActiveFaq(activeFaq === index ? null : index);
-  };
-
-  const faqs = [
-    {
-      q: "Como funciona o teste gratuito do plano Pro?",
-      a: "O teste gratuito dura 7 dias e dá-te acesso total a todas as funcionalidades Pro. Podes cancelar a qualquer momento sem custos."
-    },
-    {
-      q: "Posso cancelar ou alterar o meu plano quando quiser?",
-      a: "Sim! Não temos períodos de fidelização. Podes fazer upgrade, downgrade ou cancelar a tua subscrição diretamente nas configurações do teu perfil."
-    },
-    {
-      q: "O que está incluído nos 'destinos básicos' do plano gratuito?",
-      a: "O plano gratuito inclui acesso aos destinos mais populares como Lisboa, Paris e Londres. Os planos pagos desbloqueiam mais de 80 destinos em todo o mundo e itinerários fora das rotas turísticas comuns."
-    },
-    {
-      q: "Como funciona a exportação de PDF no plano Pro?",
-      a: "No plano Pro, recebes um PDF premium completo, formatado para impressão ou leitura em dispositivos móveis, com endereços, prioridades de reserva, custos e notas de segredos locais do Andor."
-    },
-    {
-      q: "O que é o suporte a multi-clientes no plano Agency?",
-      a: "O plano Agency foi desenhado para agências de viagens e criadores de conteúdos que planeiam viagens para outros. Permite organizar itinerários por cliente, adicionar a tua marca (white-label) e partilhar links personalizados."
-    },
-    {
-      q: "Os itinerários gerados expiram?",
-      a: "Não. Qualquer itinerário que guardares na tua conta ficará disponível para sempre, independentemente do plano ativo."
-    }
-  ];
-
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "Andor Travels Pro",
-    "description": "Itinerários de viagem ilimitados e concierge de viagem com IA disponível 24 horas por dia.",
-    "image": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=75&auto=format&fit=crop",
-    "offers": {
-      "@type": "Offer",
-      "price": "9.00",
-      "priceCurrency": "EUR",
-      "priceValidUntil": "2028-12-31",
-      "availability": "https://schema.org/InStock",
-      "url": "https://andor.travels/pricing"
-    }
+  const requestUpdates = () => {
+    trackEvent('prelaunch_updates_click');
+    window.dispatchEvent(new Event('open-custom-request'));
   };
 
   return (
     <>
-      <script 
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-      />
       <Navbar />
       <main className={styles.container}>
-        {/* HERO SECTION */}
         <section className={styles.hero}>
-          <h1 className={styles.title}>Planos Simples para Grandes Aventuras</h1>
+          <h1 className={styles.title}>Andor está em pré-lançamento</h1>
           <p className={styles.subtitle}>
-            Escolhe o nível de inteligência e liberdade que a tua próxima viagem merece.
+            Ainda não existem subscrições, testes pagos ou cobrança. A prioridade atual é validar o planeamento e a qualidade dos dados.
           </p>
         </section>
 
-        {/* BILLING TOGGLE */}
-        <div className={styles.billingToggleWrapper}>
-          <span 
-            className={`${styles.toggleLabel} ${!isYearly ? styles.toggleLabelActive : ''}`}
-            onClick={() => setIsYearly(false)}
-          >
-            Facturação Mensal
-          </span>
-          
-          <button 
-            className={`${styles.toggleSwitch} ${isYearly ? styles.toggleSwitchChecked : ''}`}
-            onClick={toggleBilling}
-            aria-label="Alternar facturação"
-          >
-            <span className={`${styles.toggleThumb} ${isYearly ? styles.toggleThumbChecked : ''}`}></span>
-          </button>
-          
-          <span 
-            className={`${styles.toggleLabel} ${isYearly ? styles.toggleLabelActive : ''}`}
-            onClick={() => setIsYearly(true)}
-          >
-            Facturação Anual
-          </span>
-          
-          <span className={styles.discountBadge}>Poupe 27%</span>
-        </div>
-
-        {/* PRICING GRID */}
         <div className={styles.grid}>
-          {/* FREE TIER */}
-          <div className={styles.card}>
+          <article className={`${styles.card} ${styles.featuredCard}`}>
+            <span className={styles.popularBadge}>Disponível agora</span>
             <div className={styles.cardHeader}>
-              <h2 className={styles.planName}>Free</h2>
+              <h2 className={styles.planName}>Protótipo</h2>
               <div className={styles.priceWrapper}>
-                <span className={styles.price}>€0</span>
-                <span className={styles.period}>/mês</span>
+                <span className={styles.price}>Sem cobrança</span>
               </div>
-              <div className={styles.yearlyNote}>Acesso gratuito vitalício</div>
+              <div className={styles.yearlyNote}>Acesso sujeito ao estado do ambiente</div>
             </div>
-            
             <ul className={styles.featuresList}>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>3 itinerários por mês</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Destinos básicos</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>AI Concierge (10 msgs/dia)</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Export PDF básico</span>
-              </li>
+              <li className={styles.featureItem}><span className={styles.checkIcon}>✓</span><span>Criar e editar propostas de itinerário</span></li>
+              <li className={styles.featureItem}><span className={styles.checkIcon}>✓</span><span>Mapa das paragens com coordenadas disponíveis</span></li>
+              <li className={styles.featureItem}><span className={styles.checkIcon}>✓</span><span>Checklist e links de pesquisa externa</span></li>
+              <li className={styles.featureItem}><span className={styles.checkIcon}>✓</span><span>Exportação e partilha para avaliação</span></li>
             </ul>
-            
-            <a 
-              href="/?wizard=true" 
-              className={`${styles.btn} ${styles.btnFree}`}
-              onClick={() => trackEvent('pricing_click', { tier: 'free' })}
-            >
-              Começar Grátis
-            </a>
-          </div>
+            <a href="/?wizard=true" className={`${styles.btn} ${styles.btnPro}`}>Experimentar o planeador</a>
+          </article>
 
-          {/* PRO TIER (FEATURED) */}
-          <div className={`${styles.card} ${styles.featuredCard}`}>
-            <span className={styles.popularBadge}>Mais Popular</span>
+          <article className={styles.card}>
             <div className={styles.cardHeader}>
-              <h2 className={styles.planName}>Pro</h2>
-              <div className={styles.priceWrapper}>
-                <span className={styles.price}>
-                  {isYearly ? '€6.58' : '€9'}
-                </span>
-                <span className={styles.period}>/mês</span>
-              </div>
-              <div className={styles.yearlyNote}>
-                {isYearly ? 'Facturado anualmente: €79/ano' : 'Cancele a qualquer momento'}
-              </div>
+              <h2 className={styles.planName}>Planos futuros</h2>
+              <div className={styles.yearlyNote}>Sem preço ou data anunciados</div>
             </div>
-            
             <ul className={styles.featuresList}>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <strong>Itinerários ilimitados</strong>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <strong>Todos os destinos premium</strong>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <strong>AI Concierge ilimitado</strong>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <strong>Export PDF premium</strong>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Colaboração em tempo real</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Alertas de preços de voos</span>
-              </li>
+              <li className={styles.featureItem}><span className={styles.checkIcon}>→</span><span>Billing e limites de utilização ainda não implementados</span></li>
+              <li className={styles.featureItem}><span className={styles.checkIcon}>→</span><span>Colaboração e alertas dependem de validação futura</span></li>
+              <li className={styles.featureItem}><span className={styles.checkIcon}>→</span><span>Qualquer oferta comercial será publicada com termos claros</span></li>
             </ul>
-            
-            <button 
-              onClick={() => {
-                trackEvent('pricing_click', { tier: 'pro' });
-                window.dispatchEvent(new Event('open-ai-chat'));
-              }}
-              className={`${styles.btn} ${styles.btnPro}`}
-            >
-              Começar Pro — 7 dias grátis
+            <button type="button" onClick={requestUpdates} className={`${styles.btn} ${styles.btnAgency}`}>
+              Pedir atualizações
             </button>
-          </div>
-
-          {/* AGENCY TIER */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2 className={styles.planName}>Agency</h2>
-              <div className={styles.priceWrapper}>
-                <span className={styles.price}>€49</span>
-                <span className={styles.period}>/mês</span>
-              </div>
-              <div className={styles.yearlyNote}>Ideal para equipas e consultores</div>
-            </div>
-            
-            <ul className={styles.featuresList}>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <strong>Tudo do Pro incluído</strong>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Multi-clientes e equipas</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>White-label disponível</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Acesso total à API do Andor</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Dashboard de analytics completo</span>
-              </li>
-              <li className={styles.featureItem}>
-                <span className={styles.checkIcon}>✓</span>
-                <span>Suporte prioritário 24/7</span>
-              </li>
-            </ul>
-            
-            <button 
-              onClick={() => {
-                trackEvent('pricing_click', { tier: 'agency' });
-                window.dispatchEvent(new Event('open-custom-request'));
-              }}
-              className={`${styles.btn} ${styles.btnAgency}`}
-            >
-              Contactar para Demo
-            </button>
-          </div>
+          </article>
         </div>
 
-        {/* FAQ SECTION */}
         <section className={styles.faqSection}>
-          <h2 className={styles.faqTitle}>Perguntas Frequentes</h2>
+          <h2 className={styles.faqTitle}>O que significa pré-lançamento?</h2>
           <div className={styles.faqList}>
-            {faqs.map((faq, index) => {
-              const isOpen = activeFaq === index;
-              return (
-                <div key={index} className={styles.faqItem}>
-                  <button 
-                    className={styles.faqHeader}
-                    onClick={() => toggleFaq(index)}
-                    aria-expanded={isOpen}
-                  >
-                    <span>{faq.q}</span>
-                    <span className={`${styles.faqChevron} ${isOpen ? styles.faqChevronActive : ''}`}>
-                      ▼
-                    </span>
-                  </button>
-                  <div className={`${styles.faqContent} ${isOpen ? styles.faqContentActive : ''}`}>
-                    <p>{faq.a}</p>
-                  </div>
-                </div>
-              );
-            })}
+            <div className={styles.faqItem}>
+              <div className={styles.faqHeader}><span>O Andor faz reservas?</span></div>
+              <div className={`${styles.faqContent} ${styles.faqContentActive}`}><p>Não. Organiza o plano e abre pesquisas externas; confirmações e pagamentos acontecem fora do Andor.</p></div>
+            </div>
+            <div className={styles.faqItem}>
+              <div className={styles.faqHeader}><span>Os preços e horários são garantidos?</span></div>
+              <div className={`${styles.faqContent} ${styles.faqContentActive}`}><p>Não. Só dados associados a uma fonte identificada devem ser tratados como dados externos, e mesmo esses têm de ser confirmados antes da compra.</p></div>
+            </div>
           </div>
         </section>
       </main>

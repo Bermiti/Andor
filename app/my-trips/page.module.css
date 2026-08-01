@@ -519,7 +519,7 @@
   }
 
   .content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding-left: 24px;
     padding-right: 24px;
   }

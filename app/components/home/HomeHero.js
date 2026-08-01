@@ -47,12 +47,13 @@ const bgImages = [
 
 const salesChatSequence = [
   { type: 'user', text: 'Vou a Paris em Outubro com a minha namorada. 5 dias.' },
-  { type: 'ai', text: 'Perfeito. Vou equilibrar bairros bonitos, reservas prioritárias e deslocações curtas.' },
+  { type: 'ai', text: 'Perfeito. Vou equilibrar bairros, prioridades a confirmar e deslocações curtas.' },
   { type: 'user', text: 'Orçamento de 1500€ para os dois, sem voos.' },
-  { type: 'ai', text: 'A criar um plano de 5 dias com custos por dia, reservas importantes e PDF para partilhar.' }
+  { type: 'ai', text: 'A criar uma proposta de 5 dias com estimativas, checklist e PDF para partilhar.' }
 ];
 
 export default function HomeHero({ onOpenWizard }) {
+  const [isHydrated, setIsHydrated] = useState(false);
   const [destIndex, setDestIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -60,6 +61,10 @@ export default function HomeHero({ onOpenWizard }) {
   const [selectedDestinationName, setSelectedDestinationName] = useState('');
   const [chatStep, setChatStep] = useState(1);
   const displayDestination = selectedDestinationName || destinations[destIndex];
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const filteredDestinations = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -180,7 +185,7 @@ export default function HomeHero({ onOpenWizard }) {
               com um concierge AI
             </h1>
             <p className={styles.subtitle}>
-              Transforma uma ideia vaga num roteiro pronto a usar: dias estruturados, orçamento, reservas importantes e um dossier bonito para levar ou enviar.
+              Transforma uma ideia vaga numa proposta organizada: dias estruturados, estimativas, checklist de confirmação e um dossier para levar ou enviar.
             </p>
             <div className={styles.statsBar} aria-label="Provas do produto">
               <span><Sparkles size={14} aria-hidden="true" /> Plano em minutos</span>
@@ -212,6 +217,7 @@ export default function HomeHero({ onOpenWizard }) {
                     aria-label="Destino"
                     aria-expanded={isFocused && filteredDestinations.length > 0}
                     autoComplete="off"
+                    disabled={!isHydrated}
                     data-testid="home-destination-input"
                   />
                 </div>
@@ -242,7 +248,7 @@ export default function HomeHero({ onOpenWizard }) {
               </div>
 
               <div className={styles.formControls}>
-                <button type="submit" className={styles.searchButton} onClick={handleSearch} data-testid="home-explore-button">
+                <button type="submit" className={styles.searchButton} disabled={!isHydrated} data-testid="home-explore-button">
                   Criar roteiro
                 </button>
               </div>

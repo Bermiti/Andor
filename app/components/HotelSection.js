@@ -3,6 +3,18 @@
 import styles from './HotelSection.module.css';
 import AccommodationCard from './AccommodationCard';
 
+function currencyLabel(value) {
+  if (typeof value === 'string') return value.trim();
+  return String(value?.symbol || value?.code || '').trim();
+}
+
+function formatEstimate(value, currency) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'string') return value.trim() || null;
+  const label = currencyLabel(currency);
+  return Number.isFinite(value) && label ? `${label} ${value}` : null;
+}
+
 /**
  * PHASE 11.3: HotelSection Component
  * Displays hotel recommendations by zone with alternatives and tiers
@@ -73,6 +85,10 @@ export default function HotelSection({ accommodation, destination }) {
               if (tier.source) {
                 return <AccommodationCard key={idx} hotel={tier} destination={destination} />;
               }
+              const estimatedNightlyPrice = formatEstimate(
+                tier.estimatedNightlyPrice ?? tier.pricePerNight,
+                tier.currency || accommodation.currency || destination?.currency
+              );
               return (
                 <div key={idx} className={`${styles.tierCard} ${styles[`tier_${tier.tier}`]}`}>
                   {/* Tier Badge */}
@@ -83,10 +99,12 @@ export default function HotelSection({ accommodation, destination }) {
                   </div>
 
                   {/* Price */}
-                  <div className={styles.tierPrice}>
-                    €{tier.estimatedNightlyPrice || tier.pricePerNight}
-                    <span className={styles.priceUnit}>/noite</span>
-                  </div>
+                  {estimatedNightlyPrice && (
+                    <div className={styles.tierPrice}>
+                      ~{estimatedNightlyPrice}
+                      <span className={styles.priceUnit}>estimativa/noite</span>
+                    </div>
+                  )}
 
                   {/* Description */}
                   {tier.description && (
@@ -94,16 +112,6 @@ export default function HotelSection({ accommodation, destination }) {
                   )}
 
                   {/* Examples */}
-                  {(tier.exampleNames || tier.name) && (
-                    <div className={styles.examples}>
-                      <div className={styles.examplesLabel}>Exemplos:</div>
-                      <div className={styles.examplesList}>
-                        {tier.exampleNames ? tier.exampleNames.slice(0, 2).map((name, i) => (
-                          <span key={i} className={styles.exampleTag}>{name}</span>
-                        )) : <span className={styles.exampleTag}>{tier.name}</span>}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Best For */}
                   {tier.bestFor && (
@@ -117,6 +125,10 @@ export default function HotelSection({ accommodation, destination }) {
             })}
           </div>
         </div>
+      )}
+
+      {(!accommodation.hotels || accommodation.hotels.length === 0) && (
+        <p className={styles.empty}>Sem inventário de fornecedor. Pesquisa disponibilidade e condições nos links acima.</p>
       )}
 
       {/* Alternative Areas */}

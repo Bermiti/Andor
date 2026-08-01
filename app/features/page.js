@@ -35,7 +35,7 @@ export default function FeaturesPage() {
             <p className={styles.kicker}>Funcionalidades</p>
             <h1>Da ideia solta ao plano pronto.</h1>
             <p>
-              O Andor junta perguntas certas, planeamento por IA, orçamento, reservas e uma
+              O Andor junta perguntas certas, planeamento por IA, estimativas, pesquisa externa e uma
               apresentação limpa para transformar intenção em viagem.
             </p>
           </div>

@@ -37,7 +37,7 @@ test.describe('Sprint 1 itinerary acceptance', () => {
     }
 
     const payload = encodeSharePayload(tokyo);
-    await page.goto(`${baseURL}/itinerary/share?data=${payload}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/itinerary/share?data=${payload}`, { waitUntil: 'domcontentloaded' });
 
     // Verify page renders and shows Tokyo
     await expect(page.locator('h1')).toContainText(/Tokyo|Tóquio/i);
@@ -53,7 +53,10 @@ test.describe('Sprint 1 itinerary acceptance', () => {
     await day2Btn.click();
     await expect(page.locator('h2', { hasText: 'Shibuya Pulse' })).toBeVisible();
 
-    // Verify activity cards render without relying on map actions.
+    await expect(page.getByTestId('itinerary-map-container')).toBeVisible();
+    await expect(page.locator('.leaflet-container')).toHaveCount(1);
+
+    // Verify activity cards render alongside the map.
     const firstActivityCard = page.getByTestId('activity-card').first();
     await expect(firstActivityCard).toBeVisible();
     const saveAction = firstActivityCard.locator('button:has-text("Guardar"), button:has-text("Guardado")').first();
@@ -68,7 +71,7 @@ test.describe('Sprint 1 itinerary acceptance', () => {
     await page.evaluate((fav) => localStorage.setItem('andor_favorites', JSON.stringify([fav])), favObj);
 
     // Refresh and confirm favorite persists (look for 'Guardado' text in buttons)
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
     const savedBtn = page.locator('button:has-text("Guardado")').first();
     await expect(savedBtn).toBeVisible({ timeout: 10000 });
 
@@ -77,18 +80,18 @@ test.describe('Sprint 1 itinerary acceptance', () => {
     // allow layout to settle after viewport change
     await page.waitForTimeout(500);
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-    expect(scrollWidth).toBeLessThanOrEqual(420); // allow small tolerance
+    expect(scrollWidth).toBeLessThanOrEqual(376);
 
     // Day tabs still usable on mobile
     await day1Btn.click();
     await expect(day1Btn).toBeVisible();
 
-    // Map surface was intentionally removed from itinerary pages.
-    await expect(page.locator('.leaflet-container')).toHaveCount(0);
+    await expect(page.getByTestId('itinerary-map-container')).toBeVisible();
+    await expect(page.locator('.leaflet-container')).toHaveCount(1);
 
     // Malformed shared itinerary: navigate to bad payload
     const badPayload = Buffer.from('this is not json').toString('base64');
-    await page.goto(`${baseURL}/itinerary/share?data=${badPayload}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/itinerary/share?data=${badPayload}`, { waitUntil: 'domcontentloaded' });
     // Expect a friendly not found/invalid UI (h2 present)
     const notFoundH2 = page.locator('h2').first();
     await expect(notFoundH2).toBeVisible();

@@ -7,11 +7,13 @@ export default function AccommodationCard({ hotel, destination }) {
   if (!hotel) return null;
 
   const { name, stars, rating, pricePerNight, description, source, bookingUrl } = hotel;
+  const hasBookingSource = source === 'booking';
 
   // Generate stars based on rating
   const renderStars = (starCount) => {
     const stars = [];
-    const count = parseInt(starCount) || 4;
+    const count = Number.parseInt(starCount, 10);
+    if (!Number.isFinite(count) || count < 1 || count > 5) return [];
     for (let i = 1; i <= count; i++) {
       stars.push(<Star key={i} size={12} fill="var(--gold)" color="var(--gold)" />);
     }
@@ -43,10 +45,12 @@ export default function AccommodationCard({ hotel, destination }) {
               {getSourceLabel(source)}
             </span>
           </div>
-          <div className={styles.ratingRow}>
-            <div className={styles.stars}>{renderStars(stars)}</div>
-            {rating && <span className={styles.ratingNumber}>★ {rating}/10</span>}
-          </div>
+          {hasBookingSource && (stars || rating) && (
+            <div className={styles.ratingRow}>
+              {stars && <div className={styles.stars}>{renderStars(stars)}</div>}
+              {rating && <span className={styles.ratingNumber}>★ {rating}/10 · Booking.com</span>}
+            </div>
+          )}
         </div>
       </div>
 
@@ -63,7 +67,7 @@ export default function AccommodationCard({ hotel, destination }) {
           rel="noopener noreferrer"
           className={styles.bookBtn}
         >
-          Reservar <ExternalLink size={12} />
+          Pesquisar no Booking.com <ExternalLink size={12} />
         </a>
       </div>
     </div>

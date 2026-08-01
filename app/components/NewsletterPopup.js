@@ -51,13 +51,13 @@ export default function NewsletterPopup() {
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body.message || 'Nao foi possivel concluir a subscricao.');
+        throw new Error(body.error?.message || 'Não foi possível concluir a subscrição.');
       }
 
       setIsSubscribed(true);
       localStorage.setItem('andor_newsletter_dismissed', 'true');
     } catch (error) {
-      showToast(error.message || 'Nao foi possivel concluir a subscricao.', 'error');
+      showToast(error.message || 'Não foi possível concluir a subscrição.', 'error');
     } finally {
       setLoading(false);
     }

@@ -41,12 +41,14 @@ export default function TransportCard({ transportOption }) {
 
       <div className={styles.timingArea}>
         <div className={styles.timingRow}>
-          <span className={styles.time}>{timing || '09:00 → 12:30'}</span>
-          <span className={styles.duration}>{duration || '3h 30m'}</span>
+          {timing && <span className={styles.time}>{timing}</span>}
+          {duration && <span className={styles.duration}>{duration}</span>}
         </div>
-        <div className={styles.stopsRow}>
-          <span className={styles.stops}>{stops || 'Direto'}</span>
-        </div>
+        {stops !== undefined && stops !== null && stops !== '' && (
+          <div className={styles.stopsRow}>
+            <span className={styles.stops}>{stops === 0 ? 'Direto' : stops}</span>
+          </div>
+        )}
       </div>
 
       <div className={styles.footer}>
@@ -61,7 +63,7 @@ export default function TransportCard({ transportOption }) {
             rel="noopener noreferrer"
             className={styles.bookBtn}
           >
-            Reservar <ExternalLink size={12} />
+            Pesquisar no fornecedor <ExternalLink size={12} />
           </a>
         )}
       </div>

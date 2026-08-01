@@ -25,14 +25,18 @@ export async function POST(req) {
   }
 
   const result = await createCustomRequestRecord(payload);
+  if (!result.ok) {
+    return apiError(
+      'PERSISTENCE_UNAVAILABLE',
+      'O pedido não foi guardado. Tenta novamente mais tarde.',
+      503,
+      true
+    );
+  }
+
   return Response.json({
     ok: true,
     provider: result.provider,
-    request: result.request || {
-      id: `local-${Date.now()}`,
-      status: 'pending',
-      created_at: new Date().toISOString(),
-    },
-    fallback: !result.ok,
+    request: result.request,
   });
 }

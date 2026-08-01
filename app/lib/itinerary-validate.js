@@ -114,10 +114,6 @@ function numberOr(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
 function safeText(value, fallback = '') {
   const text = typeof value === 'string' ? value.trim() : '';
   return text || fallback;
@@ -162,13 +158,15 @@ function getRawActivities(day) {
 }
 
 function normalizeTransport(transport, isFirst) {
-  const source = transport && typeof transport === 'object' ? transport : {};
+  if (!transport || typeof transport !== 'object') return null;
+  const source = transport;
   return {
-    mode: safeText(source.mode, isFirst ? 'walk' : 'public transport'),
-    line: safeText(source.line, isFirst ? 'hotel start' : 'direct route'),
-    duration: safeText(source.duration, isFirst ? '10 min' : '18 min'),
-    cost: Math.max(0, numberOr(source.cost, 0)),
-    directions: safeText(source.directions, isFirst ? 'Start from the recommended base area.' : 'Travel directly from the previous stop.'),
+    ...source,
+    mode: safeText(source.mode, ''),
+    line: safeText(source.line, ''),
+    duration: safeText(source.duration, ''),
+    cost: source.cost === undefined || source.cost === null ? null : Math.max(0, numberOr(source.cost, 0)),
+    directions: safeText(source.directions, ''),
   };
 }
 
@@ -178,52 +176,54 @@ function normalizeActivity(activity, dayIndex, activityIndex, bounds, destinatio
   const rawCoords = parseCoordinate(source.coordinates || source.coords || source.location || source.coordinate);
   let coordinates = rawCoords;
   if (!isPlausibleCoord(rawCoords)) {
-    coordinates = bounds?.center ? { ...bounds.center } : null;
-    result.warnings.push(`Missing or invalid coordinates repaired for activity "${name}"`);
+    coordinates = null;
+    result.warnings.push(`Missing or invalid coordinates omitted for activity "${name}"`);
   } else if (bounds && !isInBounds(rawCoords, bounds)) {
-    coordinates = { ...bounds.center };
+    coordinates = null;
     result.valid = false;
-    result.errors.push(`Activity "${name}" coordinates outside destination bounds; repaired to ${destinationName} center`);
+    result.errors.push(`Activity "${name}" coordinates outside destination bounds; coordinates omitted`);
   }
 
-  let rating = numberOr(source.rating, 4.6);
-  if (rating < 4.0 || rating > 5.0) {
-    result.warnings.push(`Rating clamped for activity "${name}"`);
-    rating = clamp(rating, 4.0, 5.0);
+  let rating = numberOr(source.rating, null);
+  if (rating !== null && (rating <= 0 || rating > 10)) {
+    result.warnings.push(`Invalid rating ignored for activity "${name}"`);
+    rating = null;
   }
 
-  const cost = Math.max(0, numberOr(source.cost ?? source.estimatedCost ?? source.price, 0));
+  const rawCost = source.cost ?? source.estimatedCost ?? source.price;
+  const cost = rawCost === undefined || rawCost === null || rawCost === ''
+    ? null
+    : Math.max(0, numberOr(rawCost, 0));
   const normalized = {
     ...source,
     id: safeText(source.id, `d${dayIndex + 1}-a${activityIndex + 1}`),
     name,
-    type: safeText(source.type || source.category, 'experience'),
-    category: safeText(source.category || source.type, 'experience'),
-    emoji: safeText(source.emoji, 'pin'),
+    type: safeText(source.type || source.category, 'atividade'),
+    category: safeText(source.category || source.type, 'atividade'),
+    emoji: safeText(source.emoji, '📍'),
     description: safeText(source.description || source.type, ''),
-    address: safeText(source.address || source.area, destinationName),
+    address: safeText(source.address || source.area, ''),
     coordinates,
-    startTime: safeText(source.startTime || source.time || source.hour, activityIndex === 0 ? '09:30' : '14:30'),
-    time: safeText(source.time || source.startTime || source.hour, activityIndex === 0 ? '09:30' : '14:30'),
-    duration: safeText(source.duration, '90 min'),
-    durationMinutes: numberOr(source.durationMinutes, null) || numberOr(source.duration, 90),
+    startTime: safeText(source.startTime || source.time || source.hour, ''),
+    time: safeText(source.time || source.startTime || source.hour, ''),
+    duration: safeText(source.duration, ''),
+    durationMinutes: source.durationMinutes === undefined || source.durationMinutes === null
+      ? null
+      : numberOr(source.durationMinutes, null),
     cost,
-    estimatedCost: source.estimatedCost ?? cost,
+    estimatedCost: source.estimatedCost ?? null,
     currency: source.currency || currencyCode,
     rating,
-    crowd: safeText(source.crowd, 'moderate'),
-    bookingRequired: Boolean(source.bookingRequired),
-    insiderTip: safeText(source.insiderTip || source.localTip || source.localSecret, `Ask staff nearby about the quietest time for ${name}; timing matters more than the main entrance.`),
+    ratingSource: source.ratingSource || source.reviewSource || null,
+    crowd: safeText(source.crowd, ''),
+    bookingRequired: typeof source.bookingRequired === 'boolean' ? source.bookingRequired : null,
+    insiderTip: safeText(source.insiderTip || source.localTip || source.localSecret, ''),
     localTip: safeText(source.localTip || source.insiderTip || source.localSecret, ''),
-    photoKeyword: safeText(source.photoKeyword, `${name} ${destinationName}`),
+    photoKeyword: safeText(source.photoKeyword, ''),
     period: safeText(source.period, activityIndex === 0 ? 'morning' : activityIndex === 1 ? 'afternoon' : 'evening'),
     transportFromPrevious: normalizeTransport(source.transportFromPrevious || source.transport, activityIndex === 0),
     bookingUrl: source.bookingUrl || source.booking || null,
   };
-
-  if (!normalized.coordinates && bounds?.center) {
-    normalized.coordinates = { ...bounds.center };
-  }
   return normalized;
 }
 
@@ -243,46 +243,33 @@ function buildPeriods(day, activities) {
   return periods;
 }
 
-function getDefaultMealCost(mealName, currencyCode) {
-  const defaults = {
-    EUR: { breakfast: 8, lunch: 18, dinner: 32 },
-    JPY: { breakfast: 900, lunch: 1800, dinner: 3600 },
-    USD: { breakfast: 12, lunch: 24, dinner: 45 },
-    GBP: { breakfast: 9, lunch: 20, dinner: 38 },
-    IDR: { breakfast: 60000, lunch: 150000, dinner: 280000 },
-    MAD: { breakfast: 45, lunch: 100, dinner: 180 },
-  };
-  return (defaults[currencyCode] || defaults.EUR)[mealName] || defaults.EUR[mealName] || 20;
-}
-
 function normalizeMeal(meal, mealName, destinationName, bounds, result, currencyCode = 'EUR') {
-  if (mealName === 'breakfast' && meal === null) return null;
-  const source = meal && typeof meal === 'object' ? meal : {};
-  const fallbackName = mealName === 'breakfast' ? `Breakfast near ${destinationName}` : `${mealName} near ${destinationName}`;
-  const name = safeText(source.name || source.restaurant, fallbackName);
+  if (!meal || typeof meal !== 'object') return null;
+  const source = meal;
+  const name = safeText(source.name || source.restaurant, 'Sugestão por confirmar');
   let coordinates = parseCoordinate(source.coordinates || source.location);
   if (!isPlausibleCoord(coordinates)) {
-    coordinates = bounds?.center ? { ...bounds.center } : null;
-    result.warnings.push(`Missing meal coordinates repaired for ${mealName}`);
+    coordinates = null;
   } else if (bounds && !isInBounds(coordinates, bounds)) {
-    coordinates = { ...bounds.center };
+    coordinates = null;
     result.valid = false;
-    result.errors.push(`${mealName} coordinates outside destination bounds; repaired to destination center`);
+    result.errors.push(`${mealName} coordinates outside destination bounds; coordinates omitted`);
   }
+  const rawCost = source.cost ?? source.estimatedCost;
   return {
     ...source,
     name,
-    cuisine: safeText(source.cuisine || source.type, mealName === 'breakfast' ? 'Cafe' : 'Local cuisine'),
+    cuisine: safeText(source.cuisine || source.type, ''),
     type: safeText(source.type, mealName),
     priceRange: safeText(source.priceRange, ''),
-    cost: Math.max(0, numberOr(source.cost, getDefaultMealCost(mealName, currencyCode))),
+    cost: rawCost === undefined || rawCost === null || rawCost === '' ? null : Math.max(0, numberOr(rawCost, 0)),
     currency: source.currency || currencyCode,
-    address: safeText(source.address, destinationName),
+    address: safeText(source.address, ''),
     coordinates,
-    mustOrder: safeText(source.mustOrder || source.note, mealName === 'breakfast' ? 'house pastry and coffee' : 'the seasonal house speciality'),
-    openingHours: safeText(source.openingHours || source.hours, mealName === 'dinner' ? '18:30 - 22:30' : '08:00 - 15:00'),
-    bookingRequired: Boolean(source.bookingRequired || mealName === 'dinner'),
-    insiderNote: safeText(source.insiderNote || source.localTip || source.note, `Ask for the daily special at ${name}; it is usually fresher than the translated menu.`),
+    mustOrder: safeText(source.mustOrder || source.note, ''),
+    openingHours: safeText(source.openingHours || source.hours, ''),
+    bookingRequired: typeof source.bookingRequired === 'boolean' ? source.bookingRequired : null,
+    insiderNote: safeText(source.insiderNote || source.localTip || source.note, ''),
   };
 }
 
@@ -376,17 +363,11 @@ export function validateAndNormalize(itinerary) {
 
   normalized.trip = {
     totalDays: numberOr(normalized.trip?.totalDays, rawDays.length),
-    travelStyle: safeText(normalized.trip?.travelStyle || normalized.style, 'cultural'),
-    groupType: safeText(normalized.trip?.groupType || normalized.travelers, 'travellers'),
-    budgetTier: safeText(normalized.trip?.budgetTier || normalized.budgetTier || normalized.budget, 'comfort'),
+    travelStyle: safeText(normalized.trip?.travelStyle || normalized.style, ''),
+    groupType: safeText(normalized.trip?.groupType || normalized.travelers, ''),
+    budgetTier: safeText(normalized.trip?.budgetTier || normalized.budgetTier || normalized.budget, ''),
     budgetBreakdown: normalizeBudgetBreakdown(normalized.trip?.budgetBreakdown || normalized.budgetBreakdown || {}),
-    topTips: Array.isArray(normalized.trip?.topTips) && normalized.trip.topTips.length >= 3
-      ? normalized.trip.topTips
-      : [
-          `Keep the first morning in ${normalized.destination.city} flexible.`,
-          'Confirm opening hours the night before key activities.',
-          'Save addresses offline before leaving the hotel.',
-        ],
+    topTips: Array.isArray(normalized.trip?.topTips) ? normalized.trip.topTips : [],
     ...normalized.trip,
   };
   const destinationCurrency = normalized.destination.currency?.code || normalized.destination.currency || 'EUR';
@@ -397,10 +378,7 @@ export function validateAndNormalize(itinerary) {
       normalized.trip.budgetBreakdown[key].currency = destinationCurrency;
     }
   });
-  normalized.summary = normalized.summary || {
-    title: `${normalized.destination.city} trip`,
-    estimatedTotalCost: normalized.trip.budgetBreakdown.grandTotal.min,
-  };
+  normalized.summary = normalized.summary || { title: `${normalized.destination.city} trip` };
 
   const seenTitles = new Set();
   let mapCriticalCount = 0;
@@ -424,13 +402,17 @@ export function validateAndNormalize(itinerary) {
       dayNumber: numberOr(day.dayNumber, dayIndex + 1),
       date: safeText(day.date, ''),
       title,
-      emoji: safeText(day.emoji, 'pin'),
+      emoji: safeText(day.emoji, '📍'),
       theme: safeText(day.theme || day.areaFocus || day.area, normalized.destination.city),
-      moodDescription: safeText(day.moodDescription || day.mood, `A well-paced day in ${normalized.destination.city} with room to breathe.`),
-      budgetEstimate: Math.max(0, numberOr(day.budgetEstimate || day.estimatedCost, 0)),
-      estimatedCost: Math.max(0, numberOr(day.estimatedCost || day.budgetEstimate, 0)),
-      weather: day.weather || { avgTemp: '', condition: 'Check forecast', practicalTip: 'Verify weather 48 hours before departure.' },
-      transport: day.transport || { mainRecommendation: 'Walk and public transport', cost: 0, tip: 'Keep the route grouped by area.' },
+      moodDescription: safeText(day.moodDescription || day.mood, ''),
+      budgetEstimate: day.budgetEstimate === undefined || day.budgetEstimate === null
+        ? null
+        : Math.max(0, numberOr(day.budgetEstimate, 0)),
+      estimatedCost: day.estimatedCost === undefined || day.estimatedCost === null
+        ? null
+        : Math.max(0, numberOr(day.estimatedCost, 0)),
+      weather: day.weather || null,
+      transport: day.transport || null,
       periods: buildPeriods(day, activities),
       activities,
       stops: activities,
@@ -439,7 +421,7 @@ export function validateAndNormalize(itinerary) {
         lunch: normalizeMeal(meals.lunch, 'lunch', normalized.destination.city, bounds, result, destinationCurrency),
         dinner: normalizeMeal(meals.dinner, 'dinner', normalized.destination.city, bounds, result, destinationCurrency),
       },
-      localSecret: safeText(day.localSecret || day.localSecrets, `Ask a staff member in ${normalized.destination.city} which street they use for a quiet dinner after work, then save that area offline.`),
+      localSecret: safeText(day.localSecret || day.localSecrets, ''),
     };
   });
 

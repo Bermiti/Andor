@@ -246,8 +246,6 @@ export default function FloatingAi() {
   const [taglineIdx, setTaglineIdx] = useState(0);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [isTherapyMode, setIsTherapyMode] = useState(false);
-  const [collabActive, setCollabActive] = useState(false);
-  const [collabPartnerTyping, setCollabPartnerTyping] = useState(false);
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [showNewChatConfirm, setShowNewChatConfirm] = useState(false);
   
@@ -264,7 +262,7 @@ export default function FloatingAi() {
 
   const taglines = [
     "Your personal travel concierge",
-    "Expert in 195 countries",
+    "Planeamento transparente, sem reservas fictícias",
     "Planning your perfect journey"
   ];
 
@@ -385,7 +383,7 @@ export default function FloatingAi() {
       setHasUnread(false);
       setUnreadCount(0);
     }
-  }, [messages, isOpen, collabPartnerTyping]);
+  }, [messages, isOpen]);
 
   // Contextual initial suggestions based on active page
   useEffect(() => {
@@ -625,40 +623,7 @@ export default function FloatingAi() {
   }, []);
 
   const handleSurpriseMe = () => {
-    const userMessage = { role: 'user', content: '🎲 Surpreende-me', id: `user-${Date.now()}` };
-    const tempAssistantMsg = { 
-      role: 'assistant', 
-      content: `A pensar no destino perfeito para ${currentMonthName}...`, 
-      isStreaming: true, 
-      id: `assistant-${Date.now()}` 
-    };
-    
-    const newMessages = [...messages, userMessage, tempAssistantMsg];
-    saveMessages(newMessages);
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      setMessages(prev => {
-        return prev.map(m => {
-          if (m.id === tempAssistantMsg.id) {
-            return {
-              ...m,
-              content: `A tua próxima aventura é... **Reykjavik, Islândia 🇮🇸**\n\nEm ${currentMonthName} tens a aurora boreal com 80% de probabilidade, temperaturas de 5-10°C, e preços 30% mais baixos que no Verão. É um destino que muda perspectivas.\n\nQuer que crie um itinerário completo?`,
-              isStreaming: false
-            };
-          }
-          return m;
-        });
-      });
-      const updatedMsgs = [...newMessages.slice(0, -1), { 
-        role: 'assistant', 
-        content: `A tua próxima aventura é... **Reykjavik, Islândia 🇮🇸**\n\nEm ${currentMonthName} tens a aurora boreal com 80% de probabilidade, temperaturas de 5-10°C, e preços 30% mais baixos que no Verão. É um destino que muda perspectivas.\n\nQuer que crie um itinerário completo?`,
-        isStreaming: false,
-        id: tempAssistantMsg.id
-      }];
-      localStorage.setItem('andor_concierge_messages', JSON.stringify(updatedMsgs.slice(-20)));
-      setIsLoading(false);
-    }, 3500);
+    handleSend('Sugere um destino com base apenas nas minhas preferências. Não inventes preços, probabilidade meteorológica, disponibilidade ou condições atuais; explica o que tenho de confirmar.');
   };
 
   const handleChipClick = (chipText) => {
@@ -745,97 +710,6 @@ export default function FloatingAi() {
     showToast('🧹 Nova conversa iniciada.');
   };
 
-  const startCollaboration = () => {
-    setCollabActive(true);
-    navigator.clipboard.writeText(window.location.origin + '?collab=room-andor-collab-' + Math.floor(Math.random() * 10000));
-    showToast('🔗 Link de colaboração copiado! Envia-o a um amigo.');
-
-    setTimeout(() => {
-      showToast('👥 João juntou-se ao planeamento.');
-      
-      setTimeout(() => {
-        setCollabPartnerTyping(true);
-        
-        setTimeout(() => {
-          setCollabPartnerTyping(false);
-          const joaoMessage = {
-            role: 'user',
-            senderName: 'João',
-            content: 'Adorei as sugestões de hotéis! Podíamos tentar incluir uma experiência gastronómica local na segunda noite?',
-            timestamp: new Date().toISOString()
-          };
-          setMessages(prev => {
-            const updated = [...prev, joaoMessage];
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('andor_concierge_messages', JSON.stringify(updated.slice(-20)));
-            }
-            return updated;
-          });
-          
-          setIsLoading(true);
-          setTimeout(async () => {
-            try {
-              const currentMsgs = [...messages, joaoMessage];
-              const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  messages: currentMsgs.map(m => ({ role: m.role, content: m.content })),
-                  locale,
-                }),
-              });
-              
-              if (response.ok) {
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let assistantMsg = '';
-                
-                setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }]);
-                
-                let buffer = '';
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-                  
-                  buffer += decoder.decode(value, { stream: true });
-                  const lines = buffer.split('\n\n');
-                  buffer = lines.pop() || '';
-                  
-                  for (const line of lines) {
-                    if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
-                    try {
-                      const {text} = JSON.parse(line.slice(6));
-                      if (text) {
-                        assistantMsg += text;
-                        setMessages(prev => {
-                          const updated = [...prev];
-                          updated[updated.length - 1] = { role: 'assistant', content: assistantMsg, isStreaming: true };
-                          return updated;
-                        });
-                      }
-                    } catch(e) {}
-                  }
-                }
-                
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = { role: 'assistant', content: assistantMsg, isStreaming: false };
-                  localStorage.setItem('andor_concierge_messages', JSON.stringify(updated.slice(-20)));
-                  return updated;
-                });
-              }
-            } catch (err) {
-              // silent error on collaboration fetch
-            } finally {
-              setIsLoading(false);
-            }
-          }, 1200);
-          
-        }, 3000);
-      }, 4000);
-    }, 6000);
-  };
-
   // Get contextual suggestion questions based on last message keywords
   const getContextSuggestions = () => {
     if (responseSuggestions.length > 0) return responseSuggestions;
@@ -878,7 +752,7 @@ export default function FloatingAi() {
         const andorItinerary = JSON.parse(jsonMatch[0]);
         const city = andorItinerary.destination?.city || "Destino";
         const days = andorItinerary.trip?.totalDays || andorItinerary.days?.length || 3;
-        const budgetMin = andorItinerary.trip?.totalBudgetEstimate?.min || 200;
+        const budgetMin = andorItinerary.trip?.totalBudgetEstimate?.min || null;
 
         const handleViewItinerary = () => {
           const legacyFormat = convertAndorToLegacy(andorItinerary);
@@ -898,7 +772,7 @@ export default function FloatingAi() {
               <span className={styles.itineraryIcon}>A</span>
               <div>
                 <h4 className={styles.itineraryTitle}>Itinerário criado</h4>
-                <p className={styles.itinerarySub}>{city} · {days} dias · €{budgetMin} est</p>
+                <p className={styles.itinerarySub}>{city} · {days} dias{budgetMin ? ` · €${budgetMin} est.` : ''}</p>
               </div>
             </div>
             <div className={styles.itineraryActions}>
@@ -916,100 +790,7 @@ export default function FloatingAi() {
       }
     }
 
-    // Enhanced dynamic card parsing
-    const parsedHotels = [];
-    const parsedFlights = [];
-    const parsedRestaurants = [];
-
-    // Parse hotels: e.g. "Hotel Gracery Shinjuku" or "Gracery Shinjuku Hotel"
-    const hotelKeywords = ['hotel', 'hostel', 'resort', 'guesthouse', 'villa', 'alojamento', 'hospedagem'];
-    if (hotelKeywords.some(kw => text.toLowerCase().includes(kw)) && !text.includes('[HOTEL:')) {
-      const matches = text.match(/(?:hotel|hostel|resort|guesthouse|villa)\s+([A-Z][a-zA-Zãõáéíóúçñ\s\-]{3,30})/gi) || 
-                      text.match(/([A-Z][a-zA-Zãõáéíóúçñ\s\-]{3,30})\s+(?:hotel|hostel|resort|guesthouse|villa)/gi);
-      if (matches) {
-        matches.forEach(m => {
-          const name = m.trim();
-          if (!parsedHotels.some(h => h.name.toLowerCase() === name.toLowerCase()) && name.length > 5) {
-            let rating = "⭐⭐⭐⭐";
-            let location = "Centro";
-            let price = "~€130/noite";
-            let desc = "Excelente localização e conforto recomendado pelo Andor.";
-            
-            if (name.toLowerCase().includes('gracery')) {
-              rating = "⭐⭐⭐⭐";
-              location = "Shinjuku";
-              price = "~€130/noite";
-              desc = "Icónico Godzilla na fachada";
-            }
-            parsedHotels.push({ name, rating, location, price, desc });
-          }
-        });
-      }
-    }
-
-    // Parse flights: e.g. "Finnair LIS→NRT"
-    const airlines = ['Finnair', 'TAP', 'Emirates', 'Lufthansa', 'Ryanair', 'Iberia', 'KLM', 'Air France', 'Qatar Airways', 'British Airways'];
-    if (!text.includes('[FLIGHT:')) {
-      airlines.forEach(airline => {
-        if (text.includes(airline)) {
-          let route = "LIS→NRT";
-          let duration = "14h30";
-          let stops = "1 escala";
-          let price = "~€720 eco";
-          
-          const routeMatch = text.match(/([A-Z]{3})\s*[→|-]\s*([A-Z]{3})/);
-          if (routeMatch) {
-            route = `${routeMatch[1]}→${routeMatch[2]}`;
-          } else if (text.toLowerCase().includes('paris')) {
-            route = "LIS→CDG";
-            duration = "2h30";
-            stops = "direto";
-            price = "~€120 eco";
-          } else if (text.toLowerCase().includes('bali')) {
-            route = "LIS→DPS";
-            duration = "18h15";
-            stops = "2 escalas";
-            price = "~€890 eco";
-          }
-
-          parsedFlights.push({
-            airline: `${airline} ${route}`,
-            details: `${duration} · ${stops} · ${price}`
-          });
-        }
-      });
-    }
-
-    // Parse restaurants: e.g. "Ichiran Ramen"
-    if (!text.includes('[RESTAURANT:')) {
-      if (text.toLowerCase().includes('ichiran')) {
-        parsedRestaurants.push({
-          name: "Ichiran Ramen",
-          location: "Shibuya",
-          price: "€€",
-          type: "🍜 Ramen",
-          desc: "Solo booths, order kaedama"
-        });
-      } else {
-        const restMatches = text.match(/(?:restaurante|tasca|bistrô|ramen)\s+([A-Z][a-zA-Zãõáéíóúçñ\s\-]{3,30})/gi);
-        if (restMatches) {
-          restMatches.forEach(m => {
-            const name = m.replace(/(?:restaurante|tasca|bistrô|ramen)\s+/i, '').trim();
-            if (name && !parsedRestaurants.some(r => r.name.toLowerCase() === name.toLowerCase()) && name.length > 3) {
-              parsedRestaurants.push({
-                name,
-                location: "Centro",
-                price: "€€",
-                type: "🍽️ Gastronomia Local",
-                desc: "Recomendado para provar sabores locais autênticos."
-              });
-            }
-          });
-        }
-      }
-    }
-
-    // 3. Inline cards regex parser
+    // Render only structured suggestions explicitly returned by the assistant.
     const parts = text.split(/(\[HOTEL:[^\]]+\]|\[RESTAURANT:[^\]]+\]|\[FLIGHT:[^\]]+\])/g);
     
     return (
@@ -1021,9 +802,8 @@ export default function FloatingAi() {
           if (part.startsWith('[HOTEL:')) {
             const inner = part.slice(7, -1).split('|');
             const name = inner[0]?.trim();
-            const rating = inner[1]?.trim() || '4.8';
-            const price = inner[2]?.trim() || '—';
-            const why = inner[3]?.trim() || 'Genuinamente excecional.';
+            const price = inner[2]?.trim() || null;
+            const why = inner[3]?.trim() || 'Sugestão gerada por IA; confirma os detalhes no fornecedor.';
             return (
               <div key={idx} className={styles.inlineCard}>
                 <div className={styles.inlineCardHeader}>
@@ -1031,8 +811,7 @@ export default function FloatingAi() {
                   <div style={{ flex: 1 }}>
                     <h5 className={styles.cardName}>{name}</h5>
                     <div className={styles.cardMeta}>
-                      <span className={styles.cardRating}>★ {rating}</span>
-                      <span className={styles.cardPrice}>{price}</span>
+                      {price && <span className={styles.cardPrice}>Estimativa: {price}</span>}
                     </div>
                   </div>
                 </div>
@@ -1053,9 +832,8 @@ export default function FloatingAi() {
           if (part.startsWith('[RESTAURANT:')) {
             const inner = part.slice(12, -1).split('|');
             const name = inner[0]?.trim();
-            const rating = inner[1]?.trim() || '4.7';
-            const price = inner[2]?.trim() || '—';
-            const note = inner[3]?.trim() || 'Especialidade local imperdível.';
+            const price = inner[2]?.trim() || null;
+            const note = inner[3]?.trim() || 'Sugestão gerada por IA; confirma os detalhes numa fonte atual.';
             return (
               <div key={idx} className={styles.inlineCard}>
                 <div className={styles.inlineCardHeader}>
@@ -1063,8 +841,7 @@ export default function FloatingAi() {
                   <div style={{ flex: 1 }}>
                     <h5 className={styles.cardName}>{name}</h5>
                     <div className={styles.cardMeta}>
-                      <span className={styles.cardRating}>★ {rating}</span>
-                      <span className={styles.cardPrice}>{price}</span>
+                      {price && <span className={styles.cardPrice}>Estimativa: {price}</span>}
                     </div>
                   </div>
                 </div>
@@ -1086,13 +863,13 @@ export default function FloatingAi() {
             const inner = part.slice(8, -1).split('|');
             const route = inner[0]?.trim() || 'Rota';
             const airline = inner[1]?.trim() || 'Companhia';
-            const price = inner[2]?.trim() || '—';
-            const tip = inner[3]?.trim() || 'Melhor janela de reserva.';
+            const price = inner[2]?.trim() || null;
+            const tip = inner[3]?.trim() || 'Confirma horários, escalas e disponibilidade no fornecedor.';
             return (
               <div key={idx} className={styles.inlineFlightCard}>
                 <div className={styles.flightHeader}>
                   <span className={styles.flightBadge}>✈️ Sugestão de Voo</span>
-                  <span className={styles.flightPrice}>{price}</span>
+                  {price && <span className={styles.flightPrice}>Estimativa: {price}</span>}
                 </div>
                 <h5 className={styles.flightRoute}>{route}</h5>
                 <p className={styles.flightDetails}>{airline} • {tip}</p>
@@ -1110,73 +887,6 @@ export default function FloatingAi() {
           
           return null;
         })}
-
-        {/* Parsed Hotels */}
-        {parsedHotels.map((hotel, idx) => (
-          <div key={`p-hotel-${idx}`} className={styles.inlineCard}>
-            <div className={styles.inlineCardHeader}>
-              <span className={styles.cardEmoji}>🏨</span>
-              <div style={{ flex: 1 }}>
-                <h5 className={styles.cardName}>{hotel.name}</h5>
-                <div className={styles.cardMeta}>
-                  <span className={styles.cardRating}>{hotel.rating}</span>
-                  <span> · {hotel.location} · {hotel.price}</span>
-                </div>
-              </div>
-            </div>
-            <p className={styles.cardText}>"{hotel.desc}"</p>
-            <a 
-              href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(hotel.name)}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className={styles.cardActionLink}
-            >
-              Ver no Booking.com →
-            </a>
-          </div>
-        ))}
-
-        {/* Parsed Flights */}
-        {parsedFlights.map((flight, idx) => (
-          <div key={`p-flight-${idx}`} className={styles.inlineFlightCard}>
-            <div className={styles.flightHeader}>
-              <span className={styles.flightBadge}>✈️ {flight.airline}</span>
-            </div>
-            <p className={styles.flightDetails}>{flight.details}</p>
-            <a 
-              href="https://www.skyscanner.com/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className={styles.cardActionLink}
-            >
-              Pesquisar no Skyscanner →
-            </a>
-          </div>
-        ))}
-
-        {/* Parsed Restaurants */}
-        {parsedRestaurants.map((rest, idx) => (
-          <div key={`p-rest-${idx}`} className={styles.inlineCard}>
-            <div className={styles.inlineCardHeader}>
-              <span className={styles.cardEmoji}>🍜</span>
-              <div style={{ flex: 1 }}>
-                <h5 className={styles.cardName}>{rest.name}</h5>
-                <div className={styles.cardMeta}>
-                  <span>{rest.location} · {rest.price} · {rest.type}</span>
-                </div>
-              </div>
-            </div>
-            <p className={styles.cardText}>"{rest.desc}"</p>
-            <a
-              href={`https://www.google.com/search?q=${encodeURIComponent(rest.name)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.cardActionLink}
-            >
-              Ver detalhes →
-            </a>
-          </div>
-        ))}
 
         {/* Surprise Me confirmation button */}
         {text.includes("Quer que crie um itinerário completo?") && (
@@ -1272,13 +982,6 @@ export default function FloatingAi() {
             >
               🧘
             </button>
-            <button 
-              className={`${styles.collabBtn} ${collabActive ? styles.activeCollab : ''}`}
-              onClick={startCollaboration}
-              title="Planear em Grupo 👥"
-            >
-              👥
-            </button>
             <button className={styles.closeBtn} onClick={() => setIsOpen(false)} aria-label="Fechar Andor AI">✕</button>
           </div>
         </div>
@@ -1333,8 +1036,7 @@ export default function FloatingAi() {
               </div>
               <h3 className={styles.onboardingGreeting}>{getGreeting()}</h3>
               <p className={styles.onboardingDesc}>
-                Eu sou o ANDOR — o teu concierge de viagens de elite. Desenho itinerários completos, 
-                descubro hotéis que valem mesmo a pena, hacks de voos e resolvo emergências em segundos.
+                Eu sou o ANDOR — um assistente de planeamento. Organizo propostas de itinerário e ajudo-te a identificar o que falta confirmar em fontes oficiais.
               </p>
               
               <div className={styles.suggestionGrid}>
@@ -1344,7 +1046,7 @@ export default function FloatingAi() {
                   "💰 Viagem a Tóquio por €800",
                   "🎲 Surpreende-me",
                   "🏨 Encontra-me o hotel perfeito",
-                  "⚡ Resolvo uma emergência de viagem"
+                  "⚡ Orientação numa disrupção"
                 ].map((chip, idx) => (
                   <button 
                     key={idx} 
@@ -1506,19 +1208,6 @@ export default function FloatingAi() {
             </div>
           )}
 
-          {/* Collaborative Typing Indicator */}
-          {collabPartnerTyping && (
-            <div className={`${styles.message} ${styles.messageUser} ${styles.messageCollabPartner}`}>
-              <span className={styles.senderLabel}>João está a escrever...</span>
-              <div className={styles.bubble}>
-                <div className={styles.typingIndicator}>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Assistant Loading / Typing state */}
           {isLoading && (

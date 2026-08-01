@@ -86,8 +86,8 @@ export function validateAndFixCoordinates(itineraryData, destinationName) {
   const bounds = destKey ? CITY_BOUNDS[destKey] : null;
   const [centerLat, centerLng] = getDestinationCenter(destinationName || itineraryData.destination?.name);
   
-  function fixCoord(coords) {
-    if (!coords) return [centerLat, centerLng];
+  function fixCoord(coords, allowDestinationCenter = false) {
+    if (!coords) return allowDestinationCenter ? [centerLat, centerLng] : null;
     
     if (Array.isArray(coords)) {
       const [lat, lng] = coords;
@@ -96,7 +96,7 @@ export function validateAndFixCoordinates(itineraryData, destinationName) {
       } else {
         if (isValidCoordinate(lat, lng)) return coords;
       }
-      return [centerLat, centerLng];
+      return allowDestinationCenter ? [centerLat, centerLng] : null;
     }
     
     if (typeof coords === 'object' && coords.lat !== undefined && coords.lng !== undefined) {
@@ -106,16 +106,16 @@ export function validateAndFixCoordinates(itineraryData, destinationName) {
       } else {
         if (isValidCoordinate(lat, lng)) return coords;
       }
-      return { lat: centerLat, lng: centerLng };
+      return allowDestinationCenter ? { lat: centerLat, lng: centerLng } : null;
     }
     
-    return [centerLat, centerLng];
+    return allowDestinationCenter ? [centerLat, centerLng] : null;
   }
   
   const result = JSON.parse(JSON.stringify(itineraryData));
   
   if (result.destination?.coordinates) {
-    result.destination.coordinates = fixCoord(result.destination.coordinates);
+    result.destination.coordinates = fixCoord(result.destination.coordinates, true);
   }
   
   if (Array.isArray(result.days)) {

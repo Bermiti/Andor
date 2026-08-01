@@ -564,8 +564,6 @@ function buildRealStop(place, index, destinationLabel, symbol) {
     landmark: 'Marco local - lugar assinatura da rota',
     experience: 'Experiencia - ancora local do percurso',
   }[place.category] || 'Experiencia - ancora local do percurso';
-  const defaultCost = place.category === 'food' ? 22 : place.category === 'culture' ? 12 : 0;
-
   return {
     time: times[index % times.length],
     name: place.name,
@@ -573,16 +571,15 @@ function buildRealStop(place, index, destinationLabel, symbol) {
     category: place.category,
     description: `${place.name} is the specific ${place.category || 'local'} anchor for this part of the route in ${destinationLabel}.`,
     whyMatters: `It keeps this day specific to ${destinationLabel} and avoids an unnecessary cross-city detour.`,
-    duration: place.category === 'food' ? '75 min' : '90 min',
-    cost: defaultCost,
-    estimatedCost: defaultCost === 0 ? 'Free' : `${symbol}${defaultCost}`,
+    duration: place.category === 'food' ? '75 min planeados' : '90 min planeados',
+    cost: null,
+    estimatedCost: null,
     coordinates: { lat: place.coordinates.lat, lng: place.coordinates.lng },
     address: place.displayName,
     coordinateSource: place.coordinateSource || 'nominatim',
     source: place.coordinateSource === 'curated' ? 'curated' : 'openstreetmap',
-    rating: 4.6,
-    bookingRequired: index % 4 === 1,
-    crowd: index % 3 === 0 ? 'low' : 'moderate',
+    bookingRequired: null,
+    crowd: null,
     photoKeyword: buildPhotoKeyword(place, destinationLabel),
     backupOption: `If ${place.name} is closed or weather makes it impractical, keep the same time block and use a nearby indoor stop in this area.`,
     practicalNote: 'Confirm current opening hours, access, and parking or transport conditions the day before.',
@@ -590,9 +587,9 @@ function buildRealStop(place, index, destinationLabel, symbol) {
     insiderTip: `Confirma os horarios recentes antes de sair; sitios pequenos mudam horarios com frequencia.`,
     transportFromPrevious: {
       mode: index === 0 ? 'Comecar na zona onde ficas' : 'A pe ou salto curto de transporte publico',
-      duration: index === 0 ? '10 min' : '12-20 min',
-      cost: index === 0 ? 0 : 2,
-      directions: index === 0 ? 'Comeca perto do alojamento.' : 'Mantem o dia num conjunto compacto antes de mudares de zona.',
+      duration: '',
+      cost: null,
+      directions: 'Confirma a rota e o tempo atuais no mapa antes de sair.',
     },
   };
 }
@@ -613,20 +610,8 @@ function makeDayTitle(dayIndex, stops, cityName) {
 }
 
 function buildDestinationAwareDay(cityName, destinationLabel, dayIndex, places, center, symbol) {
-  const sliceStart = (dayIndex * 4) % Math.max(places.length, 1);
+  const sliceStart = dayIndex * 2;
   const selected = places.slice(sliceStart, sliceStart + 4);
-  while (selected.length < 4) {
-    const offset = selected.length + dayIndex + 1;
-    selected.push({
-      name: `${cityName} local quarter ${selected.length + 1}`,
-      displayName: destinationLabel,
-      category: selected.length === 1 ? 'food' : 'experience',
-      coordinates: {
-        lat: center.lat + Math.sin(offset) * 0.012,
-        lng: center.lng + Math.cos(offset) * 0.012,
-      },
-    });
-  }
 
   const stops = selected.map((place, index) => buildRealStop(place, index, destinationLabel, symbol));
   return {
@@ -640,32 +625,15 @@ function buildDestinationAwareDay(cityName, destinationLabel, dayIndex, places, 
     localSecret: `Nao tentes apanhar todos os pontos famosos no mesmo dia. Escolhe o melhor conjunto em ${cityName} e deixa as ruas pequenas fazerem parte da viagem.`,
     stops,
     meals: {
-      breakfast: {
-        name: `${cityName} cafe de bairro`,
-        type: 'Cafe',
-        cost: symbol === '¥' ? 900 : 8,
-        mustOrder: 'Doce da casa ou pequeno-almoco local',
-        note: 'Escolhe um sitio a menos de 10 minutos da primeira paragem.',
-      },
-      lunch: {
-        name: stops.find((stop) => stop.category === 'food')?.name || `${cityName} almoco de mercado`,
-        type: 'Almoco local',
-        cost: symbol === '¥' ? 1800 : 18,
-        mustOrder: 'Prato do dia',
-        note: 'Come perto da zona da tarde para nao perderes a logistica.',
-      },
-      dinner: {
-        name: `${cityName} jantar reservado`,
-        cuisine: 'Cozinha local',
-        priceRange: symbol === '¥' ? 'JPY 3000-5000' : `${symbol}28-45`,
-        cost: symbol === '¥' ? 3600 : 34,
-        bookingRequired: dayIndex % 2 === 0,
-        insiderNote: 'Reserva o primeiro ou ultimo turno para uma sala mais calma.',
-      },
+      breakfast: null,
+      lunch: stops.find((stop) => stop.category === 'food')
+        ? { name: stops.find((stop) => stop.category === 'food').name, source: 'openstreetmap', cost: null }
+        : null,
+      dinner: null,
     },
     weather: { avgTemp: '', condition: 'Confirmar previsao', emoji: 'WX', tip: 'Confirma a meteorologia 48 horas antes.' },
-    transport: { mainMode: 'Zona caminhavel + transporte publico', apps: ['App local de transportes'], cost: 6 },
-    budgetEstimate: symbol === '¥' ? 9000 : 82,
+    transport: { mainMode: 'Confirmar ligações no mapa', apps: [], cost: null },
+    budgetEstimate: null,
   };
 }
 
@@ -701,6 +669,7 @@ export async function generateDestinationAwareFallbackItinerary(destination, num
   }
 
   const places = uniquePlaces(found);
+  if (places.length < requestedDays * 2) return null;
   const days = Array.from({ length: requestedDays }, (_, dayIndex) =>
     buildDestinationAwareDay(city, destinationLabel, dayIndex, places, center, currency.symbol)
   );
@@ -721,11 +690,11 @@ export async function generateDestinationAwareFallbackItinerary(destination, num
       andorVerdict: `Fallback sem IA externa, mas centrado em dados práticos e locais para ${destinationLabel}.`,
     },
     tripOverview: `Uma rota adaptada a ${destinationLabel}, criada com contexto local em vez de um template generico.`,
-    flights: { suggestion: `Pesquisa voos actuais para ${city} a partir ${originText} no Google Flights ou Skyscanner.`, averagePrice: 'Estimativa apenas' },
-    accommodation: { hotelName: `Base em ${city}`, type: 'Alojamento pensado por bairro', reason: 'Escolhe uma base central que mantenha os dois primeiros dias caminhaveis.' },
+    flights: { suggestion: `Pesquisa voos atuais para ${city} a partir ${originText} num fornecedor externo.` },
+    accommodation: { overview: 'Pesquisa uma base adequada ao percurso e confirma disponibilidade num fornecedor externo.', hotels: [] },
     currency: currency.symbol,
     days,
-    mustEat: [`Especialidade local em ${city}`, 'Almoco de mercado', 'Um jantar que vale reservar'],
+    mustEat: [],
     contingency: { emergencyInfo: 'Confirma numeros de emergencia locais e guarda o contacto da embaixada.', unexpectedTips: 'Horarios e precos sao estimativas; confirma paragens-chave antes de viajar.' },
     suggestions: [
       `Mais local em ${city}`,

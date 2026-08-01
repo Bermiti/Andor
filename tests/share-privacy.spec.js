@@ -54,11 +54,13 @@ test.describe('server-backed itinerary share privacy', () => {
       data: { name: 'Maria Teste', email, password },
     });
     expect(registration.status()).toBe(201);
+    const setCookieHeader = registration.headers()['set-cookie'];
+    expect(setCookieHeader).toMatch(/HttpOnly/i);
+    expect(setCookieHeader).toMatch(/SameSite=Lax/i);
 
     const sessionCookie = (await context.cookies()).find((cookie) => cookie.name === 'andor_local_session');
     expect(sessionCookie).toBeTruthy();
     expect(sessionCookie.httpOnly).toBe(true);
-    expect(sessionCookie.sameSite).toBe('Lax');
     expect((await page.request.get('/api/auth/local/me')).status()).toBe(200);
 
     expect((await page.request.post('/api/auth/local/logout')).status()).toBe(200);

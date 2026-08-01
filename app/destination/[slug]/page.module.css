@@ -564,3 +564,12 @@
     width: 100%;
   }
 }
+.editorialNotice {
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  border: 1px solid rgba(212, 168, 67, 0.45);
+  border-radius: 12px;
+  background: rgba(212, 168, 67, 0.08);
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
