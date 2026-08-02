@@ -23,6 +23,7 @@ import {
 import styles from './TripHistory.module.css';
 import { useTranslations } from '../context/LanguageContext';
 import { deleteSavedTrip, duplicateSavedTrip, renameSavedTrip } from '../lib/itinerary-store';
+import { getUnitedKingdomNumericCode } from '../lib/destination-geography';
 import ConfirmDialog from './ConfirmDialog';
 import TripExpenseManager from './TripExpenseManager';
 import { Modal } from './ui/Modal';
@@ -111,6 +112,8 @@ const TRIP_PHOTOS = [
 
 function getCountryCodeFromDestination(destination) {
   if (!destination) return null;
+  const ukCode = getUnitedKingdomNumericCode(destination);
+  if (ukCode) return ukCode;
   const lower = destination.toLowerCase();
   for (const [name, code] of Object.entries(COUNTRY_NAMES)) {
     if (lower.includes(name)) return code;
@@ -164,7 +167,16 @@ function getTripProvenanceLabel(trip) {
   return 'Dados legados — confirmar';
 }
 
-function TripCard({ trip, t, status = 'planned', featured = false, onRequestDelete, onOpenExpenses }) {
+function TripCard({
+  trip,
+  t,
+  status = 'planned',
+  featured = false,
+  onRequestDelete,
+  onOpenExpenses,
+  onRenameTrip,
+  onDuplicateTrip,
+}) {
   const viewHref = trip.viewHref || (trip.id ? `/itinerary/${trip.id}` : null);
   const daysCount = Array.isArray(trip.days) ? trip.days.length : trip.daysCount;
   const stopsLabel = (n) => `${n} ${t('stops')}`;
@@ -180,6 +192,9 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(destinationName);
+  const [actionPending, setActionPending] = useState(false);
+  const canEdit = !trip.permission || ['owner', 'editor'].includes(trip.permission);
+  const canDelete = !trip.permission || trip.permission === 'owner';
 
   const handleDelete = (e) => {
     e.preventDefault();
@@ -187,17 +202,34 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
     onRequestDelete?.(trip);
   };
 
-  const handleDuplicate = (e) => {
+  const handleDuplicate = async (e) => {
     e.preventDefault();
-    duplicateSavedTrip(trip.id, `${destinationName} (Cópia)`);
-    window.location.reload();
+    setActionPending(true);
+    try {
+      if (onDuplicateTrip) await onDuplicateTrip(trip, `${destinationName} (Cópia)`);
+      else {
+        duplicateSavedTrip(trip.id, `${destinationName} (Cópia)`);
+        window.location.reload();
+      }
+    } finally {
+      setActionPending(false);
+      setIsMenuOpen(false);
+    }
   };
 
-  const handleRename = (e) => {
+  const handleRename = async (e) => {
     e.preventDefault();
     if (newName && newName !== destinationName) {
-      renameSavedTrip(trip.id, newName);
-      window.location.reload();
+      setActionPending(true);
+      try {
+        if (onRenameTrip) await onRenameTrip(trip, newName);
+        else {
+          renameSavedTrip(trip.id, newName);
+          window.location.reload();
+        }
+      } finally {
+        setActionPending(false);
+      }
     }
     setIsRenaming(false);
   };
@@ -222,18 +254,18 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
             <span className={`${styles.statusBadge} ${status === 'completed' ? styles.statusCompleted : styles.statusPlanned}`}>
               {statusLabel}
             </span>
-            <div className={styles.tripMenuWrapper}>
+            {(canEdit || canDelete) && <div className={styles.tripMenuWrapper}>
               <button className={styles.tripMenuBtn} onClick={(e) => { e.preventDefault(); setIsMenuOpen(!isMenuOpen); }}>
                 <MoreVertical size={16} />
               </button>
               {isMenuOpen && (
                 <div className={styles.tripMenu}>
-                  <button onClick={() => setIsRenaming(true)}><Edit2 size={14}/> Renomear</button>
-                  <button onClick={handleDuplicate}><Copy size={14}/> Duplicar</button>
-                  <button onClick={handleDelete} className={styles.textDanger}><Trash2 size={14}/> Eliminar</button>
+                  {canEdit && <button disabled={actionPending} onClick={() => setIsRenaming(true)}><Edit2 size={14}/> Renomear</button>}
+                  {canEdit && <button disabled={actionPending} onClick={handleDuplicate}><Copy size={14}/> Duplicar</button>}
+                  {canDelete && <button disabled={actionPending} onClick={handleDelete} className={styles.textDanger}><Trash2 size={14}/> Eliminar</button>}
                 </div>
               )}
-            </div>
+            </div>}
           </div>
           {isRenaming ? (
             <form onSubmit={handleRename} className={styles.renameForm}>
@@ -335,7 +367,13 @@ function TripCard({ trip, t, status = 'planned', featured = false, onRequestDele
   );
 }
 
-export default function TripHistory({ trips = [], visitedCountries = [] }) {
+export default function TripHistory({
+  trips = [],
+  visitedCountries = [],
+  onDeleteTrip,
+  onRenameTrip,
+  onDuplicateTrip,
+}) {
   const t = useTranslations('myTrips');
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -457,15 +495,21 @@ export default function TripHistory({ trips = [], visitedCountries = [] }) {
     ? 'Tens roteiros prontos para transformar em viagem. Abre o mais recente, ajusta datas e fecha os proximos passos.'
     : 'Marca paises visitados no mapa para transformar roteiros planeados em memorias guardadas.';
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!tripPendingDelete?.id) {
       setTripPendingDelete(null);
       return;
     }
 
-    deleteSavedTrip(tripPendingDelete.id);
-    setTripPendingDelete(null);
-    window.location.reload();
+    try {
+      if (onDeleteTrip) await onDeleteTrip(tripPendingDelete);
+      else {
+        deleteSavedTrip(tripPendingDelete.id);
+        window.location.reload();
+      }
+    } finally {
+      setTripPendingDelete(null);
+    }
   };
 
   return (
@@ -546,6 +590,8 @@ export default function TripHistory({ trips = [], visitedCountries = [] }) {
                   featured={index === 0 && activeFilter !== 'completed'}
                   onRequestDelete={setTripPendingDelete}
                   onOpenExpenses={setExpenseTrip}
+                  onRenameTrip={onRenameTrip}
+                  onDuplicateTrip={onDuplicateTrip}
                 />
               ))}
             </div>

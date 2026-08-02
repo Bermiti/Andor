@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { getSupabaseEnv } from './env';
-import { GUEST_SESSION_COOKIE, sessionCookieOptions } from '../auth-constants';
+import {
+  authCookieOptions,
+  expiredSessionCookieOptions,
+  GUEST_SESSION_COOKIE,
+  LOCAL_AUTH_COOKIE,
+} from '../auth-constants';
+import { isLocalAdapterEnabled } from '../server/backend-mode';
+
+function expireLegacyIdentityCookies(request, response) {
+  if (request.cookies.has(GUEST_SESSION_COOKIE)) {
+    response.cookies.set(GUEST_SESSION_COOKIE, '', expiredSessionCookieOptions());
+  }
+  if (!isLocalAdapterEnabled() && request.cookies.has(LOCAL_AUTH_COOKIE)) {
+    response.cookies.set(LOCAL_AUTH_COOKIE, '', expiredSessionCookieOptions());
+  }
+}
 
 export async function updateSession(request) {
   const { url, publishableKey, hasPublicConfig } = getSupabaseEnv();
-  const existingGuestToken = request.cookies.get(GUEST_SESSION_COOKIE)?.value;
-  const guestToken = existingGuestToken || crypto.randomUUID();
-  if (!existingGuestToken) {
-    request.cookies.set(GUEST_SESSION_COOKIE, guestToken);
-  }
-
   let response = NextResponse.next({ request });
 
   if (hasPublicConfig) {
@@ -23,7 +32,7 @@ export async function updateSession(request) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, authCookieOptions(options));
           });
         },
       },
@@ -32,12 +41,6 @@ export async function updateSession(request) {
     await supabase.auth.getClaims();
   }
 
-  if (!existingGuestToken) {
-    response.cookies.set(
-      GUEST_SESSION_COOKIE,
-      guestToken,
-      sessionCookieOptions(request.nextUrl.protocol === 'https:')
-    );
-  }
+  expireLegacyIdentityCookies(request, response);
   return response;
 }

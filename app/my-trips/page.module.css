@@ -587,3 +587,132 @@
     font-size: 38px;
   }
 }
+
+.persistencePanel {
+  width: min(1200px, calc(100% - 64px));
+  margin: 0 auto 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.persistenceNotice {
+  margin: 0;
+  padding: 16px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: baseline;
+  border: 1px solid rgba(31, 103, 121, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 252, 246, 0.88);
+  color: #283c40;
+}
+
+.persistenceNotice span {
+  color: #5f6f70;
+}
+
+.persistenceError {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #fff1ee;
+  color: #8c2f22;
+}
+
+.legacyMigration {
+  padding: 22px;
+  display: grid;
+  gap: 18px;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 18px;
+  background: rgba(255, 250, 237, 0.96);
+  box-shadow: 0 16px 40px rgba(52, 43, 25, 0.08);
+}
+
+.legacyMigration h2,
+.legacyMigration p {
+  margin: 0;
+}
+
+.legacyMigration p {
+  margin-top: 7px;
+  max-width: 760px;
+  color: #625b4c;
+  line-height: 1.55;
+}
+
+.legacyEyebrow {
+  color: #886f29;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legacyList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.legacyItem {
+  padding: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid rgba(58, 53, 43, 0.14);
+  border-radius: 12px;
+  background: #fffdf8;
+  cursor: pointer;
+}
+
+.legacyItem input {
+  margin-top: 3px;
+  accent-color: #1f6779;
+}
+
+.legacyItem span {
+  display: grid;
+  gap: 3px;
+}
+
+.legacyItem small {
+  color: #756e61;
+}
+
+.legacyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.legacyActions button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #1f6779;
+  color: #fff;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.legacyActions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.legacyActions span {
+  color: #526366;
+}
+
+@media (max-width: 768px) {
+  .persistencePanel {
+    width: calc(100% - 32px);
+  }
+
+  .legacyMigration {
+    padding: 16px;
+  }
+}

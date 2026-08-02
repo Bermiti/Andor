@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { SESSION_MAX_AGE_SECONDS } from '../auth-constants';
+import { isLocalAdapterEnabled } from './backend-mode';
 import {
   createLocalSession,
   createLocalUser,
@@ -38,6 +39,9 @@ function createSessionForUser(userId) {
 }
 
 export function registerLocalUser({ name, email, password }) {
+  if (!isLocalAdapterEnabled()) {
+    return { ok: false, code: 'LOCAL_AUTH_DISABLED', message: 'Autenticacao local desativada.' };
+  }
   if (getLocalUserByEmail(email)) {
     return { ok: false, code: 'EMAIL_EXISTS', message: 'Este email já está registado.' };
   }
@@ -53,6 +57,9 @@ export function registerLocalUser({ name, email, password }) {
 }
 
 export function loginLocalUser({ email, password }) {
+  if (!isLocalAdapterEnabled()) {
+    return { ok: false, code: 'LOCAL_AUTH_DISABLED', message: 'Autenticacao local desativada.' };
+  }
   const row = getLocalUserByEmail(email);
   if (!row || !verifyPassword(password, row.password_salt, row.password_hash)) {
     return { ok: false, code: 'INVALID_CREDENTIALS', message: 'Email ou palavra-passe inválidos.' };
@@ -66,11 +73,11 @@ export function loginLocalUser({ email, password }) {
 }
 
 export function readLocalUserFromToken(token) {
-  if (!token) return null;
+  if (!isLocalAdapterEnabled() || !token) return null;
   const session = getLocalSession(hashOpaqueToken(token));
   return session ? userDto(session.user) : null;
 }
 
 export function logoutLocalUser(token) {
-  if (token) deleteLocalSession(hashOpaqueToken(token));
+  if (isLocalAdapterEnabled() && token) deleteLocalSession(hashOpaqueToken(token));
 }

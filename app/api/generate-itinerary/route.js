@@ -11,7 +11,7 @@ import { AI_MODELS } from '../../lib/server/ai-models';
 
 const DESTINATION_CURRENCY_HINTS = [
   { match: /tokyo|kyoto|osaka|japan/i, code: 'JPY', symbol: 'JPY' },
-  { match: /london|united kingdom|uk/i, code: 'GBP', symbol: 'GBP' },
+  { match: /london|united kingdom|uk|scotland|edinburgh|glasgow/i, code: 'GBP', symbol: 'GBP' },
   { match: /new york|nyc|usa|united states/i, code: 'USD', symbol: 'USD' },
   { match: /bali|indonesia/i, code: 'IDR', symbol: 'IDR' },
   { match: /marrakech|morocco/i, code: 'MAD', symbol: 'MAD' },

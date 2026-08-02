@@ -1,6 +1,97 @@
 # Andor — estado de produto, design e engenharia
 
-Atualizado em 2026-08-01. Fase atual: **Sprint 0 tecnicamente concluída; lançamento de produção bloqueado pelos P1 abaixo**.
+Atualizado em 2026-08-02. Fase atual: **Sprint 1 identity and data security gate aprovado; pré-lançamento mantido**.
+
+## Sprint 1 — consolidação de identidade, autorização, RLS e persistência durável
+
+Sprint 1 concluída com sucesso. Todos os critérios de aceitação foram cumpridos e verificados:
+- **Identidade server-side única:** Sessões validadas no servidor via Supabase Auth (produção) e adaptador SQLite isolado (dev/E2E). Nenhum `userId`, email ou estado de `localStorage` é aceite como autorização.
+- **Autorização centralizada:** Modelo `owner/editor/viewer` com regras em `app/lib/trip-permissions.js` e `MembershipRepository`. Editores não podem alterar papéis nem eliminar viagens.
+- **Persistência durável & RLS:** Schema Supabase migrado (`202608020001_sprint1_identity_authorization.sql`), RLS ativo com matriz de isolamento A/B/C.
+- **Partilhas seguras:** Links por token hash com expiração, revogação pelo owner (`DELETE /api/itineraries/[id]/shares/[shareId]`) e sanitização de dados sensíveis na rota pública `GET /api/shares/[token]`. Partilha legacy por `?data=` desativada.
+- **Migração de dados locais:** Fluxo idempotente e seletivo sem eliminação automática.
+- **Controlo de concorrência:** Suporte a `version` e `If-Match` para prevenir sobrescritas silenciosas.
+
+### Mapa encontrado
+
+- **Identidade:** Supabase Auth é usado quando existe configuração pública, mas a ausência dessa configuração ativa contas e sessões próprias em SQLite. Em paralelo, o proxy cria um cookie de visitante e `getRequestIdentity()` classifica esse visitante como `authenticated: true`. `localStorage.andor_user` replica perfis e ainda influencia várias superfícies do cliente.
+- **Autorização:** não existe um modelo central `owner/editor/viewer`. As verificações usam sobretudo igualdade de `owner_key`; não existem helpers completos para utilizador autenticado, permissão da viagem, owner e admin.
+- **Viagens:** o runtime usa um cliente Supabase com chave secreta para ler/escrever `itineraries`, contornando RLS, e faz fallback silencioso para SQLite quando o Supabase falha. O browser lê primeiro `sessionStorage`/`localStorage`; várias edições são guardadas apenas no browser.
+- **Partilhas:** os tokens são aleatórios, guardados como hash, expiráveis e revogáveis, mas a rota aceita o itinerário completo e o `sourceKey` enviados pelo browser sem confirmar que correspondem a uma viagem durável do utilizador. `itinerary_shares` tem RLS ativada sem políticas próprias.
+- **Bypass legacy:** `/itinerary/share?data=<base64>` e `?id=` ainda leem a viagem integral do URL/browser, sem hash, expiração, revogação, sanitização ou autorização. URLs completos podem ainda chegar ao módulo de analytics.
+- **Perfis e dados auxiliares:** atualizações de perfil são fire-and-forget; favoritos, países visitados, versões, packing e resumos continuam locais. `trip_ledgers` é isolado por `owner_key`, mas não prova a permissão sobre a viagem indicada.
+- **Modelo Supabase:** faltam membros, convites, auditoria, importações idempotentes, concorrência otimista, soft delete e políticas explícitas completas para `DELETE`; as operações de aplicação não exercitam as políticas existentes por usarem service role.
+
+### Classificação de risco
+
+#### P0 — corrigir antes de qualquer expansão
+
+- Um cookie de visitante recebe semântica de utilizador autenticado e pode originar persistência, partilhas e ledgers.
+- `POST /api/itineraries/[id]/shares` confia num payload de viagem fornecido pelo cliente e não prova ownership do `id`.
+- O DAL de viagens/partilhas usa service role para operações normais e, por isso, RLS não constitui uma segunda fronteira efetiva.
+- O browser pode ganhar sobre a fonte durável no carregamento e nas edições, permitindo mostrar “guardado” sem confirmação do servidor.
+- Chaves globais `andor_itinerary_*`/`andor_shared_*` sobrevivem a logout/troca de conta; um segundo utilizador no mesmo browser pode herdar dados privados e notas internas do primeiro.
+- A partilha legacy por `?data=` coloca o conteúdo integral da viagem/PII no URL e contorna toda a fronteira de links seguros.
+
+#### P1 — gate de identidade e dados
+
+- Substituir as três semânticas de identidade por Supabase Auth em produção e um adapter SQLite explicitamente limitado a desenvolvimento/testes.
+- Implementar `owner/editor/viewer`, membros/convites, revogação e proteção contra autoatribuição/escalada.
+- Criar políticas RLS explícitas para `SELECT`, `INSERT`, `UPDATE` e `DELETE`, e testá-las com identidades distintas.
+- Remover fallbacks silenciosos de Supabase para SQLite em produção; falhas duráveis devem ser visíveis e não podem devolver sucesso.
+- Criar links exclusivamente a partir da viagem lida no servidor, com token hash, expiração, revogação, payload sanitizado e auditoria sem tokens/PII.
+- Introduzir `version`/`If-Match` e resposta `409` para edição concorrente; adotar soft delete controlado pelo owner.
+- Criar listagem durável, migração local seletiva/idempotente e estados de UI para sessão, read-only, saving/saved/error, conflito, expiração e revogação.
+- Desativar a partilha legacy por URL, impedir criação de links ao abrir/alterar o modal e permitir listar/revogar links existentes.
+- Verificar todos os IDs de viagem na identidade, permissão, filtro da query e RLS; UUIDs e esconder botões não são controlos de acesso.
+- Normalizar `Escócia` como região do Reino Unido (`GB`, `GBP`, `Europe/London`) sem alegar cobertura de providers; criar regressão para Edinburgh/Scotland.
+
+#### P2 — endurecimento complementar
+
+- Tornar atualização de perfil confirmada pelo servidor e reduzir `localStorage` a cache/preferências não sensíveis.
+- Uniformizar Zod, rejeição de campos desconhecidos, limites de corpo e semântica `401/403/404/409/422/500` nas rotas sensíveis.
+- Adicionar correlation IDs e eventos de auditoria limitados para criação, edição, delete, convite, papel, link, revogação e importação.
+
+#### P3 — limpeza posterior
+
+- Remover caches/fixtures legacy e superfícies sociais/expense splitting que não façam parte do núcleo, sem misturar essa limpeza com o gate de segurança.
+
+### Modelo de autorização aprovado para implementação
+
+| Operação | Owner | Editor | Viewer | Não autenticado/link |
+| --- | --- | --- | --- | --- |
+| Ler viagem privada | Sim | Sim | Sim | Não |
+| Editar conteúdo | Sim | Sim | Não | Não |
+| Apagar/soft delete | Sim | Não | Não | Não |
+| Gerir membros e papéis | Sim | Não | Não | Não |
+| Criar/revogar links | Sim | Não | Não | Não |
+| Ler link válido | Sim | Sim | Sim | Apenas snapshot sanitizado e read-only |
+
+O owner é derivado da sessão validada e da base de dados. O cliente nunca fornece `owner_id`, `user_id` ou um papel como prova. Editores não podem alterar ownership, membros, permissões, visibilidade pública ou links.
+
+### Migrations previstas
+
+- Adaptar `itineraries` como tabela durável de viagens, sem criar uma tabela redundante: `owner_id`, `visibility`, `status`, `currency`, `schema_version`, `version`, `deleted_at` e constraints de ownership.
+- Criar `trip_members`, `trip_invitations`, `trip_share_links`, `audit_events` e `trip_imports`, com unicidade, foreign keys, índices e tokens apenas em hash.
+- Criar triggers/funções para membership inicial do owner, `updated_at`/`version`, último owner e bloqueio de alteração direta de ownership.
+- Substituir políticas antigas por políticas RLS completas e funções de permissão sem recursão; limitar service role a fronteiras operacionais justificadas.
+
+### Superfícies previstas
+
+- Server: `app/lib/server/identity.js`, novo módulo de autorização/repositório/auditoria, adapter SQLite, clientes Supabase e rotas de viagens, membros, convites, links e importação.
+- UI: `AuthContext`, `/my-trips`, página do itinerário e partilha, com fonte durável primeiro, migração explícita e estados de permissão/persistência.
+- Dados e testes: migrations/schema Supabase, testes unitários de permissões, integração multiutilizador, testes RLS em Postgres e E2E transacional em Chromium/WebKit 375 px.
+- Documentação: `README.md`, `.env.example`, guia de identidade/autorização/persistência/RLS/migração/rollback e este progresso.
+
+### Critérios de aceitação da Sprint 1
+
+- Identidade server-side única em produção; nenhum `userId`/email/localStorage usado como autorização.
+- Isolamento A/B/C comprovado em DAL, API e RLS; roles e escalada cobertos por testes.
+- Persistência durável confirmada antes de “guardado”; conflito retorna `409`; delete é owner-only.
+- Links não enumeráveis, hashed, limitados, expiráveis/revogáveis e sem fuga de campos privados.
+- Migração legacy seletiva, validada e idempotente, sem apagar o original automaticamente.
+- Unitários, integração, RLS, E2E, mobile, build, audit e `git diff --check` passam; ausência de segredos confirmada.
+- O resultado será descrito como **Sprint 1 identity and data security gate**, nunca como “production ready”.
 
 ## Quadro de execução
 

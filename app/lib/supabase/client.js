@@ -1,11 +1,7 @@
 'use client';
 
-import { createBrowserClient } from '@supabase/ssr';
-
+// Authentication is intentionally handled by same-origin Route Handlers. The
+// browser never receives a Supabase client capable of reading session cookies.
 export function createSupabaseBrowserClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) return null;
-  return createBrowserClient(url, key);
+  return null;
 }

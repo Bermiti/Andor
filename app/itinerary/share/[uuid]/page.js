@@ -1,18 +1,19 @@
 import Link from 'next/link';
 import AndorLogo from '../../../components/AndorLogo';
 import SharedItineraryView from '../../../components/SharedItineraryView';
-import { getRequestIdentity } from '../../../lib/server/identity';
 import { getItineraryShare } from '../../../lib/server/share-dal';
 import styles from './share-page.module.css';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const metadata = {
+  robots: { index: false, follow: false },
+  referrer: 'no-referrer',
+};
 
 const statusCopy = {
-  expired: ['Partilha expirada', 'Pede a quem preparou a viagem um novo link com uma validade atualizada.'],
-  revoked: ['Partilha revogada', 'Este acesso foi encerrado pela pessoa que gere o itinerario.'],
-  forbidden: ['Acesso reservado', 'Este dossier interno so esta disponivel na sessao da equipa proprietaria.'],
   not_found: ['Partilha indisponivel', 'O link pode estar incompleto ou ja nao existir.'],
+  unavailable: ['Partilha temporariamente indisponivel', 'Tenta novamente dentro de alguns minutos.'],
 };
 
 function ShareStatus({ status }) {
@@ -34,8 +35,12 @@ function ShareStatus({ status }) {
 
 export default async function SharedItineraryPage({ params }) {
   const { uuid } = await params;
-  const identity = await getRequestIdentity();
-  const result = await getItineraryShare(uuid, identity);
-  if (!result.ok) return <ShareStatus status={result.status} />;
+  const result = await getItineraryShare(uuid);
+  if (!result.ok) {
+    const status = ['persistence_unavailable', 'storage_error'].includes(result.status)
+      ? 'unavailable'
+      : 'not_found';
+    return <ShareStatus status={status} />;
+  }
   return <SharedItineraryView itinerary={result.payload} share={result.share} />;
 }

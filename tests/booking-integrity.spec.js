@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 function makeTokyoItinerary() {
   return {
-    destination: 'Tokyo, Japan',
+    destination: { city: 'Tokyo', country: 'Japan' },
     days: [
       {
         title: 'Asakusa Arrival',
@@ -16,9 +16,23 @@ function makeTokyoItinerary() {
   };
 }
 
-function encodeSharePayload(itinerary) {
-  const json = JSON.stringify(itinerary);
-  return Buffer.from(unescape(encodeURIComponent(json)), 'binary').toString('base64');
+async function createServerShare(page) {
+  const email = `booking-${Date.now()}-${Math.round(Math.random() * 10000)}@andor.test`;
+  const password = 'Andor-Segura-2026';
+  await page.request.post('/api/auth/local/register', {
+    data: { name: 'Maria Teste', email, password },
+  });
+
+  const tripRes = await page.request.post('/api/itineraries', {
+    data: { itinerary: makeTokyoItinerary(), source: 'manual' },
+  });
+  const { trip } = await tripRes.json();
+
+  const shareRes = await page.request.post(`/api/itineraries/${trip.id}/shares`, {
+    data: { expiresInDays: 7 },
+  });
+  const shareData = await shareRes.json();
+  return shareData.token;
 }
 
 test.describe('Booking integrity boundary', () => {
@@ -27,8 +41,9 @@ test.describe('Booking integrity boundary', () => {
     request,
     baseURL,
   }) => {
-    const payload = encodeSharePayload(makeTokyoItinerary());
-    await page.goto(`${baseURL}/itinerary/share?data=${payload}`, { waitUntil: 'domcontentloaded' });
+    await page.goto('/');
+    const shareToken = await createServerShare(page);
+    await page.goto(`${baseURL}/itinerary/share/${shareToken}`, { waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('h1')).toContainText(/Tokyo|Tóquio/i);
     await expect(page.getByText('Verificar Tarifas Atuais')).toHaveCount(0);

@@ -43,6 +43,7 @@ export default defineConfig({
       RENTAL_CARS_PROVIDER_SEARCH_URL: '',
       PLACES_PROVIDER_SEARCH_URL: '',
       ANDOR_DISABLE_EXTERNAL_ENRICHMENT: '1',
+      ANDOR_E2E_LOCAL_AUTH: '1',
       ANDOR_SQLITE_PATH: 'test-results/e2e/andor.sqlite',
     },
   },

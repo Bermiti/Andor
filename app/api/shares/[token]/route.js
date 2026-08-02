@@ -1,51 +1,55 @@
-import { apiError } from '../../../lib/api-utils';
-import { getRequestIdentity } from '../../../lib/server/identity';
+import { getItineraryShare } from '../../../lib/server/share-dal';
 import {
-  getItineraryShare,
-  revokeItineraryShare,
-} from '../../../lib/server/share-dal';
+  errorWithCorrelation,
+  getCorrelationId,
+  jsonWithCorrelation,
+} from '../../../lib/server/request-context';
 
 export const runtime = 'nodejs';
 
-function shareError(status) {
-  if (status === 'forbidden') {
-    return apiError('SHARE_FORBIDDEN', 'Esta partilha e exclusiva da equipa proprietaria.', 403, false);
-  }
-  if (status === 'expired') {
-    return apiError('SHARE_EXPIRED', 'Esta partilha expirou.', 410, false);
-  }
-  if (status === 'revoked') {
-    return apiError('SHARE_REVOKED', 'Esta partilha foi revogada.', 410, false);
-  }
-  return apiError('SHARE_NOT_FOUND', 'Partilha nao encontrada.', 404, false);
-}
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
-export async function GET(_req, context) {
-  const { token } = await context.params;
-  const identity = await getRequestIdentity();
-  const result = await getItineraryShare(token, identity);
-  if (!result.ok) return shareError(result.status);
-
-  return Response.json(
-    { share: result.share, itinerary: result.payload },
-    { headers: { 'Cache-Control': 'no-store, private' } }
+function unavailable(correlationId) {
+  return errorWithCorrelation(
+    'SHARE_NOT_FOUND',
+    'Partilha nao encontrada.',
+    404,
+    correlationId,
+    { headers: { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } }
   );
 }
 
-export async function DELETE(_req, context) {
-  const identity = await getRequestIdentity();
-  if (!identity) return apiError('AUTH_REQUIRED', 'Sessao nao autenticada.', 401, false);
-
+export async function GET(req, context) {
+  const correlationId = getCorrelationId(req);
   const { token } = await context.params;
-  const result = await revokeItineraryShare(token, identity);
+  if (!TOKEN_PATTERN.test(String(token || ''))) return unavailable(correlationId);
+
+  const result = await getItineraryShare(token);
   if (!result.ok) {
-    if (result.status === 'forbidden') return shareError('forbidden');
-    if (result.status === 'not_found') return shareError('not_found');
-    return apiError('SHARE_REVOKE_FAILED', 'Nao foi possivel revogar a partilha.', 500, true);
+    if (['persistence_unavailable', 'storage_error'].includes(result.status)) {
+      return errorWithCorrelation(
+        'SHARE_UNAVAILABLE',
+        'A partilha esta temporariamente indisponivel.',
+        503,
+        correlationId,
+        {
+          retryable: true,
+          headers: { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' },
+        }
+      );
+    }
+    return unavailable(correlationId);
   }
 
-  return Response.json(
-    { ok: true, share: result.share },
-    { headers: { 'Cache-Control': 'no-store, private' } }
+  return jsonWithCorrelation(
+    { share: result.share, itinerary: result.payload },
+    {
+      headers: {
+        'Cache-Control': 'no-store',
+        'Referrer-Policy': 'no-referrer',
+        'X-Robots-Tag': 'noindex, nofollow',
+      },
+    },
+    correlationId
   );
 }

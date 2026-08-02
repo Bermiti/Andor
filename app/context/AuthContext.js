@@ -1,270 +1,211 @@
 'use client';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { createSupabaseBrowserClient } from '../lib/supabase/client';
-import { safeParse, safeStringify } from '../lib/safe-json';
+
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  bindBrowserDataToUser,
+  clearBrowserDataSubject,
+  hasBrowserDataSubject,
+} from '../lib/browser-data-boundary';
 
 const AuthContext = createContext(null);
 
-function mapAuthUser(authUser, profile = {}) {
-  if (!authUser) return null;
-  const metadata = authUser.user_metadata || {};
-  return {
-    id: authUser.id,
-    name: profile.name || metadata.name || authUser.email?.split('@')[0] || 'Viajante',
-    email: authUser.email || profile.email || '',
-    createdAt: authUser.created_at || profile.created_at || new Date().toISOString(),
-    visitedCountries: profile.visited_countries || profile.visitedCountries || [],
-    trips: profile.trips || [],
-    interests: profile.interests || ['History', 'Food'],
-    bio: profile.bio || '',
-    lookingForBuddy: Boolean(profile.looking_for_buddy || profile.lookingForBuddy),
-  };
+const PROFILE_UPDATE_KEYS = new Set([
+  'name',
+  'bio',
+  'interests',
+  'visitedCountries',
+  'lookingForBuddy',
+]);
+
+function profileUpdatesOnly(updates = {}) {
+  return Object.fromEntries(
+    Object.entries(updates).filter(([key, value]) => (
+      PROFILE_UPDATE_KEYS.has(key) && value !== undefined
+    ))
+  );
 }
 
-function toProfileRow(user, updates = {}) {
-  return {
-    id: user.id,
-    email: updates.email || user.email || '',
-    name: updates.name || user.name || '',
-    bio: updates.bio ?? user.bio ?? '',
-    interests: updates.interests || user.interests || [],
-    visited_countries: updates.visitedCountries || updates.visited_countries || user.visitedCountries || [],
-    looking_for_buddy: Boolean(updates.lookingForBuddy ?? updates.looking_for_buddy ?? user.lookingForBuddy),
-    updated_at: new Date().toISOString(),
-  };
-}
-
-function loadLocalUser() {
-  try {
-    return safeParse(localStorage.getItem('andor_user'), null);
-  } catch (error) {
-    return null;
-  }
-}
-
-function saveLocalUser(user) {
-  try {
-    if (user) localStorage.setItem('andor_user', safeStringify(user));
-    else localStorage.removeItem('andor_user');
-  } catch (error) {}
-}
-
-function upsertLocalUser(user) {
-  try {
-    const users = safeParse(localStorage.getItem('andor_users'), []) || [];
-    const index = users.findIndex((item) => item.id === user.id || item.email === user.email);
-    if (index >= 0) users[index] = user;
-    else users.push(user);
-    localStorage.setItem('andor_users', safeStringify(users));
-  } catch (error) {}
+async function readPayload(response) {
+  return response.json().catch(() => null);
 }
 
 export function AuthProvider({ children }) {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [provider, setProvider] = useState('server');
 
-  const fetchProfile = async (authUser) => {
-    if (!supabase || !authUser?.id) return null;
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authUser.id)
-      .maybeSingle();
-    return data || null;
-  };
-
-  const persistProfile = async (nextUser, updates = {}) => {
-    if (!supabase || !nextUser?.id) return;
-    await supabase.from('profiles').upsert(toProfileRow(nextUser, updates), { onConflict: 'id' });
-  };
+  const refreshSession = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true);
+    try {
+      const response = await fetch('/api/auth/me', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const payload = await readPayload(response);
+      if (!response.ok || !payload?.authenticated || !payload?.user) {
+        if (hasBrowserDataSubject()) clearBrowserDataSubject();
+        setUser(null);
+        setProvider('none');
+        return null;
+      }
+      bindBrowserDataToUser(payload.user.id);
+      setUser(payload.user);
+      setProvider(payload.provider || 'server');
+      return payload.user;
+    } catch (error) {
+      // Network failures do not turn a stale browser cache into an identity.
+      setUser(null);
+      setProvider('none');
+      return null;
+    } finally {
+      if (!quiet) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
-    const hydrate = async () => {
-      if (!supabase) {
-        try {
-          const response = await fetch('/api/auth/local/me', {
-            cache: 'no-store',
-            credentials: 'same-origin',
-          });
-          if (!active) return;
-          if (response.ok) {
-            const payload = await response.json();
-            setUser(payload.user || null);
-            saveLocalUser(payload.user || null);
-          } else {
-            setUser(null);
-            saveLocalUser(null);
-          }
-        } catch (error) {
-          if (!active) return;
-          setUser(null);
-          saveLocalUser(null);
-        }
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase.auth.getUser();
-      if (!active) return;
-
-      if (error || !data?.user) {
-        setUser(null);
-        saveLocalUser(null);
-        setLoading(false);
-        return;
-      }
-
-      const profile = await fetchProfile(data.user);
-      if (!active) return;
-      const mapped = mapAuthUser(data.user, profile);
-      setUser(mapped);
-      saveLocalUser(mapped);
-      setLoading(false);
-    };
-
-    hydrate();
-
-    if (!supabase) {
-      return () => {
-        active = false;
-      };
-    }
-
-    const { data: subscriptionData } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!active) return;
-      if (!session?.user) {
-        setUser(null);
-        saveLocalUser(null);
-        return;
-      }
-      const profile = await fetchProfile(session.user);
-      if (!active) return;
-      const mapped = mapAuthUser(session.user, profile);
-      setUser(mapped);
-      saveLocalUser(mapped);
-    });
-
-    return () => {
-      active = false;
-      subscriptionData?.subscription?.unsubscribe();
-    };
-  }, [supabase]);
+    refreshSession();
+    const handleFocus = () => refreshSession({ quiet: true });
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refreshSession]);
 
   const register = async (name, email, password) => {
-    if (supabase) {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name } },
-      });
-      if (error) return { error: error.message };
-
-      if (data?.user) {
-        const mapped = mapAuthUser(data.user, { name, email });
-        setUser(mapped);
-        saveLocalUser(mapped);
-        persistProfile(mapped, { name, email }).catch(() => {});
-      }
-      return { success: true, pendingVerification: !data?.session };
-    }
-
     try {
-      const response = await fetch('/api/auth/local/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify({ name, email, password }),
       });
-      const payload = await response.json();
+      const payload = await readPayload(response);
       if (!response.ok) {
         return { error: payload?.error?.message || 'Nao foi possivel criar a conta.' };
       }
-      setUser(payload.user);
-      saveLocalUser(payload.user);
-      return { success: true, provider: 'local-server' };
+
+      setProvider(payload.provider || 'server');
+      if (payload.authenticated && payload.user) {
+        bindBrowserDataToUser(payload.user.id);
+        setUser(payload.user);
+      } else {
+        setUser(null);
+      }
+      return {
+        success: true,
+        pendingVerification: Boolean(payload.pendingVerification),
+        provider: payload.provider,
+      };
     } catch (error) {
       return { error: 'Nao foi possivel ligar ao servidor.' };
     }
   };
 
   const login = async (email, password) => {
-    if (supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: error.message };
-      const profile = await fetchProfile(data.user);
-      const mapped = mapAuthUser(data.user, profile);
-      setUser(mapped);
-      saveLocalUser(mapped);
-      return { success: true };
-    }
-
     try {
-      const response = await fetch('/api/auth/local/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify({ email, password }),
       });
-      const payload = await response.json();
-      if (!response.ok) {
+      const payload = await readPayload(response);
+      if (!response.ok || !payload?.authenticated || !payload?.user) {
         return { error: payload?.error?.message || 'Email ou palavra-passe invalidos.' };
       }
+      bindBrowserDataToUser(payload.user.id);
       setUser(payload.user);
-      saveLocalUser(payload.user);
-      return { success: true, provider: 'local-server' };
+      setProvider(payload.provider || 'server');
+      return { success: true, provider: payload.provider };
     } catch (error) {
       return { error: 'Nao foi possivel ligar ao servidor.' };
     }
   };
 
   const logout = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    } else {
-      await fetch('/api/auth/local/logout', {
-        method: 'POST',
-        credentials: 'same-origin',
-      }).catch(() => {});
-    }
-    saveLocalUser(null);
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+    }).catch(() => null);
+    clearBrowserDataSubject();
     setUser(null);
+    setProvider('none');
   };
 
   const updateUser = (updates) => {
     if (!user) return null;
     const updated = { ...user, ...updates };
     setUser(updated);
-    saveLocalUser(updated);
-    upsertLocalUser(updated);
-    persistProfile(updated, updates).catch(() => {});
+
+    const profileUpdates = profileUpdatesOnly(updates);
+    if (Object.keys(profileUpdates).length > 0) {
+      fetch('/api/auth/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(profileUpdates),
+      }).then(async (response) => {
+        if (response.status === 401) {
+          setUser(null);
+          setProvider('none');
+          return;
+        }
+        const payload = await readPayload(response);
+        if (!response.ok || !payload?.user) return;
+        setUser((current) => {
+          if (!current || current.id !== payload.user.id) return current;
+          return {
+            ...current,
+            ...payload.user,
+            trips: current.trips || payload.user.trips || [],
+          };
+        });
+      }).catch(() => null);
+    }
     return updated;
   };
 
-  const saveTrip = (trip) => {
-    if (!user) return null;
-    const newTrip = { ...trip, id: trip.id || Date.now().toString(), savedAt: new Date().toISOString() };
-    const updatedTrips = [...(user.trips || []), newTrip];
-    updateUser({ trips: updatedTrips });
-    if (newTrip.id) {
-      fetch(`/api/itineraries/${newTrip.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itinerary: newTrip }),
-      }).catch(() => {});
+  const saveTrip = async (trip) => {
+    if (!user) return { ok: false, status: 'auth_required' };
+    const isDurableTrip = typeof trip?.id === 'string'
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trip.id)
+      && Number.isInteger(Number(trip.version));
+    const response = await fetch(
+      isDurableTrip ? `/api/itineraries/${encodeURIComponent(trip.id)}` : '/api/itineraries',
+      {
+        method: isDurableTrip ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(isDurableTrip ? { 'If-Match': `"${Number(trip.version)}"` } : {}),
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(isDurableTrip
+          ? { itinerary: trip }
+          : { itinerary: trip, source: 'manual' }),
+      }
+    );
+    const payload = await readPayload(response);
+    if (!response.ok || !payload?.trip) {
+      return {
+        ok: false,
+        status: response.status === 409 ? 'conflict' : 'error',
+        error: payload?.error || null,
+      };
     }
-    return newTrip;
+    const durableTrip = payload.trip;
+    setUser((current) => {
+      if (!current || current.id !== user.id) return current;
+      const trips = (current.trips || []).filter((item) => item.id !== durableTrip.id);
+      return { ...current, trips: [durableTrip, ...trips] };
+    });
+    return { ok: true, trip: durableTrip, persistence: payload.persistence };
   };
 
   const toggleCountry = (countryCode) => {
     if (!user) return;
     const current = user.visitedCountries || [];
-    const updated = current.includes(countryCode)
+    const visitedCountries = current.includes(countryCode)
       ? current.filter((item) => item !== countryCode)
       : [...current, countryCode];
-    updateUser({ visitedCountries: updated });
+    updateUser({ visitedCountries });
   };
 
   return (
@@ -277,7 +218,8 @@ export function AuthProvider({ children }) {
       updateUser,
       saveTrip,
       toggleCountry,
-      authProvider: supabase ? 'supabase' : 'local-server',
+      refreshSession,
+      authProvider: provider,
     }}>
       {children}
     </AuthContext.Provider>

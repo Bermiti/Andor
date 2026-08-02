@@ -76,6 +76,7 @@ export const COUNTRY_NAME_TO_CENTROID = {
   itália: COUNTRY_CENTROIDS.it,
   "united kingdom": COUNTRY_CENTROIDS.gb,
   "reino unido": COUNTRY_CENTROIDS.gb,
+  scotland: COUNTRY_CENTROIDS.gb,
   germany: COUNTRY_CENTROIDS.de,
   alemanha: COUNTRY_CENTROIDS.de,
   japan: COUNTRY_CENTROIDS.jp,

@@ -20,7 +20,7 @@ import {
   Users,
   WalletCards,
 } from 'lucide-react';
-import { getItinerary, saveGeneratedItinerary, updateSavedTrip } from '../../lib/itinerary-store';
+import { getItinerary, updateSavedTrip } from '../../lib/itinerary-store';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
 import { ensureBookingReadyItinerary } from '../../lib/booking-ready';
 import { getJson, setJson } from '../../lib/storage';
@@ -29,7 +29,6 @@ import { validateAndFixCoordinates } from '../../lib/coordinate-validator';
 import {
   buildClientShareSummary,
   buildInternalShareSummary,
-  decodeSharePayload,
 } from '../../lib/share-utils';
 import { getDestinationCover } from '../../lib/destination-media';
 import { useAuth } from '../../context/AuthContext';
@@ -241,13 +240,12 @@ export default function ItineraryPage() {
   const id = params?.id;
   const router = useRouter();
   const { showToast } = useToast();
-  const { user, saveTrip } = useAuth();
+  const { user } = useAuth();
   
   const [itinerary, setItinerary] = useState(null);
   const [validationError, setValidationError] = useState(null);
   const [activeDay, setActiveDay] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [shareAudience, setShareAudience] = useState('client');
   const [expandedStops, setExpandedStops] = useState({});
   const [isAdapting, setIsAdapting] = useState(false);
   const [dayTransitioning, setDayTransitioning] = useState(false);
@@ -260,6 +258,11 @@ export default function ItineraryPage() {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState('');
   const [activeShare, setActiveShare] = useState(null);
+  const [shareLinks, setShareLinks] = useState([]);
+  const [tripVersion, setTripVersion] = useState(null);
+  const [tripPermission, setTripPermission] = useState(null);
+  const [persistenceState, setPersistenceState] = useState('loading');
+  const [saveStatus, setSaveStatus] = useState('idle');
   const [bookingStop, setBookingStop] = useState(null);
   const [adaptFeedback, setAdaptFeedback] = useState('');
   const [adaptChecks, setAdaptChecks] = useState({});
@@ -290,11 +293,13 @@ export default function ItineraryPage() {
   const timelineRef = useRef();
   const dayTabRefs = useRef([]);
   const versionsLoadedRef = useRef(false);
+  const versionRef = useRef(null);
+  const saveQueueRef = useRef(Promise.resolve());
 
   useEffect(() => {
     let cancelled = false;
 
-    const applyData = (data) => {
+    const applyData = (data, record = null) => {
       if (!data || cancelled) return false;
       try {
         const val = validateAndNormalize(data);
@@ -320,43 +325,51 @@ export default function ItineraryPage() {
         const enriched = enrichItinerary(bookingReadyData);
         setItinerary(enriched);
       }
+      if (record) {
+        const version = Number(record.version) || 1;
+        versionRef.current = version;
+        setTripVersion(version);
+        setTripPermission(record.permission || null);
+        setPersistenceState('durable');
+        setSaveStatus('saved');
+      }
       return true;
     };
 
     const loadItinerary = async () => {
       let data = null;
+      let applied = false;
       if (params.id === 'share') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedData = urlParams.get('data');
-        if (sharedData) {
-          data = decodeSharePayload(sharedData);
-        } else {
-          const urlId = urlParams.get('id');
-          if (urlId) {
-            data = getJson(`andor_shared_${urlId}`, null, 'local');
-          }
-        }
+        setValidationError('A partilha antiga por dados no URL foi desativada. Importa o roteiro local e cria um novo link seguro.');
+        setPersistenceState('legacy-share-blocked');
       } else {
-        data = getItinerary(params.id);
-        if (!data && typeof window !== 'undefined') {
-          data = getJson(`andor_shared_${params.id}`, null, 'local');
-        }
-        if (!data) {
+        const isDurableId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(params.id));
+        if (isDurableId) {
           try {
-            const response = await fetch(`/api/itineraries/${encodeURIComponent(params.id)}`, { cache: 'no-store' });
+            const response = await fetch(`/api/itineraries/${encodeURIComponent(params.id)}`, {
+              cache: 'no-store',
+              credentials: 'same-origin',
+            });
             if (response.ok) {
               const payload = await response.json();
-              data = payload.itinerary;
-              if (data) {
-                setJson(`andor_itinerary_${params.id}`, data, 'local');
-                setJson(`andor_shared_${params.id}`, data, 'local');
-              }
+              data = payload.trip?.itinerary || payload.itinerary;
+              applied = applyData(data, payload.trip);
+            } else if (response.status === 401) {
+              setValidationError('Inicia sessao para abrir esta viagem guardada.');
             }
           } catch (error) {}
         }
+        if (!data) {
+          data = getItinerary(params.id) || getJson(`andor_itinerary_${params.id}`, null, 'local');
+          if (data) {
+            setPersistenceState('legacy');
+            setTripPermission('legacy');
+            setSaveStatus('local');
+          }
+        }
       }
 
-      applyData(data);
+      if (data && !applied) applyData(data);
       if (!cancelled) setLoading(false);
     };
 
@@ -364,10 +377,16 @@ export default function ItineraryPage() {
     return () => {
       cancelled = true;
     };
-  }, [params.id]);
+  }, [params.id, user?.id]);
 
   useEffect(() => {
     if (!itinerary || !id || enrichmentStatus !== 'idle') return;
+    if (persistenceState === 'durable') {
+      // Durable records render exactly what the authorized repository returned.
+      // Background enrichment must not create an unversioned browser-only fork.
+      setEnrichmentStatus('complete');
+      return;
+    }
     if (itinerary.metadata?.enrichmentStatus === 'complete') {
       setEnrichmentStatus('complete');
       return;
@@ -428,7 +447,6 @@ export default function ItineraryPage() {
                 }
               };
               setJson(`andor_itinerary_${id}`, updated, 'local');
-              setJson(`andor_shared_${id}`, updated, 'local');
               return updated;
             });
             setEnrichmentStatus('complete');
@@ -446,7 +464,7 @@ export default function ItineraryPage() {
 
     runEnrichment();
     return () => { active = false; };
-  }, [itinerary, id, enrichmentStatus]);
+  }, [itinerary, id, enrichmentStatus, persistenceState]);
 
   useEffect(() => {
     if (itinerary) {
@@ -525,17 +543,62 @@ export default function ItineraryPage() {
   }, [id]);
 
   const saveItinerarySnapshot = (nextItinerary) => {
-    if (!id) return;
-    const persisted = updateSavedTrip(id, () => nextItinerary);
-    if (!persisted) {
-      setJson(`andor_itinerary_${id}`, nextItinerary, 'session');
-      setJson(`andor_itinerary_${id}`, nextItinerary, 'local');
-      setJson(`andor_shared_${id}`, nextItinerary, 'local');
+    if (!id) return Promise.resolve({ ok: false, status: 'missing_id' });
+    if (persistenceState !== 'durable') {
+      const persisted = updateSavedTrip(id, () => nextItinerary);
+      if (!persisted) {
+        setJson(`andor_itinerary_${id}`, nextItinerary, 'session');
+        setJson(`andor_itinerary_${id}`, nextItinerary, 'local');
+      }
+      setSaveStatus('local');
+      return Promise.resolve({ ok: true, status: 'local' });
     }
+    if (!['owner', 'editor'].includes(tripPermission)) {
+      setSaveStatus('forbidden');
+      showToast('Esta viagem esta em modo de leitura.', 'info');
+      return Promise.resolve({ ok: false, status: 'forbidden' });
+    }
+
+    const persist = async () => {
+      const expectedVersion = versionRef.current;
+      if (!Number.isInteger(expectedVersion)) return { ok: false, status: 'missing_version' };
+      setSaveStatus('saving');
+      try {
+        const response = await fetch(`/api/itineraries/${encodeURIComponent(String(id))}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'If-Match': `"${expectedVersion}"`,
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({ itinerary: nextItinerary }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (response.status === 409) {
+          setSaveStatus('conflict');
+          return { ok: false, status: 'conflict', currentVersion: payload?.error?.currentVersion };
+        }
+        if (!response.ok || !payload?.trip) {
+          setSaveStatus('error');
+          return { ok: false, status: 'error' };
+        }
+        const nextVersion = Number(payload.trip.version);
+        versionRef.current = nextVersion;
+        setTripVersion(nextVersion);
+        setSaveStatus('saved');
+        return { ok: true, status: 'saved', version: nextVersion };
+      } catch (error) {
+        setSaveStatus('error');
+        return { ok: false, status: 'network_error' };
+      }
+    };
+
+    saveQueueRef.current = saveQueueRef.current.catch(() => null).then(persist);
+    return saveQueueRef.current;
   };
 
   const saveVersion = (label, nextItinerary) => {
-    if (!id) return;
+    if (!id || (persistenceState === 'durable' && !['owner', 'editor'].includes(tripPermission))) return;
     const versionKey = `andor_itinerary_versions_${id}`;
     const currentVersions = getJson(versionKey, [], 'local') || versions;
     const nextVersion = {
@@ -550,6 +613,7 @@ export default function ItineraryPage() {
   };
 
   const restoreVersion = (version) => {
+    if (persistenceState === 'durable' && !['owner', 'editor'].includes(tripPermission)) return;
     setItinerary(version.itinerary);
     saveItinerarySnapshot(version.itinerary);
     setShowVersionsModal(false);
@@ -611,8 +675,27 @@ export default function ItineraryPage() {
     setJson(`andor_packing_checked_${id}`, next, 'local');
   };
 
-  const createShareUrl = async (audience = shareAudience, expiresInDays = shareExpiresInDays) => {
-    if (!itinerary || !id) return null;
+  const loadShareLinks = async () => {
+    if (!id || persistenceState !== 'durable' || tripPermission !== 'owner') return [];
+    try {
+      const response = await fetch(`/api/itineraries/${encodeURIComponent(String(id))}/shares`, {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !Array.isArray(payload?.shares)) {
+        throw new Error(payload?.error?.message || 'Nao foi possivel carregar os links.');
+      }
+      setShareLinks(payload.shares);
+      return payload.shares;
+    } catch (error) {
+      setShareError(error?.message || 'Nao foi possivel carregar os links.');
+      return [];
+    }
+  };
+
+  const createShareUrl = async (expiresInDays = shareExpiresInDays) => {
+    if (!itinerary || !id || persistenceState !== 'durable' || tripPermission !== 'owner') return null;
     setShareLoading(true);
     setShareError('');
     try {
@@ -620,14 +703,15 @@ export default function ItineraryPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ itinerary, audience, expiresInDays }),
+        body: JSON.stringify({ expiresInDays }),
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.url) {
         throw new Error(payload?.error?.message || 'Não foi possível criar o link seguro.');
       }
       setShareUrl(payload.url);
-      setActiveShare({ ...payload.share, token: payload.token });
+      setActiveShare(payload.share);
+      setShareLinks((current) => [payload.share, ...current.filter((share) => share.id !== payload.share.id)]);
       return payload.url;
     } catch (error) {
       setShareUrl('');
@@ -641,49 +725,58 @@ export default function ItineraryPage() {
 
   const handleShare = async () => {
     if (typeof window === 'undefined' || !itinerary) return;
+    if (persistenceState !== 'durable') {
+      showToast('Importa e guarda esta viagem antes de criares um link.', 'info');
+      return;
+    }
+    if (tripPermission !== 'owner') {
+      showToast('So o proprietario pode gerir links publicos.', 'info');
+      return;
+    }
+    setShareUrl('');
+    setActiveShare(null);
+    setShareError('');
     setShowShareModal(true);
-    await createShareUrl(shareAudience, shareExpiresInDays);
+    await loadShareLinks();
   };
 
-  const handleShareAudienceChange = async (audience) => {
-    setShareAudience(audience);
-    await createShareUrl(audience, shareExpiresInDays);
-  };
-
-  const handleShareExpiryChange = async (value) => {
+  const handleShareExpiryChange = (value) => {
     const expiresInDays = Number(value);
     setShareExpiresInDays(expiresInDays);
-    await createShareUrl(shareAudience, expiresInDays);
   };
 
   const copyShareUrl = async () => {
     try {
-      const nextUrl = shareUrl || await createShareUrl(shareAudience, shareExpiresInDays);
-      if (!nextUrl) throw new Error('missing_share_url');
-      await navigator.clipboard.writeText(nextUrl);
+      if (!shareUrl) throw new Error('missing_share_url');
+      await navigator.clipboard.writeText(shareUrl);
       showToast('Link copiado para a área de transferência.', 'success');
     } catch (err) {
-      showToast('Erro ao partilhar.', 'error');
+      showToast('Cria primeiro um novo link para o poderes copiar.', 'info');
     }
   };
 
-  const revokeCurrentShare = async () => {
-    if (!activeShare?.token) return;
+  const revokeShare = async (shareId) => {
+    if (!shareId) return;
     try {
-      const response = await fetch(`/api/shares/${encodeURIComponent(activeShare.token)}`, {
+      const response = await fetch(`/api/itineraries/${encodeURIComponent(String(id))}/shares/${encodeURIComponent(shareId)}`, {
         method: 'DELETE',
         credentials: 'same-origin',
       });
       if (!response.ok) throw new Error('share_revoke_failed');
-      setShareUrl('');
-      setActiveShare(null);
+      setShareLinks((current) => current.map((share) => (
+        share.id === shareId ? { ...share, revokedAt: new Date().toISOString() } : share
+      )));
+      if (activeShare?.id === shareId) {
+        setShareUrl('');
+        setActiveShare(null);
+      }
       showToast('Link revogado.', 'success');
     } catch (error) {
       showToast('Não foi possível revogar o link.', 'error');
     }
   };
 
-  const copyTextSummary = async (audience = shareAudience) => {
+  const copyTextSummary = async (audience = 'client') => {
     try {
       const summary = audience === 'internal'
         ? buildInternalShareSummary(itinerary)
@@ -1321,6 +1414,10 @@ export default function ItineraryPage() {
   };
 
   const handleRegenerateDay = async () => {
+    if (persistenceState === 'durable' && !['owner', 'editor'].includes(tripPermission)) {
+      showToast('Esta viagem esta em modo de leitura.', 'info');
+      return;
+    }
     const checkedLabels = ADAPT_OPTIONS
       .filter(o => adaptChecks[o.id])
       .map(o => o.label);
@@ -1385,6 +1482,7 @@ export default function ItineraryPage() {
   };
 
   const updateActivity = (stop, patch) => {
+    if (persistenceState === 'durable' && !['owner', 'editor'].includes(tripPermission)) return;
     const matches = (item) => (
       (stop.id && item?.id === stop.id) || (!stop.id && item?.name === stop.name)
     );
@@ -1515,6 +1613,7 @@ export default function ItineraryPage() {
         <Navbar />
         <div className={styles.notFound}>
           <h2>{validationError ? 'Itinerário inválido' : 'Itinerário não encontrado'}</h2>
+          {validationError && <p>{validationError}</p>}
           <button className="btn btn-primary" onClick={() => router.push('/')}>Criar o meu próprio</button>
         </div>
       </>
@@ -1525,6 +1624,8 @@ export default function ItineraryPage() {
     ? { name: itinerary.destination } 
     : (itinerary.destination || {});
   const trip = itinerary.trip || {};
+  const canEditTrip = persistenceState === 'legacy' || ['owner', 'editor'].includes(tripPermission);
+  const canManageShares = persistenceState === 'durable' && tripPermission === 'owner';
   const currencyContext = getCurrencyContext(itinerary);
   const formatMoney = (value) => formatCurrencyAmount(value, currencyContext);
   const destinationBadge = getDestinationBadge(dest);
@@ -1613,8 +1714,8 @@ export default function ItineraryPage() {
               </div>
             </div>
             <div className={styles.headerActionsDesktop}>
-              <button className={styles.btnSecondary} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title="Editar este dia"><Edit3 size={16} aria-hidden="true" /> <span>Editar</span></button>
-              <button className={styles.btnSecondary} onClick={handleShare} aria-label="Partilhar itinerário" title="Partilhar itinerário"><Share2 size={16} aria-hidden="true" /> <span>Partilhar</span></button>
+              <button className={styles.btnSecondary} disabled={!canEditTrip} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title={canEditTrip ? 'Editar este dia' : 'Modo de leitura'}><Edit3 size={16} aria-hidden="true" /> <span>Editar</span></button>
+              <button className={styles.btnSecondary} disabled={!canManageShares} onClick={handleShare} aria-label="Partilhar itinerário" title={canManageShares ? 'Partilhar itinerário' : 'Apenas o proprietario pode partilhar'}><Share2 size={16} aria-hidden="true" /> <span>Partilhar</span></button>
               <button className={styles.btnSecondary} onClick={() => handleExportPDF(exportMode)} aria-label="Exportar PDF" title="Exportar PDF"><FileText size={16} aria-hidden="true" /> <span>PDF</span></button>
               <button className={styles.btnSecondary} onClick={() => setShowVersionsModal(true)} aria-label="Ver versões" title="Ver versões"><History size={16} aria-hidden="true" /> <span>Versões</span></button>
               <button className={styles.btnSecondary} onClick={handleGeneratePackingList} aria-label="Gerar lista de bagagem" title="Gerar lista de bagagem"><Package size={16} aria-hidden="true" /> <span>Bagagem</span></button>
@@ -1623,6 +1724,25 @@ export default function ItineraryPage() {
             </div>
           </div>
         </header>
+
+        <section className={`${styles.persistenceBanner} ${saveStatus === 'conflict' || saveStatus === 'error' ? styles.persistenceBannerError : ''}`} aria-live="polite">
+          <strong>
+            {persistenceState === 'durable'
+              ? `Guardado no servidor · ${tripPermission || 'sem papel'} · v${tripVersion || '–'}`
+              : 'Rascunho local · ainda nao importado'}
+          </strong>
+          <span>
+            {saveStatus === 'saving' && 'A guardar alteracoes...'}
+            {saveStatus === 'saved' && 'Alteracoes sincronizadas.'}
+            {saveStatus === 'local' && 'As alteracoes existem apenas neste dispositivo.'}
+            {saveStatus === 'forbidden' && 'Esta viagem esta em modo de leitura.'}
+            {saveStatus === 'error' && 'Falha ao guardar. Os dados do servidor nao foram confirmados.'}
+            {saveStatus === 'conflict' && 'Conflito: existe uma versao mais recente no servidor.'}
+          </span>
+          {saveStatus === 'conflict' && (
+            <button type="button" onClick={() => window.location.reload()}>Recarregar versao atual</button>
+          )}
+        </section>
 
         <section className={styles.agencyBrief} aria-label="Resumo profissional do itinerario">
           <div className={styles.agencyBriefHeader}>
@@ -1821,7 +1941,7 @@ export default function ItineraryPage() {
                   >
                     {compactMode ? 'Vista compacta' : 'Vista detalhada'}
                   </button>
-                  <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting}>
+                  <button className={styles.btnRegenerate} onClick={() => setShowAdaptModal(true)} disabled={isAdapting || !canEditTrip}>
                     {isAdapting ? <><Loader2 size={16} aria-hidden="true" /> A processar...</> : <><RefreshCw size={16} aria-hidden="true" /> Regenerar este dia</>}
                   </button>
                 </div>
@@ -1908,7 +2028,7 @@ export default function ItineraryPage() {
                                 onSave={() => toggleSaved(stop)}
                                 onBook={() => setBookingStop(stop)}
                                 onCopy={() => copyActivityDetails(stop)}
-                                onUpdate={(patch) => updateActivity(stop, patch)}
+                                onUpdate={canEditTrip ? (patch) => updateActivity(stop, patch) : undefined}
                                 isDayHighlight={stopIdx === 0}
                               />
                             </div>
@@ -2149,7 +2269,7 @@ export default function ItineraryPage() {
               </div>
               <div className={styles.sidebarActionsCol}>
                 <button className={styles.btnSecondaryFull} onClick={() => handleExportPDF(exportMode)}><FileText size={16} aria-hidden="true" /> Exportar PDF</button>
-                <button className={styles.btnSecondaryFull} onClick={handleShare}><Share2 size={16} aria-hidden="true" /> Partilhar</button>
+                <button className={styles.btnSecondaryFull} disabled={!canManageShares} onClick={handleShare}><Share2 size={16} aria-hidden="true" /> Partilhar</button>
                 <button className={styles.btnSecondaryFull} onClick={() => copyTextSummary('client')}><Copy size={16} aria-hidden="true" /> Resumo cliente</button>
                 <button className={styles.btnSecondaryFull} onClick={() => copyTextSummary('internal')}><Copy size={16} aria-hidden="true" /> Resumo interno</button>
                 <button className={styles.btnPrimaryFull} onClick={openAIChat}><MessageCircle size={16} aria-hidden="true" /> Pedir ao Andor</button>
@@ -2219,16 +2339,10 @@ export default function ItineraryPage() {
         onClose={() => setShowShareModal(false)}
         title="Partilhar Itinerário"
       >
-        <div className={styles.shareAudienceToggle}>
-          <label className={`${styles.shareRadio} ${shareAudience === 'client' ? styles.shareRadioActive : ''}`}>
-            <input type="radio" name="shareAudience" value="client" checked={shareAudience === 'client'} onChange={(e) => handleShareAudienceChange(e.target.value)} />
-            <span>Cliente</span>
-          </label>
-          <label className={`${styles.shareRadio} ${shareAudience === 'internal' ? styles.shareRadioActive : ''}`}>
-            <input type="radio" name="shareAudience" value="internal" checked={shareAudience === 'internal'} onChange={(e) => handleShareAudienceChange(e.target.value)} />
-            <span>Equipa interna</span>
-          </label>
-        </div>
+        <p className={styles.shareDisclosure}>
+          O link publico e sempre de leitura e inclui apenas o roteiro permitido para cliente.
+          Nomes de cliente, notas internas, referencias de reserva e campos desconhecidos ficam excluidos.
+        </p>
         <label className={styles.shareExpiry}>
           <span>Validade do link</span>
           <select value={shareExpiresInDays} onChange={(event) => handleShareExpiryChange(event.target.value)} disabled={shareLoading}>
@@ -2238,35 +2352,68 @@ export default function ItineraryPage() {
             <option value={90}>90 dias</option>
           </select>
         </label>
+        <div className={styles.shareActions}>
+          <button
+            className={styles.btnPrimary}
+            onClick={() => createShareUrl(shareExpiresInDays)}
+            disabled={shareLoading}
+            type="button"
+          >
+            {shareLoading ? 'A criar...' : 'Criar novo link'}
+          </button>
+        </div>
         <div className={styles.sharePreview}>
-          <span>URL segura deste roteiro</span>
+          <span>URL do link acabado de criar</span>
           <div className={styles.shareUrlField}>
             {shareLoading && <Loader2 size={18} className={styles.shareSpinner} aria-hidden="true" />}
-            <input value={shareLoading ? 'A criar link seguro...' : shareUrl} readOnly aria-label="URL de partilha" />
+            <input
+              value={shareLoading ? 'A criar link seguro...' : shareUrl}
+              placeholder="Cria um link para veres o URL uma unica vez"
+              readOnly
+              aria-label="URL de partilha"
+            />
           </div>
           {shareError && <span className={styles.shareError} role="alert">{shareError}</span>}
           {!shareError && activeShare && (
-            <span>
-              {shareAudience === 'internal'
-                ? 'Apenas a sessão proprietária consegue abrir esta versão interna.'
-                : 'Qualquer pessoa com este link pode abrir a versão cliente até ao fim da validade.'}
-            </span>
+            <span>Qualquer pessoa com este link pode abrir a versao cliente ate ao fim da validade.</span>
           )}
           {activeShare?.expiresAt && (
             <span>Expira em {new Date(activeShare.expiresAt).toLocaleString('pt-PT')}</span>
           )}
         </div>
         <div className={styles.shareActions}>
-          <button className={styles.btnPrimary} onClick={copyShareUrl} disabled={shareLoading}>Copiar link</button>
-          <button className={styles.btnOutline} onClick={() => copyTextSummary(shareAudience)}>Copiar resumo</button>
-          <button className={styles.btnOutline} onClick={() => handleExportPDF(shareAudience)}>PDF</button>
+          <button className={styles.btnPrimary} onClick={copyShareUrl} disabled={shareLoading || !shareUrl}>Copiar link</button>
+          <button className={styles.btnOutline} onClick={() => copyTextSummary('client')}>Copiar resumo</button>
+          <button className={styles.btnOutline} onClick={() => handleExportPDF('client')}>PDF cliente</button>
           {shareUrl && <a className={styles.btnOutline} href={`https://wa.me/?text=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
           {shareUrl && <a className={styles.btnOutline} href={`mailto:?subject=${encodeURIComponent('O meu roteiro Andor')}&body=${encodeURIComponent(shareUrl)}`}>Email</a>}
           {activeShare && (
-            <button className={styles.btnDanger} onClick={revokeCurrentShare} type="button">
+            <button className={styles.btnDanger} onClick={() => revokeShare(activeShare.id)} type="button">
               <Unlink size={16} aria-hidden="true" /> Revogar link
             </button>
           )}
+        </div>
+        <div className={styles.shareLinkList}>
+          <strong>Links criados</strong>
+          {shareLinks.length === 0 ? (
+            <span>Ainda nao existem links para esta viagem.</span>
+          ) : shareLinks.map((share) => {
+            const expired = new Date(share.expiresAt).getTime() <= Date.now();
+            const inactive = Boolean(share.revokedAt || expired);
+            return (
+              <div key={share.id} className={styles.shareLinkItem}>
+                <span>
+                  <strong>{inactive ? 'Inativo' : 'Ativo'}</strong>
+                  <small>Criado em {new Date(share.createdAt).toLocaleString('pt-PT')} · expira em {new Date(share.expiresAt).toLocaleString('pt-PT')}</small>
+                </span>
+                {!inactive && (
+                  <button type="button" className={styles.btnDanger} onClick={() => revokeShare(share.id)}>
+                    Revogar
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </Modal>
 

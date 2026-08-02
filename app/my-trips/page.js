@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
@@ -9,7 +9,13 @@ import TripHistory from '../components/TripHistory';
 import styles from './page.module.css';
 import { safeParse } from '../lib/safe-json';
 import { useTranslations } from '../context/LanguageContext';
-import { getStoredJourneyTrips } from '../lib/itinerary-store';
+import {
+  deleteSavedTrip,
+  getStoredJourneyTrips,
+  normalizeTripForJourney,
+} from '../lib/itinerary-store';
+import { getUnitedKingdomNumericCode } from '../lib/destination-geography';
+import { useAuth } from '../context/AuthContext';
 // Dynamic import for the Globe (needs browser APIs, no SSR)
 const GlobeTracker = dynamic(() => import('../components/GlobeTracker'), {
   ssr: false,
@@ -182,8 +188,57 @@ const DEMO_TRIPS = [
 
 export default function MyTripsPage() {
   const t = useTranslations('myTrips');
+  const { user, loading: authLoading, toggleCountry } = useAuth();
   const [visitedCountries, setVisitedCountries] = useState([]);
   const [journeyTrips, setJourneyTrips] = useState([]);
+  const [legacyTrips, setLegacyTrips] = useState([]);
+  const [selectedLegacyIds, setSelectedLegacyIds] = useState(() => new Set());
+  const [tripsLoading, setTripsLoading] = useState(true);
+  const [tripError, setTripError] = useState('');
+  const [migrationPending, setMigrationPending] = useState(false);
+  const [migrationMessage, setMigrationMessage] = useState('');
+
+  const refreshLegacyTrips = useCallback(() => {
+    setLegacyTrips(getStoredJourneyTrips());
+  }, []);
+
+  const loadDurableTrips = useCallback(async () => {
+    if (!user) {
+      setJourneyTrips([]);
+      setTripsLoading(false);
+      return;
+    }
+    setTripsLoading(true);
+    setTripError('');
+    try {
+      const response = await fetch('/api/itineraries', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !Array.isArray(payload?.trips)) {
+        throw new Error(payload?.error?.message || 'Nao foi possivel carregar as viagens guardadas.');
+      }
+      const trips = payload.trips.map((record) => ({
+        ...normalizeTripForJourney({
+          ...(record.itinerary || {}),
+          id: record.id,
+          version: record.version,
+          savedAt: record.createdAt,
+          lastUpdated: record.updatedAt,
+        }, record.id),
+        permission: record.permission,
+        persistence: record.persistence || payload.persistence,
+        recordItinerary: record.itinerary,
+      }));
+      setJourneyTrips(trips);
+    } catch (error) {
+      setJourneyTrips([]);
+      setTripError(error?.message || 'Nao foi possivel carregar as viagens guardadas.');
+    } finally {
+      setTripsLoading(false);
+    }
+  }, [user]);
 
   // Country name to code mapping for destination matching
   const DEST_TO_CODE = {
@@ -206,6 +261,11 @@ export default function MyTripsPage() {
     const codes = new Set();
     journeyTrips.forEach(trip => {
       if (!trip.destination) return;
+      const ukCode = getUnitedKingdomNumericCode(trip.destination);
+      if (ukCode) {
+        if (!visitedCountries.includes(ukCode)) codes.add(ukCode);
+        return;
+      }
       const lower = trip.destination.toLowerCase();
       for (const [name, code] of Object.entries(DEST_TO_CODE)) {
         if (lower.includes(name) && !visitedCountries.includes(code)) {
@@ -249,7 +309,7 @@ export default function MyTripsPage() {
     };
   }, [journeyTrips]);
 
-  // Load from localStorage on mount
+  // Local data is treated only as a legacy import source, never as server identity.
   useEffect(() => {
     const stored = localStorage.getItem('andor_visited_countries');
     if (stored) {
@@ -260,8 +320,20 @@ export default function MyTripsPage() {
       }
     }
 
-    setJourneyTrips(getStoredJourneyTrips());
-  }, []);
+    refreshLegacyTrips();
+  }, [refreshLegacyTrips]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    refreshLegacyTrips();
+    loadDurableTrips();
+  }, [authLoading, loadDurableTrips, refreshLegacyTrips, user?.id]);
+
+  useEffect(() => {
+    if (Array.isArray(user?.visitedCountries)) {
+      setVisitedCountries(user.visitedCountries);
+    }
+  }, [user?.visitedCountries]);
 
   // Save to localStorage on change
   useEffect(() => {
@@ -275,6 +347,119 @@ export default function MyTripsPage() {
       }
       return [...prev, code];
     });
+    if (user) toggleCountry(code);
+  };
+
+  const visibleLegacyTrips = useMemo(() => {
+    const durableIds = new Set(journeyTrips.map((trip) => trip.id));
+    return legacyTrips.filter((trip) => !durableIds.has(trip.id));
+  }, [journeyTrips, legacyTrips]);
+
+  const legacyIdempotencyKey = (trip) => {
+    const stem = String(trip.id || 'unknown').replace(/[^A-Za-z0-9._:-]/g, '-').slice(0, 96);
+    return `legacy-v1:${stem}:0000000000000000`.slice(0, 128);
+  };
+
+  const toggleLegacySelection = (id) => {
+    setSelectedLegacyIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleLegacyImport = async () => {
+    if (!user || selectedLegacyIds.size === 0) return;
+    const selected = visibleLegacyTrips.filter((trip) => selectedLegacyIds.has(trip.id));
+    setMigrationPending(true);
+    setMigrationMessage('');
+    try {
+      const response = await fetch('/api/itineraries/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          trips: selected.map((trip) => ({
+            idempotencyKey: legacyIdempotencyKey(trip),
+            itinerary: trip,
+          })),
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!payload?.results) {
+        throw new Error(payload?.error?.message || 'A importacao nao foi concluida.');
+      }
+      const byKey = new Map(selected.map((trip) => [legacyIdempotencyKey(trip), trip]));
+      const imported = payload.results.filter((result) => result.ok);
+      imported.forEach((result) => {
+        const trip = byKey.get(result.idempotencyKey);
+        if (trip?.id) deleteSavedTrip(trip.id);
+      });
+      const conflicts = payload.results.filter((result) => result.status === 'conflict').length;
+      setMigrationMessage(
+        conflicts
+          ? `${imported.length} importadas; ${conflicts} mantidas por conflito para revisao.`
+          : `${imported.length} viagem(ns) importada(s) com sucesso.`
+      );
+      setSelectedLegacyIds(new Set());
+      refreshLegacyTrips();
+      await loadDurableTrips();
+    } catch (error) {
+      setMigrationMessage(error?.message || 'A importacao nao foi concluida. Os dados locais foram preservados.');
+    } finally {
+      setMigrationPending(false);
+    }
+  };
+
+  const handleDeleteTrip = async (trip) => {
+    setTripError('');
+    const response = await fetch(`/api/itineraries/${encodeURIComponent(trip.id)}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      setTripError(payload?.error?.message || 'Nao foi possivel eliminar a viagem.');
+      return;
+    }
+    await loadDurableTrips();
+  };
+
+  const handleRenameTrip = async (trip, name) => {
+    setTripError('');
+    const response = await fetch(`/api/itineraries/${encodeURIComponent(trip.id)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'If-Match': `"${Number(trip.version)}"`,
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({ itinerary: { ...(trip.recordItinerary || {}), title: name } }),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      setTripError(response.status === 409
+        ? 'Esta viagem mudou noutro separador. A lista foi atualizada; tenta novamente.'
+        : payload?.error?.message || 'Nao foi possivel renomear a viagem.');
+    }
+    await loadDurableTrips();
+  };
+
+  const handleDuplicateTrip = async (trip, name) => {
+    setTripError('');
+    const copy = { ...(trip.recordItinerary || {}), title: name };
+    delete copy.id;
+    delete copy.version;
+    const response = await fetch('/api/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ itinerary: copy, source: 'manual' }),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) setTripError(payload?.error?.message || 'Nao foi possivel duplicar a viagem.');
+    await loadDurableTrips();
   };
 
   return (
@@ -326,6 +511,62 @@ export default function MyTripsPage() {
           ))}
         </section>
 
+        <section className={styles.persistencePanel} aria-live="polite">
+          {authLoading || tripsLoading ? (
+            <p className={styles.persistenceNotice}>A carregar as viagens da tua conta...</p>
+          ) : !user ? (
+            <div className={styles.persistenceNotice}>
+              <strong>As viagens guardadas exigem uma conta.</strong>
+              <span>Inicia sessao para veres dados duraveis e importares rascunhos deste dispositivo.</span>
+            </div>
+          ) : (
+            <div className={styles.persistenceNotice}>
+              <strong>{journeyTrips.length} viagem(ns) duravel(is)</strong>
+              <span>Esta lista vem do servidor e respeita o teu papel de owner, editor ou viewer.</span>
+            </div>
+          )}
+          {tripError && <p className={styles.persistenceError} role="alert">{tripError}</p>}
+
+          {user && visibleLegacyTrips.length > 0 && (
+            <div className={styles.legacyMigration}>
+              <div>
+                <span className={styles.legacyEyebrow}>Dados locais encontrados</span>
+                <h2>Escolhe o que queres importar</h2>
+                <p>
+                  Nada e migrado automaticamente. Cada selecao usa uma chave idempotente;
+                  os dados locais so sao removidos depois de o servidor confirmar a importacao.
+                </p>
+              </div>
+              <div className={styles.legacyList}>
+                {visibleLegacyTrips.map((trip) => (
+                  <label key={trip.id} className={styles.legacyItem}>
+                    <input
+                      type="checkbox"
+                      checked={selectedLegacyIds.has(trip.id)}
+                      onChange={() => toggleLegacySelection(trip.id)}
+                      disabled={migrationPending}
+                    />
+                    <span>
+                      <strong>{trip.destination || trip.title || 'Viagem local'}</strong>
+                      <small>{trip.daysCount || trip.days?.length || 0} dia(s) · apenas neste dispositivo</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className={styles.legacyActions}>
+                <button
+                  type="button"
+                  onClick={handleLegacyImport}
+                  disabled={migrationPending || selectedLegacyIds.size === 0}
+                >
+                  {migrationPending ? 'A importar...' : `Importar selecionadas (${selectedLegacyIds.size})`}
+                </button>
+                {migrationMessage && <span role="status">{migrationMessage}</span>}
+              </div>
+            </div>
+          )}
+        </section>
+
         <div className={styles.content}>
           <div className={styles.globeSection}>
             <GlobeTracker visitedCountries={visitedCountries} plannedCountries={plannedCountryCodes} />
@@ -342,6 +583,9 @@ export default function MyTripsPage() {
         <TripHistory
           trips={journeyTrips}
           visitedCountries={visitedCountries}
+          onDeleteTrip={handleDeleteTrip}
+          onRenameTrip={handleRenameTrip}
+          onDuplicateTrip={handleDuplicateTrip}
         />
       </main>
       <Footer />

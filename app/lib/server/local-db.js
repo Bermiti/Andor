@@ -94,6 +94,108 @@ export function getLocalDatabase() {
       updated_at TEXT NOT NULL,
       PRIMARY KEY (trip_key, owner_key)
     );
+
+    CREATE TABLE IF NOT EXISTS trip_members (
+      trip_id TEXT NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('owner', 'editor', 'viewer')),
+      invited_by TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      revoked_at TEXT,
+      PRIMARY KEY (trip_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS trip_members_user_idx
+      ON trip_members(user_id, revoked_at, updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS trip_invitations (
+      id TEXT PRIMARY KEY,
+      trip_id TEXT NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
+      email_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('editor', 'viewer')),
+      invited_by TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      revoked_at TEXT,
+      accepted_by TEXT,
+      accepted_at TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS trip_invitations_trip_idx
+      ON trip_invitations(trip_id, revoked_at, expires_at);
+
+    CREATE TABLE IF NOT EXISTS trip_share_links (
+      id TEXT PRIMARY KEY,
+      trip_id TEXT NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      permission TEXT NOT NULL DEFAULT 'viewer' CHECK (permission = 'viewer'),
+      audience TEXT NOT NULL DEFAULT 'client' CHECK (audience = 'client'),
+      expires_at TEXT NOT NULL,
+      revoked_at TEXT,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      last_accessed_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS trip_share_links_trip_idx
+      ON trip_share_links(trip_id, revoked_at, expires_at, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS audit_events (
+      id TEXT PRIMARY KEY,
+      actor_user_id TEXT,
+      action TEXT NOT NULL,
+      resource_type TEXT NOT NULL,
+      resource_id TEXT NOT NULL,
+      correlation_id TEXT,
+      metadata_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS audit_events_resource_idx
+      ON audit_events(resource_type, resource_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS trip_imports (
+      user_id TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL,
+      payload_hash TEXT NOT NULL,
+      trip_id TEXT REFERENCES itineraries(id) ON DELETE SET NULL,
+      status TEXT NOT NULL CHECK (status IN ('completed', 'conflict', 'failed')),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, idempotency_key)
+    );
+  `);
+
+  const itineraryColumns = new Set(
+    database.prepare('PRAGMA table_info(itineraries)').all().map((column) => column.name)
+  );
+  const additiveColumns = [
+    ['owner_id', 'TEXT'],
+    ['visibility', "TEXT NOT NULL DEFAULT 'private'"],
+    ['status', "TEXT NOT NULL DEFAULT 'draft'"],
+    ['currency', 'TEXT'],
+    ['schema_version', 'INTEGER NOT NULL DEFAULT 1'],
+    ['version', 'INTEGER NOT NULL DEFAULT 1'],
+    ['deleted_at', 'TEXT'],
+  ];
+  additiveColumns.forEach(([name, definition]) => {
+    if (!itineraryColumns.has(name)) {
+      database.exec(`ALTER TABLE itineraries ADD COLUMN ${name} ${definition}`);
+    }
+  });
+
+  database.exec(`
+    UPDATE itineraries
+    SET owner_id = user_id
+    WHERE owner_id IS NULL AND user_id IS NOT NULL;
+
+    INSERT OR IGNORE INTO trip_members
+      (trip_id, user_id, role, invited_by, created_at, updated_at, revoked_at)
+    SELECT id, owner_id, 'owner', owner_id, created_at, updated_at, NULL
+    FROM itineraries
+    WHERE owner_id IS NOT NULL;
   `);
 
   return database;

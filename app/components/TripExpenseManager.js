@@ -47,12 +47,14 @@ function csvCell(value) {
 
 export default function TripExpenseManager({ trip }) {
   const tripKey = String(trip?.id || trip?.destination || 'trip');
+  const canEdit = !trip?.permission || ['owner', 'editor'].includes(trip.permission);
   const defaults = useMemo(() => initialParticipants(trip), [trip]);
   const [ledger, setLedger] = useState(() => createEmptyLedger(defaults));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [updatedAt, setUpdatedAt] = useState(null);
+  const [ledgerVersion, setLedgerVersion] = useState(0);
   const [activeTab, setActiveTab] = useState('expenses');
   const [participantName, setParticipantName] = useState('');
   const [form, setForm] = useState({
@@ -70,7 +72,7 @@ export default function TripExpenseManager({ trip }) {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`/api/trips/${encodeURIComponent(tripKey)}/ledger`, {
+        const response = await fetch(`/api/itineraries/${encodeURIComponent(tripKey)}/ledger`, {
           cache: 'no-store',
           credentials: 'same-origin',
         });
@@ -81,6 +83,7 @@ export default function TripExpenseManager({ trip }) {
         const next = loaded.participants.length > 0 ? loaded : createEmptyLedger(defaults, loaded.currency);
         setLedger(next);
         setUpdatedAt(payload.updatedAt);
+        setLedgerVersion(Number(payload.version) || 0);
         setForm((current) => ({
           ...current,
           paidBy: next.participants[0]?.id || '',
@@ -101,22 +104,39 @@ export default function TripExpenseManager({ trip }) {
   const totalCents = useMemo(() => expenseTotalCents(ledger), [ledger]);
 
   const persist = async (input) => {
+    if (!canEdit) {
+      setError('Esta viagem esta em modo de leitura.');
+      return;
+    }
     const next = normalizeExpenseLedger(input);
+    const previous = ledger;
     setLedger(next);
     setSaving(true);
     setError('');
     try {
-      const response = await fetch(`/api/trips/${encodeURIComponent(tripKey)}/ledger`, {
+      const response = await fetch(`/api/itineraries/${encodeURIComponent(tripKey)}/ledger`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'If-Match': `"${ledgerVersion}"`,
+        },
         credentials: 'same-origin',
         body: JSON.stringify(next),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error?.message || 'Nao foi possivel guardar.');
+      if (!response.ok) {
+        const conflict = response.status === 409;
+        const failure = new Error(conflict
+          ? 'As despesas mudaram noutro separador. Fecha e volta a abrir para recarregar.'
+          : payload?.error?.message || 'Nao foi possivel guardar.');
+        failure.conflict = conflict;
+        throw failure;
+      }
       setLedger(normalizeExpenseLedger(payload.ledger));
       setUpdatedAt(payload.updatedAt);
+      setLedgerVersion(Number(payload.version));
     } catch (saveError) {
+      setLedger(previous);
       setError(saveError.message || 'Nao foi possivel guardar.');
     } finally {
       setSaving(false);
@@ -125,6 +145,7 @@ export default function TripExpenseManager({ trip }) {
 
   const addParticipant = async (event) => {
     event.preventDefault();
+    if (!canEdit) return;
     const name = participantName.trim();
     if (!name) return;
     const participant = { id: crypto.randomUUID(), name };
@@ -138,6 +159,7 @@ export default function TripExpenseManager({ trip }) {
   };
 
   const removeParticipant = async (participantId) => {
+    if (!canEdit) return;
     const inUse = ledger.expenses.some((expense) => (
       expense.paidBy === participantId || expense.splitBetween.includes(participantId)
     ));
@@ -165,6 +187,7 @@ export default function TripExpenseManager({ trip }) {
 
   const addExpense = async (event) => {
     event.preventDefault();
+    if (!canEdit) return;
     const amount = Number(String(form.amount).replace(',', '.'));
     if (!form.description.trim() || !Number.isFinite(amount) || amount <= 0 || !form.paidBy || form.splitBetween.length === 0) {
       setError('Preenche a descricao, o valor, quem pagou e pelo menos uma pessoa na divisao.');
@@ -185,6 +208,7 @@ export default function TripExpenseManager({ trip }) {
   };
 
   const deleteExpense = async (expenseId) => {
+    if (!canEdit) return;
     await persist({ ...ledger, expenses: ledger.expenses.filter((expense) => expense.id !== expenseId) });
   };
 
@@ -230,7 +254,7 @@ export default function TripExpenseManager({ trip }) {
         <div><span>Participantes</span><strong>{ledger.participants.length}</strong></div>
         <label>
           <span>Moeda</span>
-          <select value={ledger.currency} onChange={(event) => persist({ ...ledger, currency: event.target.value })} disabled={saving}>
+          <select value={ledger.currency} onChange={(event) => persist({ ...ledger, currency: event.target.value })} disabled={saving || !canEdit}>
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
             <option value="GBP">GBP</option>
@@ -254,20 +278,21 @@ export default function TripExpenseManager({ trip }) {
       </div>
 
       {error && <div className={styles.error} role="alert">{error}</div>}
+      {!canEdit && <div className={styles.error}>Modo de leitura: apenas owner e editor podem alterar despesas.</div>}
 
       <section className={styles.peopleSection}>
         <div className={styles.sectionHeading}>
           <div><span>Grupo</span><h3>Quem participa</h3></div>
           <form className={styles.addPerson} onSubmit={addParticipant}>
-            <input value={participantName} onChange={(event) => setParticipantName(event.target.value)} placeholder="Nome" maxLength={80} aria-label="Nome do participante" />
-            <button type="submit" title="Adicionar participante" aria-label="Adicionar participante" disabled={saving || !participantName.trim()}><Plus size={17} /></button>
+            <input value={participantName} onChange={(event) => setParticipantName(event.target.value)} placeholder="Nome" maxLength={80} aria-label="Nome do participante" readOnly={!canEdit} />
+            <button type="submit" title="Adicionar participante" aria-label="Adicionar participante" disabled={saving || !canEdit || !participantName.trim()}><Plus size={17} /></button>
           </form>
         </div>
         <div className={styles.peopleList}>
           {ledger.participants.map((participant) => (
             <span className={styles.personChip} key={participant.id}>
               {participant.name}
-              <button type="button" onClick={() => removeParticipant(participant.id)} title={`Remover ${participant.name}`} aria-label={`Remover ${participant.name}`} disabled={saving}><Trash2 size={13} /></button>
+              <button type="button" onClick={() => removeParticipant(participant.id)} title={`Remover ${participant.name}`} aria-label={`Remover ${participant.name}`} disabled={saving || !canEdit}><Trash2 size={13} /></button>
             </span>
           ))}
         </div>
@@ -278,19 +303,19 @@ export default function TripExpenseManager({ trip }) {
           <form className={styles.expenseForm} onSubmit={addExpense}>
             <div className={styles.sectionHeading}><div><span>Novo registo</span><h3>Adicionar despesa</h3></div></div>
             <div className={styles.formGrid}>
-              <label className={styles.descriptionField}><span>Descricao</span><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Jantar, hotel, comboio..." maxLength={120} /></label>
-              <label><span>Valor</span><input type="number" min="0.01" step="0.01" inputMode="decimal" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} placeholder="0,00" /></label>
-              <label><span>Pago por</span><select value={form.paidBy} onChange={(event) => setForm({ ...form, paidBy: event.target.value })}>{ledger.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}</select></label>
-              <label><span>Categoria</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-              <label><span>Data</span><input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} /></label>
+              <label className={styles.descriptionField}><span>Descricao</span><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Jantar, hotel, comboio..." maxLength={120} readOnly={!canEdit} /></label>
+              <label><span>Valor</span><input type="number" min="0.01" step="0.01" inputMode="decimal" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} placeholder="0,00" readOnly={!canEdit} /></label>
+              <label><span>Pago por</span><select value={form.paidBy} onChange={(event) => setForm({ ...form, paidBy: event.target.value })} disabled={!canEdit}>{ledger.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}</select></label>
+              <label><span>Categoria</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} disabled={!canEdit}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+              <label><span>Data</span><input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} readOnly={!canEdit} /></label>
             </div>
             <fieldset className={styles.splitFieldset}>
               <legend>Dividir igualmente entre</legend>
               <div>{ledger.participants.map((participant) => (
-                <label key={participant.id}><input type="checkbox" checked={form.splitBetween.includes(participant.id)} onChange={() => toggleSplit(participant.id)} /><span>{participant.name}</span></label>
+                <label key={participant.id}><input type="checkbox" checked={form.splitBetween.includes(participant.id)} onChange={() => toggleSplit(participant.id)} disabled={!canEdit} /><span>{participant.name}</span></label>
               ))}</div>
             </fieldset>
-            <button className={styles.primaryButton} type="submit" disabled={saving || ledger.participants.length === 0}><Plus size={17} /> Adicionar despesa</button>
+            <button className={styles.primaryButton} type="submit" disabled={saving || !canEdit || ledger.participants.length === 0}><Plus size={17} /> Adicionar despesa</button>
           </form>
 
           <section className={styles.expensesSection}>
@@ -309,7 +334,7 @@ export default function TripExpenseManager({ trip }) {
                     <div className={styles.expenseRow} key={expense.id}>
                       <div><strong>{expense.description}</strong><span>{expense.date} | {category} | pago por {payer}</span></div>
                       <strong>{formatLedgerMoney(expense.amountCents, ledger.currency)}</strong>
-                      <button type="button" onClick={() => deleteExpense(expense.id)} title="Eliminar despesa" aria-label={`Eliminar ${expense.description}`} disabled={saving}><Trash2 size={16} /></button>
+                      <button type="button" onClick={() => deleteExpense(expense.id)} title="Eliminar despesa" aria-label={`Eliminar ${expense.description}`} disabled={saving || !canEdit}><Trash2 size={16} /></button>
                     </div>
                   );
                 })}

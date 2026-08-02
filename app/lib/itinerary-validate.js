@@ -1,4 +1,5 @@
 import { getDayTitleQualityScore, isBannedDayTitle, suggestDayTitle } from './day-title-validator.js';
+import { normalizeUnitedKingdomDestination } from './destination-geography.js';
 
 export const DESTINATION_BOUNDS = {
   tokyo: { latMin: 35.0, latMax: 36.5, lngMin: 138.5, lngMax: 140.5, center: { lat: 35.6762, lng: 139.6503 } },
@@ -317,9 +318,10 @@ export function validateAndNormalize(itinerary) {
   }
 
   const destInput = normalized.destination || normalized.city || null;
-  const destName = typeof destInput === 'object'
-    ? safeText(destInput.city || destInput.name || destInput.country, '')
-    : safeText(destInput, '');
+  const ukDestination = normalizeUnitedKingdomDestination(destInput);
+  const destName = ukDestination?.name || (typeof destInput === 'object'
+    ? safeText(destInput.city || destInput.name || destInput.region || destInput.country, '')
+    : safeText(destInput, ''));
   if (!destName) {
     result.valid = false;
     result.fatal = true;
@@ -327,16 +329,19 @@ export function validateAndNormalize(itinerary) {
     return result;
   }
 
-  const destKey = normalizeDestinationKey(destInput);
-  const bounds = getDestinationBounds(destInput);
+  const destinationInput = ukDestination || destInput;
+  const destKey = normalizeDestinationKey(destinationInput);
+  const bounds = getDestinationBounds(destinationInput);
   const defaults = DESTINATION_DEFAULTS[destKey] || {};
-  const rawDestination = typeof destInput === 'object' ? destInput : {};
+  const rawDestination = ukDestination || (typeof destInput === 'object' ? destInput : {});
   const destinationCoords = parseCoordinate(rawDestination.coordinates);
   normalized.destination = {
     ...defaults,
     ...rawDestination,
     name: safeText(rawDestination.name || rawDestination.city, destName),
-    city: safeText(rawDestination.city || rawDestination.name, destName.split(',')[0]),
+    city: ukDestination
+      ? safeText(rawDestination.city, '')
+      : safeText(rawDestination.city || rawDestination.name, destName.split(',')[0]),
     country: safeText(rawDestination.country, defaults.country || ''),
     countryCode: safeText(rawDestination.countryCode, defaults.countryCode || ''),
     flag: safeText(rawDestination.flag, defaults.flag || defaults.countryCode || ''),

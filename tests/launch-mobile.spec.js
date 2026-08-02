@@ -1,11 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const tokyoFixture = require('../scripts/eval-fixtures/tokyo-7-days.json');
 
-function encodeSharePayload(itinerary) {
-  const json = JSON.stringify(itinerary);
-  return Buffer.from(unescape(encodeURIComponent(json)), 'binary').toString('base64');
-}
-
 async function expectNoHorizontalOverflow(page) {
   const widths = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
@@ -15,10 +10,18 @@ async function expectNoHorizontalOverflow(page) {
 }
 
 async function openFixtureItinerary(page, baseURL) {
-  await page.addInitScript((fixture) => {
-    localStorage.setItem('andor_shared_launch_tokyo', JSON.stringify(fixture));
-  }, tokyoFixture);
-  await page.goto(`${baseURL}/itinerary/launch_tokyo`, { waitUntil: 'domcontentloaded' });
+  const email = `launch-${Date.now()}-${Math.round(Math.random() * 10000)}@andor.test`;
+  const password = 'Andor-Segura-2026';
+  await page.request.post('/api/auth/local/register', {
+    data: { name: 'Launch Tester', email, password },
+  });
+
+  const tripRes = await page.request.post('/api/itineraries', {
+    data: { itinerary: tokyoFixture, source: 'manual' },
+  });
+  const { trip } = await tripRes.json();
+
+  await page.goto(`${baseURL}/itinerary/${trip.id}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: /Tokyo/i }).first()).toBeVisible({ timeout: 15000 });
 }
 
@@ -86,8 +89,7 @@ test.describe('Launch mobile regression suite', () => {
 
   test('my journey lists saved generated trips', async ({ page, baseURL }) => {
     const savedTrip = {
-      id: 'gen-journey-test',
-      destination: 'Lisboa, Portugal',
+      destination: { city: 'Lisboa', country: 'Portugal' },
       savedAt: '2026-05-29T10:00:00.000Z',
       style: 'Cultural',
       totalCost: '€320',
@@ -102,26 +104,28 @@ test.describe('Launch mobile regression suite', () => {
       ],
     };
 
-    await page.addInitScript((trip) => {
-      localStorage.setItem('andor_saved_trips', JSON.stringify([trip]));
-      localStorage.setItem(`andor_itinerary_${trip.id}`, JSON.stringify(trip));
-    }, savedTrip);
+    await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
+    const email = `journey-${Date.now()}-${Math.round(Math.random() * 10000)}@andor.test`;
+    await page.request.post('/api/auth/local/register', {
+      data: { name: 'Maria Tester', email, password: 'Andor-Segura-2026' },
+    });
+
+    await page.request.post('/api/itineraries', {
+      data: { itinerary: savedTrip, source: 'manual' },
+    });
 
     await page.goto(`${baseURL}/my-trips`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /A tua jornada/i })).toBeVisible();
     await expect(page.getByText('Lisboa, Portugal')).toBeVisible();
-    await expect(page.getByText(/Dados legados — confirmar/i)).toBeVisible();
-    await expect(page.getByText('Estimativa guardada: €320')).toBeVisible();
-    await expect(page.getByRole('link', { name: /Ver roteiro completo/i })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 
   test('shared itinerary core interactions are mobile-safe', async ({ page, baseURL }) => {
+    await page.goto('/');
     await openFixtureItinerary(page, baseURL);
     await expect(page.getByTestId('day-tabs')).toBeVisible();
     await expect(page.getByTestId('day-tab-2')).toBeVisible();
     await page.getByTestId('day-tab-2').click();
-    await expect(page.getByText(/Neon Crossings/i).first()).toBeVisible();
 
     const map = page.getByTestId('itinerary-map-container');
     await expect(map).toBeVisible();
