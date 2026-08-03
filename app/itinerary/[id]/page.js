@@ -55,6 +55,8 @@ import RestaurantCard from '../../components/RestaurantCard';
 import AccommodationCard from '../../components/AccommodationCard';
 import TransportCard from '../../components/TransportCard';
 import EnrichmentProgress from '../../components/EnrichmentProgress';
+import WeatherSummary from '../../components/WeatherSummary';
+import { calculateDayRoutes } from '../../lib/route-calculator';
 import LiveMap from '../../components/LiveMap';
 import styles from './itinerary.module.css';
 import { trackEvent } from '../../lib/analytics';
@@ -275,6 +277,9 @@ export default function ItineraryPage() {
   const [compactMode, setCompactMode] = useState(false);
   const [enrichmentStatus, setEnrichmentStatus] = useState('idle');
   const [exportMode, setExportMode] = useState('client');
+  const [weatherData, setWeatherData] = useState(null);
+  const [dayRoutes, setDayRoutes] = useState({});
+  const [exchangeRateData, setExchangeRateData] = useState(null);
 
   useEffect(() => {
     setFavorites(getJson('andor_favorites', [], 'local') || []);
@@ -378,6 +383,93 @@ export default function ItineraryPage() {
       cancelled = true;
     };
   }, [params.id, user?.id]);
+
+  // Fetch verified weather, OSRM routes, and live exchange rates from server APIs
+  useEffect(() => {
+    if (!itinerary) return;
+    let active = true;
+
+    const fetchWeather = async () => {
+      const destCoords = itinerary.destination?.coordinates;
+      let lat = null;
+      let lng = null;
+
+      if (Array.isArray(destCoords)) {
+        [lat, lng] = destCoords;
+      } else if (typeof destCoords === 'object' && destCoords) {
+        lat = destCoords.lat;
+        lng = destCoords.lng;
+      }
+
+      if (lat == null || lng == null) {
+        const firstStop = itinerary.days?.[0]?.stops?.[0];
+        if (firstStop?.coordinates) {
+          const coords = firstStop.coordinates;
+          lat = Array.isArray(coords) ? coords[0] : coords.lat;
+          lng = Array.isArray(coords) ? coords[1] : coords.lng;
+        }
+      }
+
+      if (lat != null && lng != null) {
+        try {
+          const daysCount = itinerary.days?.length || 7;
+          const res = await fetch(`/api/weather?lat=${lat}&lng=${lng}&days=${daysCount}`);
+          if (res.ok && active) {
+            const data = await res.json();
+            setWeatherData(data);
+          }
+        } catch (e) {
+          console.warn('Weather fetch error:', e);
+        }
+      }
+    };
+
+    const fetchExchangeRate = async () => {
+      const destCurrency = itinerary.destination?.currency?.code || itinerary.currency || 'EUR';
+      if (destCurrency && destCurrency.toUpperCase() !== 'EUR') {
+        try {
+          const res = await fetch(`/api/exchange-rates?base=EUR&quote=${encodeURIComponent(destCurrency)}`);
+          if (res.ok && active) {
+            const data = await res.json();
+            setExchangeRateData(data);
+          }
+        } catch (e) {
+          console.warn('Exchange rate fetch error:', e);
+        }
+      }
+    };
+
+    fetchWeather();
+    fetchExchangeRate();
+
+    return () => {
+      active = false;
+    };
+  }, [itinerary]);
+
+  useEffect(() => {
+    if (!itinerary?.days?.[activeDay]) return;
+    let active = true;
+
+    const runRouteCalc = async () => {
+      const stops = itinerary.days[activeDay].stops || [];
+      if (stops.length < 2) return;
+
+      try {
+        const routes = await calculateDayRoutes(stops);
+        if (active && routes && routes.length > 0) {
+          setDayRoutes((prev) => ({ ...prev, [activeDay]: routes }));
+        }
+      } catch (e) {
+        console.warn('Route calculation error:', e);
+      }
+    };
+
+    runRouteCalc();
+    return () => {
+      active = false;
+    };
+  }, [itinerary, activeDay]);
 
   useEffect(() => {
     if (!itinerary || !id || enrichmentStatus !== 'idle') return;
@@ -1890,18 +1982,20 @@ export default function ItineraryPage() {
             
             {/* CLIMA E TRANSPORTE */}
             <div className={styles.dayMetaCards}>
-              {currentDay.weather && (
+              {weatherData ? (
+                <WeatherSummary weatherData={weatherData} activeDayIndex={activeDay} />
+              ) : currentDay.weather ? (
                 <div className={styles.metaCard}>
-                  <span className={styles.metaIcon}>WX</span>
+                  <span className={styles.metaIcon}>⛅</span>
                   <div>
-                    <div className={styles.metaLabel}>Clima estimado · confirmar previsão</div>
+                    <div className={styles.metaLabel}>Clima estimado · estimativa sazonal</div>
                     <div className={styles.metaValue}>{currentDay.weather.avgTemp} · {currentDay.weather.condition}</div>
                     {currentDay.weather.tip && (
                       <div className={styles.metaValueSub}>{currentDay.weather.tip}</div>
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
               {currentDay.transport && (
                 <div className={styles.metaCard}>
                   <span className={styles.metaIcon}><Route size={18} aria-hidden="true" /></span>
@@ -2326,6 +2420,7 @@ export default function ItineraryPage() {
               baseCost={trip.budgetBreakdown?.grandTotal?.min || 500} 
               daysCount={trip.totalDays || itinerary.days?.length || 3} 
               currency={currencyContext.symbol} 
+              exchangeRate={exchangeRateData}
             />
           </ErrorBoundary>
         </div>

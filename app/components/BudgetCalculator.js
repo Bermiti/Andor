@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import styles from './BudgetCalculator.module.css';
 
-export default function BudgetCalculator({ baseCost = 250, daysCount = 3, currency = '€' }) {
+export default function BudgetCalculator({ baseCost = 250, daysCount = 3, currency = '€', exchangeRate = null }) {
   const [travelers, setTravelers] = useState(2);
   const [days, setDays] = useState(daysCount);
   const [flightClass, setFlightClass] = useState('economy'); // economy, business, first
@@ -16,6 +16,10 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
     activities: 0,
     total: 0
   });
+
+  const rate = exchangeRate?.data?.rate || exchangeRate?.rate;
+  const quote = exchangeRate?.data?.quoteCurrency || exchangeRate?.quoteCurrency;
+  const rateAvailable = typeof rate === 'number' && rate > 0 && quote && quote !== 'EUR';
 
   useEffect(() => {
     // Standard cost formulas (realistic estimates)
@@ -100,7 +104,7 @@ export default function BudgetCalculator({ baseCost = 250, daysCount = 3, curren
         <div className={styles.tabsGrid}>
           {[
             { id: 'budget', label: 'Económico' },
-            { id: 'boutique', label: 'Conforto' },
+            { id: 'boutique', label: 'Boutique' },
             { id: 'luxury', label: 'Luxo' }
           ].map((tier) => (
             <button

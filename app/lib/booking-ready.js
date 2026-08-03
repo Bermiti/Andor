@@ -1,3 +1,10 @@
+import {
+  getFlightSearchLinks,
+  getHotelSearchLinks,
+  getCarRentalSearchLinks,
+  getActivitySearchLinks,
+} from './booking-links';
+
 const BOOKING_STATUSES = new Set(['not_started', 'searching', 'selected', 'booked', 'confirmed']);
 const DOCUMENT_STATUSES = new Set(['not_started', 'needed', 'ready', 'uploaded_confirmed', 'not_applicable']);
 
@@ -68,52 +75,49 @@ export function buildBookingProviderLinks(itinerary, context = {}) {
   const startDate = text(itinerary?.trip?.startDate || profile.startDate, '');
   const endDate = text(itinerary?.trip?.endDate || profile.endDate, '');
   const origin = text(profile.originCity || profile.departureCity || profile.origin, '');
-  const travelers = Number(profile.travelers) > 0 ? Number(profile.travelers) : '';
-  const queryParts = [destination.label, startDate, endDate].filter(Boolean);
-  const params = {
+  const travelers = Number(profile.travelers) > 0 ? Number(profile.travelers) : 1;
+
+  const flightLinks = getFlightSearchLinks({
     origin,
     destination: destination.label,
-    city: destination.city,
-    country: destination.country,
-    startDate,
-    endDate,
-    travelers,
-  };
-  const flightQuery = [origin && `voos de ${origin} para`, ...queryParts].filter(Boolean).join(' ');
-  const hotelQuery = [...queryParts, 'alojamento'].join(' ');
+    departureDate: startDate,
+    returnDate: endDate,
+    adults: travelers,
+  });
+
+  const hotelLinks = getHotelSearchLinks({
+    destination: destination.label,
+    checkin: startDate,
+    checkout: endDate,
+    adults: travelers,
+  });
+
+  const carLinks = getCarRentalSearchLinks({
+    pickupCity: destination.city || destination.label,
+    pickupDate: startDate,
+    dropoffDate: endDate,
+  });
 
   return {
     flights: {
-      google: configuredOr(
-        'FLIGHTS_PROVIDER_SEARCH_URL',
-        params,
-        googleSearch('https://www.google.com/travel/flights?q=', flightQuery || `voos ${destination.label}`)
-      ),
-      skyscanner: 'https://www.skyscanner.pt/transport/flights/',
+      google: flightLinks.find((l) => l.provider === 'Google Flights')?.url || `https://www.google.com/travel/flights?q=voos+${encodeURIComponent(destination.label)}`,
+      skyscanner: flightLinks.find((l) => l.provider === 'Skyscanner')?.url || `https://www.skyscanner.net/`,
+      kayak: flightLinks.find((l) => l.provider === 'Kayak')?.url || `https://www.kayak.com/`,
     },
     hotels: {
-      booking: configuredOr(
-        'HOTELS_PROVIDER_SEARCH_URL',
-        params,
-        `https://www.booking.com/searchresults.pt-pt.html?ss=${encodeURIComponent(destination.label)}`
-      ),
-      googleHotels: googleSearch('https://www.google.com/travel/hotels?q=', hotelQuery),
+      booking: hotelLinks.find((l) => l.provider === 'Booking.com')?.url || `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(destination.label)}`,
+      googleHotels: `https://www.google.com/travel/hotels?q=${encodeURIComponent(destination.label + ' hotéis')}`,
       airbnb: `https://www.airbnb.com/s/${encodeURIComponent(destination.label)}/homes`,
+      hotelsCom: hotelLinks.find((l) => l.provider === 'Hotels.com')?.url,
+      hostelworld: hotelLinks.find((l) => l.provider === 'Hostelworld')?.url,
     },
     rentalCars: {
-      search: configuredOr(
-        'RENTAL_CARS_PROVIDER_SEARCH_URL',
-        params,
-        googleSearch('https://www.google.com/search?q=', `rent-a-car ${destination.label}`)
-      ),
-      google: googleSearch('https://www.google.com/search?q=', `aluguer de automóvel ${destination.label}`),
+      rentalcars: carLinks.find((l) => l.provider === 'Rentalcars.com')?.url,
+      kayak: carLinks.find((l) => l.provider === 'Kayak Cars')?.url,
+      google: `https://www.google.com/search?q=${encodeURIComponent('aluguer de automóvel ' + destination.label)}`,
     },
     places: {
-      search: configuredOr(
-        'PLACES_PROVIDER_SEARCH_URL',
-        params,
-        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination.label)}`
-      ),
+      search: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination.label)}`,
     },
   };
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import styles from './EnhancedActivityCard.module.css';
 import { MapPin, Navigation, Lightbulb, Calendar, Bookmark, Clock, Users, AlertCircle, Copy, CheckCircle2, StickyNote } from 'lucide-react';
+import { getActivitySearchLinks } from '../lib/booking-links';
 
 const VERIFIED_LOCATION_SOURCES = new Set(['nominatim', 'curated']);
 const AUTHORITATIVE_RATING_SOURCES = new Set([
@@ -458,7 +459,16 @@ export default function EnhancedActivityCard({
               className={styles.btnSecondary}
               onClick={(e) => {
                 e.stopPropagation();
-                if (onBook) onBook(activity);
+                if (onBook) {
+                  onBook(activity);
+                } else if (activity?.bookingUrl) {
+                  window.open(activity.bookingUrl, '_blank', 'noopener,noreferrer');
+                } else {
+                  const links = getActivitySearchLinks({ activityName: activity?.name, destination: activity?.location || '' });
+                  if (links && links.length > 0) {
+                    window.open(links[0].url, '_blank', 'noopener,noreferrer');
+                  }
+                }
               }}
               data-testid="booking-button"
             >
