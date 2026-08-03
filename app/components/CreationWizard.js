@@ -59,6 +59,21 @@ const AUTOCOMPLETE_DATA = [
   { name: 'Cape Town, South Africa', flag: '🇿🇦', continent: 'África' },
 ];
 
+const POPULAR_RECOMMENDATION_CHIPS = [
+  { name: 'Tóquio, Japão', flag: '🇯🇵', tag: 'Cultura & Gastronomia' },
+  { name: 'Paris, França', flag: '🇫🇷', tag: 'Romântico & Arte' },
+  { name: 'Roma, Itália', flag: '🇮🇹', tag: 'História & Gastronomia' },
+  { name: 'Lisboa, Portugal', flag: '🇵🇹', tag: 'História & Atlântico' },
+  { name: 'Barcelona, Espanha', flag: '🇪🇸', tag: 'Arquitetura & Praia' },
+  { name: 'Bali, Indonésia', flag: '🇮🇩', tag: 'Natureza & Praias' },
+  { name: 'Banguecoque, Tailândia', flag: '🇹🇭', tag: 'Templos & Gastronomia' },
+  { name: 'Nova Iorque, EUA', flag: '🇺🇸', tag: 'Urbano & Espetáculos' },
+  { name: 'Quioto, Japão', flag: '🇯🇵', tag: 'Tradição & Templos' },
+  { name: 'Santorini, Grécia', flag: '🇬🇷', tag: 'Vistas & Mar' },
+  { name: 'Amsterdão, Países Baixos', flag: '🇳🇱', tag: 'Canais & Museus' },
+  { name: 'Edimburgo, Escócia', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', tag: 'Castelos & História' },
+];
+
 const COUNTRY_CODES = {
   japan: 'JP',
   france: 'FR',
@@ -672,7 +687,7 @@ export default function CreationWizard({
                     <input
                       type="text"
                       className={styles.hugeInput}
-                      placeholder="Ex: Tóquio, Paris..."
+                      placeholder="Ex: Japão, Tóquio, Itália, Paris..."
                       value={destination}
                       onChange={(e) => { setDestination(e.target.value); setShowDropdown(true); }}
                       onFocus={() => setShowDropdown(true)}
@@ -681,21 +696,57 @@ export default function CreationWizard({
                     />
                     {showDropdown && destination && filteredDestinations.length > 0 && (
                       <div className={styles.autocomplete}>
-                        {filteredDestinations.map(d => (
-                          <div
-                            key={d.name}
-                            className={styles.autoItem}
-                            onClick={() => { setDestination(d.name); setShowDropdown(false); }}
-                          >
-                            <span className={styles.autoFlag}>{d.flag}</span>
-                            <div className={styles.autoText}>
-                              <span className={styles.autoCity}>{d.name.split(',')[0]}</span>
-                              <span className={styles.autoCountry}>{d.name.split(',')[1] || d.continent}</span>
+                        {filteredDestinations.map(d => {
+                          const nameLabel = d.displayName || d.ptName || d.name;
+                          const countryLabel = d.countryPt || d.name.split(',')[1] || d.continent;
+                          return (
+                            <div
+                              key={d.entityId || d.name}
+                              className={styles.autoItem}
+                              onClick={() => { setDestination(nameLabel); setShowDropdown(false); }}
+                            >
+                              <span className={styles.autoFlag}>{d.flag || '📍'}</span>
+                              <div className={styles.autoText}>
+                                <span className={styles.autoCity}>{nameLabel.split(',')[0]}</span>
+                                <span className={styles.autoCountry}>{countryLabel} {d.tag ? ` · ${d.tag}` : ''}</span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
+
+                    {/* Recomendações Populares Chips */}
+                    <div style={{ marginTop: '16px' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--t-2, #C4BFB5)', display: 'block', marginBottom: '8px', fontWeight: 600 }}>
+                        ✨ Destinos e países recomendados em destaque:
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {POPULAR_RECOMMENDATION_CHIPS.map((chip) => (
+                          <button
+                            key={chip.name}
+                            type="button"
+                            onClick={() => { setDestination(chip.name); setShowDropdown(false); }}
+                            style={{
+                              background: destination === chip.name ? 'rgba(212, 168, 67, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                              border: destination === chip.name ? '1px solid var(--gold, #D4A843)' : '1px solid rgba(255, 255, 255, 0.1)',
+                              color: 'var(--t-1, #F0EDE6)',
+                              padding: '6px 12px',
+                              borderRadius: '20px',
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <span>{chip.flag}</span>
+                            <span>{chip.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className={styles.surpriseBox}>

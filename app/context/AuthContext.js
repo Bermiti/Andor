@@ -120,6 +120,37 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+      });
+      const payload = await readPayload(response);
+
+      if (payload?.redirect && payload?.url) {
+        window.location.href = payload.url;
+        return { success: true, redirecting: true };
+      }
+
+      if (payload?.authenticated && payload?.user) {
+        bindBrowserDataToUser(payload.user.id);
+        setUser(payload.user);
+        setProvider(payload.provider || 'google');
+        return { success: true };
+      }
+
+      window.location.href = '/api/auth/google';
+      return { success: true, redirecting: true };
+    } catch (error) {
+      return { error: 'Não foi possível ligar ao serviço de autenticação Google.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     await fetch('/api/auth/logout', {
       method: 'POST',
@@ -214,6 +245,7 @@ export function AuthProvider({ children }) {
       loading,
       register,
       login,
+      loginWithGoogle,
       logout,
       updateUser,
       saveTrip,

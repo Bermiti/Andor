@@ -157,11 +157,47 @@ export default function Hero({ onOpenWizard }) {
     return () => clearInterval(interval);
   }, []);
 
-  const filteredDestinations = destination.trim().length >= 2
-    ? AUTOCOMPLETE_DATA.filter((d) =>
-        d.city.toLowerCase().includes(destination.toLowerCase()) ||
-        d.country.toLowerCase().includes(destination.toLowerCase())
-      )
+const COUNTRY_PT_MAP = {
+  japan: 'Japão',
+  france: 'França',
+  indonesia: 'Indonésia',
+  usa: 'Estados Unidos',
+  portugal: 'Portugal',
+  spain: 'Espanha',
+  italy: 'Itália',
+  netherlands: 'Holanda',
+  uk: 'Reino Unido',
+  germany: 'Alemanha',
+  'czech republic': 'República Checa',
+  greece: 'Grécia',
+  croatia: 'Croácia',
+  iceland: 'Islândia',
+  uae: 'Emirados Árabes',
+  morocco: 'Marrocos',
+  egypt: 'Egito',
+  'south africa': 'África do Sul',
+  thailand: 'Tailândia',
+  singapore: 'Singapura',
+  'south korea': 'Coreia do Sul',
+  maldives: 'Maldivas',
+  vietnam: 'Vietname',
+  argentina: 'Argentina',
+  brazil: 'Brasil',
+  mexico: 'México',
+  australia: 'Austrália',
+};
+
+  const queryLower = destination.toLowerCase().trim();
+  const filteredDestinations = queryLower.length >= 2
+    ? AUTOCOMPLETE_DATA.filter((d) => {
+        const countryPt = COUNTRY_PT_MAP[d.country.toLowerCase()] || d.country;
+        return (
+          d.city.toLowerCase().includes(queryLower) ||
+          d.country.toLowerCase().includes(queryLower) ||
+          countryPt.toLowerCase().includes(queryLower) ||
+          d.continent.toLowerCase().includes(queryLower)
+        );
+      })
     : AUTOCOMPLETE_DATA.slice(0, 6);
 
   useEffect(() => {
