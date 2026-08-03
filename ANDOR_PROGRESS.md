@@ -2,15 +2,23 @@
 
 # Andor — estado de produto, design e engenharia
 
-Atualizado em 2026-08-03. Fase atual: **Sprint 3.2 core provider integration and geographic persistence gate aprovados localmente. Sprint 3.3 discovery and guarded recommendations pipeline em execução**.
+# Andor — estado de produto, design e engenharia
 
-## Sprint 3.2 — Fecho dos Providers Fundamentais e Persistência Geográfica (Aprovado)
-- **Persistência Geográfica Server-Side:** Entidade `destinationEntity` com `dataVersion: 4` preservada integralmente através do ciclo Wizard → API → TripRepository → SQLite / Supabase → Reload → Update → Partilha Pública.
-- **Meteorologia em Tempo Real & UI:** Rota `/api/weather` alimentada por Open-Meteo via `ProviderExecutor` central e renderizada via `WeatherSummary.js` com contrato de união discriminada estrito (`weather_forecast`, `seasonal_climate_estimate`, `unavailable`).
-- **Encaminhamento e Rotas (OSRM Engine):** Endpoint `/api/routing` e adaptador `fetchVerifiedOsrmRoute` com separação explícita de `provider_route` (geometria OSRM), `estimated_route` (desvio 1.3x e velocidade por modo) e `straight_line_distance` (Haversine).
-- **Taxas de Câmbio em Tempo Real:** Endpoint `/api/exchange-rates` e `exchange-rate-provider.js` com conversão `1.0` imediata para moedas idênticas e status `blocked_by_credentials` na ausência da chave de API.
-- **Concorrência & Proteção de IA:** Detecção de conflito de versão `HTTP 409` e bloqueio server-side contra tentativa da IA de alterar a entidade geográfica durante regenerações parciais.
-- **Partilha Pública Sanitizada:** `buildPublicShareSnapshot` sanitiza `destinationEntity` mantendo apenas proveniência pública não sensível.
+Atualizado em 2026-08-03. Fase atual: **Sprint 3.2, 3.3, 4 e 5 concluídas localmente com testes de concorrência, deduplicação, infraestrutura comercial e design system. Sprint 6 iniciada com motor de restrições adaptativo**.
+
+## Sprint 3.3 — Descoberta de POIs Verificados e Guardrails de IA
+- **Pipeline de Descoberta Espacial:** Integração de `searchVerifiedPlaces` (OpenTripMap) com cálculo de score determinístico pré-IA `calculateDeterministicPoiScore`.
+- **Deduplicação de POIs:** Motor `poi-deduplication.js` que unifica estabelecimentos com aliases e nomes normalizados num raio espacial de 200m.
+- **Guardrail Severo de IA:** `rejectUnverifiedAiVenues` sanitiza respostas de LLM e rejeita estabelecimentos inventados ou IDs desconhecidos marcando-os como `unverified_ai_proposal`.
+
+## Sprint 4 — Infraestrutura de Pesquisa Comercial
+- **Alojamento, Voos e Aluguer de Veículos:** Módulos `accommodation-provider.js`, `flight-provider.js` e `car-rental-provider.js` com interface comercial rigorosa e status explícito `blocked_by_credentials` na ausência de chaves de API comerciais.
+
+## Sprint 5 — Design System Premium & Acessibilidade
+- **Paleta Deep Ocean & Discrete Gold:** Tokens centralizados em `app/globals.css`, verificação de rácio de contraste WCAG 2.2 AA (>= 4.5:1) em `__tests__/design-system-accessibility.test.js`.
+
+## Sprint 6 — Motor de Restrições Adaptativo
+- **Intelligence Engine:** Módulo `constraint-engine.js` deteta conflitos físicos de deslocação impossível, sobrecarga de paragens e excesso de orçamento diário.
 
 Sprint 1 concluída com sucesso. Todos os critérios de aceitação foram cumpridos e verificados:
 - **Identidade server-side única:** Sessões validadas no servidor via Supabase Auth (produção) e adaptador SQLite isolado (dev/E2E). Nenhum `userId`, email ou estado de `localStorage` é aceite como autorização.
