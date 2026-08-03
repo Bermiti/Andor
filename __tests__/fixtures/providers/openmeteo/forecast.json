@@ -1,0 +1,17 @@
+{
+  "latitude": 38.70775,
+  "longitude": -9.13659,
+  "generationtime_ms": 0.25,
+  "utc_offset_seconds": 0,
+  "timezone": "Europe/Lisbon",
+  "timezone_abbreviation": "WET",
+  "elevation": 52.0,
+  "daily": {
+    "time": ["2026-08-04", "2026-08-05"],
+    "temperature_2m_max": [28.5, 29.1],
+    "temperature_2m_min": [18.2, 18.9],
+    "precipitation_sum": [0.0, 0.0],
+    "weathercode": [0, 1],
+    "windspeed_10m_max": [14.2, 15.1]
+  }
+}

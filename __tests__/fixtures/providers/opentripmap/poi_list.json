@@ -1,0 +1,13 @@
+[
+  {
+    "xid": "W12345678",
+    "name": "Castelo de São Jorge",
+    "rate": 3,
+    "osm": "way/12345678",
+    "kinds": "historic,castles,interesting_places",
+    "point": {
+      "lon": -9.1336,
+      "lat": 38.7139
+    }
+  }
+]
