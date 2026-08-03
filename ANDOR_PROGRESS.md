@@ -1,6 +1,6 @@
 # Andor — estado de produto, design e engenharia
 
-Atualizado em 2026-08-02. Fase atual: **Sprint 1 identity and data security gate aprovado; pré-lançamento mantido**.
+Atualizado em 2026-08-03. Fase atual: **Sprint 3 global provider foundation implementada e validada localmente. Integração real e validação de staging permanecem em execução**.
 
 ## Sprint 1 — consolidação de identidade, autorização, RLS e persistência durável
 
