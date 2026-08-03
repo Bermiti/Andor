@@ -1,8 +1,16 @@
 # Andor — estado de produto, design e engenharia
 
-Atualizado em 2026-08-03. Fase atual: **Sprint 3 global provider foundation implementada e validada localmente. Integração real e validação de staging permanecem em execução**.
+# Andor — estado de produto, design e engenharia
 
-## Sprint 1 — consolidação de identidade, autorização, RLS e persistência durável
+Atualizado em 2026-08-03. Fase atual: **Sprint 3.2 core provider integration and geographic persistence gate aprovados localmente. Sprint 3.3 discovery and guarded recommendations pipeline em execução**.
+
+## Sprint 3.2 — Fecho dos Providers Fundamentais e Persistência Geográfica (Aprovado)
+- **Persistência Geográfica Server-Side:** Entidade `destinationEntity` com `dataVersion: 4` preservada integralmente através do ciclo Wizard → API → TripRepository → SQLite / Supabase → Reload → Update → Partilha Pública.
+- **Meteorologia em Tempo Real & UI:** Rota `/api/weather` alimentada por Open-Meteo via `ProviderExecutor` central e renderizada via `WeatherSummary.js` com contrato de união discriminada estrito (`weather_forecast`, `seasonal_climate_estimate`, `unavailable`).
+- **Encaminhamento e Rotas (OSRM Engine):** Endpoint `/api/routing` e adaptador `fetchVerifiedOsrmRoute` com separação explícita de `provider_route` (geometria OSRM), `estimated_route` (desvio 1.3x e velocidade por modo) e `straight_line_distance` (Haversine).
+- **Taxas de Câmbio em Tempo Real:** Endpoint `/api/exchange-rates` e `exchange-rate-provider.js` com conversão `1.0` imediata para moedas idênticas e status `blocked_by_credentials` na ausência da chave de API.
+- **Concorrência & Proteção de IA:** Detecção de conflito de versão `HTTP 409` e bloqueio server-side contra tentativa da IA de alterar a entidade geográfica durante regenerações parciais.
+- **Partilha Pública Sanitizada:** `buildPublicShareSnapshot` sanitiza `destinationEntity` mantendo apenas proveniência pública não sensível.
 
 Sprint 1 concluída com sucesso. Todos os critérios de aceitação foram cumpridos e verificados:
 - **Identidade server-side única:** Sessões validadas no servidor via Supabase Auth (produção) e adaptador SQLite isolado (dev/E2E). Nenhum `userId`, email ou estado de `localStorage` é aceite como autorização.
