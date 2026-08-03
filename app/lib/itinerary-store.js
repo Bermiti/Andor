@@ -6,7 +6,7 @@ import { safeParse } from './safe-json';
 import { getJson, setJson, removeItem } from './storage';
 import { deriveTripStatus } from './trip-lifecycle';
 
-const TRIP_DATA_VERSION = 3;
+const TRIP_DATA_VERSION = 4;
 
 export function migrateTripData(trip) {
   if (!trip) return null;
@@ -25,6 +25,18 @@ export function migrateTripData(trip) {
       migrated.lifecycle.status = deriveTripStatus(migrated);
     }
     migrated.shareConfig = migrated.shareConfig || { visibility: 'private' };
+  }
+
+  if (currentVersion < 4) {
+    if (typeof migrated.destination === 'string') {
+      migrated.destinationText = migrated.destination;
+      migrated.destinationEntity = null;
+      migrated.resolutionStatus = 'legacy_unresolved';
+    } else if (migrated.destination && typeof migrated.destination === 'object') {
+      migrated.destinationEntity = migrated.destination.entityId ? migrated.destination : null;
+      migrated.destinationText = migrated.destination.canonicalName || migrated.destination.city || '';
+      migrated.resolutionStatus = migrated.destination.resolutionStatus || (migrated.destination.entityId ? 'resolved' : 'legacy_unresolved');
+    }
   }
 
   migrated.dataVersion = TRIP_DATA_VERSION;

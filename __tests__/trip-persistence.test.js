@@ -18,7 +18,7 @@ describe('trip persistence layer', () => {
     const oldTrip = { id: 'trip-1', destination: 'Paris', days: [{}] };
     const migrated = migrateTripData(oldTrip);
     
-    expect(migrated.dataVersion).toBe(3);
+    expect(migrated.dataVersion).toBe(4);
     expect(migrated.lifecycle.status).toBe('generated');
   });
 
