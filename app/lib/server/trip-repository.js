@@ -27,11 +27,11 @@ function destinationParts(itinerary) {
     const country = rest.join(', ');
     return { label: destination, city: city || destination, country: country || null };
   }
-  const city = text(destination?.city || destination?.name || itinerary?.title, 'Destino');
-  const region = text(destination?.region, '');
-  const country = text(destination?.country, '');
+  const city = text(destination?.canonicalName || destination?.city || destination?.name || itinerary?.title, 'Destino');
+  const region = text(destination?.regionCode || destination?.region, '');
+  const country = text(destination?.countryCode || destination?.country, '');
   return {
-    label: [city, region, country].filter(Boolean).join(', '),
+    label: text(destination?.displayName, [city, region, country].filter(Boolean).join(', ')),
     city,
     country: country || null,
   };
