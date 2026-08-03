@@ -34,12 +34,26 @@ function publicDestination(value) {
   if (typeof value === 'string') return cleanText(value, 160);
   if (!value || typeof value !== 'object' || Array.isArray(value)) return 'Destino';
   return definedEntries([
-    ['city', cleanText(value.city, 100)],
-    ['name', cleanText(value.name, 100)],
+    ['entityId', cleanText(value.entityId, 64)],
+    ['canonicalName', cleanText(value.canonicalName, 100)],
+    ['displayName', cleanText(value.displayName, 160)],
+    ['entityType', cleanText(value.entityType, 40)],
+    ['city', cleanText(value.city || value.canonicalName, 100)],
+    ['name', cleanText(value.name || value.canonicalName, 100)],
     ['region', cleanText(value.region, 100)],
+    ['regionCode', cleanText(value.regionCode, 20)],
     ['country', cleanText(value.country, 100)],
     ['countryCode', cleanText(value.countryCode, 3)],
+    ['timezone', cleanText(value.timezone, 60)],
+    ['currencyCodes', Array.isArray(value.currencyCodes) ? value.currencyCodes.map(c => cleanText(c, 8)).filter(Boolean) : undefined],
     ['currency', publicCurrency(value.currency)],
+    ['resolutionStatus', cleanText(value.resolutionStatus, 40)],
+    ['provenance', value.provenance && typeof value.provenance === 'object' ? definedEntries([
+      ['sourceType', cleanText(value.provenance.sourceType, 40)],
+      ['provider', cleanText(value.provenance.provider, 60)],
+      ['confidence', cleanNumber(value.provenance.confidence, 0, 1)],
+      ['attribution', cleanText(value.provenance.attribution, 200)],
+    ]) : undefined],
   ]);
 }
 
