@@ -18,6 +18,10 @@ export function isKillSwitchActive() {
   return envVal === '1' || envVal === 'true';
 }
 
+export function isAiKillSwitchActive() {
+  return isKillSwitchActive();
+}
+
 export function resetDailyCostTracker() {
   dailyCostCentsInWindow = 0;
   lastResetTimestamp = Date.now();
