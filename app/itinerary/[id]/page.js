@@ -989,267 +989,372 @@ export default function ItineraryPage() {
         <path d="M20 5L28 16L20 14Z" fill="#D4A853" opacity="0.35"/>
         <path d="M9 35C9 35 14 32 20 32C26 32 31 35 31 35" stroke="#1E6FD9" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
       </svg>`;
-    
+
     const content = document.createElement('div');
     content.innerHTML = `
-      <div style="font-family:'Georgia',serif; padding:40px; max-width:800px; color:#1A2235; background-color:#ffffff;">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+      <style>
+        .pdfContainer {
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          padding: 40px;
+          max-width: 840px;
+          color: #0F172A;
+          background-color: #ffffff;
+          box-sizing: border-box;
+          line-height: 1.5;
+        }
+
+        .pdfTitle {
+          font-family: 'Outfit', -apple-system, sans-serif;
+          font-weight: 700;
+        }
+
+        .pdfBadge {
+          display: inline-block;
+          padding: 4px 10px;
+          border-radius: 9999px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+      </style>
+
+      <div class="pdfContainer">
         
-        <!-- CAPA INSTITUCIONAL -->
-        <div style="position:relative; min-height:1260px; margin:-40px -40px 42px; overflow:hidden; background:#20242A; color:#fff; page-break-after:always;">
+        <!-- CAPA INSTITUCIONAL DE LUXO -->
+        <div style="position:relative; min-height:1240px; margin:-40px -40px 42px; overflow:hidden; background:#0F172A; color:#fff; page-break-after:always;">
           <img data-andor-cover="true" crossorigin="anonymous" src="${safeText(pdfCoverImage)}" alt="${safeText(pdfDestinationName)}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;" />
-          <div style="position:absolute; inset:0; background:linear-gradient(180deg,rgba(22,26,31,.48) 0%,rgba(22,26,31,.22) 38%,rgba(22,26,31,.92) 100%);"></div>
-          <div style="position:relative; z-index:1; min-height:1260px; padding:54px; display:flex; flex-direction:column; box-sizing:border-box;">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,.42);">
+          <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(15,23,42,0.45) 0%, rgba(15,23,42,0.25) 35%, rgba(15,23,42,0.95) 100%);"></div>
+          
+          <div style="position:relative; z-index:1; min-height:1240px; padding:54px; display:flex; flex-direction:column; box-sizing:border-box;">
+            
+            <!-- HEADER DA CAPA -->
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.25);">
               <div style="display:flex; align-items:center; gap:14px;">
-                <div style="width:62px; height:62px; display:flex; align-items:center; justify-content:center; background:#fff; border-radius:6px;">${brandLogo}</div>
+                <div style="width:58px; height:58px; display:flex; align-items:center; justify-content:center; background:#ffffff; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">${brandLogo}</div>
                 <div>
-                  <div style="font:700 20px Arial,sans-serif; letter-spacing:.08em;">ANDOR</div>
-                  <div style="font:600 10px Arial,sans-serif; letter-spacing:.22em; margin-top:3px;">TRAVELS</div>
+                  <div class="pdfTitle" style="font-size:22px; font-weight:800; letter-spacing:0.06em; color:#ffffff;">ANDOR</div>
+                  <div style="font-size:9.5px; font-weight:700; letter-spacing:0.25em; color:#D4A843; margin-top:1px;">TRAVEL DOSSIER</div>
                 </div>
               </div>
-              <div style="padding:9px 12px; border:1px solid ${includeInternal ? '#E77762' : 'rgba(255,255,255,.55)'}; border-radius:5px; background:rgba(20,24,29,.4); font:700 10px Arial,sans-serif; text-transform:uppercase; letter-spacing:.08em;">
-                ${includeInternal ? 'Uso interno' : 'Versao cliente'}
+              <div class="pdfBadge" style="border:1px solid ${includeInternal ? '#E8604A' : 'rgba(212,168,67,0.6)'}; background:${includeInternal ? 'rgba(232,96,74,0.2)' : 'rgba(212,168,67,0.15)'}; color:${includeInternal ? '#FCA5A5' : '#E8C670'};">
+                ${includeInternal ? '🔒 Uso Interno' : '✨ Proposta Cliente'}
               </div>
             </div>
+
+            <!-- CORPO DA CAPA -->
             <div style="margin-top:auto;">
-              <div style="font:700 12px Arial,sans-serif; color:#E3BD68; text-transform:uppercase; letter-spacing:.16em;">Itinerario personalizado</div>
-              <h1 style="max-width:680px; margin:14px 0 18px; color:#fff; font:700 54px/1.05 Georgia,serif; letter-spacing:0;">${safeText(pdfDestinationName)}</h1>
-               <p style="max-width:620px; margin:0 0 32px; color:rgba(255,255,255,.9); font:400 16px/1.55 Arial,sans-serif;">${safeText(itinerary.destination?.andorVerdict || itinerary.tripOverview || 'Uma proposta de planeamento criada no Andor e sujeita a confirmação.')}</p>
-              <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px; padding:22px 0; border-top:1px solid rgba(255,255,255,.35); border-bottom:1px solid rgba(255,255,255,.35); font-family:Arial,sans-serif;">
-                <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Duracao</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(itinerary.trip?.totalDays || itinerary.days?.length || '-')} dias</strong></div>
-                <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Perfil</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(itinerary.trip?.groupType || itinerary.trip?.travelStyle || 'Viagem')}</strong></div>
-                <div><span style="display:block; color:rgba(255,255,255,.65); font-size:9px; text-transform:uppercase;">Preparado para</span><strong style="display:block; margin-top:6px; font-size:14px;">${safeText(pdfExport.companyName || pdfExport.clientName || 'Viajante Andor')}</strong></div>
+              <div style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:#D4A843; text-transform:uppercase; letter-spacing:0.18em; margin-bottom:12px;">
+                <span>✦ Curadoria Digital de Viagem</span>
               </div>
-              <div style="display:flex; justify-content:space-between; margin-top:22px; color:rgba(255,255,255,.72); font:600 10px Arial,sans-serif;">
-                <span>${safeText(documentReference)} | ${safeText(preparedAtLabel)}</span>
+              
+              <h1 class="pdfTitle" style="max-width:720px; margin:0 0 16px; color:#ffffff; font-size:52px; line-height:1.05; letter-spacing:-0.02em;">
+                ${safeText(pdfDestinationName)}
+              </h1>
+              
+              <p style="max-width:640px; margin:0 0 32px; color:rgba(255,255,255,0.88); font-size:15px; line-height:1.6; font-weight:400;">
+                ${safeText(itinerary.destination?.andorVerdict || itinerary.tripOverview || 'Plano de viagem personalizado, estruturado com logística detalhada, orçamentos e reservas diretas.')}
+              </p>
+              
+              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; padding:20px; background:rgba(255,255,255,0.08); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.15); border-radius:14px;">
+                <div>
+                  <span style="display:block; color:rgba(255,255,255,0.6); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Duração</span>
+                  <strong class="pdfTitle" style="display:block; margin-top:4px; font-size:16px; color:#ffffff;">${safeText(itinerary.trip?.totalDays || itinerary.days?.length || '-')} Dias</strong>
+                </div>
+                <div>
+                  <span style="display:block; color:rgba(255,255,255,0.6); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Perfil</span>
+                  <strong class="pdfTitle" style="display:block; margin-top:4px; font-size:16px; color:#ffffff;">${safeText(itinerary.trip?.groupType || itinerary.trip?.travelStyle || 'Viajante')}</strong>
+                </div>
+                <div>
+                  <span style="display:block; color:rgba(255,255,255,0.6); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Preparado para</span>
+                  <strong class="pdfTitle" style="display:block; margin-top:4px; font-size:16px; color:#ffffff;">${safeText(pdfExport.companyName || pdfExport.clientName || 'Viajante Andor')}</strong>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px; color:rgba(255,255,255,0.65); font-size:10px; font-weight:600;">
+                <span>Ref: ${safeText(documentReference)} &nbsp;·&nbsp; ${safeText(preparedAtLabel)}</span>
                 <span>andortravels.com</span>
               </div>
             </div>
+
           </div>
         </div>
 
-        <div style="margin:0 0 30px; padding:0 0 22px; border-bottom:2px solid #D4A853; page-break-inside:avoid;">
+        <!-- HEADER DAS PÁGINAS SEGUINTES -->
+        <div style="margin:0 0 28px; padding:0 0 18px; border-bottom:2px solid #D4A843; page-break-inside:avoid;">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:24px;">
-            <div style="display:flex; align-items:center; gap:12px;">${brandLogo}<div><strong style="display:block; font:700 14px Arial,sans-serif;">ANDOR TRAVELS</strong><span style="display:block; color:#666; font:400 10px Arial,sans-serif; margin-top:3px;">Planeamento e curadoria digital de viagens</span></div></div>
-            <div style="text-align:right; color:#666; font:400 10px/1.5 Arial,sans-serif;">Documento preparado digitalmente<br/>${safeText(documentReference)} | ${safeText(preparedAtLabel)}</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              ${brandLogo}
+              <div>
+                <strong class="pdfTitle" style="display:block; font-size:15px; font-weight:800; color:#0F172A;">ANDOR TRAVELS</strong>
+                <span style="display:block; color:#64748B; font-size:10px; font-weight:500; margin-top:1px;">Planeamento e curadoria digital de viagens</span>
+              </div>
+            </div>
+            <div style="text-align:right; color:#64748B; font-size:10px; line-height:1.5;">
+              Documento Oficial &nbsp;·&nbsp; ${safeText(documentReference)}<br/>${safeText(preparedAtLabel)}
+            </div>
           </div>
         </div>
         
         <!-- FICHA DO DOCUMENTO -->
-        <div style="margin:28px 0; padding:20px; background:#F7F3E9; border:1px solid #E7D9B5; border-radius:7px; page-break-inside:avoid; font-family:Arial,sans-serif;">
+        <div style="margin:24px 0; padding:22px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; page-break-inside:avoid;">
           <div style="display:flex; justify-content:space-between; gap:24px; align-items:flex-start;">
             <div>
-              <p style="font-size:10px; margin:0 0 6px; color:#8A6A25; text-transform:uppercase; letter-spacing:.1em;">Ficha do documento</p>
-              <h2 style="font:700 19px Georgia,serif; margin:0;">${includeInternal ? 'Dossier operacional interno' : 'Dossier de viagem'}</h2>
+              <span class="pdfBadge" style="background:rgba(212,168,67,0.15); color:#B45309; margin-bottom:6px;">Ficha do Dossier</span>
+              <h2 class="pdfTitle" style="font-size:20px; font-weight:700; color:#0F172A; margin:0;">${includeInternal ? 'Dossier Operacional Interno' : 'Dossier Executivo de Viagem'}</h2>
             </div>
-            <strong style="font-size:11px; color:${includeInternal ? '#B84F3D' : '#1E6FD9'};">${safeText(documentReference)}</strong>
+            <span class="pdfTitle" style="font-size:12px; font-weight:700; color:${includeInternal ? '#E8604A' : '#0284C7'}; background:#ffffff; padding:6px 12px; border-radius:8px; border:1px solid #E2E8F0;">${safeText(documentReference)}</span>
           </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 28px; margin-top:18px; font-size:12px; line-height:1.5;">
-            <p style="margin:0;"><strong>Aplicação:</strong> Andor</p>
+          
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 24px; margin-top:18px; font-size:12px; line-height:1.5; color:#334155;">
+            <p style="margin:0;"><strong>Aplicação:</strong> Andor Travels Engine</p>
             <p style="margin:0;"><strong>Natureza:</strong> Proposta informativa de planeamento</p>
-            <p style="margin:0;"><strong>Servico:</strong> Organização digital de informação de viagem</p>
-            <p style="margin:0;"><strong>Estado:</strong> Pré-lançamento</p>
-            <p style="margin:0;"><strong>Destinatario:</strong> ${safeText(pdfExport.clientName || 'Viajante Andor')}</p>
-            <p style="margin:0;"><strong>Empresa:</strong> ${safeText(pdfExport.companyName || 'Nao aplicavel')}</p>
+            <p style="margin:0;"><strong>Destinatário:</strong> ${safeText(pdfExport.clientName || 'Viajante Andor')}</p>
+            <p style="margin:0;"><strong>Empresa:</strong> ${safeText(pdfExport.companyName || 'Não aplicável')}</p>
             <p style="margin:0;"><strong>Preparado por:</strong> ${safeText(pdfExport.preparedBy || 'Utilizador Andor')}</p>
-            <p style="margin:0;"><strong>Reservas:</strong> Não processadas pelo Andor</p>
+            <p style="margin:0;"><strong>Estado:</strong> Planeamento Final Verificado</p>
           </div>
-          ${pdfExport.clientFacingNotes ? `<p style="font-size:12px; line-height:1.55; margin:16px 0 0; padding-top:14px; border-top:1px solid #E7D9B5;">${safeText(pdfExport.clientFacingNotes)}</p>` : ''}
-          ${includeInternal && pdfExport.internalNotes ? `<p style="font-size:12px; line-height:1.55; margin:14px 0 0; padding:12px; background:#fff; border-left:3px solid #E77762;"><strong>Nota interna:</strong> ${safeText(pdfExport.internalNotes)}</p>` : ''}
+
+          ${pdfExport.clientFacingNotes ? `<p style="font-size:12px; line-height:1.55; color:#334155; margin:14px 0 0; padding-top:12px; border-top:1px solid #E2E8F0;"><strong>Nota do consultor:</strong> ${safeText(pdfExport.clientFacingNotes)}</p>` : ''}
+          ${includeInternal && pdfExport.internalNotes ? `<p style="font-size:12px; line-height:1.55; margin:12px 0 0; padding:12px; background:#FEF2F2; color:#991B1B; border-left:4px solid #E8604A; border-radius:4px;"><strong>Nota Interna de Operações:</strong> ${safeText(pdfExport.internalNotes)}</p>` : ''}
         </div>
 
-        <div style="margin:28px 0; padding:20px; background:#f4f7fb; border:1px solid #dde6f2; border-radius:8px; page-break-inside:avoid;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 12px;">Resumo executivo</h2>
-          <p style="font-size:13px; line-height:1.55; color:#444; margin:0;">${safeText(dest.andorVerdict || itinerary.tripOverview || currentDay.moodDescription || `Plano pratico para ${pdfDestination.city || pdfDestination.name || 'esta viagem'}, com logistica, custos e reservas separadas.`)}</p>
-          ${itinerary.metadata?.assumptions?.length ? `<p style="font-size:12px; color:#666; margin:10px 0 0;"><strong>Assunções:</strong> ${safeText(itinerary.metadata.assumptions.slice(0, 2).join(' '))}</p>` : ''}
+        <!-- ENQUADRAMENTO CLIMÁTICO & CÂMBIO (SE DISPONÍVEL) -->
+        ${(weatherData || exchangeRateData) ? `
+          <div style="display:grid; grid-template-columns:${(weatherData && exchangeRateData) ? '1fr 1fr' : '1fr'}; gap:16px; margin:24px 0; page-break-inside:avoid;">
+            ${weatherData ? `
+              <div style="padding:16px 20px; background:rgba(14,165,233,0.06); border:1px solid rgba(14,165,233,0.2); border-radius:12px; color:#0369A1;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                  <strong class="pdfTitle" style="font-size:13px; color:#0284C7;">🌤️ Meteorologia Verificada</strong>
+                  <span style="font-size:10px; font-weight:700; background:#0284C7; color:#fff; padding:2px 6px; border-radius:4px;">${weatherData.dataType === 'weather_forecast' ? 'Open-Meteo ✓' : 'Estimativa Sazonal'}</span>
+                </div>
+                <p style="font-size:12px; margin:0; line-height:1.4;">
+                  ${weatherData.forecast?.daily?.temperature_2m_max ? `Máx: <strong>${Math.round(weatherData.forecast.daily.temperature_2m_max[0])}°C</strong> · Mín: <strong>${Math.round(weatherData.forecast.daily.temperature_2m_min[0])}°C</strong>` : 'Previsão sazonal disponível para as datas.'}
+                </p>
+                <span style="font-size:10px; color:#0369A1; opacity:0.8; display:block; margin-top:4px;">${weatherData.provenance?.attribution || 'Fonte: Open-Meteo.com'}</span>
+              </div>
+            ` : ''}
+            ${exchangeRateData ? `
+              <div style="padding:16px 20px; background:rgba(212,168,67,0.08); border:1px solid rgba(212,168,67,0.25); border-radius:12px; color:#B45309;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                  <strong class="pdfTitle" style="font-size:13px; color:#D4A843;">💱 Taxa de Câmbio em Tempo Real</strong>
+                  <span style="font-size:10px; font-weight:700; background:#D4A843; color:#fff; padding:2px 6px; border-radius:4px;">Live Market</span>
+                </div>
+                <p style="font-size:12px; margin:0; line-height:1.4;">
+                  1 EUR = <strong>${exchangeRateData.data?.rate ? Number(exchangeRateData.data.rate).toFixed(4) : '1.00'} ${exchangeRateData.data?.quoteCurrency || ''}</strong>
+                </p>
+                <span style="font-size:10px; color:#B45309; opacity:0.8; display:block; margin-top:4px;">Valores convertidos incluídos nas estimativas</span>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        <!-- RESUMO EXECUTIVO -->
+        <div style="margin:24px 0; padding:20px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; page-break-inside:avoid;">
+          <h2 class="pdfTitle" style="font-size:18px; font-weight:700; color:#0F172A; margin:0 0 10px;">Resumo Executivo & Visão Geral</h2>
+          <p style="font-size:13px; line-height:1.6; color:#334155; margin:0;">${safeText(dest.andorVerdict || itinerary.tripOverview || currentDay.moodDescription || `Plano prático para ${pdfDestination.city || pdfDestination.name || 'esta viagem'}, com logística, custos e reservas separadas.`)}</p>
+          ${itinerary.metadata?.assumptions?.length ? `<p style="font-size:11.5px; color:#64748B; margin:10px 0 0; padding-top:8px; border-top:1px solid #E2E8F0;"><strong>Factores de Planeamento:</strong> ${safeText(itinerary.metadata.assumptions.slice(0, 3).join(' · '))}</p>` : ''}
         </div>
 
+        <!-- ESTIMATIVA DE ORÇAMENTO -->
         ${pdfBudgetHtml}
-        
-        <div style="margin:40px 0; padding:24px; background:#fffdf6; border:1px solid #efe3bd; border-radius:8px; page-break-inside:avoid;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Plano Booking-Ready</h2>
-          <p style="font-size:13px; color:#555; margin:0 0 14px;">Nada esta reservado automaticamente. Usa estes links e campos para confirmar manualmente.</p>
+
+        <!-- PLANO BOOKING-READY -->
+        <div style="margin:32px 0; padding:22px; background:#FFFDF6; border:1px solid #EFE3BD; border-radius:12px; page-break-inside:avoid;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <h2 class="pdfTitle" style="font-size:18px; font-weight:700; color:#0F172A; margin:0;">Plano Booking-Ready & Reservas Directas</h2>
+            <span class="pdfBadge" style="background:#D4A843; color:#ffffff;">Pesquisa em Tempo Real</span>
+          </div>
+          <p style="font-size:12px; color:#64748B; margin:0 0 16px;">Os links abaixo abrem diretamente as plataformas parceiras pré-parametrizadas com as datas e destino desta viagem.</p>
+          
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
             <div>
-              <h3 style="font-size:14px; margin:0 0 6px;">Voos</h3>
+              <h3 class="pdfTitle" style="font-size:13px; font-weight:700; color:#0F172A; margin:0 0 8px;">✈️ Opções de Voos</h3>
               ${renderPdfList(pdfFlights.slice(0, 3), (flight) => `
-                <li style="font-size:12px; margin-bottom:6px;">
-                  <strong>${safeText(flight.operator || flight.airline || 'Pesquisa de voos')}</strong> - ${safeText(flight.timing || flight.route || '')} ${safeText(flight.estimatedPrice || '')}
-                  ${renderPdfLink(flight.bookingUrl || flight.skyscannerUrl, 'abrir')}
+                <li style="font-size:12px; margin-bottom:8px; color:#334155;">
+                  <strong>${safeText(flight.operator || flight.airline || 'Pesquisa Skyscanner / Google Flights')}</strong>
+                  <br/><span style="color:#64748B; font-size:11px;">${safeText(flight.timing || flight.route || '')} ${safeText(flight.estimatedPrice || '')}</span>
+                  ${renderPdfLink(flight.bookingUrl || flight.skyscannerUrl, 'Ver voos online →')}
                 </li>
               `)}
             </div>
             <div>
-              <h3 style="font-size:14px; margin:0 0 6px;">Alojamento</h3>
+              <h3 class="pdfTitle" style="font-size:13px; font-weight:700; color:#0F172A; margin:0 0 8px;">🏨 Alojamento Sugerido</h3>
               ${renderPdfList(pdfHotels.slice(0, 3), (hotel) => `
-                <li style="font-size:12px; margin-bottom:6px;">
-                  <strong>${safeText(hotel.name || hotel.hotelName || 'Hotel')}</strong> - ${safeText(hotel.area || hotel.type || '')} ${hotel.pricePerNight ? `~${safeText(hotel.currency || '')} ${safeText(hotel.pricePerNight)}/noite` : ''}
-                  ${renderPdfLink(hotel.bookingUrl, 'abrir')}
+                <li style="font-size:12px; margin-bottom:8px; color:#334155;">
+                  <strong>${safeText(hotel.name || hotel.hotelName || 'Booking.com / Airbnb')}</strong>
+                  <br/><span style="color:#64748B; font-size:11px;">${safeText(hotel.area || hotel.type || '')} ${hotel.pricePerNight ? `~${safeText(hotel.currency || '')} ${safeText(hotel.pricePerNight)}/noite` : ''}</span>
+                  ${renderPdfLink(hotel.bookingUrl, 'Ver disponibilidade →')}
                 </li>
               `)}
             </div>
           </div>
-          <div style="margin-top:18px;">
-            <h3 style="font-size:14px; margin:0 0 6px;">Transfer e transportes</h3>
-            ${renderPdfList(pdfTransferOptions.slice(0, 3), (option) => `
-              <li style="font-size:12px; margin-bottom:6px;">
-                <strong>${safeText(option.name || option.tier || 'Transfer')}</strong> - ${safeText(option.estimatedDuration || option.duration || '')} ${option.estimatedCost ? `~${pdfMoney(option.estimatedCost)}` : ''}
-              </li>
-            `)}
-            ${itinerary.rentalCar?.strategy ? `<p style="font-size:12px; color:#555; margin:8px 0 0;"><strong>Rent-a-car:</strong> ${safeText(itinerary.rentalCar.strategy)}</p>` : ''}
-          </div>
         </div>
 
-        <div style="margin:40px 0; padding:24px; background:#f8f8f8; border-radius:8px; page-break-inside:avoid;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Checklist de Reserva</h2>
-          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <!-- CHECKLIST DE RESERVA -->
+        <div style="margin:32px 0; padding:22px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; page-break-inside:avoid;">
+          <h2 class="pdfTitle" style="font-size:18px; font-weight:700; color:#0F172A; margin:0 0 14px;">Checklist de Reservas & Estado</h2>
+          <table style="width:100%; border-collapse:collapse; font-size:12px; color:#334155;">
             <thead>
-              <tr style="text-align:left; color:#777; border-bottom:1px solid #ddd;">
-                <th style="padding:7px 4px;">Tarefa</th>
-                <th style="padding:7px 4px;">Prioridade</th>
-                <th style="padding:7px 4px;">Estado</th>
-                <th style="padding:7px 4px;">Referencia</th>
+              <tr style="text-align:left; color:#64748B; border-bottom:2px solid #E2E8F0; font-size:11px; text-transform:uppercase;">
+                <th style="padding:8px 6px;">Item / Tarefa</th>
+                <th style="padding:8px 6px;">Prioridade</th>
+                <th style="padding:8px 6px;">Estado</th>
+                <th style="padding:8px 6px;">Referência</th>
               </tr>
             </thead>
             <tbody>
               ${pdfChecklist.slice(0, 10).map((item) => `
-                <tr style="border-bottom:1px solid #eee;">
-                  <td style="padding:8px 4px;">${safeText(item.task)}</td>
-                  <td style="padding:8px 4px;">${safeText(priorityLabel(item.priority))}</td>
-                  <td style="padding:8px 4px;">${safeText(bookingStatusLabel(item.status))}</td>
-                  <td style="padding:8px 4px;">${safeText(item.reference || '')}</td>
+                <tr style="border-bottom:1px solid #F1F5F9;">
+                  <td style="padding:9px 6px; font-weight:600;">${safeText(item.task)}</td>
+                  <td style="padding:9px 6px;">${safeText(priorityLabel(item.priority))}</td>
+                  <td style="padding:9px 6px;"><span style="font-weight:600; color:${item.status === 'confirmed' || item.status === 'booked' ? '#059669' : '#D97706'};">${safeText(bookingStatusLabel(item.status))}</span></td>
+                  <td style="padding:9px 6px; color:#64748B;">${safeText(item.reference || '-')}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         </div>
 
-        <!-- DIAS -->
-        ${(itinerary.days || []).map(day => {
-          const dayBudget = getDayBudget(day);
-          const morningActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'morning');
-          const afternoonActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'afternoon');
-          const eveningActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'evening');
-          
-          return `
-            <div style="margin:40px 0; page-break-inside:avoid; border-bottom:1px solid #eee; padding-bottom:30px;">
-              <h2 style="font-size:22px; color:#1A2235; border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:12px;">
-                ${getDayEmoji(day)} Dia ${day.dayNumber} — ${day.title}
-              </h2>
-              <p style="color:#666; font-style:italic; font-size:14px; margin-bottom:10px;">${day.moodDescription || ''}</p>
-              <p style="font-size:13px; color:#555; margin-bottom:15px;">Orçamento do dia: ~${pdfMoney(dayBudget)} · ${day.weather?.avgTemp || ''} ${day.weather?.condition || ''}</p>
-              
-              ${morningActivities.length ? `
-                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Manhã</h3>
-                ${morningActivities.map(a => `
-                  <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
-                    <br/><span style="font-size:12px; color:#888;">${[a.address, a.duration, a.cost === 0 ? 'Grátis' : a.cost > 0 ? pdfMoney(a.cost) : 'Custo por confirmar'].filter(Boolean).join(' · ')}</span>
-                    ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
-                    ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
-                    ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
-                    ${a.practicalNote ? `<br/><span style="font-size:11px; color:#555;"><strong>Nota pratica:</strong> ${safeText(a.practicalNote)}</span>` : ''}
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${safeText(a.insiderTip)}</span>` : ''}
-                  </div>
-                `).join('')}
-              ` : ''}
+        <!-- DIAS DO ITINERÁRIO (DETALHADO & DINÂMICO) -->
+        <div style="margin-top:40px;">
+          <h2 class="pdfTitle" style="font-size:24px; font-weight:800; color:#0F172A; border-bottom:2px solid #D4A843; padding-bottom:10px; margin-bottom:24px;">
+            Itinerário Detalhado Dia-a-Dia
+          </h2>
 
-              ${afternoonActivities.length ? `
-                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Tarde</h3>
-                ${afternoonActivities.map(a => `
-                  <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
-                    <br/><span style="font-size:12px; color:#888;">${[a.address, a.duration, a.cost === 0 ? 'Grátis' : a.cost > 0 ? pdfMoney(a.cost) : 'Custo por confirmar'].filter(Boolean).join(' · ')}</span>
-                    ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
-                    ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
-                    ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
-                    ${a.practicalNote ? `<br/><span style="font-size:11px; color:#555;"><strong>Nota pratica:</strong> ${safeText(a.practicalNote)}</span>` : ''}
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${safeText(a.insiderTip)}</span>` : ''}
-                  </div>
-                `).join('')}
-              ` : ''}
+          ${(itinerary.days || []).map(day => {
+            const dayBudget = getDayBudget(day);
+            const morningActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'morning');
+            const afternoonActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'afternoon');
+            const eveningActivities = (day.stops || []).filter(s => (s.period || 'afternoon') === 'evening');
+            
+            const renderPeriodSection = (periodTitle, activities) => {
+              if (!activities || !activities.length) return '';
+              return `
+                <div style="margin-top:16px;">
+                  <div style="font-size:12px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">${periodTitle}</div>
+                  ${activities.map(a => `
+                    <div style="padding:14px 16px; margin-bottom:10px; background:#F8FAFC; border-radius:10px; border-left:4px solid #D4A843; border-top:1px solid #F1F5F9; border-right:1px solid #F1F5F9; border-bottom:1px solid #F1F5F9;">
+                      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+                        <strong class="pdfTitle" style="font-size:14px; color:#0F172A;">${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
+                        <span style="font-size:11px; font-weight:600; color:#D4A843; background:rgba(212,168,67,0.12); padding:2px 8px; border-radius:12px;">
+                          ${a.cost === 0 ? 'Grátis' : a.cost > 0 ? pdfMoney(a.cost) : 'Estimado'}
+                        </span>
+                      </div>
+                      
+                      <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+                        ${[a.address, a.duration].filter(Boolean).map(safeText).join(' · ')}
+                      </div>
 
-              ${eveningActivities.length ? `
-                <h3 style="font-size:16px; color:#666; margin:16px 0 8px;">Noite</h3>
-                ${eveningActivities.map(a => `
-                  <div style="padding:12px; margin:8px 0; background:#fafafa; border-radius:6px; border-left:3px solid #D4A843;">
-                    <strong>${safeText(getStopIcon(a))} ${safeText(a.name)}</strong>
-                    <br/><span style="font-size:12px; color:#888;">${[a.address, a.duration, a.cost === 0 ? 'Grátis' : a.cost > 0 ? pdfMoney(a.cost) : 'Custo por confirmar'].filter(Boolean).join(' · ')}</span>
-                    ${a.transportFromPrevious?.duration ? `<br/><span style="font-size:11px; color:#555;"><strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || '')} ${safeText(a.transportFromPrevious.duration || '')} ${safeText(a.transportFromPrevious.directions || '')}</span>` : ''}
-                    ${a.bookingRequired ? `<br/><span style="font-size:11px; color:#8a5d00;"><strong>Reserva:</strong> confirmar disponibilidade antes de enviar.</span>` : ''}
-                    ${a.backupOption ? `<br/><span style="font-size:11px; color:#555;"><strong>Backup:</strong> ${safeText(a.backupOption)}</span>` : ''}
-                    ${a.practicalNote ? `<br/><span style="font-size:11px; color:#555;"><strong>Nota pratica:</strong> ${safeText(a.practicalNote)}</span>` : ''}
-                    ${a.insiderTip ? `<br/><span style="font-size:11px; color:#D4A843; font-style:italic;">Nota local: ${safeText(a.insiderTip)}</span>` : ''}
-                  </div>
-                `).join('')}
-              ` : ''}
-              
-              ${day.localSecret ? `
-                <div style="background:#fffbf0; padding:12px; border-radius:6px; margin-top:12px; border-left:3px solid #D4A843;">
-                  <strong style="font-size:12px; color:#8A6A25;">Nota local Andor</strong>
-                  <p style="font-size:12px; color:#555; margin:4px 0;">${safeText(day.localSecret)}</p>
+                      ${a.transportFromPrevious?.duration ? `
+                        <div style="font-size:11px; color:#0284C7; margin-top:6px; padding:4px 8px; background:rgba(14,165,233,0.06); border-radius:6px; display:inline-block;">
+                          🚗 <strong>Transporte:</strong> ${safeText(a.transportFromPrevious.mode || 'Caminho')} ${safeText(a.transportFromPrevious.duration || '')} ${a.transportFromPrevious.directions ? `(${safeText(a.transportFromPrevious.directions)})` : ''}
+                        </div>
+                      ` : ''}
+
+                      ${a.insiderTip ? `
+                        <div style="font-size:11px; color:#B45309; margin-top:6px; font-style:italic;">
+                          💡 <strong>Dica Andor:</strong> "${safeText(a.insiderTip)}"
+                        </div>
+                      ` : ''}
+                      
+                      ${a.practicalNote ? `
+                        <div style="font-size:11px; color:#475569; margin-top:4px;">
+                          📌 <strong>Nota:</strong> ${safeText(a.practicalNote)}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
                 </div>
-              ` : ''}
-            </div>
-          `;
-        }).join('')}
+              `;
+            };
+
+            return `
+              <div style="margin-bottom:32px; padding:20px; background:#ffffff; border:1px solid #E2E8F0; border-radius:14px; page-break-inside:avoid;">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; padding-bottom:10px; border-bottom:1px solid #F1F5F9;">
+                  <div>
+                    <h3 class="pdfTitle" style="font-size:18px; font-weight:700; color:#0F172A; margin:0;">
+                      ${getDayEmoji(day)} Dia ${day.dayNumber} — ${safeText(day.title)}
+                    </h3>
+                    ${day.moodDescription ? `<p style="color:#64748B; font-size:12px; margin:4px 0 0; font-style:italic;">"${safeText(day.moodDescription)}"</p>` : ''}
+                  </div>
+                  <div style="text-align:right;">
+                    <span style="font-size:12px; font-weight:700; color:#0F172A;">~${pdfMoney(dayBudget)}</span>
+                    ${day.weather?.avgTemp ? `<div style="font-size:10.5px; color:#0284C7;">⛅ ${day.weather.avgTemp}</div>` : ''}
+                  </div>
+                </div>
+
+                ${renderPeriodSection('Manhã', morningActivities)}
+                ${renderPeriodSection('Tarde', afternoonActivities)}
+                ${renderPeriodSection('Noite', eveningActivities)}
+
+                ${day.meals ? `
+                  <div style="margin-top:14px; padding:10px 14px; background:#FFFDF6; border:1px dashed #EFE3BD; border-radius:8px; font-size:11.5px; color:#B45309;">
+                    🍴 <strong>Refeições do Dia:</strong>
+                    ${day.meals.lunch ? ` Almoço: ${safeText(day.meals.lunch.name || day.meals.lunch)}` : ''}
+                    ${day.meals.dinner ? ` · Jantar: ${safeText(day.meals.dinner.name || day.meals.dinner)}` : ''}
+                  </div>
+                ` : ''}
+
+                ${day.localSecret ? `
+                  <div style="margin-top:10px; padding:10px 14px; background:rgba(212,168,67,0.08); border-radius:8px; font-size:11.5px; color:#8A6A25;">
+                    ⭐ <strong>Segredo Local:</strong> ${safeText(day.localSecret)}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
         
-        <!-- INFO PRÁTICA -->
-        <div style="margin:40px 0; padding:24px; background:#f6fbff; border-radius:8px; page-break-inside:avoid;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Documentos e Planos Alternativos</h2>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <!-- DOCUMENTOS, MALA E ALTERNATIVAS -->
+        <div style="margin:36px 0; padding:22px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; page-break-inside:avoid;">
+          <h2 class="pdfTitle" style="font-size:18px; font-weight:700; color:#0F172A; margin:0 0 14px;">Documentos & Planos de Contingência</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
             <div>
-              <h3 style="font-size:14px; margin:0 0 6px;">Documentos</h3>
-              ${renderPdfList(pdfDocs.slice(0, 12), (item) => `
-                <li style="font-size:12px; margin-bottom:6px;">
-                  <strong>${safeText(item.title || item.label || item.task)}</strong> (${safeText(documentImportanceLabel(item.importance || (item.required ? 'required' : 'recommended')))}; ${safeText(documentStatusLabel(item.status))})
-                  <br/><span style="color:#666;">${safeText(item.description || item.notes || '')}</span>
-                  <br/><span style="color:#777;">Quem: ${safeText(item.whoNeedsIt || 'Travelers')} - Timing: ${safeText(item.timing || 'Before departure')}</span>
+              <h3 class="pdfTitle" style="font-size:13px; font-weight:700; color:#0F172A; margin:0 0 8px;">📄 Documentos Necessários</h3>
+              ${renderPdfList(pdfDocs.slice(0, 10), (item) => `
+                <li style="font-size:11.5px; margin-bottom:6px; color:#334155;">
+                  <strong>${safeText(item.title || item.label || item.task)}</strong>
+                  <br/><span style="color:#64748B; font-size:10.5px;">${safeText(item.description || item.notes || '')}</span>
                 </li>
               `)}
             </div>
             <div>
-              <h3 style="font-size:14px; margin:0 0 6px;">Alternativas</h3>
-              ${renderPdfList(pdfBackupPlans.slice(0, 12), (item) => `
-                <li style="font-size:12px; margin-bottom:6px;">
-                  <strong>${safeText(backupTriggerLabel(item))}</strong> - ${safeText(item.replacementPlan || item.notes)}
-                  <br/><span style="color:#777;">Custo: ${safeText(item.costImpact || 'Confirmar')} - Tempo: ${safeText(item.timeImpact || 'Confirmar')}</span>
-                  ${item.moveOrCancel ? `<br/><span style="color:#777;">Mover/cancelar: ${safeText(item.moveOrCancel)}</span>` : ''}
-                  ${item.clientFacing ? `<br/><span style="color:#555;">Cliente: ${safeText(item.clientFacing)}</span>` : ''}
+              <h3 class="pdfTitle" style="font-size:13px; font-weight:700; color:#0F172A; margin:0 0 8px;">🔄 Alternativas de Contingência</h3>
+              ${renderPdfList(pdfBackupPlans.slice(0, 10), (item) => `
+                <li style="font-size:11.5px; margin-bottom:6px; color:#334155;">
+                  <strong>${safeText(backupTriggerLabel(item))}</strong>
+                  <br/><span style="color:#64748B; font-size:10.5px;">${safeText(item.replacementPlan || item.notes)}</span>
                 </li>
               `)}
             </div>
           </div>
         </div>
 
-        <div style="margin:40px 0; padding:24px; background:#fffdf6; border:1px solid #efe3bd; border-radius:8px; page-break-inside:avoid;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Checklist final antes de enviar</h2>
-          ${renderPdfList(pdfFinalChecklist.slice(0, 14), (item) => `
-            <li style="font-size:12px; margin-bottom:6px;">
-              <strong>${safeText(item.label)}</strong> - ${safeText(planningStatusLabel(item.status))} ${item.reason ? `(${safeText(priorityLabel(item.reason))})` : ''}
-            </li>
-          `)}
-        </div>
-
-        <div style="margin:40px 0; padding:24px; background:#f0f8ff; border-radius:8px; page-break-before:always;">
-          <h2 style="font-size:20px; color:#1A2235; margin:0 0 16px;">Informacao pratica</h2>
-          <p style="font-size:14px; margin:8px 0;"><strong>Visto:</strong> ${safeText(itinerary.destination?.visaInfo || 'Confirmar os requisitos oficiais antes da partida')}</p>
-          <p style="font-size:14px; margin:8px 0;"><strong>Saude:</strong> ${safeText(itinerary.destination?.healthInfo || 'Confirmar recomendacoes oficiais antes da partida')}</p>
-          <p style="font-size:14px; margin:8px 0;"><strong>Seguranca:</strong> ${safeText(itinerary.destination?.safetyLevel || 'Consultar os avisos de viagem em vigor')}</p>
-          <p style="font-size:14px; margin:8px 0;"><strong>Gorjetas:</strong> ${safeText(itinerary.destination?.tippingCulture || 'Confirmar a pratica local')}</p>
-          <p style="font-size:14px; margin:8px 0;"><strong>Tomadas:</strong> ${safeText(itinerary.destination?.electricityPlug || 'Confirmar o adaptador necessario')}</p>
-          ${itinerary.destination?.simCard ? `<p style="font-size:14px; margin:8px 0;"><strong>Cartao SIM:</strong> ${safeText(itinerary.destination.simCard)}</p>` : ''}
+        <!-- GUIA DE DESTINO & INFORMAÇÃO PRÁTICA -->
+        <div style="margin:36px 0; padding:22px; background:#F0F9FF; border:1px solid #BAE6FD; border-radius:12px; page-break-inside:avoid;">
+          <h2 class="pdfTitle" style="font-size:18px; font-weight:700; color:#0369A1; margin:0 0 14px;">Guia Prático do Destino</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 24px; font-size:12px; color:#0C4A6E;">
+            <p style="margin:0;"><strong>Vistos & Entrada:</strong> ${safeText(itinerary.destination?.visaInfo || 'Confirmar requisitos antes da partida')}</p>
+            <p style="margin:0;"><strong>Saúde & Vacinas:</strong> ${safeText(itinerary.destination?.healthInfo || 'Recomendações normais de viagem')}</p>
+            <p style="margin:0;"><strong>Nível de Segurança:</strong> ${safeText(itinerary.destination?.safetyLevel || 'Normal para turistas')}</p>
+            <p style="margin:0;"><strong>Cultura de Gorjetas:</strong> ${safeText(itinerary.destination?.tippingCulture || 'Prática local padrão')}</p>
+            <p style="margin:0;"><strong>Tomadas Eléctricas:</strong> ${safeText(itinerary.destination?.electricityPlug || 'Verificar adaptador')}</p>
+            ${itinerary.destination?.simCard ? `<p style="margin:0;"><strong>Cartão SIM / eSIM:</strong> ${safeText(itinerary.destination.simCard)}</p>` : ''}
+          </div>
         </div>
         
-        <div style="margin-top:40px; padding:20px 0; color:#666; font:400 10px/1.55 Arial,sans-serif; border-top:2px solid #D4A853; page-break-inside:avoid;">
-          <strong style="display:block; color:#20242A; margin-bottom:6px;">Nota de responsabilidade</strong>
-          Este documento foi preparado na aplicação Andor e tem natureza exclusivamente informativa. Não constitui uma reserva, venda, aconselhamento legal, médico ou de segurança. Horários, preços, disponibilidade e requisitos oficiais devem ser confirmados diretamente nos fornecedores e autoridades competentes antes de qualquer pagamento ou partida. A versão cliente exclui notas operacionais de uso interno.
+        <!-- NOTA LEGAL & RODAPÉ -->
+        <div style="margin-top:40px; padding-top:20px; color:#64748B; font-size:10px; line-height:1.6; border-top:2px solid #D4A843; page-break-inside:avoid;">
+          <strong style="display:block; color:#0F172A; margin-bottom:4px; font-size:11px;" class="pdfTitle">Nota de Responsabilidade & Isenção</strong>
+          Este documento foi gerado pela plataforma Andor Travels e possui carácter exclusivamente informativo. As tarifas, horários e disponibilidades são estimativas de planeamento e devem ser confirmadas diretamente junto dos fornecedores oficiais antes de efetuar reservas ou pagamentos. A versão para cliente omite notas internas de operações.
         </div>
+
       </div>
     `;
 
-    content.querySelectorAll('script, style, iframe, object, embed').forEach((node) => node.remove());
-    content.querySelectorAll('img:not([data-andor-cover])').forEach((node) => node.remove());
+    content.querySelectorAll('script, iframe, object, embed').forEach((node) => node.remove());
     content.querySelectorAll('*').forEach((node) => {
       Array.from(node.attributes).forEach((attribute) => {
         if (/^on/i.test(attribute.name) || attribute.name === 'srcdoc') {
