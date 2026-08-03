@@ -121,3 +121,37 @@ export function formatVerifiedProviderRoute({
     route: RouteSchema.parse(payload),
   };
 }
+
+/**
+ * Fetches verified route from OSRM Open Routing Machine.
+ */
+export async function fetchVerifiedOsrmRoute({ origin, destination, mode = 'walking' }) {
+  const osrmMode = mode === 'driving' ? 'car' : mode === 'bicycling' ? 'bike' : 'foot';
+  const url = `https://router.project-osrm.org/route/v1/${osrmMode}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`;
+
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'AndorTravelPlanner/1.0' },
+  });
+
+  if (!res.ok) {
+    throw new Error(`OSRM provider returned HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  if (data.code !== 'Ok' || !data.routes?.[0]) {
+    throw new Error('OSRM provider failed to find a valid route');
+  }
+
+  const osrmRoute = data.routes[0];
+  return formatVerifiedProviderRoute({
+    origin,
+    destination,
+    mode,
+    distanceMeters: Math.round(osrmRoute.distance),
+    durationSeconds: Math.round(osrmRoute.duration),
+    geometry: JSON.stringify(osrmRoute.geometry),
+    provider: 'osrm_routing_engine',
+    trafficIncluded: false,
+    timetableIncluded: false,
+  });
+}
