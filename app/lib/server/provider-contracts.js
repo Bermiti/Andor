@@ -98,6 +98,33 @@ export const PoiSchema = z.object({
   provenance: ProvenanceSchema,
 });
 
+export const ExchangeRateSchema = z.object({
+  baseCurrency: z.string().regex(/^[A-Z]{3}$/i),
+  quoteCurrency: z.string().regex(/^[A-Z]{3}$/i),
+  rate: z.number().positive(),
+  rateType: z.enum(['indicative', 'reference', 'market', 'commercial', 'estimate']),
+  effectiveAt: z.string(),
+  retrievedAt: z.string(),
+  provider: z.string(),
+  providerRecordId: z.string().optional(),
+  isIndicative: z.boolean().default(true),
+  provenance: ProvenanceSchema,
+});
+
+export const RouteSchema = z.object({
+  origin: z.object({ lat: z.number(), lng: z.number() }),
+  destination: z.object({ lat: z.number(), lng: z.number() }),
+  mode: z.enum(['walking', 'driving', 'bicycling', 'transit']),
+  distanceMeters: z.number().nonnegative(),
+  durationSeconds: z.number().nonnegative(),
+  geometry: z.string().optional(), // Encoded polyline or GeoJSON string
+  provider: z.string(),
+  retrievedAt: z.string(),
+  trafficIncluded: z.boolean().default(false),
+  timetableIncluded: z.boolean().default(false),
+  provenance: ProvenanceSchema,
+});
+
 export const CoverageCapabilityEnum = z.enum([
   'geography',
   'places',
@@ -109,7 +136,8 @@ export const CoverageCapabilityEnum = z.enum([
   'weather',
   'publicTransport',
   'drivingRoutes',
-  'currency',
+  'currency_metadata',
+  'exchange_rates',
   'socialSignals',
   'officialTourism',
 ]);

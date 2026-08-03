@@ -55,6 +55,8 @@ describe('Global Geographic Resolution & Provider Contract Suite', () => {
 
     const ptCoverage = registry.getProviderCoverage('PT');
     expect(ptCoverage.geography).toBe('validated_locally');
+    expect(ptCoverage.currency_metadata).toBe('validated_locally');
+    expect(ptCoverage.exchange_rates).toBe('not_implemented');
     expect(ptCoverage.accommodation).toBe('blocked_by_credentials');
   });
 });

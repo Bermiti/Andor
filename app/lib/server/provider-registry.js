@@ -108,8 +108,10 @@ class ProviderRegistry {
         return hasStaging ? 'validated_in_staging' : 'partial';
       case 'restaurants':
         return 'partial'; // Combination of open POIs and AI proposal fallback
-      case 'currency':
-        return 'validated_locally'; // ISO reference rates engine
+      case 'currency_metadata':
+        return 'validated_locally'; // ISO 4217 currency metadata
+      case 'exchange_rates':
+        return 'not_implemented'; // Awaiting live exchange rates provider integration
       case 'publicTransport':
       case 'drivingRoutes':
         return 'partial';
@@ -132,7 +134,8 @@ class ProviderRegistry {
       'flights',
       'carRental',
       'weather',
-      'currency',
+      'currency_metadata',
+      'exchange_rates',
       'publicTransport',
     ];
 
