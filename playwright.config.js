@@ -45,6 +45,12 @@ export default defineConfig({
       ANDOR_DISABLE_EXTERNAL_ENRICHMENT: '1',
       ANDOR_E2E_LOCAL_AUTH: '1',
       ANDOR_SQLITE_PATH: 'test-results/e2e/andor.sqlite',
+      RATE_LIMIT_AUTH_LOGIN_MAX: '1000',
+      RATE_LIMIT_AUTH_REGISTER_MAX: '1000',
+      RATE_LIMIT_AI_GENERATE_MAX: '1000',
+      RATE_LIMIT_AI_REGENERATE_MAX: '1000',
+      RATE_LIMIT_PUBLIC_SHARE_MAX: '1000',
+      RATE_LIMIT_IMPORT_MAX: '1000',
     },
   },
 });
