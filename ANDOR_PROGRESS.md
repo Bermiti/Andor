@@ -4,21 +4,13 @@
 
 # Andor — estado de produto, design e engenharia
 
-Atualizado em 2026-08-03. Fase atual: **Sprint 3.2, 3.3, 4 e 5 concluídas localmente com testes de concorrência, deduplicação, infraestrutura comercial e design system. Sprint 6 iniciada com motor de restrições adaptativo**.
+# Andor — estado de produto, design e engenharia
 
-## Sprint 3.3 — Descoberta de POIs Verificados e Guardrails de IA
-- **Pipeline de Descoberta Espacial:** Integração de `searchVerifiedPlaces` (OpenTripMap) com cálculo de score determinístico pré-IA `calculateDeterministicPoiScore`.
-- **Deduplicação de POIs:** Motor `poi-deduplication.js` que unifica estabelecimentos com aliases e nomes normalizados num raio espacial de 200m.
-- **Guardrail Severo de IA:** `rejectUnverifiedAiVenues` sanitiza respostas de LLM e rejeita estabelecimentos inventados ou IDs desconhecidos marcando-os como `unverified_ai_proposal`.
+Atualizado em 2026-08-03. Fase atual: **Sprints 3.2, 3.3, 4, 5 e 6 totalmente integradas localmente com 200 testes unitários/integração Vitest e 42 testes Playwright E2E**.
 
-## Sprint 4 — Infraestrutura de Pesquisa Comercial
-- **Alojamento, Voos e Aluguer de Veículos:** Módulos `accommodation-provider.js`, `flight-provider.js` e `car-rental-provider.js` com interface comercial rigorosa e status explícito `blocked_by_credentials` na ausência de chaves de API comerciais.
-
-## Sprint 5 — Design System Premium & Acessibilidade
-- **Paleta Deep Ocean & Discrete Gold:** Tokens centralizados em `app/globals.css`, verificação de rácio de contraste WCAG 2.2 AA (>= 4.5:1) em `__tests__/design-system-accessibility.test.js`.
-
-## Sprint 6 — Motor de Restrições Adaptativo
-- **Intelligence Engine:** Módulo `constraint-engine.js` deteta conflitos físicos de deslocação impossível, sobrecarga de paragens e excesso de orçamento diário.
+## Sprint 6 — Motor de Personalização & Assistente Estruturado
+- **Motor de Personalização por Consentimento:** Módulo `personalization-engine.js` respeita consentimento explícito e aplica bonificação de score baseada nos interesses reais do utilizador.
+- **Assistente de Operações Estruturadas:** Endpoint `/api/assistant` e módulo `structured-assistant.js` processam comandos estruturados (`swap_activity`, `adapt_to_weather`, `make_cheaper`), preservando itens bloqueados e aplicando validação de restrições em tempo real.
 
 Sprint 1 concluída com sucesso. Todos os critérios de aceitação foram cumpridos e verificados:
 - **Identidade server-side única:** Sessões validadas no servidor via Supabase Auth (produção) e adaptador SQLite isolado (dev/E2E). Nenhum `userId`, email ou estado de `localStorage` é aceite como autorização.
