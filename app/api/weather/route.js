@@ -16,9 +16,17 @@ export async function GET(request) {
 
     if (isNaN(lat) || isNaN(lng)) {
       return NextResponse.json({
-        status: 'invalid_coordinates',
-        measurementType: 'seasonal_climate_estimate',
+        dataType: 'seasonal_climate_estimate',
+        status: 'estimate_only',
+        forecast: null,
+        climate: null,
         estimate: getSeasonalClimateEstimate('general'),
+        provenance: {
+          sourceType: 'estimate',
+          provider: 'andor_editorial_climate',
+          retrievedAt: new Date().toISOString(),
+          confidence: 0.6,
+        },
       }, { status: 400 });
     }
 
@@ -29,11 +37,14 @@ export async function GET(request) {
       executorFn: async (input) => fetchWeatherForecast(input),
     });
 
-    if (!result.success) {
+    if (!result.success || !result.data || result.data.status !== 'available') {
       return NextResponse.json({
+        dataType: 'unavailable',
         status: 'provider_unavailable',
-        measurementType: 'weather_forecast',
-        error: result.error,
+        forecast: null,
+        climate: null,
+        estimate: null,
+        error: result.error || 'Provider unavailable',
         provenance: {
           sourceType: 'verified_provider',
           provider: 'open-meteo',
@@ -43,12 +54,22 @@ export async function GET(request) {
       }, { status: 503 });
     }
 
-    return NextResponse.json(result.data);
+    return NextResponse.json({
+      dataType: 'weather_forecast',
+      status: 'available',
+      forecast: result.data,
+      climate: null,
+      estimate: null,
+      provenance: result.data.provenance,
+    });
   } catch (error) {
     console.error('Weather API error:', error);
     return NextResponse.json({
-      status: 'error',
-      measurementType: 'weather_forecast',
+      dataType: 'unavailable',
+      status: 'provider_unavailable',
+      forecast: null,
+      climate: null,
+      estimate: null,
       error: error.message,
     }, { status: 500 });
   }
