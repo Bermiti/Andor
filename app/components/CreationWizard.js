@@ -96,6 +96,75 @@ const COUNTRY_CODES = {
   'south africa': 'ZA',
 };
 
+const suggestionText = (...values) => values
+  .find((value) => typeof value === 'string' && value.trim())
+  ?.trim() || '';
+
+export function normalizeDestinationSuggestion(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const localizedName = value.localizedNames?.pt || value.localizedNames?.en;
+  const displayName = suggestionText(
+    value.displayName,
+    value.ptName,
+    value.name,
+    localizedName,
+    value.canonicalName,
+  );
+  const canonicalName = suggestionText(
+    value.canonicalName,
+    value.city,
+    localizedName,
+    displayName.split(',')[0],
+  );
+  if (!displayName || !canonicalName) return null;
+  const displayParts = displayName.split(',').map((part) => part.trim()).filter(Boolean);
+  const countryLabel = suggestionText(
+    value.countryPt,
+    value.country,
+    displayParts.slice(1).join(', '),
+    value.countryCode,
+    value.continent,
+  );
+  return {
+    ...value,
+    name: suggestionText(value.name, displayName),
+    canonicalName,
+    displayName,
+    cityLabel: canonicalName,
+    countryLabel,
+  };
+}
+
+export function normalizeDestinationSuggestions(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map(normalizeDestinationSuggestion).filter(Boolean);
+}
+
+export function resolveGeneratedItineraryResponse(data) {
+  const itinerary = data?.itinerary || data;
+  const persistence = data?.persistence || itinerary?.persistence;
+  if (!itinerary || typeof itinerary !== 'object') {
+    throw new Error('O servidor nÃ£o devolveu um roteiro vÃ¡lido.');
+  }
+  if (persistence?.mode === 'durable' && persistence.persisted === true) {
+    if (!itinerary.id) throw new Error('O roteiro foi guardado sem um identificador vÃ¡lido.');
+    return { mode: 'durable', id: itinerary.id, itinerary, persistence };
+  }
+  if (
+    persistence?.mode === 'local_draft'
+    && persistence.persisted === false
+    && persistence.reason === 'auth_required'
+  ) {
+    return {
+      mode: 'local_draft',
+      id: null,
+      itinerary: { ...itinerary, persistence },
+      persistence,
+    };
+  }
+  throw new Error('O roteiro nÃ£o ficou guardado. Tenta novamente.');
+}
+
 const getDestinationCode = (name = '') => {
   const country = String(name).split(',').pop()?.trim().toLowerCase();
   return COUNTRY_CODES[country] || country?.slice(0, 2).toUpperCase() || 'TR';
@@ -256,6 +325,7 @@ export default function CreationWizard({
 
   const [step, setStep] = useState(initialStep);
   const [destination, setDestination] = useState(initialDestination);
+  const [destinationEntity, setDestinationEntity] = useState(null);
   const [isSurprise, setIsSurprise] = useState(false);
   const [dates, setDates] = useState({ start: '', end: '', flexible: false });
   const [datesUnknown, setDatesUnknown] = useState(false);
@@ -301,6 +371,60 @@ export default function CreationWizard({
   const [isHydrated, setIsHydrated] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const generationAbortRef = useRef(null);
+  const dialogRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    previouslyFocusedRef.current = document.activeElement;
+    document.body.classList.add('modal-open');
+
+    const focusTimer = window.setTimeout(() => {
+      const focusable = dialogRef.current?.querySelector(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      );
+      focusable?.focus();
+    }, 0);
+
+    const handleDialogKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        generationAbortRef.current?.abort();
+        generationAbortRef.current = null;
+        setIsSubmitting(false);
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusable = Array.from(dialogRef.current.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => element.getClientRects().length > 0);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleDialogKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('keydown', handleDialogKeyDown);
+      document.body.classList.remove('modal-open');
+      previouslyFocusedRef.current?.focus?.();
+    };
+  }, [isOpen]);
 
   // Debounce city autocomplete
   useEffect(() => {
@@ -313,7 +437,7 @@ export default function CreationWizard({
         const response = await fetch(`/api/autocomplete?q=${encodeURIComponent(destination)}`);
         if (response.ok) {
           const data = await response.json();
-          setLiveSuggestions(data);
+          setLiveSuggestions(normalizeDestinationSuggestions(data));
         }
       } catch (err) {
         console.error('Failed to fetch autocomplete suggestions:', err);
@@ -334,6 +458,9 @@ export default function CreationWizard({
 
       setStep(initialStep > 1 ? initialStep : draft?.step || initialStep);
       setDestination(initialDestination || draft?.destination || '');
+      setDestinationEntity(
+        initialDestination ? null : normalizeDestinationSuggestion(draft?.destinationEntity),
+      );
       setDates(initialDates
         ? { start: initialDates.start || '', end: initialDates.end || '', flexible: Boolean(initialDates.flexible) }
         : draft?.dates || { start: '', end: '', flexible: false });
@@ -382,6 +509,7 @@ export default function CreationWizard({
   useEffect(() => {
     if (!isOpen || !initialDestination.trim()) return;
     setDestination(initialDestination);
+    setDestinationEntity(null);
   }, [initialDestination, isOpen]);
 
   useEffect(() => {
@@ -392,6 +520,7 @@ export default function CreationWizard({
         updatedAt: new Date().toISOString(),
         step,
         destination,
+        destinationEntity,
         isSurprise,
         dates,
         datesUnknown,
@@ -432,7 +561,7 @@ export default function CreationWizard({
     }, 250);
     return () => window.clearTimeout(timer);
   }, [
-    isHydrated, isOpen, isSubmitting, step, destination, isSurprise, dates, datesUnknown,
+    isHydrated, isOpen, isSubmitting, step, destination, destinationEntity, isSurprise, dates, datesUnknown,
     flexibleDays, travelers, stylesList, travelerType, companyMode, clientName, companyName,
     preparedBy, internalNotes, clientFacingNotes, exportPreference, budgetPerDay, dietary,
     mobilityReduced, transportPreference, budgetIncludesFlights, pace, childrenAges,
@@ -520,6 +649,7 @@ export default function CreationWizard({
     try {
       const payload = {
         destination: isSurprise ? 'Destino Surpresa' : destination,
+        destinationEntity: isSurprise ? null : destinationEntity,
         days: getDaysCount(),
         budget: getBudgetTierLabel(budgetPerDay).toLowerCase(),
         travelers: travelers.adults + travelers.children,
@@ -576,7 +706,8 @@ export default function CreationWizard({
         throw new Error(failure?.error?.message || failure?.message || 'Não foi possível gerar o roteiro.');
       }
       const data = await response.json();
-      const itinerary = data.itinerary || data;
+      const generationResult = resolveGeneratedItineraryResponse(data);
+      const itinerary = generationResult.itinerary;
 
       trackEvent('itinerary_generated', {
         destination: payload.destination,
@@ -587,8 +718,12 @@ export default function CreationWizard({
         source: itinerary.metadata?.generationSource || (forceFallback ? 'fallback' : 'generated'),
       });
 
-      const { saveGeneratedItinerary } = await import('../lib/itinerary-store');
-      const newId = saveGeneratedItinerary(itinerary);
+      let newId = generationResult.id;
+      if (generationResult.mode === 'local_draft') {
+        const { saveGeneratedItinerary } = await import('../lib/itinerary-store');
+        newId = saveGeneratedItinerary(itinerary);
+        showToast('Rascunho guardado apenas neste dispositivo.', 'info');
+      }
 
       try {
         sessionStorage.removeItem(PLANNER_DRAFT_KEY);
@@ -612,16 +747,17 @@ export default function CreationWizard({
     setIsSubmitting(false);
   };
 
-  const filteredDestinations = liveSuggestions.length > 0
+  const filteredDestinations = normalizeDestinationSuggestions(liveSuggestions.length > 0
     ? liveSuggestions
     : AUTOCOMPLETE_DATA.filter(d =>
         d.name.toLowerCase().includes(destination.toLowerCase())
-      );
+      ));
 
   const estimatedTotal = budgetPerDay * getDaysCount() * (travelers.adults + travelers.children);
 
   return (
     <div
+      ref={dialogRef}
       className={styles.wizardOverlay}
       data-testid="creation-wizard"
       role="dialog"
@@ -689,25 +825,33 @@ export default function CreationWizard({
                       className={styles.hugeInput}
                       placeholder="Ex: Japão, Tóquio, Itália, Paris..."
                       value={destination}
-                      onChange={(e) => { setDestination(e.target.value); setShowDropdown(true); }}
+                      onChange={(e) => {
+                        setDestination(e.target.value);
+                        setDestinationEntity(null);
+                        setShowDropdown(true);
+                      }}
                       onFocus={() => setShowDropdown(true)}
                       aria-label="Destino da viagem"
                       data-testid="wizard-destination-input"
                     />
                     {showDropdown && destination && filteredDestinations.length > 0 && (
                       <div className={styles.autocomplete}>
-                        {filteredDestinations.map(d => {
-                          const nameLabel = d.displayName || d.ptName || d.name;
-                          const countryLabel = d.countryPt || d.name.split(',')[1] || d.continent;
+                        {filteredDestinations.map((d, index) => {
+                          const nameLabel = d.displayName;
+                          const countryLabel = d.countryLabel;
                           return (
                             <div
-                              key={d.entityId || d.name}
+                              key={d.entityId || `${nameLabel}-${index}`}
                               className={styles.autoItem}
-                              onClick={() => { setDestination(nameLabel); setShowDropdown(false); }}
+                              onClick={() => {
+                                setDestination(nameLabel);
+                                setDestinationEntity(d);
+                                setShowDropdown(false);
+                              }}
                             >
                               <span className={styles.autoFlag}>{d.flag || '📍'}</span>
                               <div className={styles.autoText}>
-                                <span className={styles.autoCity}>{nameLabel.split(',')[0]}</span>
+                                <span className={styles.autoCity}>{d.cityLabel}</span>
                                 <span className={styles.autoCountry}>{countryLabel} {d.tag ? ` · ${d.tag}` : ''}</span>
                               </div>
                             </div>
@@ -726,7 +870,11 @@ export default function CreationWizard({
                           <button
                             key={chip.name}
                             type="button"
-                            onClick={() => { setDestination(chip.name); setShowDropdown(false); }}
+                            onClick={() => {
+                              setDestination(chip.name);
+                              setDestinationEntity(null);
+                              setShowDropdown(false);
+                            }}
                             style={{
                               background: destination === chip.name ? 'rgba(212, 168, 67, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                               border: destination === chip.name ? '1px solid var(--gold, #D4A843)' : '1px solid rgba(255, 255, 255, 0.1)',
@@ -754,7 +902,15 @@ export default function CreationWizard({
                     <p className={styles.surpriseSubtext}>Baseado no clima, festivais e preços actuais.</p>
                     <div className={styles.seasonalGrid}>
                       {(SEASONAL_SUGGESTIONS[new Date().getMonth()] || SEASONAL_SUGGESTIONS[0]).map((s, i) => (
-                        <div key={i} className={styles.seasonalCard} onClick={() => { setDestination(s.name); setIsSurprise(false); }}>
+                        <div
+                          key={i}
+                          className={styles.seasonalCard}
+                          onClick={() => {
+                            setDestination(s.name);
+                            setDestinationEntity(null);
+                            setIsSurprise(false);
+                          }}
+                        >
                           <span className={styles.seasonalFlag}>{getDestinationCode(s.name)}</span>
                           <div className={styles.seasonalInfo}>
                             <strong>{s.name}</strong>

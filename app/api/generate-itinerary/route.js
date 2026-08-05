@@ -23,6 +23,46 @@ const LOCAL_CURRENCY_SCALE = {
   MAD: { factor: 11, lowGrandTotal: 10000, lowActivity: 250 },
 };
 
+function coordinatePair(value) {
+  const lat = Array.isArray(value) ? Number(value[0]) : Number(value?.lat ?? value?.latitude);
+  const lng = Array.isArray(value) ? Number(value[1]) : Number(value?.lng ?? value?.lon ?? value?.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180 || (lat === 0 && lng === 0)) return null;
+  return [lat, lng];
+}
+
+function cleanDestinationEntity(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const displayName = cleanString(value.displayName || value.name || value.canonicalName, '', 160);
+  const canonicalName = cleanString(value.canonicalName || displayName.split(',')[0], '', 90);
+  if (!displayName && !canonicalName) return null;
+  const coordinates = coordinatePair(value.coordinates);
+  const currencyCodes = cleanList(value.currencyCodes, 4, 3)
+    .map((code) => code.toUpperCase())
+    .filter((code) => /^[A-Z]{3}$/.test(code));
+  return {
+    entityId: cleanString(value.entityId, '', 120) || null,
+    canonicalName: canonicalName || displayName,
+    displayName: displayName || canonicalName,
+    entityType: cleanString(value.entityType, '', 40) || null,
+    countryCode: cleanString(value.countryCode, '', 3).toUpperCase() || null,
+    regionCode: cleanString(value.regionCode, '', 80) || null,
+    parentPath: cleanList(value.parentPath, 8, 80),
+    coordinates: coordinates ? { lat: coordinates[0], lng: coordinates[1] } : null,
+    timezone: cleanString(value.timezone, '', 80) || null,
+    currencyCodes,
+    resolutionStatus: cleanString(value.resolutionStatus, '', 40) || null,
+    providerRefs: value.providerRefs && typeof value.providerRefs === 'object'
+      ? Object.fromEntries(
+        Object.entries(value.providerRefs)
+          .slice(0, 5)
+          .map(([key, ref]) => [cleanString(key, '', 40), cleanString(ref, '', 120)])
+          .filter(([key, ref]) => key && ref),
+      )
+      : {},
+  };
+}
+
 function parseMoneyValue(value, fallback = 0) {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   const parsed = Number(String(value ?? '').replace(/[^\d.-]/g, ''));
@@ -170,7 +210,13 @@ function repairGenericSuggestions(itinerary, destinationCity, profile = {}) {
   return itinerary;
 }
 
-async function normalizeGeneratedItinerary(itinerary, requestedDestination, requestedDays, profile = {}) {
+async function normalizeGeneratedItinerary(
+  itinerary,
+  requestedDestination,
+  requestedDays,
+  profile = {},
+  requestedDestinationEntity = null,
+) {
   if (!itinerary || typeof itinerary !== 'object') {
     throw new Error('Generated itinerary is not an object');
   }
@@ -179,33 +225,62 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
   const destination = typeof itinerary.destination === 'object'
     ? { ...itinerary.destination }
     : { city: itinerary.destination || fallbackDestination };
-  destination.city = destination.city || destination.name || fallbackDestination;
-  destination.name = destination.name || destination.city;
+  const selectedCity = requestedDestinationEntity?.canonicalName
+    || requestedDestinationEntity?.displayName?.split(',')[0]?.trim()
+    || '';
+  destination.city = selectedCity || destination.city || destination.name || fallbackDestination;
+  destination.name = requestedDestinationEntity?.displayName || destination.name || destination.city;
+  if (requestedDestinationEntity) {
+    destination.entityId = requestedDestinationEntity.entityId;
+    destination.canonicalName = requestedDestinationEntity.canonicalName;
+    destination.displayName = requestedDestinationEntity.displayName;
+    destination.entityType = requestedDestinationEntity.entityType;
+    destination.countryCode = requestedDestinationEntity.countryCode || destination.countryCode;
+    destination.regionCode = requestedDestinationEntity.regionCode;
+    destination.parentPath = requestedDestinationEntity.parentPath;
+    destination.timezone = requestedDestinationEntity.timezone || destination.timezone;
+    destination.currencyCodes = requestedDestinationEntity.currencyCodes;
+    destination.resolutionStatus = requestedDestinationEntity.resolutionStatus;
+    destination.providerRefs = requestedDestinationEntity.providerRefs;
+  }
   const destinationCurrency = getDestinationCurrency(destination, fallbackDestination);
   destination.currency = destination.currency || destinationCurrency;
 
   const country = destination.countryCode || destination.country || '';
   
   // Dynamic geocoding for the destination
-  let destCoords = null;
-  try {
-    const geoDest = await geocodeServerSide(destination.city, country);
-    if (geoDest) {
-      destCoords = [geoDest.lat, geoDest.lng];
-      destination.coordinates = destCoords;
+  let destCoords = coordinatePair(requestedDestinationEntity?.coordinates);
+  let destinationCoordinateSource = destCoords ? 'selected_destination' : null;
+  if (!destCoords) {
+    try {
+      const geoDest = await geocodeServerSide(destination.city, country);
+      if (geoDest) {
+        destCoords = coordinatePair(geoDest);
+        if (destCoords) destinationCoordinateSource = 'geocoder';
+      }
+    } catch (err) {
+      console.error('Failed to geocode destination city:', err);
     }
-  } catch (err) {
-    console.error('Failed to geocode destination city:', err);
   }
-
-  const [centerLat, centerLng] = destCoords || getDestinationCenter(destination.city || fallbackDestination);
-  if (!Array.isArray(destination.coordinates)) {
-    destination.coordinates = [centerLat, centerLng];
+  const knownCenter = getDestinationCenter(
+    destination.city || fallbackDestination,
+    { fallback: null },
+  );
+  const destinationCenter = destCoords || knownCenter;
+  if (destinationCenter) {
+    destination.coordinates = destinationCenter;
+    destination.coordinateSource = destinationCoordinateSource || 'destination_registry';
+  } else {
+    destination.coordinates = null;
   }
 
   const days = Array.isArray(itinerary.days) ? itinerary.days : [];
   if (days.length === 0) {
     throw new Error('Generated itinerary has no days');
+  }
+  const expectedDays = Number(requestedDays) || days.length;
+  if (days.length !== expectedDays) {
+    throw new Error(`Expected exactly ${expectedDays} days, received ${days.length}`);
   }
 
   const isValidCoordinateLocal = (lat, lng) => {
@@ -215,7 +290,7 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
   };
 
   const seenTitles = new Set();
-  const repairedDays = days.slice(0, Number(requestedDays) || days.length).map((day, dayIndex) => {
+  const repairedDays = days.map((day, dayIndex) => {
     const nextDay = { ...day, dayNumber: day.dayNumber || dayIndex + 1 };
     if (!nextDay.title || isBannedDayTitle(nextDay.title) || seenTitles.has(nextDay.title.trim().toLowerCase())) {
       nextDay.title = suggestDayTitle({ ...nextDay, dayIndex }, destination.city);
@@ -311,12 +386,12 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
     ...itinerary,
     destination,
     trip: {
+      ...itinerary.trip,
       totalDays: Number(requestedDays) || itinerary.trip?.totalDays || repairedDays.length,
       travelStyle: itinerary.trip?.travelStyle || '',
       groupType: itinerary.trip?.groupType || '',
       budgetTier: itinerary.trip?.budgetTier || '',
       topTips: itinerary.trip?.topTips || [],
-      ...itinerary.trip,
     },
     days: repairedDays,
     flightOptions: Array.isArray(itinerary.flightOptions) ? itinerary.flightOptions : [],
@@ -330,7 +405,10 @@ async function normalizeGeneratedItinerary(itinerary, requestedDestination, requ
   repairGenericSuggestions(repaired, destination.city, profile);
 
   const coordinateFixed = validateAndFixCoordinates(repaired, destination.city);
-  const validation = validateAndNormalize(coordinateFixed);
+  const validation = validateAndNormalize(coordinateFixed, {
+    expectedDays: requestedDays,
+    requireDestinationCoordinate: true,
+  });
   if (validation.fatal) {
     throw new Error(validation.errors.join('; '));
   }
@@ -345,7 +423,12 @@ export async function POST(req) {
       return apiError('MALFORMED_JSON', 'Pedido inválido. Verifica os dados e tenta novamente.', 400, false);
     }
 
-    const destination = cleanString(body.destination, '', 90);
+    const destinationEntity = cleanDestinationEntity(body.destinationEntity);
+    const destination = cleanString(
+      body.destination || destinationEntity?.displayName || destinationEntity?.canonicalName,
+      '',
+      160,
+    );
     const days = cleanInteger(body.days, 5, 1, 14);
     const budget = cleanString(body.budget || body.budgetTier, 'comfort', 40);
     const travelers = cleanInteger(body.travelers ?? body.travellerCount ?? body.people, 2, 1, 12);
@@ -442,34 +525,111 @@ export async function POST(req) {
           travelerProfileSource: 'conversational-wizard',
           memoryMode,
           generationSource: source,
+          destinationSelection: destinationEntity
+            ? {
+              entityId: destinationEntity.entityId,
+              resolutionStatus: destinationEntity.resolutionStatus,
+            }
+            : null,
         },
       };
-      const payload = ensureBookingReadyItinerary(basePayload, {
-        profile: basePayload.trip.travelerProfile,
+      const finalValidation = validateAndNormalize(basePayload, {
+        expectedDays: days,
+        requireDestinationCoordinate: true,
+      });
+      if (finalValidation.fatal) {
+        return apiError(
+          'ITINERARY_DATA_INVALID',
+          'Os dados gerados nÃ£o formam um roteiro completo para todos os dias pedidos.',
+          503,
+          true,
+          { errors: finalValidation.errors },
+        );
+      }
+      const validatedPayload = finalValidation.normalized || basePayload;
+      const payload = ensureBookingReadyItinerary(validatedPayload, {
+        profile: validatedPayload.trip.travelerProfile,
       });
 
-      const persisted = await createItineraryRecord(payload, {
-        days,
-        budget,
-        travelers,
-        style,
-        startDate: startDate || null,
-        endDate: endDate || null,
-        source,
-      });
+      let persisted;
+      try {
+        persisted = await createItineraryRecord(payload, {
+          days,
+          budget,
+          travelers,
+          style,
+          startDate: startDate || null,
+          endDate: endDate || null,
+          source,
+        });
+      } catch (error) {
+        logger.warn('generate_itinerary:persistence_failed', error, { destination, days });
+        return apiError(
+          'ITINERARY_PERSISTENCE_FAILED',
+          'O roteiro foi gerado, mas nÃ£o foi possÃ­vel guardÃ¡-lo com seguranÃ§a. Tenta novamente.',
+          503,
+          true,
+          { reason: 'storage_error' },
+        );
+      }
+
+      if (!persisted?.ok && persisted?.reason !== 'auth_required') {
+        logger.warn('generate_itinerary:persistence_failed', null, {
+          destination,
+          days,
+          reason: persisted?.reason || 'unknown',
+        });
+        return apiError(
+          'ITINERARY_PERSISTENCE_FAILED',
+          'O roteiro foi gerado, mas nÃ£o foi possÃ­vel guardÃ¡-lo com seguranÃ§a. Tenta novamente.',
+          503,
+          true,
+          { reason: persisted?.reason || 'unknown' },
+        );
+      }
+      if (persisted.ok && !cleanString(persisted.id, '', 120)) {
+        logger.warn('generate_itinerary:persistence_missing_id', null, {
+          destination,
+          days,
+          provider: persisted.provider || 'unknown',
+        });
+        return apiError(
+          'ITINERARY_PERSISTENCE_FAILED',
+          'O roteiro foi gerado, mas o armazenamento nÃ£o devolveu um identificador vÃ¡lido. Tenta novamente.',
+          503,
+          true,
+          { reason: 'missing_persisted_id' },
+        );
+      }
+
+      const persistence = persisted.ok
+        ? {
+          mode: 'durable',
+          provider: persisted.provider,
+          persisted: true,
+          reason: null,
+        }
+        : {
+          mode: 'local_draft',
+          provider: 'browser',
+          persisted: false,
+          reason: 'auth_required',
+        };
 
       const saved = persisted.ok
         ? { ...payload, id: persisted.id, shareToken: persisted.shareToken }
-        : payload;
+        : {
+          ...payload,
+          metadata: {
+            ...(payload.metadata || {}),
+            persistenceMode: 'local_draft',
+          },
+        };
 
       return Response.json({
         ...saved,
         itinerary: saved,
-        persistence: {
-          provider: persisted.provider,
-          persisted: persisted.ok,
-          reason: persisted.reason || null,
-        },
+        persistence,
       });
     };
 
@@ -1192,7 +1352,13 @@ Return ONLY valid JSON matching the exact requested schema.`;
           const data = await response.json();
           try {
             const parsed = JSON.parse(data.choices[0].message.content);
-            const result = await normalizeGeneratedItinerary(parsed, destination, days, generationProfile);
+            const result = await normalizeGeneratedItinerary(
+              parsed,
+              destination,
+              days,
+              generationProfile,
+              destinationEntity,
+            );
             return respondWithItinerary(result, 'groq');
           } catch (e) {
             logger.warn('generate_itinerary:groq_parse_failed', e, { destination, days });
@@ -1465,7 +1631,13 @@ Return ONLY valid JSON matching the exact requested schema.`;
           prompt: `${systemPrompt}\n\n${userPrompt}`,
         });
         
-        let result = await normalizeGeneratedItinerary(object, destination, days, generationProfile);
+        let result = await normalizeGeneratedItinerary(
+          object,
+          destination,
+          days,
+          generationProfile,
+          destinationEntity,
+        );
         const titleValidation = validateAllDayTitles(result);
         if (!titleValidation.valid) {
           // day title validation warnings, but continue
@@ -1500,11 +1672,26 @@ Return ONLY valid JSON matching the exact requested schema.`;
       );
     }
     try {
-      itinerary = await normalizeGeneratedItinerary(itinerary, destination, days, generationProfile);
+      itinerary = await normalizeGeneratedItinerary(
+        itinerary,
+        destination,
+        days,
+        generationProfile,
+        destinationEntity,
+      );
     } catch (error) {
       logger.warn('generate_itinerary:fallback_normalization_failed', error, { destination, days });
+      return apiError(
+        'ITINERARY_DATA_INVALID',
+        'Os dados disponÃ­veis nÃ£o permitem construir todos os dias pedidos com localizaÃ§Ãµes coerentes.',
+        503,
+        true,
+      );
     }
-    const validation = validateAndNormalize(itinerary);
+    const validation = validateAndNormalize(itinerary, {
+      expectedDays: days,
+      requireDestinationCoordinate: true,
+    });
     if (validation.fatal) {
       return apiError(
         'ITINERARY_DATA_INVALID',

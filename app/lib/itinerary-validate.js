@@ -109,6 +109,40 @@ function isInBounds(coords, bounds) {
     && coords.lng <= bounds.lngMax;
 }
 
+function distanceKm(from, to) {
+  if (!isPlausibleCoord(from) || !isPlausibleCoord(to)) return null;
+  const radians = (degrees) => degrees * (Math.PI / 180);
+  const earthRadiusKm = 6371;
+  const latDelta = radians(to.lat - from.lat);
+  const lngDelta = radians(to.lng - from.lng);
+  const a = Math.sin(latDelta / 2) ** 2
+    + Math.cos(radians(from.lat)) * Math.cos(radians(to.lat)) * Math.sin(lngDelta / 2) ** 2;
+  const boundedA = Math.min(1, Math.max(0, a));
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(boundedA), Math.sqrt(1 - boundedA));
+}
+
+function getDestinationRadiusKm(destination = {}) {
+  const entityType = safeText(
+    destination.entityType || destination.placeType || destination.type || destination.category,
+    '',
+  ).toLowerCase();
+  if (/country|nation/.test(entityType)) return 2500;
+  if (/region|state|province|territory/.test(entityType)) return 1000;
+  if (/city|town|village|municipality|locality/.test(entityType)) return 250;
+  return 500;
+}
+
+function isCoherentWithDestination(coords, destinationCenter, radiusKm) {
+  if (!isPlausibleCoord(destinationCenter)) return true;
+  const distance = distanceKm(coords, destinationCenter);
+  return distance !== null && distance <= radiusKm;
+}
+
+function positiveInteger(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 function numberOr(value, fallback = 0) {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   const parsed = parseFloat(String(value ?? '').replace(/[^\d.-]/g, ''));
@@ -171,7 +205,17 @@ function normalizeTransport(transport, isFirst) {
   };
 }
 
-function normalizeActivity(activity, dayIndex, activityIndex, bounds, destinationName, result, currencyCode = 'EUR') {
+function normalizeActivity(
+  activity,
+  dayIndex,
+  activityIndex,
+  bounds,
+  destinationName,
+  result,
+  currencyCode = 'EUR',
+  destinationCenter = null,
+  destinationRadiusKm = 500,
+) {
   const source = activity && typeof activity === 'object' ? activity : {};
   const name = safeText(source.name || source.title, `Stop ${activityIndex + 1}`);
   const rawCoords = parseCoordinate(source.coordinates || source.coords || source.location || source.coordinate);
@@ -183,6 +227,10 @@ function normalizeActivity(activity, dayIndex, activityIndex, bounds, destinatio
     coordinates = null;
     result.valid = false;
     result.errors.push(`Activity "${name}" coordinates outside destination bounds; coordinates omitted`);
+  } else if (!bounds && !isCoherentWithDestination(rawCoords, destinationCenter, destinationRadiusKm)) {
+    coordinates = null;
+    result.valid = false;
+    result.errors.push(`Activity "${name}" coordinates are not coherent with the destination; coordinates omitted`);
   }
 
   let rating = numberOr(source.rating, null);
@@ -244,7 +292,16 @@ function buildPeriods(day, activities) {
   return periods;
 }
 
-function normalizeMeal(meal, mealName, destinationName, bounds, result, currencyCode = 'EUR') {
+function normalizeMeal(
+  meal,
+  mealName,
+  destinationName,
+  bounds,
+  result,
+  currencyCode = 'EUR',
+  destinationCenter = null,
+  destinationRadiusKm = 500,
+) {
   if (!meal || typeof meal !== 'object') return null;
   const source = meal;
   const name = safeText(source.name || source.restaurant, 'Sugestão por confirmar');
@@ -255,6 +312,10 @@ function normalizeMeal(meal, mealName, destinationName, bounds, result, currency
     coordinates = null;
     result.valid = false;
     result.errors.push(`${mealName} coordinates outside destination bounds; coordinates omitted`);
+  } else if (!bounds && !isCoherentWithDestination(coordinates, destinationCenter, destinationRadiusKm)) {
+    coordinates = null;
+    result.valid = false;
+    result.errors.push(`${mealName} coordinates are not coherent with the destination; coordinates omitted`);
   }
   const rawCost = source.cost ?? source.estimatedCost;
   return {
@@ -299,7 +360,7 @@ function normalizeDayTitle(day, dayIndex, destinationName, seenTitles, result) {
   return uniqueTitle;
 }
 
-export function validateAndNormalize(itinerary) {
+export function validateAndNormalize(itinerary, options = {}) {
   const result = { valid: true, warnings: [], errors: [], normalized: null, fatal: false };
 
   if (!itinerary || typeof itinerary !== 'object' || Array.isArray(itinerary)) {
@@ -331,10 +392,25 @@ export function validateAndNormalize(itinerary) {
 
   const destinationInput = ukDestination || destInput;
   const destKey = normalizeDestinationKey(destinationInput);
-  const bounds = getDestinationBounds(destinationInput);
+  const legacyBounds = getDestinationBounds(destinationInput);
   const defaults = DESTINATION_DEFAULTS[destKey] || {};
   const rawDestination = ukDestination || (typeof destInput === 'object' ? destInput : {});
   const destinationCoords = parseCoordinate(rawDestination.coordinates);
+  const hasResolvedCenter = isPlausibleCoord(destinationCoords) && Boolean(
+    rawDestination.entityId
+    || rawDestination.coordinateSource
+    || rawDestination.resolutionStatus,
+  );
+  const bounds = hasResolvedCenter ? null : legacyBounds;
+  const normalizedDestinationCoordinates = isPlausibleCoord(destinationCoords)
+    ? [destinationCoords.lat, destinationCoords.lng]
+    : bounds?.center
+      ? [bounds.center.lat, bounds.center.lng]
+      : null;
+  if (rawDestination.coordinates != null && !isPlausibleCoord(destinationCoords)) {
+    result.valid = false;
+    result.errors.push('Destination coordinates are invalid and were omitted');
+  }
   normalized.destination = {
     ...defaults,
     ...rawDestination,
@@ -347,15 +423,19 @@ export function validateAndNormalize(itinerary) {
     flag: safeText(rawDestination.flag, defaults.flag || defaults.countryCode || ''),
     timezone: safeText(rawDestination.timezone, defaults.timezone || ''),
     currency: rawDestination.currency || defaults.currency || { code: 'EUR', symbol: 'EUR' },
-    coordinates: isPlausibleCoord(destinationCoords)
-      ? [destinationCoords.lat, destinationCoords.lng]
-      : bounds?.center ? [bounds.center.lat, bounds.center.lng] : rawDestination.coordinates,
+    coordinates: normalizedDestinationCoordinates,
   };
 
   if (bounds && !isInBounds(parseCoordinate(normalized.destination.coordinates), bounds)) {
     normalized.destination.coordinates = [bounds.center.lat, bounds.center.lng];
     result.valid = false;
     result.errors.push('Destination coordinates were outside expected bounds and were repaired');
+  }
+  if (options?.requireDestinationCoordinate === true
+    && !isPlausibleCoord(parseCoordinate(normalized.destination.coordinates))) {
+    result.valid = false;
+    result.fatal = true;
+    result.errors.push('Destination coordinates are required to verify geographic coherence');
   }
 
   const rawDays = normalized.days || normalized.trip?.days || normalized.dailyPlan || [];
@@ -366,14 +446,28 @@ export function validateAndNormalize(itinerary) {
     return result;
   }
 
+  const explicitExpectedDays = positiveInteger(
+    typeof options === 'number' ? options : options?.expectedDays,
+  );
+  const declaredDays = positiveInteger(normalized.trip?.totalDays);
+  const expectedDays = explicitExpectedDays || declaredDays || rawDays.length;
+  if (rawDays.length !== expectedDays) {
+    result.valid = false;
+    result.fatal = true;
+    result.errors.push(`Expected exactly ${expectedDays} days, received ${rawDays.length}`);
+  }
+  if (explicitExpectedDays && declaredDays && declaredDays !== explicitExpectedDays) {
+    result.warnings.push(`Trip totalDays was repaired from ${declaredDays} to ${explicitExpectedDays}`);
+  }
+
   normalized.trip = {
-    totalDays: numberOr(normalized.trip?.totalDays, rawDays.length),
+    ...normalized.trip,
+    totalDays: expectedDays,
     travelStyle: safeText(normalized.trip?.travelStyle || normalized.style, ''),
     groupType: safeText(normalized.trip?.groupType || normalized.travelers, ''),
     budgetTier: safeText(normalized.trip?.budgetTier || normalized.budgetTier || normalized.budget, ''),
     budgetBreakdown: normalizeBudgetBreakdown(normalized.trip?.budgetBreakdown || normalized.budgetBreakdown || {}),
     topTips: Array.isArray(normalized.trip?.topTips) ? normalized.trip.topTips : [],
-    ...normalized.trip,
   };
   const destinationCurrency = normalized.destination.currency?.code || normalized.destination.currency || 'EUR';
   normalized.trip.budgetBreakdown = normalizeBudgetBreakdown(normalized.trip.budgetBreakdown);
@@ -387,17 +481,30 @@ export function validateAndNormalize(itinerary) {
 
   const seenTitles = new Set();
   let mapCriticalCount = 0;
+  const destinationCenter = parseCoordinate(normalized.destination.coordinates);
+  const destinationRadiusKm = getDestinationRadiusKm(normalized.destination);
   normalized.days = rawDays.map((rawDay, dayIndex) => {
     const day = rawDay && typeof rawDay === 'object' ? rawDay : {};
     const title = normalizeDayTitle(day, dayIndex, normalized.destination.city, seenTitles, result);
     const activities = getRawActivities(day).map((activity, activityIndex) => {
-      const normalizedActivity = normalizeActivity(activity, dayIndex, activityIndex, bounds, normalized.destination.city, result, destinationCurrency);
+      const normalizedActivity = normalizeActivity(
+        activity,
+        dayIndex,
+        activityIndex,
+        bounds,
+        normalized.destination.city,
+        result,
+        destinationCurrency,
+        destinationCenter,
+        destinationRadiusKm,
+      );
       if (normalizedActivity.coordinates) mapCriticalCount += 1;
       return normalizedActivity;
     });
 
     if (activities.length === 0) {
       result.valid = false;
+      result.fatal = true;
       result.errors.push(`Day ${dayIndex + 1} has no activities`);
     }
 
@@ -422,9 +529,9 @@ export function validateAndNormalize(itinerary) {
       activities,
       stops: activities,
       meals: {
-        breakfast: 'breakfast' in meals ? normalizeMeal(meals.breakfast, 'breakfast', normalized.destination.city, bounds, result, destinationCurrency) : null,
-        lunch: normalizeMeal(meals.lunch, 'lunch', normalized.destination.city, bounds, result, destinationCurrency),
-        dinner: normalizeMeal(meals.dinner, 'dinner', normalized.destination.city, bounds, result, destinationCurrency),
+        breakfast: 'breakfast' in meals ? normalizeMeal(meals.breakfast, 'breakfast', normalized.destination.city, bounds, result, destinationCurrency, destinationCenter, destinationRadiusKm) : null,
+        lunch: normalizeMeal(meals.lunch, 'lunch', normalized.destination.city, bounds, result, destinationCurrency, destinationCenter, destinationRadiusKm),
+        dinner: normalizeMeal(meals.dinner, 'dinner', normalized.destination.city, bounds, result, destinationCurrency, destinationCenter, destinationRadiusKm),
       },
       localSecret: safeText(day.localSecret || day.localSecrets, ''),
     };
