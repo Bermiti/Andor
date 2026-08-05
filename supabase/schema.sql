@@ -12,6 +12,40 @@ create table if not exists public.profiles (
   updated_at timestamptz default now()
 );
 
+-- Create the application profile even when email confirmation means signUp does
+-- not return an authenticated session. OAuth and password users share this path.
+create or replace function public.handle_new_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.profiles as existing (id, email, name)
+  values (
+    new.id,
+    coalesce(new.email, ''),
+    coalesce(
+      nullif(new.raw_user_meta_data ->> 'name', ''),
+      nullif(new.raw_user_meta_data ->> 'full_name', ''),
+      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+      'Viajante'
+    )
+  )
+  on conflict (id) do update
+  set email = excluded.email,
+      name = coalesce(nullif(existing.name, ''), excluded.name),
+      updated_at = now();
+  return new;
+end;
+$$;
+
+revoke all on function public.handle_new_auth_user() from public;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_auth_user();
+
 create table if not exists public.itineraries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
@@ -209,7 +243,7 @@ begin
   ) then
     alter table public.itineraries
       add constraint itineraries_status_check
-      check (status in ('active', 'archived', 'deleted', 'legacy_pending'));
+      check (status in ('draft', 'active', 'archived', 'deleted', 'legacy_pending'));
   end if;
 
   if not exists (
@@ -368,23 +402,23 @@ create index if not exists trip_share_links_active_idx
 
 create table if not exists public.audit_events (
   id uuid primary key default gen_random_uuid(),
-  actor_id uuid references auth.users(id) on delete set null,
+  actor_user_id uuid references auth.users(id) on delete set null,
   trip_id uuid,
   action text not null,
-  target_type text not null,
-  target_id uuid,
-  correlation_id uuid not null default gen_random_uuid(),
+  resource_type text not null,
+  resource_id uuid not null,
+  correlation_id text not null default gen_random_uuid()::text,
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   constraint audit_events_action_check check (action ~ '^[a-z][a-z0-9_.-]{2,79}$'),
-  constraint audit_events_target_type_check check (target_type ~ '^[a-z][a-z0-9_.-]{1,39}$'),
+  constraint audit_events_resource_type_check check (resource_type ~ '^[a-z][a-z0-9_.-]{1,39}$'),
   constraint audit_events_metadata_object_check check (jsonb_typeof(metadata) = 'object')
 );
 
 create index if not exists audit_events_trip_created_idx
   on public.audit_events(trip_id, created_at desc);
 create index if not exists audit_events_actor_created_idx
-  on public.audit_events(actor_id, created_at desc);
+  on public.audit_events(actor_user_id, created_at desc);
 
 create table if not exists public.trip_imports (
   id uuid primary key default gen_random_uuid(),
@@ -403,10 +437,10 @@ create table if not exists public.trip_imports (
     local_id is null or char_length(local_id) between 1 and 200
   ),
   constraint trip_imports_payload_hash_check check (payload_hash ~ '^[0-9a-f]{64}$'),
-  constraint trip_imports_status_check check (status in ('pending', 'imported', 'conflict', 'failed')),
+  constraint trip_imports_status_check check (status in ('pending', 'completed', 'conflict', 'failed')),
   constraint trip_imports_completion_check check (
     (status = 'pending' and completed_at is null)
-    or (status <> 'pending' and completed_at is not null)
+    or status <> 'pending'
   ),
   unique (user_id, idempotency_key)
 );
@@ -846,58 +880,10 @@ create trigger trip_ledgers_canonicalize
 before insert or update on public.trip_ledgers
 for each row execute function public.canonicalize_trip_ledger();
 
--- Invitation acceptance is the only client-callable membership mutation helper.
-create or replace function public.accept_trip_invitation(p_token text)
-returns table (trip_id uuid, role text)
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  invitation public.trip_invitations%rowtype;
-  actor uuid := auth.uid();
-begin
-  if actor is null then
-    raise exception 'authentication required' using errcode = '28000';
-  end if;
-  if p_token is null or char_length(p_token) < 32 then
-    raise exception 'invalid invitation' using errcode = '22023';
-  end if;
-
-  select * into invitation
-  from public.trip_invitations
-  where token_hash = encode(digest(p_token, 'sha256'), 'hex')
-    and accepted_at is null
-    and revoked_at is null
-    and expires_at > now()
-  for update;
-
-  if not found then
-    raise exception 'invitation unavailable' using errcode = 'P0002';
-  end if;
-
-  insert into public.trip_members (
-    trip_id, user_id, role, invited_by, accepted_at, revoked_at
-  ) values (
-    invitation.trip_id, actor, invitation.role, invitation.invited_by, now(), null
-  )
-  on conflict (trip_id, user_id) do update
-  set role = excluded.role,
-      invited_by = excluded.invited_by,
-      accepted_at = now(),
-      revoked_at = null,
-      updated_at = now();
-
-  update public.trip_invitations
-  set accepted_at = now(), accepted_by = actor, updated_at = now()
-  where id = invitation.id;
-
-  return query select invitation.trip_id, invitation.role;
-end;
-$$;
-
-revoke all on function public.accept_trip_invitation(text) from public;
-grant execute on function public.accept_trip_invitation(text) to authenticated;
+-- Invitation acceptance deliberately has no authenticated SQL RPC. The server
+-- resolves the opaque hash through its narrow service-role boundary, verifies
+-- the invitee's HMAC email fingerprint, and only then writes the stored role.
+drop function if exists public.accept_trip_invitation(text);
 
 -- ---------------------------------------------------------------------------
 -- Append-only audit helpers and trigger coverage
@@ -906,8 +892,8 @@ grant execute on function public.accept_trip_invitation(text) to authenticated;
 create or replace function public.record_trip_audit_event(
   p_trip_id uuid,
   p_action text,
-  p_target_type text,
-  p_target_id uuid,
+  p_resource_type text,
+  p_resource_id uuid,
   p_metadata jsonb default '{}'::jsonb
 )
 returns void
@@ -917,9 +903,9 @@ set search_path = public, pg_temp
 as $$
 begin
   insert into public.audit_events (
-    actor_id, trip_id, action, target_type, target_id, metadata
+    actor_user_id, trip_id, action, resource_type, resource_id, metadata
   ) values (
-    auth.uid(), p_trip_id, p_action, p_target_type, p_target_id,
+    auth.uid(), p_trip_id, p_action, p_resource_type, p_resource_id,
     case when jsonb_typeof(coalesce(p_metadata, '{}'::jsonb)) = 'object'
       then coalesce(p_metadata, '{}'::jsonb)
       else '{}'::jsonb
@@ -929,6 +915,36 @@ end;
 $$;
 
 revoke all on function public.record_trip_audit_event(uuid, text, text, uuid, jsonb) from public;
+
+create or replace function public.normalize_audit_event()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
+begin
+  new.actor_user_id := coalesce(new.actor_user_id, auth.uid());
+  new.correlation_id := coalesce(new.correlation_id, gen_random_uuid()::text);
+
+  if new.trip_id is null and new.resource_type = 'trip' then
+    new.trip_id := new.resource_id;
+  elsif new.trip_id is null and new.resource_type = 'trip_invitation' then
+    select invitation.trip_id into new.trip_id
+    from public.trip_invitations invitation
+    where invitation.id = new.resource_id;
+  elsif new.trip_id is null and new.resource_type = 'trip_share_link' then
+    select share_link.trip_id into new.trip_id
+    from public.trip_share_links share_link
+    where share_link.id = new.resource_id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists audit_events_normalize on public.audit_events;
+create trigger audit_events_normalize
+before insert on public.audit_events
+for each row execute function public.normalize_audit_event();
 
 create or replace function public.audit_itinerary_change()
 returns trigger
@@ -1215,17 +1231,20 @@ create policy "audit_events_delete_never" on public.audit_events
 
 drop policy if exists "trip_imports_select_own" on public.trip_imports;
 drop policy if exists "trip_imports_insert_pending_own" on public.trip_imports;
+drop policy if exists "trip_imports_insert_own" on public.trip_imports;
 drop policy if exists "trip_imports_update_service_only" on public.trip_imports;
 drop policy if exists "trip_imports_delete_service_only" on public.trip_imports;
 create policy "trip_imports_select_own" on public.trip_imports
   for select to authenticated using (user_id = auth.uid());
-create policy "trip_imports_insert_pending_own" on public.trip_imports
+create policy "trip_imports_insert_own" on public.trip_imports
   for insert to authenticated
   with check (
     user_id = auth.uid()
-    and status = 'pending'
-    and trip_id is null
-    and completed_at is null
+    and (
+      (status = 'pending' and trip_id is null and completed_at is null)
+      or
+      (status = 'completed' and trip_id is not null and public.current_user_owns_trip(trip_id))
+    )
   );
 create policy "trip_imports_update_service_only" on public.trip_imports
   for update to authenticated using (false) with check (false);

@@ -29,7 +29,7 @@ npm run dev
 
 Abre [http://localhost:3000](http://localhost:3000). Sem credenciais Supabase, o desenvolvimento pode usar `.andor/andor.sqlite`. Sem um fornecedor de IA, os fluxos suportados usam conteúdo local claramente marcado como demonstração.
 
-As variáveis e notas de segurança estão em [.env.example](.env.example). Para Supabase, aplica primeiro [supabase/schema.sql](supabase/schema.sql).
+As variáveis e notas de segurança estão em [.env.example](.env.example). Para Supabase, aplica primeiro [supabase/schema.sql](supabase/schema.sql). A configuração externa do provider Google está documentada em [docs/GOOGLE_OAUTH_SETUP.md](docs/GOOGLE_OAUTH_SETUP.md). Os materiais de validação comercial, lifecycle e analytics estão organizados em [docs/commercial/README.md](docs/commercial/README.md).
 
 ## Validação
 
