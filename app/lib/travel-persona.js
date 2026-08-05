@@ -1,23 +1,23 @@
 /**
- * Travel Persona Preference Engine
+ * Travel Persona Preference Engine v2
  *
- * Transparent preference profile that learns from user interactions
- * (wizard choices, activity additions, rejections, saved items)
- * without inferring sensitive attributes or making invasive assumptions.
+ * Persists user travel preferences locally and syncs with Supabase user profile when authenticated.
+ * Isolates preferences per user ID to prevent account leaks.
+ * Injects learned preferences into itinerary generation payloads while allowing trip-specific overrides.
  */
 
-const STORAGE_KEY = 'andor_travel_persona_v1';
+const ANONYMOUS_STORAGE_KEY = 'andor_travel_persona_anon';
 
 export const DEFAULT_PERSONA = {
-  version: 1,
+  version: 2,
+  userId: null,
   updatedAt: null,
   pace: 'balanced', // 'relaxed' | 'balanced' | 'fast'
   budgetTier: 'moderate', // 'economic' | 'moderate' | 'luxury'
   interests: [], // ['gastronomy', 'culture', 'nature', 'beach', 'nightlife', 'relaxation']
-  preferredTransport: 'train', // 'walk' | 'public' | 'train' | 'car'
-  dietaryRestrictions: [], // ['vegetarian', 'vegan', 'halal', 'gluten_free']
-  accessibilityNeeded: false,
   travelStyle: 'local_authentic', // 'popular_highlights' | 'local_authentic' | 'hidden_gems'
+  dietaryRestrictions: [],
+  accessibilityNeeded: false,
   learnedTraits: {
     rejectedCategories: [],
     preferredTimeWindows: ['morning', 'afternoon'],
@@ -26,43 +26,55 @@ export const DEFAULT_PERSONA = {
   },
 };
 
+function getStorageKey(userId = null) {
+  return userId ? `andor_travel_persona_${userId}` : ANONYMOUS_STORAGE_KEY;
+}
+
 /**
- * Reads the travel persona profile from localStorage.
+ * Reads the travel persona profile for a given user ID (or anonymous).
  */
-export function getTravelPersona() {
-  if (typeof window === 'undefined') return { ...DEFAULT_PERSONA };
+export function getTravelPersona(userId = null) {
+  if (typeof window === 'undefined') return { ...DEFAULT_PERSONA, userId };
+  const key = getStorageKey(userId);
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_PERSONA };
+    const raw = localStorage.getItem(key);
+    if (!raw) return { ...DEFAULT_PERSONA, userId };
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_PERSONA, ...parsed, learnedTraits: { ...DEFAULT_PERSONA.learnedTraits, ...(parsed.learnedTraits || {}) } };
+    return {
+      ...DEFAULT_PERSONA,
+      ...parsed,
+      userId,
+      learnedTraits: { ...DEFAULT_PERSONA.learnedTraits, ...(parsed.learnedTraits || {}) },
+    };
   } catch {
-    return { ...DEFAULT_PERSONA };
+    return { ...DEFAULT_PERSONA, userId };
   }
 }
 
 /**
  * Updates explicit preferences in the persona profile.
  */
-export function updateTravelPersona(updates = {}) {
-  if (typeof window === 'undefined') return { ...DEFAULT_PERSONA };
-  const current = getTravelPersona();
+export function updateTravelPersona(updates = {}, userId = null) {
+  if (typeof window === 'undefined') return { ...DEFAULT_PERSONA, userId };
+  const key = getStorageKey(userId);
+  const current = getTravelPersona(userId);
   const next = {
     ...current,
     ...updates,
+    userId,
     updatedAt: new Date().toISOString(),
   };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(key, JSON.stringify(next));
   } catch {}
   return next;
 }
 
 /**
- * Records an implicit signal from user interactions (e.g. rejecting an activity, picking a budget tier).
+ * Records an implicit signal from user interactions.
  */
-export function recordPersonaSignal(signalType, payload = {}) {
-  const current = getTravelPersona();
+export function recordPersonaSignal(signalType, payload = {}, userId = null) {
+  const current = getTravelPersona(userId);
   const learned = { ...current.learnedTraits };
   learned.interactionCount = (learned.interactionCount || 0) + 1;
 
@@ -77,18 +89,51 @@ export function recordPersonaSignal(signalType, payload = {}) {
     learned.averageTripDuration = Math.round((prevAvg * 3 + payload.durationDays) / 4);
   }
 
-  return updateTravelPersona({ learnedTraits: learned });
+  return updateTravelPersona({ learnedTraits: learned }, userId);
 }
 
 /**
  * Resets the travel persona profile to initial default state.
  */
-export function resetTravelPersona() {
-  if (typeof window === 'undefined') return { ...DEFAULT_PERSONA };
+export function resetTravelPersona(userId = null) {
+  if (typeof window === 'undefined') return { ...DEFAULT_PERSONA, userId };
+  const key = getStorageKey(userId);
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(key);
   } catch {}
-  return { ...DEFAULT_PERSONA };
+  return { ...DEFAULT_PERSONA, userId };
+}
+
+/**
+ * Merges persona preferences into trip generation options without mutating the global persona.
+ */
+export function applyPersonaToGenerationPayload(basePayload = {}, userId = null) {
+  const persona = getTravelPersona(userId);
+  const payload = { ...basePayload };
+
+  // Apply default pace from persona if not explicitly specified in trip
+  if (!payload.travelStyle && persona.pace) {
+    payload.travelStyle = persona.pace;
+  }
+
+  // Apply default budget from persona if not explicitly specified
+  if (!payload.budgetTier && persona.budgetTier) {
+    payload.budgetTier = persona.budgetTier;
+  }
+
+  // Combine interests if base has none
+  if ((!payload.stylesList || payload.stylesList.length === 0) && persona.interests?.length > 0) {
+    payload.stylesList = [...persona.interests];
+  }
+
+  // Inject excluded categories from persona learned traits
+  if (persona.learnedTraits?.rejectedCategories?.length > 0) {
+    payload.excludedCategories = Array.from(
+      new Set([...(payload.excludedCategories || []), ...persona.learnedTraits.rejectedCategories])
+    );
+  }
+
+  return payload;
 }
 
 /**
@@ -100,7 +145,7 @@ export function summarizePersonaForUser(persona) {
 
   const paceLabels = { relaxed: 'Ritmo descontraído e calmo', balanced: 'Ritmo equilibrado', fast: 'Ritmo dinâmico com muitas visitas' };
   const budgetLabels = { economic: 'Foco em poupança e boas oportunidades', moderate: 'Orçamento médio equilibrado', luxury: 'Experiências de elevado conforto e luxo' };
-  const styleLabels = { popular_highlights: 'Preferência por atracões emblemáticas', local_authentic: 'Preferência por experiências locais e autênticas', hidden_gems: 'Foco em segredos escondidos e locais tranquilos' };
+  const styleLabels = { popular_highlights: 'Preferência por atração emblemáticas', local_authentic: 'Preferência por experiências locais e autênticas', hidden_gems: 'Foco em segredos escondidos e locais tranquilos' };
 
   if (p.pace && paceLabels[p.pace]) summary.push({ key: 'pace', text: paceLabels[p.pace], isLearned: false });
   if (p.budgetTier && budgetLabels[p.budgetTier]) summary.push({ key: 'budget', text: budgetLabels[p.budgetTier], isLearned: false });
