@@ -1,13 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Navbar from './components/Navbar';
 import HomeHero from './components/home/HomeHero';
 import InteractiveTripDemo from './components/home/InteractiveTripDemo';
 import HomeValueProp from './components/home/HomeValueProp';
-import PreferencesDrawer from './components/PreferencesDrawer';
 import CtaFinal from './components/CtaFinal';
 import Footer from './components/Footer';
+
+const PreferencesDrawer = dynamic(() => import('./components/PreferencesDrawer'), {
+  ssr: false,
+});
 
 export default function Home() {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
