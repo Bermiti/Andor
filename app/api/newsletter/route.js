@@ -5,6 +5,20 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function safePagePath(value) {
+  const raw = cleanString(value, '', 240);
+  if (!raw.startsWith('/')) return '';
+  try {
+    const pathname = new URL(raw, 'https://andor.invalid').pathname;
+    return pathname
+      .replace(/^\/invitations\/[^/]+/i, '/invitations/:token')
+      .replace(/^\/itinerary\/share\/[^/]+/i, '/itinerary/share/:token')
+      .replace(/^\/itinerary\/(?!share(?:\/|$)|tokyo-food(?:\/|$)|hidden-gems-lisbon(?:\/|$))[^/]+/i, '/itinerary/:id');
+  } catch {
+    return '';
+  }
+}
+
 export async function POST(req) {
   const body = await readJsonBody(req, 'newsletter');
   if (!body || typeof body !== 'object') {
@@ -15,14 +29,23 @@ export async function POST(req) {
   if (!email || !isValidEmail(email)) {
     return apiError('INVALID_EMAIL', 'Indica um email valido.', 400, false);
   }
+  if (body.consent !== true) {
+    return apiError(
+      'CONSENT_REQUIRED',
+      'Confirma que aceitas receber comunicações da Andor.',
+      422,
+      false,
+    );
+  }
 
   const result = await createNewsletterSubscriber({
     email,
     source: cleanString(body.source, 'newsletter_popup', 80),
     locale: cleanLocale(body.locale),
     metadata: {
-      page: cleanString(body.page, '', 240),
-      userAgent: cleanString(req.headers.get('user-agent'), '', 240),
+      page: safePagePath(body.page),
+      consent: 'newsletter_marketing_v1',
+      consentedAt: new Date().toISOString(),
     },
   });
 

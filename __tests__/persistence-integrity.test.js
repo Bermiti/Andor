@@ -33,6 +33,7 @@ describe('persistence integrity', () => {
 
     const response = await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
       email: 'traveler@example.com',
+      consent: true,
     }));
     const body = await response.json();
 
@@ -49,11 +50,38 @@ describe('persistence integrity', () => {
 
     const response = await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
       email: 'traveler@example.com',
+      consent: true,
     }));
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body).toEqual({ ok: true, provider: 'supabase', id: 'subscriber-1' });
+  });
+
+  test('newsletter requires explicit consent and redacts private route identifiers', async () => {
+    const missingConsent = await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
+      email: 'traveler@example.com',
+      page: '/invitations/private-token',
+    }));
+    expect(missingConsent.status).toBe(422);
+    expect(dbMocks.createNewsletterSubscriber).not.toHaveBeenCalled();
+
+    dbMocks.createNewsletterSubscriber.mockResolvedValue({
+      ok: true,
+      provider: 'supabase',
+      id: 'subscriber-2',
+    });
+    await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
+      email: 'traveler@example.com',
+      consent: true,
+      page: '/invitations/private-token?email=hidden@example.com',
+    }));
+    expect(dbMocks.createNewsletterSubscriber).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        page: '/invitations/:token',
+        consent: 'newsletter_marketing_v1',
+      }),
+    }));
   });
 
   test('custom requests never invent a local request id', async () => {
