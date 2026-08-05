@@ -1,0 +1,73 @@
+.container {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--b-1);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.stageWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stagePill {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: var(--r-md, 12px);
+  cursor: pointer;
+  min-width: 140px;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.stagePill:hover {
+  border-color: var(--b-gold, #D4A843);
+  background: var(--bg-elevated);
+}
+
+.stagePill.active {
+  border-color: var(--gold, #D4A843);
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.08) 0%, var(--bg-2) 100%);
+  box-shadow: 0 4px 12px rgba(212, 168, 67, 0.1);
+}
+
+.destination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t-1);
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--t-3);
+}
+
+.transfer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--t-2);
+  border: 1px solid var(--b-1);
+  flex-shrink: 0;
+}
