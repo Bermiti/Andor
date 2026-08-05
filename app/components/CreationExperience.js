@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sparkles,
   MapPin,
@@ -16,28 +16,11 @@ import {
   AlertCircle,
   ChevronRight,
   Info,
+  HelpCircle,
 } from 'lucide-react';
 import { parseNaturalLanguageIntent, buildConfirmationChips } from '../lib/natural-intent-parser';
 import { getTravelPersona, updateTravelPersona } from '../lib/travel-persona';
 import styles from './CreationExperience.module.css';
-
-const PACE_OPTIONS = [
-  { id: 'relaxed', label: 'Tranquilo & Calmo', desc: 'Menos locais por dia, mais tempo livre e refeições sem pressa' },
-  { id: 'balanced', label: 'Equilibrado', desc: 'Ritmo ideal entre visitas marcantes e momentos espontâneos' },
-  { id: 'fast', label: 'Intenso & Completo', desc: 'Maximiza o tempo para ver o maior número de pontos icónicos' },
-];
-
-const STYLE_OPTIONS = [
-  { id: 'local_authentic', label: 'Autêntico & Local', desc: 'Bairros genuínos, tabernas locais e recantos fora do circuito' },
-  { id: 'popular_highlights', label: 'Monumentos Icónicos', desc: 'Cartões postais imperdíveis, monumentos e atrações famosas' },
-  { id: 'hidden_gems', label: 'Segredos Escondidos', desc: 'Lugares tranquilos, miradouros menos conhecidos e locais calmos' },
-];
-
-const BUDGET_OPTIONS = [
-  { id: 'economic', label: 'Económico', desc: 'Otimizado para poupança sem prescindir de qualidade' },
-  { id: 'moderate', label: 'Equilibrado', desc: 'Boa relação qualidade-preço em alojamento e restauração' },
-  { id: 'luxury', label: 'Conforto Superior', desc: 'Alojamentos premium, refeições selecionadas e maior conforto' },
-];
 
 export default function CreationExperience({
   isOpen,
@@ -48,10 +31,11 @@ export default function CreationExperience({
 }) {
   const [inputText, setInputText] = useState(initialText);
   const [intent, setIntent] = useState(null);
-  const [step, setStep] = useState(1); // 1: Natural Intent & Chips, 2: Adaptive Choices, 3: Live Preview, 4: Generating
+  const [step, setStep] = useState(1); // 1: Input & Chips, 2: Dynamic Adaptive Questions, 3: True Preview, 4: Generating
   const [editingChip, setEditingChip] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [adaptiveAnswers, setAdaptiveAnswers] = useState({});
 
   // Initialize intent from initial input
   useEffect(() => {
@@ -59,12 +43,15 @@ export default function CreationExperience({
       const textToParse = initialText || (initialDestination ? `Viagem para ${initialDestination}` : '');
       setInputText(textToParse);
       const parsed = parseNaturalLanguageIntent(textToParse);
-      if (initialDestination && !parsed.destination) {
-        parsed.destination = initialDestination;
+      if (initialDestination && parsed.fields.destinations.length === 0) {
+        parsed.fields.destinations = [{ raw: initialDestination, canonical: initialDestination, type: 'city' }];
+        parsed.missingFields = parsed.missingFields.filter((f) => f !== 'destinations');
       }
       setIntent(parsed);
       setStep(1);
       setErrorMsg('');
+      setIsSubmitting(false);
+      setAdaptiveAnswers({});
     }
   }, [isOpen, initialText, initialDestination]);
 
@@ -81,21 +68,103 @@ export default function CreationExperience({
     setEditingChip(editingChip === chipKey ? null : chipKey);
   };
 
-  const updateIntentField = (field, value) => {
-    setIntent((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const updateField = (fieldName, val) => {
+    setIntent((prev) => {
+      const nextFields = { ...prev.fields, [fieldName]: val };
+      const nextMissing = prev.missingFields.filter((f) => f !== fieldName);
+      return {
+        ...prev,
+        fields: nextFields,
+        missingFields: nextMissing,
+      };
+    });
     setEditingChip(null);
   };
 
-  const handleProceedToAdapt = () => {
-    if (!intent?.destination || !intent.destination.trim()) {
-      setErrorMsg('Indica o destino da viagem antes de continuar.');
+  // Determine dynamic questions needed based on intent state
+  const getDynamicQuestions = () => {
+    if (!intent || !intent.fields) return [];
+
+    const questions = [];
+    const f = intent.fields;
+
+    // 1. Missing Destination Question
+    if (f.destinations.length === 0) {
+      questions.push({
+        id: 'missing_destination',
+        title: 'Para onde gostarias de viajar?',
+        desc: 'Escolhe um estilo de destino para sugerirmos as melhores opções.',
+        options: [
+          { id: 'dest_europe_classic', label: 'Europa Clássica (Roma, Paris, Lisboa)', value: 'Roma, Itália' },
+          { id: 'dest_nature_islands', label: 'Natureza & Ilhas (Açores, Escócia)', value: 'Açores, Portugal' },
+          { id: 'dest_asia_exotic', label: 'Exótico & Ásia (Tóquio, Bali)', value: 'Tóquio, Japão' },
+        ],
+        onSelect: (opt) => {
+          updateField('destinations', [{ raw: opt.value, canonical: opt.value, type: 'city' }]);
+        },
+      });
+    }
+
+    // 2. Budget Conflict Question (if detected)
+    if (intent.conflicts.some((c) => c.field === 'budget')) {
+      questions.push({
+        id: 'conflict_budget',
+        title: 'Clarificação sobre o Orçamento',
+        desc: 'Foram detetados sinais de luxo e economia. Qual é a tua prioridade real?',
+        options: [
+          { id: 'budget_eco', label: 'Prioridade a Poupança (Económico)', value: { tier: 'economic', label: 'Económico' } },
+          { id: 'budget_mod', label: 'Equilíbrio Qualidade-Preço', value: { tier: 'moderate', label: 'Equilibrado' } },
+          { id: 'budget_lux', label: 'Prioridade a Luxo e Conforto', value: { tier: 'luxury', label: 'Luxo' } },
+        ],
+        onSelect: (opt) => updateField('budget', opt.value),
+      });
+    }
+
+    // 3. Multi-destination or Long Duration Split Question
+    if (f.destinations.length > 1 || (f.durationDays && f.durationDays >= 7)) {
+      questions.push({
+        id: 'accommodation_split',
+        title: 'Estadia & Deslocação',
+        desc: `Com ${f.durationDays || 7} dias, preferes fixar base numa só cidade ou dividir estadias?`,
+        options: [
+          { id: 'single_base', label: 'Fixar base num único alojamento' },
+          { id: 'split_stages', label: 'Dividir noites entre várias cidades' },
+        ],
+        onSelect: (opt) => setAdaptiveAnswers((prev) => ({ ...prev, accommodationSplit: opt.id })),
+      });
+    }
+
+    // 4. Missing Pace Question (only if pace is not set)
+    if (!f.pace) {
+      questions.push({
+        id: 'pace_selection',
+        title: 'Ritmo da Viagem',
+        desc: 'Como preferes distribuir o tempo durante os dias?',
+        options: [
+          { id: 'relaxed', label: 'Tranquilo & Calmo (Mais tempo livre)' },
+          { id: 'balanced', label: 'Equilibrado (Ritmo ideal)' },
+          { id: 'fast', label: 'Intenso (Ver tudo o que for possível)' },
+        ],
+        onSelect: (opt) => updateField('pace', { pace: opt.id, label: opt.label }),
+      });
+    }
+
+    return questions;
+  };
+
+  const dynamicQuestions = getDynamicQuestions();
+
+  const handleProceedFromStep1 = () => {
+    if (!intent?.fields?.destinations || intent.fields.destinations.length === 0) {
+      setErrorMsg('Indica o destino da viagem para continuar.');
       return;
     }
     setErrorMsg('');
-    setStep(2);
+    if (dynamicQuestions.length > 0) {
+      setStep(2);
+    } else {
+      setStep(3); // Skip straight to preview if all info is clear!
+    }
   };
 
   const handleProceedToPreview = () => {
@@ -103,27 +172,33 @@ export default function CreationExperience({
   };
 
   const handleGenerate = async () => {
+    if (isSubmitting) return; // Duplicate submission safety
+    setIsSubmitting(true);
     setStep(4);
     setErrorMsg('');
 
     try {
-      // Save user choices to persona for progress learning
+      const f = intent.fields;
+
+      // Update persona locally & transparently
       updateTravelPersona({
-        pace: intent.pace?.pace || 'balanced',
-        budgetTier: intent.budget?.tier || 'moderate',
-        interests: (intent.interests || []).map((i) => i.id),
+        pace: f.pace?.pace || 'balanced',
+        budgetTier: f.budget?.tier || 'moderate',
+        interests: (f.interests || []).map((i) => i.id),
       });
 
       const body = {
-        destination: intent.destination,
-        days: intent.durationDays || 5,
-        travelStyle: intent.pace?.pace || 'balanced',
-        budgetTier: intent.budget?.tier || 'moderate',
-        stylesList: (intent.interests || []).map((i) => i.id),
-        travelers: intent.travelers || { adults: 2, children: 0 },
-        dates: intent.dates || null,
+        destination: f.destinations[0]?.canonical || 'Lisboa, Portugal',
+        destinations: f.destinations,
+        days: f.durationDays || 5,
+        travelStyle: f.pace?.pace || 'balanced',
+        budgetTier: f.budget?.tier || 'moderate',
+        stylesList: (f.interests || []).map((i) => i.id),
+        travelers: f.travelers || { adults: 2, children: 0 },
+        dates: f.dates || null,
+        adaptiveAnswers,
         generationIntent: {
-          key: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          requestId: `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           fingerprint: JSON.stringify(intent),
         },
       };
@@ -137,7 +212,7 @@ export default function CreationExperience({
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        throw new Error(data.error?.message || data.message || 'Erro ao gerar o roteiro.');
+        throw new Error(data.error?.message || data.message || 'Erro na geração da viagem.');
       }
 
       const tripId = data.id || data.itinerary?.id;
@@ -145,16 +220,18 @@ export default function CreationExperience({
         if (onItineraryCreated) onItineraryCreated(data);
         window.location.href = `/itinerary/${tripId}`;
       } else {
-        throw new Error('Nenhum identificador de viagem devolvido.');
+        throw new Error('Identificador da viagem não devolvido.');
       }
     } catch (err) {
-      console.error('Generation error:', err);
-      setErrorMsg(err.message || 'Ocorreu um erro ao criar o roteiro. Tenta novamente.');
+      console.error('Generation failure:', err);
+      setIsSubmitting(false);
+      setErrorMsg(err.message || 'Erro de comunicação ao criar o roteiro. Tenta novamente.');
       setStep(3);
     }
   };
 
   const chips = buildConfirmationChips(intent);
+  const f = intent?.fields || {};
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -185,19 +262,19 @@ export default function CreationExperience({
           </div>
         )}
 
-        {/* Step 1: Natural Intent & Chips */}
+        {/* Step 1: Natural Text & Structured Chips */}
         {step === 1 && (
           <div className={styles.stepContent}>
             <h2 className={styles.title}>Descreve a viagem que imaginas</h2>
             <p className={styles.subtitle}>
-              Escreve como falares a um amigo. A Andor extrai automaticamente o destino, duração e preferências.
+              Escreve em linguagem natural. A Andor extrai os dados e pede apenas o que faltar.
             </p>
 
             <div className={styles.inputWrapper}>
               <textarea
                 className={styles.textarea}
                 rows={3}
-                placeholder="Ex: Quero viajar 5 dias para Itália em casal em setembro, com foco em praia e boa comida..."
+                placeholder="Ex: Quero passar cinco dias em Roma em setembro com a minha namorada..."
                 value={inputText}
                 onChange={handleTextChange}
                 autoFocus
@@ -206,7 +283,7 @@ export default function CreationExperience({
 
             {/* Extracted Chips Section */}
             <div className={styles.chipsSection}>
-              <div className={styles.chipsTitle}>O que a Andor já percebeu:</div>
+              <div className={styles.chipsTitle}>Dados extraídos da intenção:</div>
               <div className={styles.chipsGrid}>
                 {chips.map((chip) => (
                   <div
@@ -220,52 +297,32 @@ export default function CreationExperience({
                 ))}
               </div>
 
-              {/* Inline Chip Quick Editors */}
-              {editingChip === 'destination' && (
+              {/* Inline Chip Contextual Editors */}
+              {editingChip === 'destinations' && (
                 <div className={styles.quickEditor}>
                   <label>Destino:</label>
                   <input
                     type="text"
-                    value={intent?.destination || ''}
-                    onChange={(e) => updateIntentField('destination', e.target.value)}
-                    placeholder="Cidade ou País"
+                    value={f.destinations[0]?.canonical || ''}
+                    onChange={(e) =>
+                      updateField('destinations', [{ raw: e.target.value, canonical: e.target.value, type: 'city' }])
+                    }
+                    placeholder="Ex: Roma, Itália"
                   />
                 </div>
               )}
 
               {editingChip === 'durationDays' && (
                 <div className={styles.quickEditor}>
-                  <label>Número de Dias:</label>
+                  <label>Duração (dias):</label>
                   <div className={styles.numSelector}>
                     {[3, 4, 5, 7, 10, 14].map((d) => (
                       <button
                         key={d}
-                        className={intent?.durationDays === d ? styles.numActive : ''}
-                        onClick={() => updateIntentField('durationDays', d)}
+                        className={f.durationDays === d ? styles.numActive : ''}
+                        onClick={() => updateField('durationDays', d)}
                       >
                         {d}d
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {editingChip === 'travelers' && (
-                <div className={styles.quickEditor}>
-                  <label>Companheiros:</label>
-                  <div className={styles.optionRow}>
-                    {[
-                      { label: 'Casal', adults: 2, children: 0, type: 'couple' },
-                      { label: 'Solo', adults: 1, children: 0, type: 'solo' },
-                      { label: 'Família', adults: 2, children: 2, type: 'family' },
-                      { label: 'Amigos', adults: 4, children: 0, type: 'friends' },
-                    ].map((opt) => (
-                      <button
-                        key={opt.label}
-                        className={intent?.travelers?.label === opt.label ? styles.numActive : ''}
-                        onClick={() => updateIntentField('travelers', opt)}
-                      >
-                        {opt.label}
                       </button>
                     ))}
                   </div>
@@ -274,78 +331,44 @@ export default function CreationExperience({
             </div>
 
             <div className={styles.actionsRow}>
-              <button className={styles.primaryBtn} onClick={handleProceedToAdapt}>
-                <span>Continuar e Ajustar Detalhes</span>
+              <button className={styles.primaryBtn} onClick={handleProceedFromStep1}>
+                <span>{dynamicQuestions.length > 0 ? 'Continuar e Ajustar Lacunas' : 'Ver Resumo da Viagem'}</span>
                 <ArrowRight size={16} />
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 2: Adaptive Visual Choices */}
+        {/* Step 2: Dynamic Adaptive Questions */}
         {step === 2 && (
           <div className={styles.stepContent}>
-            <h2 className={styles.title}>Ajustes Rápidos</h2>
-            <p className={styles.subtitle}>3 escolhas simples para afinar a tua experiência sem formulários longos.</p>
+            <h2 className={styles.title}>Perguntas Adaptativas</h2>
+            <p className={styles.subtitle}>Apenas as decisões necessárias para esclarecer a tua viagem.</p>
 
-            {/* Choice 1: Pace */}
-            <div className={styles.choiceGroup}>
-              <div className={styles.groupLabel}>1. Qual é o ritmo ideal?</div>
-              <div className={styles.cardsGrid}>
-                {PACE_OPTIONS.map((opt) => (
-                  <div
-                    key={opt.id}
-                    className={`${styles.selectCard} ${intent?.pace?.pace === opt.id ? styles.selectedCard : ''}`}
-                    onClick={() => updateIntentField('pace', { pace: opt.id, label: opt.label })}
-                  >
-                    <div className={styles.cardHeader}>
-                      <span className={styles.cardTitle}>{opt.label}</span>
-                      {intent?.pace?.pace === opt.id && <Check size={16} className={styles.checkIcon} />}
-                    </div>
-                    <div className={styles.cardDesc}>{opt.desc}</div>
+            <div className={styles.questionsContainer}>
+              {dynamicQuestions.map((q) => (
+                <div key={q.id} className={styles.choiceGroup}>
+                  <div className={styles.groupLabel}>{q.title}</div>
+                  <div className={styles.groupSub}>{q.desc}</div>
+                  <div className={styles.cardsGrid}>
+                    {q.options.map((opt) => (
+                      <div
+                        key={opt.id}
+                        className={`${styles.selectCard} ${adaptiveAnswers[q.id] === opt.id ? styles.selectedCard : ''}`}
+                        onClick={() => {
+                          setAdaptiveAnswers((prev) => ({ ...prev, [q.id]: opt.id }));
+                          if (q.onSelect) q.onSelect(opt);
+                        }}
+                      >
+                        <div className={styles.cardHeader}>
+                          <span className={styles.cardTitle}>{opt.label}</span>
+                          {adaptiveAnswers[q.id] === opt.id && <Check size={16} className={styles.checkIcon} />}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Choice 2: Style */}
-            <div className={styles.choiceGroup}>
-              <div className={styles.groupLabel}>2. Que tipo de locais preferes?</div>
-              <div className={styles.cardsGrid}>
-                {STYLE_OPTIONS.map((opt) => (
-                  <div
-                    key={opt.id}
-                    className={`${styles.selectCard} ${intent?.style === opt.id ? styles.selectedCard : ''}`}
-                    onClick={() => updateIntentField('style', opt.id)}
-                  >
-                    <div className={styles.cardHeader}>
-                      <span className={styles.cardTitle}>{opt.label}</span>
-                      {intent?.style === opt.id && <Check size={16} className={styles.checkIcon} />}
-                    </div>
-                    <div className={styles.cardDesc}>{opt.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Choice 3: Budget */}
-            <div className={styles.choiceGroup}>
-              <div className={styles.groupLabel}>3. Qual é o nível de orçamento?</div>
-              <div className={styles.cardsGrid}>
-                {BUDGET_OPTIONS.map((opt) => (
-                  <div
-                    key={opt.id}
-                    className={`${styles.selectCard} ${intent?.budget?.tier === opt.id ? styles.selectedCard : ''}`}
-                    onClick={() => updateIntentField('budget', { tier: opt.id, label: opt.label })}
-                  >
-                    <div className={styles.cardHeader}>
-                      <span className={styles.cardTitle}>{opt.label}</span>
-                      {intent?.budget?.tier === opt.id && <Check size={16} className={styles.checkIcon} />}
-                    </div>
-                    <div className={styles.cardDesc}>{opt.desc}</div>
-                  </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
 
             <div className={styles.actionsRow}>
@@ -360,43 +383,45 @@ export default function CreationExperience({
           </div>
         )}
 
-        {/* Step 3: Live Preview Before Generation */}
+        {/* Step 3: True Preview (No invented specific activities) */}
         {step === 3 && (
           <div className={styles.stepContent}>
             <h2 className={styles.title}>Resumo do Roteiro</h2>
-            <p className={styles.subtitle}>Confirma os dados da viagem antes de dar início à geração.</p>
+            <p className={styles.subtitle}>Verifica a estrutura antes da geração real pela IA.</p>
 
             <div className={styles.previewBox}>
               <div className={styles.previewHeader}>
                 <MapPin size={18} className={styles.previewIcon} />
-                <span className={styles.previewDest}>{intent?.destination}</span>
-                <span className={styles.previewDays}>{intent?.durationDays} Dias</span>
+                <span className={styles.previewDest}>
+                  {f.destinations.map((d) => d.canonical).join(' + ') || 'Destino a escolher'}
+                </span>
+                <span className={styles.previewDays}>{f.durationDays || 5} Dias</span>
               </div>
 
               <div className={styles.previewGrid}>
                 <div className={styles.previewItem}>
-                  <span className={styles.itemLabel}>Acompanhantes</span>
-                  <span className={styles.itemVal}>{intent?.travelers?.label || 'Casal'}</span>
+                  <span className={styles.itemLabel}>Viajantes</span>
+                  <span className={styles.itemVal}>{f.travelers?.label || 'Casal'}</span>
                 </div>
                 <div className={styles.previewItem}>
                   <span className={styles.itemLabel}>Orçamento</span>
-                  <span className={styles.itemVal}>{intent?.budget?.label || 'Equilibrado'}</span>
+                  <span className={styles.itemVal}>{f.budget?.label || 'Equilibrado'}</span>
                 </div>
                 <div className={styles.previewItem}>
                   <span className={styles.itemLabel}>Ritmo</span>
-                  <span className={styles.itemVal}>{intent?.pace?.label || 'Equilibrado'}</span>
+                  <span className={styles.itemVal}>{f.pace?.label || 'Equilibrado'}</span>
                 </div>
                 <div className={styles.previewItem}>
                   <span className={styles.itemLabel}>Interesses</span>
                   <span className={styles.itemVal}>
-                    {intent?.interests?.length > 0 ? intent.interests.map((i) => i.label).join(', ') : 'Gerais'}
+                    {f.interests?.length > 0 ? f.interests.map((i) => i.label).join(', ') : 'Gerais'}
                   </span>
                 </div>
               </div>
 
               <div className={styles.confidenceBar}>
                 <div className={styles.confidenceHeader}>
-                  <span>Confiança nos dados da viagem</span>
+                  <span>Confiança na estrutura da viagem</span>
                   <span>{Math.round((intent?.confidence?.overall || 0.85) * 100)}%</span>
                 </div>
                 <div className={styles.barTrack}>
@@ -409,22 +434,22 @@ export default function CreationExperience({
             </div>
 
             <div className={styles.actionsRow}>
-              <button className={styles.secondaryBtn} onClick={() => setStep(2)}>
-                Ajustar Escolhas
+              <button className={styles.secondaryBtn} onClick={() => setStep(dynamicQuestions.length > 0 ? 2 : 1)}>
+                Ajustar
               </button>
-              <button className={styles.primaryBtn} onClick={handleGenerate}>
+              <button className={styles.primaryBtn} onClick={handleGenerate} disabled={isSubmitting}>
                 <Sparkles size={16} />
-                <span>Gerar Roteiro Personalizado</span>
+                <span>{isSubmitting ? 'A Gerar...' : 'Gerar Roteiro Personalizado'}</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 4: Generation Loading State */}
+        {/* Step 4: Loading State */}
         {step === 4 && (
           <div className={styles.loadingState}>
             <div className={styles.spinner} />
-            <h2 className={styles.loadingTitle}>A criar o teu roteiro para {intent?.destination}...</h2>
+            <h2 className={styles.loadingTitle}>A criar o teu roteiro para {f.destinations[0]?.canonical}...</h2>
             <p className={styles.loadingSub}>
               A selecionar atividades verificadas, otimizar deslocações e ajustar ao teu ritmo.
             </p>
