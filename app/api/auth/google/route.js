@@ -1,99 +1,86 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import {
-  LOCAL_AUTH_COOKIE,
-  sessionCookieOptions,
-} from '../../../lib/auth-constants';
-import { resolveAuthBackend, toPublicAuthUser } from '../../../lib/server/identity';
-import { loginLocalUser } from '../../../lib/server/local-auth';
+import { apiError } from '../../../lib/api-utils';
+import { resolveAuthOrigin, safeAuthRedirectPath } from '../../../lib/auth-redirect';
+import { logger } from '../../../lib/logger';
+import { resolveAuthBackend } from '../../../lib/server/identity';
 import { createSupabaseServerClient } from '../../../lib/supabase/server';
 
 export const runtime = 'nodejs';
 
+function callbackUrl(origin, nextPath) {
+  const url = new URL('/api/auth/callback', origin);
+  url.searchParams.set('next', nextPath);
+  return url.toString();
+}
+
+function loginErrorRedirect(origin, code) {
+  const url = new URL('/', origin);
+  url.searchParams.set('authError', code);
+  return privateRedirect(url);
+}
+
+function privateRedirect(url) {
+  const response = NextResponse.redirect(url);
+  response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  return response;
+}
+
 export async function GET(request) {
-  const { searchParams, origin } = new URL(request.url);
-  const next = searchParams.get('next') || '/my-trips';
+  const requestUrl = new URL(request.url);
+  const appOrigin = resolveAuthOrigin(requestUrl);
+  const nextPath = safeAuthRedirectPath(requestUrl.searchParams.get('next'));
 
-  const backend = resolveAuthBackend();
-
-  // 1. Supabase OAuth Google redirect
-  if (backend === 'supabase') {
-    try {
-      const supabase = await createSupabaseServerClient();
-      const redirectTo = `${origin}/api/auth/callback?next=${encodeURIComponent(next)}`;
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      if (error || !data?.url) {
-        return NextResponse.redirect(`${origin}/?authError=${encodeURIComponent(error?.message || 'OAuth error')}`);
-      }
-
-      return NextResponse.redirect(data.url);
-    } catch (err) {
-      console.error('Google OAuth error:', err);
-    }
+  if (resolveAuthBackend() !== 'supabase') {
+    return loginErrorRedirect(appOrigin, 'google_not_configured');
   }
 
-  // 2. Local / Development / Fallback mode Google sign in
-  const googleMockUser = {
-    email: 'google.user@andortravel.com',
-    password: 'GoogleUserPassword123!',
-    name: 'Viajante Google',
-  };
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) {
+      return loginErrorRedirect(appOrigin, 'google_not_configured');
+    }
 
-  const loginRes = loginLocalUser(googleMockUser);
-  const sessionToken = loginRes.ok ? loginRes.session.token : 'google-oauth-session-token';
-  const userPayload = loginRes.ok ? loginRes.user : toPublicAuthUser({
-    id: 'usr_google_default',
-    email: googleMockUser.email,
-    name: googleMockUser.name,
-    user_metadata: { name: googleMockUser.name, avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
-  });
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: callbackUrl(appOrigin, nextPath),
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
 
-  const cookieStore = await cookies();
-  cookieStore.set(LOCAL_AUTH_COOKIE, sessionToken, sessionCookieOptions());
+    if (error || !data?.url) {
+      logger.warn('auth_google:start_failed', error || new Error('Missing OAuth redirect URL'));
+      return loginErrorRedirect(appOrigin, 'google_start_failed');
+    }
 
-  return NextResponse.redirect(`${origin}${next}`);
+    return privateRedirect(data.url);
+  } catch (error) {
+    logger.warn('auth_google:start_failed', error);
+    return loginErrorRedirect(appOrigin, 'google_start_failed');
+  }
 }
 
 export async function POST(request) {
-  const backend = resolveAuthBackend();
-
-  if (backend === 'supabase') {
-    return NextResponse.json({
-      redirect: true,
-      url: '/api/auth/google',
-    });
+  if (resolveAuthBackend() !== 'supabase') {
+    return apiError(
+      'GOOGLE_AUTH_UNAVAILABLE',
+      'O login Google ainda não está configurado neste ambiente. Usa email e palavra-passe.',
+      503,
+      false
+    );
   }
 
-  const googleMockUser = {
-    email: 'google.user@andortravel.com',
-    password: 'GoogleUserPassword123!',
-    name: 'Viajante Google',
-  };
-
-  const loginRes = loginLocalUser(googleMockUser);
-  const sessionToken = loginRes.ok ? loginRes.session.token : 'google-oauth-session-token';
-  const userPayload = loginRes.ok ? loginRes.user : toPublicAuthUser({
-    id: 'usr_google_default',
-    email: googleMockUser.email,
-    name: googleMockUser.name,
-  });
-
-  const cookieStore = await cookies();
-  cookieStore.set(LOCAL_AUTH_COOKIE, sessionToken, sessionCookieOptions());
+  const nextPath = request
+    ? safeAuthRedirectPath(new URL(request.url).searchParams.get('next'))
+    : safeAuthRedirectPath(null);
 
   return NextResponse.json({
-    authenticated: true,
-    provider: backend,
-    user: userPayload,
+    redirect: true,
+    url: `/api/auth/google?next=${encodeURIComponent(nextPath)}`,
   });
 }

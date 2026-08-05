@@ -55,8 +55,11 @@ export async function executeProviderRequest({
   }
 
   // 3. Rate limiting per provider policy
-  const rateLimitResult = await checkRateLimit(`policy:provider:${providerId}`, `prov:${providerId}`, 100, 60);
-  if (rateLimitResult.limited) {
+  // The internal subject keeps one aggregate bucket per provider while using the
+  // same policy API as authenticated and request-scoped rate limits.
+  const providerSubject = { authenticated: true, userId: `provider:${providerId}` };
+  const rateLimitResult = await checkRateLimit('provider_request', providerSubject, null);
+  if (!rateLimitResult.allowed) {
     return {
       success: false,
       error: {

@@ -21,10 +21,10 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [locale, setLocaleState] = useState('pt');
-  const [theme, setThemeState] = useState('dark');
   const [mounted, setMounted] = useState(false);
 
-  // Initialize language and theme from localStorage on mount
+  // Initialize language. The product currently has one deliberate editorial
+  // theme, so stale legacy preferences are normalized to dark.
   useEffect(() => {
     setMounted(true);
     const savedLang = localStorage.getItem('andor_lang');
@@ -34,17 +34,8 @@ export function LanguageProvider({ children }) {
       setLocaleState('pt');
     }
 
-    const savedTheme = localStorage.getItem('andor_theme');
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      setThemeState(savedTheme);
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    } else {
-      // Auto-detect browser color scheme preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const themeVal = prefersDark ? 'dark' : 'light';
-      setThemeState(themeVal);
-      document.documentElement.setAttribute('data-theme', themeVal);
-    }
+    localStorage.setItem('andor_theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
   }, []);
 
   const setLocale = (newLocale) => {
@@ -52,21 +43,6 @@ export function LanguageProvider({ children }) {
       setLocaleState(newLocale);
       localStorage.setItem('andor_lang', newLocale);
     }
-  };
-
-  const setTheme = (newTheme) => {
-    if (newTheme === 'light' || newTheme === 'dark') {
-      setThemeState(newTheme);
-      localStorage.setItem('andor_theme', newTheme);
-      
-      // Smooth transitions between modes
-      document.documentElement.style.transition = 'background-color 400ms ease, color 400ms ease';
-      document.documentElement.setAttribute('data-theme', newTheme);
-    }
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
   const activeTranslations = translationsMap[locale] || pt;
@@ -111,7 +87,7 @@ export function LanguageProvider({ children }) {
   };
 
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, theme, setTheme, toggleTheme, t: translate, translations: activeTranslations, mounted }}>
+    <LanguageContext.Provider value={{ locale, setLocale, t: translate, translations: activeTranslations, mounted }}>
       {children}
     </LanguageContext.Provider>
   );

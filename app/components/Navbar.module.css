@@ -200,7 +200,6 @@
 .mobileDivider,
 .mobileSectionTitle,
 .mobileLangList,
-.mobileThemeToggle,
 .mobileActions,
 .loginBtnMobile,
 .ctaBtnMobile,
@@ -750,30 +749,10 @@
   font-weight: 600;
 }
 
-.mobileThemeToggle {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-light);
-  color: var(--text-primary);
-  font-family: var(--font-heading);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-align: center;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.mobileThemeToggle:hover {
-  border-color: var(--border-gold);
-}
-
 @media (min-width: 769px) {
   .mobileDivider,
   .mobileSectionTitle,
   .mobileLangList,
-  .mobileThemeToggle,
   .mobileActions,
   .loginBtnMobile,
   .ctaBtnMobile,
@@ -862,7 +841,6 @@
 .userMenu,
 .loginBtnMobile,
 .userMenuItemMobile,
-.mobileThemeToggle,
 .mobileLangItem {
   background: var(--surface-elevated);
   border-color: rgba(255,255,255,0.10);

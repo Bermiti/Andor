@@ -100,8 +100,8 @@ export default function RootLayout({ children }) {
         <Script id="theme-script" strategy="beforeInteractive" dangerouslySetInnerHTML={{__html: `
           (function() {
             try {
-              const theme = localStorage.getItem('andor_theme') || 'dark';
-              document.documentElement.setAttribute('data-theme', theme);
+              localStorage.setItem('andor_theme', 'dark');
+              document.documentElement.setAttribute('data-theme', 'dark');
             } catch(e) {}
           })();
         `}} />

@@ -85,6 +85,10 @@ export function getRateLimitConfig(policyName) {
       windowSeconds: parseInt(process.env.RATE_LIMIT_NEWSLETTER_WINDOW || '86400', 10), // 24 hours
       maxLimit: parseInt(process.env.RATE_LIMIT_NEWSLETTER_MAX || '3', 10),
     },
+    provider_request: {
+      windowSeconds: parseInt(process.env.RATE_LIMIT_PROVIDER_WINDOW || '60', 10),
+      maxLimit: parseInt(process.env.RATE_LIMIT_PROVIDER_MAX || '100', 10),
+    },
   };
 
   return configs[policyName] || { windowSeconds: 60, maxLimit: 30 };

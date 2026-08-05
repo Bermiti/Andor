@@ -19,7 +19,7 @@ const languages = [
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { locale, setLocale, theme, toggleTheme, mounted } = useLanguage();
+  const { locale, setLocale } = useLanguage();
   const t = useTranslations('nav');
   
   const [scrolled, setScrolled] = useState(false);
@@ -27,10 +27,10 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const [authErrorCode, setAuthErrorCode] = useState(null);
   
   const isMyTrips = pathname === '/my-trips';
-  const isLightTheme = theme === 'light';
-  const forceDarkText = (isMyTrips && !scrolled) || isLightTheme;
+  const forceDarkText = isMyTrips && !scrolled;
   
   const getLinkClass = (href) => {
     const isActive = href === '/'
@@ -43,6 +43,19 @@ export default function Navbar() {
   const langDropdownRef = useRef(null);
 
   useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    const callbackError = currentUrl.searchParams.get('authError');
+    if (callbackError) {
+      setAuthErrorCode(callbackError);
+      setIsLoginOpen(true);
+      currentUrl.searchParams.delete('authError');
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+      );
+    }
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 80);
     };
@@ -151,18 +164,6 @@ export default function Navbar() {
               ))}
             </div>
             
-            <div className={styles.mobileDivider}></div>
-            <div className={styles.mobileSectionTitle}>Tema</div>
-            <button 
-              className={styles.mobileThemeToggle} 
-              onClick={() => {
-                toggleTheme();
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              <span>{theme === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Escuro'}</span>
-            </button>
-            
             {/* Mobile-only actions */}
             <div className={styles.mobileActions}>
               {user ? (
@@ -269,7 +270,15 @@ export default function Navbar() {
         </div>
       </nav>
       
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <LoginModal
+        isOpen={isLoginOpen}
+        initialErrorCode={authErrorCode}
+        redirectPath={pathname?.startsWith('/invitations/') ? pathname : '/my-trips'}
+        onClose={() => {
+          setIsLoginOpen(false);
+          setAuthErrorCode(null);
+        }}
+      />
     </>
   );
 }

@@ -120,18 +120,25 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (nextPath = '/my-trips') => {
     try {
       setLoading(true);
-      const response = await fetch('/api/auth/google', {
+      const response = await fetch(`/api/auth/google?next=${encodeURIComponent(nextPath)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
       });
       const payload = await readPayload(response);
 
+      if (!response.ok) {
+        return {
+          error: payload?.error?.message
+            || 'Não foi possível iniciar o login Google. Tenta novamente.',
+        };
+      }
+
       if (payload?.redirect && payload?.url) {
-        window.location.href = payload.url;
+        window.location.assign(payload.url);
         return { success: true, redirecting: true };
       }
 
@@ -142,8 +149,7 @@ export function AuthProvider({ children }) {
         return { success: true };
       }
 
-      window.location.href = '/api/auth/google';
-      return { success: true, redirecting: true };
+      return { error: 'O servidor não devolveu um fluxo de login Google válido.' };
     } catch (error) {
       return { error: 'Não foi possível ligar ao serviço de autenticação Google.' };
     } finally {

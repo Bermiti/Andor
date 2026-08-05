@@ -9,6 +9,7 @@ import {
   toPublicAuthUser,
 } from '../../../lib/server/identity';
 import { loginLocalUser } from '../../../lib/server/local-auth';
+import { checkRateLimit, getRateLimitHeaders } from '../../../lib/server/rate-limit';
 import { createSupabaseServerClient } from '../../../lib/supabase/server';
 import { cookies } from 'next/headers';
 
@@ -19,10 +20,34 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
 }).strict();
 
+function withRateLimitHeaders(response, headers) {
+  Object.entries(headers).forEach(([name, value]) => response.headers.set(name, value));
+  response.headers.set('Cache-Control', 'no-store, private');
+  return response;
+}
+
 export async function POST(req) {
+  const rateLimit = await checkRateLimit('auth_login', null, req);
+  const rateLimitHeaders = getRateLimitHeaders(rateLimit);
+  if (!rateLimit.allowed) {
+    return Response.json(
+      {
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Muitas tentativas. Tenta novamente mais tarde.',
+          retryable: true,
+        },
+      },
+      { status: 429, headers: { ...rateLimitHeaders, 'Cache-Control': 'no-store, private' } }
+    );
+  }
+
   const parsed = loginSchema.safeParse(await readJsonBody(req, 'auth_login'));
   if (!parsed.success) {
-    return apiError('INVALID_LOGIN', 'Introduz um email e palavra-passe validos.', 400, false);
+    return withRateLimitHeaders(
+      apiError('INVALID_LOGIN', 'Introduz um email e palavra-passe validos.', 400, false),
+      rateLimitHeaders
+    );
   }
 
   const backend = resolveAuthBackend();
@@ -30,29 +55,38 @@ export async function POST(req) {
     const result = loginLocalUser(parsed.data);
     if (!result.ok) {
       const unavailable = result.code === 'LOCAL_AUTH_DISABLED';
-      return apiError(
-        unavailable ? 'AUTH_NOT_CONFIGURED' : 'INVALID_CREDENTIALS',
-        unavailable ? 'Autenticacao indisponivel.' : 'Email ou palavra-passe invalidos.',
-        unavailable ? 503 : 401,
-        unavailable
+      return withRateLimitHeaders(
+        apiError(
+          unavailable ? 'AUTH_NOT_CONFIGURED' : 'INVALID_CREDENTIALS',
+          unavailable ? 'Autenticacao indisponivel.' : 'Email ou palavra-passe invalidos.',
+          unavailable ? 503 : 401,
+          unavailable
+        ),
+        rateLimitHeaders
       );
     }
     const cookieStore = await cookies();
     cookieStore.set(LOCAL_AUTH_COOKIE, result.session.token, sessionCookieOptions());
     return Response.json(
       { authenticated: true, provider: 'local', user: result.user },
-      { headers: { 'Cache-Control': 'no-store, private' } }
+      { headers: { ...rateLimitHeaders, 'Cache-Control': 'no-store, private' } }
     );
   }
 
   if (backend !== 'supabase') {
-    return apiError('AUTH_NOT_CONFIGURED', 'Autenticacao indisponivel.', 503, true);
+    return withRateLimitHeaders(
+      apiError('AUTH_NOT_CONFIGURED', 'Autenticacao indisponivel.', 503, true),
+      rateLimitHeaders
+    );
   }
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error || !data?.session || !data?.user) {
-    return apiError('INVALID_CREDENTIALS', 'Email ou palavra-passe invalidos.', 401, false);
+    return withRateLimitHeaders(
+      apiError('INVALID_CREDENTIALS', 'Email ou palavra-passe invalidos.', 401, false),
+      rateLimitHeaders
+    );
   }
 
   return Response.json(
@@ -61,6 +95,6 @@ export async function POST(req) {
       provider: 'supabase',
       user: toPublicAuthUser(data.user),
     },
-    { headers: { 'Cache-Control': 'no-store, private' } }
+    { headers: { ...rateLimitHeaders, 'Cache-Control': 'no-store, private' } }
   );
 }

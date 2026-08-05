@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
 import { executeProviderRequest } from '../app/lib/server/provider-executor';
+import { clearRateLimitStore } from '../app/lib/server/rate-limit';
 import {
   calculateEstimatedRoute,
   calculateStraightLineDistance,
@@ -15,6 +16,14 @@ import {
 } from '../app/lib/server/weather-provider';
 
 describe('Sprint 3.2 Weather, Routing, and Executor Test Suite', () => {
+  beforeEach(() => {
+    clearRateLimitStore();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('distinguishes live weather forecasts from historical climate normals and estimates', async () => {
     const historical = getHistoricalClimateNormals('PT', 8);
     expect(historical.measurementType).toBe('climate_normals');
@@ -65,5 +74,26 @@ describe('Sprint 3.2 Weather, Routing, and Executor Test Suite', () => {
     expect(res.success).toBe(true);
     expect(res.data.canonicalName).toBe('Lisboa');
     expect(res.correlationId).toBeDefined();
+  });
+
+  it('blocks a provider after its configured aggregate request limit', async () => {
+    vi.stubEnv('RATE_LIMIT_PROVIDER_MAX', '1');
+    const executorFn = vi.fn(async () => ({ ok: true }));
+    const request = {
+      providerId: 'provider-rate-limit-test',
+      capability: 'geography',
+      input: { query: 'Lisboa' },
+      executorFn,
+    };
+
+    await expect(executeProviderRequest(request)).resolves.toMatchObject({ success: true });
+    await expect(executeProviderRequest(request)).resolves.toMatchObject({
+      success: false,
+      error: {
+        code: 'PROVIDER_RATE_LIMITED',
+        retryable: true,
+      },
+    });
+    expect(executorFn).toHaveBeenCalledTimes(1);
   });
 });
