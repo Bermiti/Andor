@@ -1,559 +1,361 @@
-create extension if not exists "pgcrypto";
 
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text not null,
-  name text,
-  bio text default '',
-  interests text[] default array[]::text[],
-  visited_countries text[] default array[]::text[],
-  looking_for_buddy boolean default false,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
 
--- Create the application profile even when email confirmation means signUp does
--- not return an authenticated session. OAuth and password users share this path.
-create or replace function public.handle_new_auth_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+
+CREATE SCHEMA IF NOT EXISTS "private";
+
+
+ALTER SCHEMA "private" OWNER TO "postgres";
+
+
+CREATE SCHEMA IF NOT EXISTS "public";
+
+
+ALTER SCHEMA "public" OWNER TO "pg_database_owner";
+
+
+COMMENT ON SCHEMA "public" IS 'standard public schema';
+
+
+
+CREATE OR REPLACE FUNCTION "private"."current_audit_actor"() RETURNS "uuid"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $_$
+declare
+  delegated_actor text := current_setting('andor.actor_user_id', true);
 begin
-  insert into public.profiles as existing (id, email, name)
-  values (
-    new.id,
-    coalesce(new.email, ''),
-    coalesce(
-      nullif(new.raw_user_meta_data ->> 'name', ''),
-      nullif(new.raw_user_meta_data ->> 'full_name', ''),
-      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
-      'Viajante'
-    )
+  if auth.uid() is not null then
+    return auth.uid();
+  end if;
+  if delegated_actor ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    return delegated_actor::uuid;
+  end if;
+  return null;
+end;
+$_$;
+
+
+ALTER FUNCTION "private"."current_audit_actor"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."accept_trip_invitation_transaction"("p_token_hash" "text", "p_user_id" "uuid", "p_email_hash" "text") RETURNS TABLE("status" "text", "trip_id" "uuid", "role" "text")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare
+  invitation public.trip_invitations%rowtype;
+  trip_owner uuid;
+  affected_rows bigint;
+begin
+  if p_user_id is null
+     or p_token_hash !~ '^[0-9a-f]{64}$'
+     or p_email_hash !~ '^[0-9a-f]{64}$'
+     or not exists (select 1 from auth.users where id = p_user_id) then
+    return query select 'not_found'::text, null::uuid, null::text;
+    return;
+  end if;
+
+  select candidate.* into invitation
+  from public.trip_invitations candidate
+  where candidate.token_hash = p_token_hash
+  for update;
+
+  if not found then
+    return query select 'not_found'::text, null::uuid, null::text;
+    return;
+  end if;
+
+  if invitation.accepted_at is not null then
+    if invitation.accepted_by = p_user_id then
+      if exists (
+        select 1 from public.trip_members member
+        where member.trip_id = invitation.trip_id
+          and member.user_id = p_user_id
+          and member.role = invitation.role
+          and member.revoked_at is null
+      ) then
+        return query select 'already_accepted'::text, invitation.trip_id, invitation.role;
+      else
+        return query select 'invalid_state'::text, null::uuid, null::text;
+      end if;
+    else
+      return query select 'not_found'::text, null::uuid, null::text;
+    end if;
+    return;
+  end if;
+
+  if invitation.revoked_at is not null then
+    return query select 'revoked'::text, null::uuid, null::text;
+    return;
+  end if;
+  if invitation.expires_at <= now() then
+    return query select 'expired'::text, null::uuid, null::text;
+    return;
+  end if;
+  if invitation.email_hash is distinct from p_email_hash
+     or invitation.role not in ('editor', 'viewer') then
+    return query select 'forbidden'::text, null::uuid, null::text;
+    return;
+  end if;
+
+  select itinerary.owner_id into trip_owner
+  from public.itineraries itinerary
+  where itinerary.id = invitation.trip_id
+    and itinerary.deleted_at is null;
+
+  if trip_owner is null
+     or trip_owner = p_user_id
+     or invitation.invited_by = p_user_id then
+    return query select 'forbidden'::text, null::uuid, null::text;
+    return;
+  end if;
+
+  perform set_config('andor.actor_user_id', p_user_id::text, true);
+
+  insert into public.trip_members (
+    trip_id, user_id, role, invited_by, accepted_at, revoked_at, updated_at
+  ) values (
+    invitation.trip_id, p_user_id, invitation.role, invitation.invited_by,
+    now(), null, now()
   )
-  on conflict (id) do update
-  set email = excluded.email,
-      name = coalesce(nullif(existing.name, ''), excluded.name),
-      updated_at = now();
-  return new;
+  on conflict on constraint trip_members_pkey do update
+  set role = excluded.role,
+      invited_by = excluded.invited_by,
+      accepted_at = excluded.accepted_at,
+      revoked_at = null,
+      updated_at = excluded.updated_at
+  where public.trip_members.role <> 'owner';
+
+  update public.trip_invitations
+  set accepted_by = p_user_id,
+      accepted_at = now(),
+      updated_at = now()
+  where id = invitation.id
+    and accepted_at is null
+    and revoked_at is null
+    and expires_at > now();
+
+  get diagnostics affected_rows = row_count;
+  if affected_rows <> 1 then
+    raise exception 'invitation state changed during acceptance'
+      using errcode = '40001';
+  end if;
+
+  return query select 'accepted'::text, invitation.trip_id, invitation.role;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."accept_trip_invitation_transaction"("p_token_hash" "text", "p_user_id" "uuid", "p_email_hash" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."audit_invitation_change"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+declare
+  row_value public.trip_invitations%rowtype;
+  event_action text;
+begin
+  if tg_op = 'DELETE' then
+    row_value := old;
+    event_action := 'invitation.deleted';
+  elsif tg_op = 'INSERT' then
+    row_value := new;
+    event_action := 'invitation.created';
+  else
+    row_value := new;
+    event_action := case
+      when new.accepted_at is not null and old.accepted_at is null then 'invitation.accepted'
+      when new.revoked_at is not null and old.revoked_at is null then 'invitation.revoked'
+      else 'invitation.updated'
+    end;
+  end if;
+  perform public.record_trip_audit_event(
+    row_value.trip_id,
+    event_action,
+    'invitation', row_value.id,
+    jsonb_build_object('role', row_value.role)
+  );
+  return row_value;
 end;
 $$;
 
-revoke all on function public.handle_new_auth_user() from public;
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute function public.handle_new_auth_user();
 
-create table if not exists public.itineraries (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  owner_key text,
-  destination text not null,
-  destination_city text,
-  destination_country text,
-  days_count int not null default 0,
-  style text,
-  budget_tier text,
-  travelers int,
-  start_date date,
-  end_date date,
-  share_token uuid not null default gen_random_uuid(),
-  itinerary jsonb not null,
-  source text not null default 'generated',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
+ALTER FUNCTION "public"."audit_invitation_change"() OWNER TO "postgres";
 
-alter table public.itineraries add column if not exists owner_key text;
-update public.itineraries
-set owner_key = 'supabase:' || user_id::text
-where owner_key is null and user_id is not null;
 
-create unique index if not exists itineraries_share_token_idx on public.itineraries(share_token);
-create index if not exists itineraries_user_id_created_at_idx on public.itineraries(user_id, created_at desc);
-
-create table if not exists public.itinerary_versions (
-  id uuid primary key default gen_random_uuid(),
-  itinerary_id uuid not null references public.itineraries(id) on delete cascade,
-  user_id uuid references auth.users(id) on delete set null,
-  label text not null,
-  itinerary jsonb not null,
-  created_at timestamptz default now()
-);
-
-create table if not exists public.itinerary_shares (
-  id uuid primary key default gen_random_uuid(),
-  source_key text not null,
-  owner_key text not null,
-  token_hash text not null unique,
-  audience text not null check (audience in ('client', 'internal')),
-  payload jsonb not null,
-  expires_at timestamptz not null,
-  revoked_at timestamptz,
-  created_at timestamptz not null default now(),
-  last_accessed_at timestamptz
-);
-
-create index if not exists itinerary_shares_owner_source_idx
-  on public.itinerary_shares(owner_key, source_key, created_at desc);
-create index if not exists itinerary_shares_expiry_idx
-  on public.itinerary_shares(expires_at) where revoked_at is null;
-
-create table if not exists public.trip_ledgers (
-  trip_key text not null,
-  owner_key text not null,
-  ledger jsonb not null default '{"participants":[],"expenses":[]}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  primary key (trip_key, owner_key)
-);
-
-create index if not exists trip_ledgers_owner_updated_idx
-  on public.trip_ledgers(owner_key, updated_at desc);
-
-create table if not exists public.newsletter_subscribers (
-  id uuid primary key default gen_random_uuid(),
-  email text not null unique,
-  source text default 'newsletter_popup',
-  locale text default 'pt',
-  status text not null default 'active',
-  metadata jsonb default '{}'::jsonb,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table if not exists public.custom_requests (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  destination text not null,
-  start_date date not null,
-  end_date date not null,
-  budget numeric,
-  travelers text,
-  notes text,
-  status text not null default 'pending',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-alter table public.profiles enable row level security;
-alter table public.itineraries enable row level security;
-alter table public.itinerary_versions enable row level security;
-alter table public.itinerary_shares enable row level security;
-alter table public.trip_ledgers enable row level security;
-alter table public.newsletter_subscribers enable row level security;
-alter table public.custom_requests enable row level security;
-
-drop policy if exists "profiles_select_own" on public.profiles;
-create policy "profiles_select_own" on public.profiles for select using (auth.uid() = id);
-drop policy if exists "profiles_insert_own" on public.profiles;
-create policy "profiles_insert_own" on public.profiles for insert with check (auth.uid() = id);
-drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
-
-drop policy if exists "itineraries_select_own_or_shared" on public.itineraries;
-drop policy if exists "itineraries_select_own" on public.itineraries;
-create policy "itineraries_select_own" on public.itineraries for select using (auth.uid() = user_id);
-drop policy if exists "itineraries_insert_own" on public.itineraries;
-create policy "itineraries_insert_own" on public.itineraries for insert with check (auth.uid() = user_id);
-drop policy if exists "itineraries_update_own" on public.itineraries;
-create policy "itineraries_update_own" on public.itineraries for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "versions_select_own" on public.itinerary_versions;
-create policy "versions_select_own" on public.itinerary_versions for select using (auth.uid() = user_id);
-drop policy if exists "versions_insert_own" on public.itinerary_versions;
-create policy "versions_insert_own" on public.itinerary_versions for insert with check (auth.uid() = user_id);
-
-drop policy if exists "newsletter_insert_anyone" on public.newsletter_subscribers;
-create policy "newsletter_insert_anyone" on public.newsletter_subscribers for insert with check (true);
-
-drop policy if exists "custom_requests_insert_anyone" on public.custom_requests;
-create policy "custom_requests_insert_anyone" on public.custom_requests for insert with check (true);
-drop policy if exists "custom_requests_select_own" on public.custom_requests;
-create policy "custom_requests_select_own" on public.custom_requests for select using (auth.uid() = user_id);
-
--- ---------------------------------------------------------------------------
--- Sprint 1 canonical schema
--- ---------------------------------------------------------------------------
--- This fresh-install snapshot applies the same canonicalization used by the
--- versioned upgrade below, so empty and existing databases converge without
--- maintaining a second copy of the security rules by hand.
-
--- Andor Sprint 1: canonical ownership, collaboration, durable imports and RLS.
---
--- This migration deliberately preserves the legacy `user_id`, `owner_key`,
--- `share_token`, `itinerary_shares` and text ledger keys. They are compatibility
--- data only after this migration; no RLS decision depends on them.
-
-begin;
-
-create extension if not exists "pgcrypto";
-
--- ---------------------------------------------------------------------------
--- Canonical itinerary columns and quarantine of ownerless legacy rows
--- ---------------------------------------------------------------------------
-
-alter table public.itineraries
-  add column if not exists owner_id uuid references auth.users(id) on delete restrict,
-  add column if not exists visibility text not null default 'private',
-  add column if not exists status text not null default 'active',
-  add column if not exists currency text not null default 'EUR',
-  add column if not exists schema_version integer not null default 1,
-  add column if not exists version bigint not null default 1,
-  add column if not exists deleted_at timestamptz,
-  add column if not exists legacy_quarantined_at timestamptz;
-
-update public.itineraries
-set owner_id = user_id
-where owner_id is null
-  and user_id is not null;
-
-update public.itineraries
-set status = 'legacy_pending',
-    visibility = 'private',
-    legacy_quarantined_at = coalesce(legacy_quarantined_at, now())
-where owner_id is null;
-
-update public.itineraries
-set user_id = owner_id,
-    owner_key = 'supabase:' || owner_id::text,
-    currency = upper(coalesce(nullif(trim(currency), ''), 'EUR')),
-    schema_version = greatest(schema_version, 1),
-    version = greatest(version, 1)
-where owner_id is not null;
-
-do $$
+CREATE OR REPLACE FUNCTION "public"."audit_itinerary_change"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
 begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'itineraries_visibility_check'
-      and conrelid = 'public.itineraries'::regclass
-  ) then
-    alter table public.itineraries
-      add constraint itineraries_visibility_check
-      check (visibility in ('private', 'unlisted', 'public'));
+  if tg_op = 'INSERT' then
+    perform public.record_trip_audit_event(new.id, 'trip.created', 'trip', new.id,
+      jsonb_build_object('version', new.version, 'visibility', new.visibility));
+    return new;
+  elsif tg_op = 'UPDATE' then
+    perform public.record_trip_audit_event(new.id,
+      case
+        when new.deleted_at is not null and old.deleted_at is null then 'trip.deleted'
+        when new.deleted_at is null and old.deleted_at is not null then 'trip.restored'
+        else 'trip.updated'
+      end,
+      'trip', new.id,
+      jsonb_build_object('version', new.version, 'status', new.status, 'visibility', new.visibility));
+    return new;
+  else
+    perform public.record_trip_audit_event(old.id, 'trip.purged', 'trip', old.id,
+      jsonb_build_object('version', old.version));
+    return old;
   end if;
-
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'itineraries_status_check'
-      and conrelid = 'public.itineraries'::regclass
-  ) then
-    alter table public.itineraries
-      add constraint itineraries_status_check
-      check (status in ('draft', 'active', 'archived', 'deleted', 'legacy_pending'));
-  end if;
-
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'itineraries_currency_check'
-      and conrelid = 'public.itineraries'::regclass
-  ) then
-    alter table public.itineraries
-      add constraint itineraries_currency_check
-      check (currency ~ '^[A-Z]{3}$');
-  end if;
-
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'itineraries_schema_version_check'
-      and conrelid = 'public.itineraries'::regclass
-  ) then
-    alter table public.itineraries
-      add constraint itineraries_schema_version_check
-      check (schema_version >= 1);
-  end if;
-
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'itineraries_version_check'
-      and conrelid = 'public.itineraries'::regclass
-  ) then
-    alter table public.itineraries
-      add constraint itineraries_version_check
-      check (version >= 1);
-  end if;
-
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'itineraries_owner_state_check'
-      and conrelid = 'public.itineraries'::regclass
-  ) then
-    alter table public.itineraries
-      add constraint itineraries_owner_state_check
-      check (
-        (owner_id is null and status = 'legacy_pending' and legacy_quarantined_at is not null)
-        or
-        (owner_id is not null and status <> 'legacy_pending')
-      );
-  end if;
-end
+end;
 $$;
 
-comment on column public.itineraries.owner_id is
-  'Canonical owner. The server must derive this from auth.uid(); never from request JSON.';
-comment on column public.itineraries.user_id is
-  'Deprecated compatibility mirror of owner_id. Do not use for authorization.';
-comment on column public.itineraries.owner_key is
-  'Deprecated legacy identity key. Quarantined compatibility data; never an authorization source.';
-comment on column public.itineraries.share_token is
-  'Deprecated raw token. New links use trip_share_links.token_hash; do not expose this value.';
-comment on column public.itineraries.version is
-  'Optimistic concurrency version. Update with WHERE version = expected_version.';
 
-create index if not exists itineraries_owner_updated_idx
-  on public.itineraries(owner_id, updated_at desc)
-  where owner_id is not null and deleted_at is null;
-create index if not exists itineraries_legacy_quarantine_idx
-  on public.itineraries(legacy_quarantined_at)
-  where owner_id is null;
+ALTER FUNCTION "public"."audit_itinerary_change"() OWNER TO "postgres";
 
--- ---------------------------------------------------------------------------
--- Memberships, invitations, hashed share links, imports and audit
--- ---------------------------------------------------------------------------
 
-create table if not exists public.trip_members (
-  trip_id uuid not null references public.itineraries(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null,
-  invited_by uuid references auth.users(id) on delete set null,
-  accepted_at timestamptz not null default now(),
-  revoked_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  primary key (trip_id, user_id),
-  constraint trip_members_role_check check (role in ('owner', 'editor', 'viewer')),
-  constraint trip_members_owner_active_check check (role <> 'owner' or revoked_at is null)
-);
-
-create index if not exists trip_members_user_active_idx
-  on public.trip_members(user_id, updated_at desc)
-  where revoked_at is null;
-
-insert into public.trip_members (trip_id, user_id, role, invited_by, accepted_at)
-select id, owner_id, 'owner', owner_id, coalesce(created_at, now())
-from public.itineraries
-where owner_id is not null
-on conflict (trip_id, user_id) do update
-set role = 'owner',
-    revoked_at = null,
-    updated_at = now();
-
-create table if not exists public.trip_invitations (
-  id uuid primary key default gen_random_uuid(),
-  trip_id uuid not null references public.itineraries(id) on delete cascade,
-  email_hash text,
-  role text not null,
-  token_hash text not null unique,
-  invited_by uuid not null references auth.users(id) on delete restrict,
-  expires_at timestamptz not null,
-  accepted_at timestamptz,
-  accepted_by uuid references auth.users(id) on delete set null,
-  revoked_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint trip_invitations_role_check check (role in ('editor', 'viewer')),
-  constraint trip_invitations_token_hash_check check (token_hash ~ '^[0-9a-f]{64}$'),
-  constraint trip_invitations_email_hash_check check (
-    email_hash is null or email_hash ~ '^[0-9a-f]{64}$'
-  ),
-  constraint trip_invitations_expiry_check check (expires_at > created_at),
-  constraint trip_invitations_terminal_state_check check (
-    not (accepted_at is not null and revoked_at is not null)
-  )
-);
-
-create index if not exists trip_invitations_trip_created_idx
-  on public.trip_invitations(trip_id, created_at desc);
-create index if not exists trip_invitations_active_idx
-  on public.trip_invitations(expires_at)
-  where accepted_at is null and revoked_at is null;
-
-create table if not exists public.trip_share_links (
-  id uuid primary key default gen_random_uuid(),
-  trip_id uuid not null references public.itineraries(id) on delete cascade,
-  token_hash text not null unique,
-  permission text not null default 'viewer',
-  audience text not null default 'client',
-  created_by uuid not null references auth.users(id) on delete restrict,
-  expires_at timestamptz not null,
-  revoked_at timestamptz,
-  max_uses integer,
-  use_count integer not null default 0,
-  last_accessed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint trip_share_links_audience_check check (audience in ('client', 'internal')),
-  constraint trip_share_links_permission_check check (permission = 'viewer'),
-  constraint trip_share_links_token_hash_check check (token_hash ~ '^[0-9a-f]{64}$'),
-  constraint trip_share_links_expiry_check check (expires_at > created_at),
-  constraint trip_share_links_max_uses_check check (max_uses is null or max_uses > 0),
-  constraint trip_share_links_use_count_check check (use_count >= 0),
-  constraint trip_share_links_use_limit_check check (max_uses is null or use_count <= max_uses)
-);
-
-create index if not exists trip_share_links_trip_created_idx
-  on public.trip_share_links(trip_id, created_at desc);
-create index if not exists trip_share_links_active_idx
-  on public.trip_share_links(expires_at)
-  where revoked_at is null;
-
-create table if not exists public.audit_events (
-  id uuid primary key default gen_random_uuid(),
-  actor_user_id uuid references auth.users(id) on delete set null,
-  trip_id uuid,
-  action text not null,
-  resource_type text not null,
-  resource_id uuid not null,
-  correlation_id text not null default gen_random_uuid()::text,
-  metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  constraint audit_events_action_check check (action ~ '^[a-z][a-z0-9_.-]{2,79}$'),
-  constraint audit_events_resource_type_check check (resource_type ~ '^[a-z][a-z0-9_.-]{1,39}$'),
-  constraint audit_events_metadata_object_check check (jsonb_typeof(metadata) = 'object')
-);
-
-create index if not exists audit_events_trip_created_idx
-  on public.audit_events(trip_id, created_at desc);
-create index if not exists audit_events_actor_created_idx
-  on public.audit_events(actor_user_id, created_at desc);
-
-create table if not exists public.trip_imports (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  idempotency_key text not null,
-  local_id text,
-  payload_hash text not null,
-  trip_id uuid references public.itineraries(id) on delete set null,
-  status text not null default 'pending',
-  conflict_code text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  completed_at timestamptz,
-  constraint trip_imports_idempotency_key_check check (char_length(idempotency_key) between 8 and 200),
-  constraint trip_imports_local_id_check check (
-    local_id is null or char_length(local_id) between 1 and 200
-  ),
-  constraint trip_imports_payload_hash_check check (payload_hash ~ '^[0-9a-f]{64}$'),
-  constraint trip_imports_status_check check (status in ('pending', 'completed', 'conflict', 'failed')),
-  constraint trip_imports_completion_check check (
-    (status = 'pending' and completed_at is null)
-    or status <> 'pending'
-  ),
-  unique (user_id, idempotency_key)
-);
-
-create unique index if not exists trip_imports_user_local_hash_idx
-  on public.trip_imports(user_id, local_id, payload_hash)
-  where local_id is not null;
-create index if not exists trip_imports_user_created_idx
-  on public.trip_imports(user_id, created_at desc);
-
--- Legacy snapshots remain quarantined. New code must write trip_share_links.
-alter table public.itinerary_shares
-  add column if not exists legacy_quarantined_at timestamptz not null default now();
-comment on table public.itinerary_shares is
-  'Deprecated payload snapshots. Service-only quarantine; new links belong in trip_share_links.';
-
--- Canonicalize the existing ledger table without destroying text-keyed rows.
-alter table public.trip_ledgers
-  add column if not exists itinerary_id uuid references public.itineraries(id) on delete cascade,
-  add column if not exists version bigint not null default 1,
-  add column if not exists legacy_quarantined_at timestamptz;
-
-with ledger_candidates as materialized (
-  select ctid as row_id,
-         case
-           when trip_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-             then trip_key::uuid
-         end as trip_id
-  from public.trip_ledgers
-  where itinerary_id is null
-)
-update public.trip_ledgers ledger
-set itinerary_id = candidate.trip_id
-from ledger_candidates candidate
-where ledger.ctid = candidate.row_id
-  and candidate.trip_id is not null
-  and exists (
-    select 1 from public.itineraries itinerary
-    where itinerary.id = candidate.trip_id
-      and itinerary.owner_id is not null
-      and ledger.owner_key = 'supabase:' || itinerary.owner_id::text
+CREATE OR REPLACE FUNCTION "public"."audit_membership_change"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+declare
+  row_value public.trip_members%rowtype;
+  event_action text;
+begin
+  if tg_op = 'DELETE' then
+    row_value := old;
+    event_action := 'member.removed';
+  elsif tg_op = 'INSERT' then
+    row_value := new;
+    event_action := 'member.added';
+  else
+    row_value := new;
+    event_action := case
+      when new.revoked_at is not null and old.revoked_at is null then 'member.revoked'
+      else 'member.updated'
+    end;
+  end if;
+  perform public.record_trip_audit_event(
+    row_value.trip_id,
+    event_action,
+    'member', row_value.user_id,
+    jsonb_build_object('role', row_value.role)
   );
-
-update public.trip_ledgers
-set legacy_quarantined_at = coalesce(legacy_quarantined_at, now())
-where itinerary_id is null;
-
-create unique index if not exists trip_ledgers_itinerary_idx
-  on public.trip_ledgers(itinerary_id)
-  where itinerary_id is not null;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'trip_ledgers_version_check'
-      and conrelid = 'public.trip_ledgers'::regclass
-  ) then
-    alter table public.trip_ledgers
-      add constraint trip_ledgers_version_check check (version >= 1);
-  end if;
-end
+  return row_value;
+end;
 $$;
 
-comment on column public.trip_ledgers.trip_key is
-  'Deprecated compatibility key. Canonical authorization uses itinerary_id.';
-comment on column public.trip_ledgers.owner_key is
-  'Deprecated compatibility key. Never use for authorization.';
 
--- Rework durable versions so permission follows the parent itinerary.
-alter table public.itinerary_versions
-  add column if not exists created_by uuid references auth.users(id) on delete set null,
-  add column if not exists version bigint;
+ALTER FUNCTION "public"."audit_membership_change"() OWNER TO "postgres";
 
-update public.itinerary_versions
-set created_by = user_id
-where created_by is null and user_id is not null;
 
-with ranked as (
-  select id,
-         row_number() over (partition by itinerary_id order by created_at, id) as ordinal
-  from public.itinerary_versions
-)
-update public.itinerary_versions version_row
-set version = ranked.ordinal
-from ranked
-where version_row.id = ranked.id
-  and version_row.version is null;
+CREATE OR REPLACE FUNCTION "public"."audit_share_link_change"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+declare
+  row_value public.trip_share_links%rowtype;
+  event_action text;
+begin
+  if tg_op = 'DELETE' then
+    row_value := old;
+    event_action := 'share.deleted';
+  elsif tg_op = 'INSERT' then
+    row_value := new;
+    event_action := 'share.created';
+  else
+    row_value := new;
+    event_action := case
+      when new.revoked_at is not null and old.revoked_at is null then 'share.revoked'
+      else 'share.updated'
+    end;
+  end if;
+  perform public.record_trip_audit_event(
+    row_value.trip_id,
+    event_action,
+    'share_link', row_value.id,
+    jsonb_build_object('audience', row_value.audience)
+  );
+  return row_value;
+end;
+$$;
 
-alter table public.itinerary_versions
-  alter column version set default 1,
-  alter column version set not null;
 
-create unique index if not exists itinerary_versions_trip_version_idx
-  on public.itinerary_versions(itinerary_id, version);
+ALTER FUNCTION "public"."audit_share_link_change"() OWNER TO "postgres";
 
-comment on column public.itinerary_versions.user_id is
-  'Deprecated compatibility actor. Authorization follows itinerary membership.';
 
--- ---------------------------------------------------------------------------
--- Role helpers. SECURITY DEFINER avoids recursive trip_members RLS evaluation.
--- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION "public"."canonicalize_trip_ledger"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $_$
+declare
+  canonical_owner uuid;
+begin
+  if new.itinerary_id is null
+     and new.trip_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    if exists (
+      select 1 from public.itineraries
+      where id = new.trip_key::uuid and owner_id is not null
+    ) then
+      new.itinerary_id := new.trip_key::uuid;
+    end if;
+  end if;
 
-create or replace function public.current_user_has_trip_role(
-  p_trip_id uuid,
-  p_roles text[] default array['owner', 'editor', 'viewer']::text[]
-)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, pg_temp
-as $$
+  if new.itinerary_id is null then
+    new.legacy_quarantined_at := coalesce(new.legacy_quarantined_at, now());
+  else
+    select owner_id into canonical_owner
+    from public.itineraries
+    where id = new.itinerary_id;
+
+    if canonical_owner is null then
+      raise exception 'canonical ledger requires an owned itinerary'
+        using errcode = '23514';
+    end if;
+
+    if tg_op = 'UPDATE' and new.itinerary_id is distinct from old.itinerary_id then
+      raise exception 'ledger itinerary is immutable'
+        using errcode = '42501';
+    end if;
+
+    new.trip_key := new.itinerary_id::text;
+    new.owner_key := 'supabase:' || canonical_owner::text;
+    new.legacy_quarantined_at := null;
+  end if;
+
+  if tg_op = 'UPDATE' then
+    new.version := old.version + 1;
+  else
+    new.version := greatest(coalesce(new.version, 1), 1);
+    new.created_at := coalesce(new.created_at, now());
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."canonicalize_trip_ledger"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."current_user_has_trip_role"("p_trip_id" "uuid", "p_roles" "text"[] DEFAULT ARRAY['owner'::"text", 'editor'::"text", 'viewer'::"text"]) RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
   select exists (
     select 1
     from public.trip_members member
@@ -564,13 +366,14 @@ as $$
   );
 $$;
 
-create or replace function public.current_user_owns_trip(p_trip_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, pg_temp
-as $$
+
+ALTER FUNCTION "public"."current_user_has_trip_role"("p_trip_id" "uuid", "p_roles" "text"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."current_user_owns_trip"("p_trip_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
   select exists (
     select 1
     from public.itineraries itinerary
@@ -579,20 +382,14 @@ as $$
   );
 $$;
 
-revoke all on function public.current_user_has_trip_role(uuid, text[]) from public;
-revoke all on function public.current_user_owns_trip(uuid) from public;
-grant execute on function public.current_user_has_trip_role(uuid, text[]) to authenticated;
-grant execute on function public.current_user_owns_trip(uuid) to authenticated;
 
--- ---------------------------------------------------------------------------
--- Integrity and optimistic concurrency triggers
--- ---------------------------------------------------------------------------
+ALTER FUNCTION "public"."current_user_owns_trip"("p_trip_id" "uuid") OWNER TO "postgres";
 
-create or replace function public.enforce_itinerary_invariants()
-returns trigger
-language plpgsql
-set search_path = public, pg_temp
-as $$
+
+CREATE OR REPLACE FUNCTION "public"."enforce_itinerary_invariants"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
 begin
   if tg_op = 'INSERT' then
     if new.owner_id is null and new.user_id is not null then
@@ -612,7 +409,7 @@ begin
       new.user_id := new.owner_id;
       new.owner_key := 'supabase:' || new.owner_id::text;
       if new.status = 'legacy_pending' then
-        new.status := 'active';
+        new.status := 'draft';
       end if;
       new.legacy_quarantined_at := null;
     end if;
@@ -676,48 +473,59 @@ begin
   if new.deleted_at is not null then
     new.status := 'deleted';
   elsif old.deleted_at is not null and new.deleted_at is null and new.status = 'deleted' then
-    new.status := 'active';
+    new.status := 'draft';
   end if;
 
   return new;
 end;
 $$;
 
-drop trigger if exists itineraries_enforce_invariants on public.itineraries;
-create trigger itineraries_enforce_invariants
-before insert or update on public.itineraries
-for each row execute function public.enforce_itinerary_invariants();
 
-create or replace function public.ensure_itinerary_owner_membership()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
+ALTER FUNCTION "public"."enforce_itinerary_invariants"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."enforce_trip_invitation_client_update"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
 begin
-  if new.owner_id is not null then
-    insert into public.trip_members (
-      trip_id, user_id, role, invited_by, accepted_at, revoked_at
-    ) values (
-      new.id, new.owner_id, 'owner', new.owner_id, now(), null
-    )
-    on conflict (trip_id, user_id) do update
-    set role = 'owner', revoked_at = null, updated_at = now();
+  if current_user = 'authenticated' then
+    if tg_op = 'INSERT' then
+      if new.accepted_at is not null
+         or new.accepted_by is not null
+         or new.revoked_at is not null then
+        raise exception 'new invitations must be pending'
+          using errcode = '42501';
+      end if;
+    elsif new.id is distinct from old.id
+       or new.trip_id is distinct from old.trip_id
+       or new.email_hash is distinct from old.email_hash
+       or new.role is distinct from old.role
+       or new.invited_by is distinct from old.invited_by
+       or new.token_hash is distinct from old.token_hash
+       or new.expires_at is distinct from old.expires_at
+       or new.accepted_by is distinct from old.accepted_by
+       or new.accepted_at is distinct from old.accepted_at
+       or new.created_at is distinct from old.created_at
+       or old.accepted_at is not null
+       or old.revoked_at is not null
+       or new.revoked_at is null then
+      raise exception 'only pending invitation revocation is allowed'
+        using errcode = '42501';
+    end if;
   end if;
   return new;
 end;
 $$;
 
-drop trigger if exists itineraries_ensure_owner_membership on public.itineraries;
-create trigger itineraries_ensure_owner_membership
-after insert or update of owner_id on public.itineraries
-for each row execute function public.ensure_itinerary_owner_membership();
 
-create or replace function public.enforce_trip_member_invariants()
-returns trigger
-language plpgsql
-set search_path = public, pg_temp
-as $$
+ALTER FUNCTION "public"."enforce_trip_invitation_client_update"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."enforce_trip_member_invariants"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
 declare
   canonical_owner uuid;
 begin
@@ -768,161 +576,97 @@ begin
 end;
 $$;
 
-drop trigger if exists trip_members_enforce_invariants on public.trip_members;
-create trigger trip_members_enforce_invariants
-before insert or update on public.trip_members
-for each row execute function public.enforce_trip_member_invariants();
 
-create or replace function public.prevent_owner_membership_delete()
-returns trigger
-language plpgsql
-set search_path = public, pg_temp
-as $$
+ALTER FUNCTION "public"."enforce_trip_member_invariants"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."enforce_trip_share_client_update"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
 begin
-  if old.role = 'owner'
-     and exists (select 1 from public.itineraries where id = old.trip_id) then
-    raise exception 'last owner membership cannot be removed'
-      using errcode = '42501';
-  end if;
-  return old;
-end;
-$$;
-
-drop trigger if exists trip_members_prevent_owner_delete on public.trip_members;
-create trigger trip_members_prevent_owner_delete
-before delete on public.trip_members
-for each row execute function public.prevent_owner_membership_delete();
-
-create or replace function public.set_row_updated_at()
-returns trigger
-language plpgsql
-set search_path = public, pg_temp
-as $$
-begin
-  new.updated_at := now();
-  return new;
-end;
-$$;
-
-drop trigger if exists profiles_set_updated_at on public.profiles;
-create trigger profiles_set_updated_at
-before update on public.profiles
-for each row execute function public.set_row_updated_at();
-
-drop trigger if exists trip_invitations_set_updated_at on public.trip_invitations;
-create trigger trip_invitations_set_updated_at
-before update on public.trip_invitations
-for each row execute function public.set_row_updated_at();
-
-drop trigger if exists trip_share_links_set_updated_at on public.trip_share_links;
-create trigger trip_share_links_set_updated_at
-before update on public.trip_share_links
-for each row execute function public.set_row_updated_at();
-
-drop trigger if exists trip_imports_set_updated_at on public.trip_imports;
-create trigger trip_imports_set_updated_at
-before update on public.trip_imports
-for each row execute function public.set_row_updated_at();
-
-create or replace function public.canonicalize_trip_ledger()
-returns trigger
-language plpgsql
-set search_path = public, pg_temp
-as $$
-declare
-  canonical_owner uuid;
-begin
-  if new.itinerary_id is null
-     and new.trip_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
-    if exists (
-      select 1 from public.itineraries
-      where id = new.trip_key::uuid and owner_id is not null
-    ) then
-      new.itinerary_id := new.trip_key::uuid;
-    end if;
-  end if;
-
-  if new.itinerary_id is null then
-    new.legacy_quarantined_at := coalesce(new.legacy_quarantined_at, now());
-  else
-    select owner_id into canonical_owner
-    from public.itineraries
-    where id = new.itinerary_id;
-
-    if canonical_owner is null then
-      raise exception 'canonical ledger requires an owned itinerary'
-        using errcode = '23514';
-    end if;
-
-    if tg_op = 'UPDATE' and new.itinerary_id is distinct from old.itinerary_id then
-      raise exception 'ledger itinerary is immutable'
+  if current_user = 'authenticated' then
+    if new.id is distinct from old.id
+       or new.trip_id is distinct from old.trip_id
+       or new.token_hash is distinct from old.token_hash
+       or new.permission is distinct from old.permission
+       or new.audience is distinct from old.audience
+       or new.created_by is distinct from old.created_by
+       or new.expires_at is distinct from old.expires_at
+       or new.max_uses is distinct from old.max_uses
+       or new.use_count is distinct from old.use_count
+       or new.last_accessed_at is distinct from old.last_accessed_at
+       or new.created_at is distinct from old.created_at
+       or old.revoked_at is not null
+       or new.revoked_at is null then
+      raise exception 'only active share-link revocation is allowed'
         using errcode = '42501';
     end if;
-
-    new.trip_key := new.itinerary_id::text;
-    new.owner_key := 'supabase:' || canonical_owner::text;
-    new.legacy_quarantined_at := null;
   end if;
-
-  if tg_op = 'UPDATE' then
-    new.version := old.version + 1;
-  else
-    new.version := greatest(coalesce(new.version, 1), 1);
-    new.created_at := coalesce(new.created_at, now());
-  end if;
-  new.updated_at := now();
   return new;
 end;
 $$;
 
-drop trigger if exists trip_ledgers_canonicalize on public.trip_ledgers;
-create trigger trip_ledgers_canonicalize
-before insert or update on public.trip_ledgers
-for each row execute function public.canonicalize_trip_ledger();
 
--- Invitation acceptance deliberately has no authenticated SQL RPC. The server
--- resolves the opaque hash through its narrow service-role boundary, verifies
--- the invitee's HMAC email fingerprint, and only then writes the stored role.
-drop function if exists public.accept_trip_invitation(text);
+ALTER FUNCTION "public"."enforce_trip_share_client_update"() OWNER TO "postgres";
 
--- ---------------------------------------------------------------------------
--- Append-only audit helpers and trigger coverage
--- ---------------------------------------------------------------------------
 
-create or replace function public.record_trip_audit_event(
-  p_trip_id uuid,
-  p_action text,
-  p_resource_type text,
-  p_resource_id uuid,
-  p_metadata jsonb default '{}'::jsonb
-)
-returns void
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
+CREATE OR REPLACE FUNCTION "public"."ensure_itinerary_owner_membership"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
 begin
-  insert into public.audit_events (
-    actor_user_id, trip_id, action, resource_type, resource_id, metadata
-  ) values (
-    auth.uid(), p_trip_id, p_action, p_resource_type, p_resource_id,
-    case when jsonb_typeof(coalesce(p_metadata, '{}'::jsonb)) = 'object'
-      then coalesce(p_metadata, '{}'::jsonb)
-      else '{}'::jsonb
-    end
-  );
+  if new.owner_id is not null then
+    insert into public.trip_members (
+      trip_id, user_id, role, invited_by, accepted_at, revoked_at
+    ) values (
+      new.id, new.owner_id, 'owner', new.owner_id, now(), null
+    )
+    on conflict (trip_id, user_id) do update
+    set role = 'owner', revoked_at = null, updated_at = now();
+  end if;
+  return new;
 end;
 $$;
 
-revoke all on function public.record_trip_audit_event(uuid, text, text, uuid, jsonb) from public;
 
-create or replace function public.normalize_audit_event()
-returns trigger
-language plpgsql
-set search_path = public, pg_temp
-as $$
+ALTER FUNCTION "public"."ensure_itinerary_owner_membership"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."handle_new_auth_user"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
 begin
-  new.actor_user_id := coalesce(new.actor_user_id, auth.uid());
+  insert into public.profiles as existing (id, email, name)
+  values (
+    new.id,
+    coalesce(new.email, ''),
+    coalesce(
+      nullif(new.raw_user_meta_data ->> 'name', ''),
+      nullif(new.raw_user_meta_data ->> 'full_name', ''),
+      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+      'Viajante'
+    )
+  )
+  on conflict (id) do update
+  set email = excluded.email,
+      name = coalesce(nullif(existing.name, ''), excluded.name),
+      updated_at = now();
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."handle_new_auth_user"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."normalize_audit_event"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+begin
+  new.actor_user_id := coalesce(new.actor_user_id, private.current_audit_actor());
   new.correlation_id := coalesce(new.correlation_id, gen_random_uuid()::text);
 
   if new.trip_id is null and new.resource_type = 'trip' then
@@ -941,434 +685,1018 @@ begin
 end;
 $$;
 
-drop trigger if exists audit_events_normalize on public.audit_events;
-create trigger audit_events_normalize
-before insert on public.audit_events
-for each row execute function public.normalize_audit_event();
 
-create or replace function public.audit_itinerary_change()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
+ALTER FUNCTION "public"."normalize_audit_event"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."prevent_owner_membership_delete"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
 begin
-  if tg_op = 'INSERT' then
-    perform public.record_trip_audit_event(new.id, 'trip.created', 'trip', new.id,
-      jsonb_build_object('version', new.version, 'visibility', new.visibility));
-    return new;
-  elsif tg_op = 'UPDATE' then
-    perform public.record_trip_audit_event(new.id,
-      case
-        when new.deleted_at is not null and old.deleted_at is null then 'trip.deleted'
-        when new.deleted_at is null and old.deleted_at is not null then 'trip.restored'
-        else 'trip.updated'
-      end,
-      'trip', new.id,
-      jsonb_build_object('version', new.version, 'status', new.status, 'visibility', new.visibility));
-    return new;
-  else
-    perform public.record_trip_audit_event(old.id, 'trip.purged', 'trip', old.id,
-      jsonb_build_object('version', old.version));
-    return old;
+  if old.role = 'owner'
+     and exists (select 1 from public.itineraries where id = old.trip_id) then
+    raise exception 'last owner membership cannot be removed'
+      using errcode = '42501';
   end if;
+  return old;
 end;
 $$;
 
-drop trigger if exists itineraries_audit on public.itineraries;
-create trigger itineraries_audit
-after insert or update or delete on public.itineraries
-for each row execute function public.audit_itinerary_change();
 
-create or replace function public.audit_membership_change()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  row_value public.trip_members%rowtype;
-  event_action text;
+ALTER FUNCTION "public"."prevent_owner_membership_delete"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."record_trip_audit_event"("p_trip_id" "uuid", "p_action" "text", "p_resource_type" "text", "p_resource_id" "uuid", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
 begin
-  if tg_op = 'DELETE' then
-    row_value := old;
-    event_action := 'member.removed';
-  elsif tg_op = 'INSERT' then
-    row_value := new;
-    event_action := 'member.added';
-  else
-    row_value := new;
-    event_action := case
-      when new.revoked_at is not null and old.revoked_at is null then 'member.revoked'
-      else 'member.updated'
-    end;
-  end if;
-  perform public.record_trip_audit_event(
-    row_value.trip_id,
-    event_action,
-    'member', row_value.user_id,
-    jsonb_build_object('role', row_value.role)
+  insert into public.audit_events (
+    actor_user_id, trip_id, action, resource_type, resource_id, metadata
+  ) values (
+    private.current_audit_actor(), p_trip_id, p_action, p_resource_type, p_resource_id,
+    case when jsonb_typeof(coalesce(p_metadata, '{}'::jsonb)) = 'object'
+      then coalesce(p_metadata, '{}'::jsonb)
+      else '{}'::jsonb
+    end
   );
-  return row_value;
 end;
 $$;
 
-drop trigger if exists trip_members_audit on public.trip_members;
-create trigger trip_members_audit
-after insert or update or delete on public.trip_members
-for each row execute function public.audit_membership_change();
 
-create or replace function public.audit_share_link_change()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  row_value public.trip_share_links%rowtype;
-  event_action text;
+ALTER FUNCTION "public"."record_trip_audit_event"("p_trip_id" "uuid", "p_action" "text", "p_resource_type" "text", "p_resource_id" "uuid", "p_metadata" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."set_row_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
 begin
-  if tg_op = 'DELETE' then
-    row_value := old;
-    event_action := 'share.deleted';
-  elsif tg_op = 'INSERT' then
-    row_value := new;
-    event_action := 'share.created';
-  else
-    row_value := new;
-    event_action := case
-      when new.revoked_at is not null and old.revoked_at is null then 'share.revoked'
-      else 'share.updated'
-    end;
-  end if;
-  perform public.record_trip_audit_event(
-    row_value.trip_id,
-    event_action,
-    'share_link', row_value.id,
-    jsonb_build_object('audience', row_value.audience)
-  );
-  return row_value;
+  new.updated_at := now();
+  return new;
 end;
 $$;
 
-drop trigger if exists trip_share_links_audit on public.trip_share_links;
-create trigger trip_share_links_audit
-after insert or update or delete on public.trip_share_links
-for each row execute function public.audit_share_link_change();
 
-create or replace function public.audit_invitation_change()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  row_value public.trip_invitations%rowtype;
-  event_action text;
-begin
-  if tg_op = 'DELETE' then
-    row_value := old;
-    event_action := 'invitation.deleted';
-  elsif tg_op = 'INSERT' then
-    row_value := new;
-    event_action := 'invitation.created';
-  else
-    row_value := new;
-    event_action := case
-      when new.accepted_at is not null and old.accepted_at is null then 'invitation.accepted'
-      when new.revoked_at is not null and old.revoked_at is null then 'invitation.revoked'
-      else 'invitation.updated'
-    end;
-  end if;
-  perform public.record_trip_audit_event(
-    row_value.trip_id,
-    event_action,
-    'invitation', row_value.id,
-    jsonb_build_object('role', row_value.role)
-  );
-  return row_value;
-end;
-$$;
+ALTER FUNCTION "public"."set_row_updated_at"() OWNER TO "postgres";
 
-drop trigger if exists trip_invitations_audit on public.trip_invitations;
-create trigger trip_invitations_audit
-after insert or update or delete on public.trip_invitations
-for each row execute function public.audit_invitation_change();
+SET default_tablespace = '';
 
--- ---------------------------------------------------------------------------
--- RLS: every action is explicit. False policies document service-only actions.
--- ---------------------------------------------------------------------------
+SET default_table_access_method = "heap";
 
-alter table public.profiles enable row level security;
-alter table public.itineraries enable row level security;
-alter table public.trip_members enable row level security;
-alter table public.trip_invitations enable row level security;
-alter table public.trip_share_links enable row level security;
-alter table public.audit_events enable row level security;
-alter table public.trip_imports enable row level security;
-alter table public.itinerary_versions enable row level security;
-alter table public.itinerary_shares enable row level security;
-alter table public.trip_ledgers enable row level security;
-alter table public.newsletter_subscribers enable row level security;
-alter table public.custom_requests enable row level security;
 
-drop policy if exists "profiles_select_own" on public.profiles;
-drop policy if exists "profiles_insert_own" on public.profiles;
-drop policy if exists "profiles_update_own" on public.profiles;
-drop policy if exists "profiles_delete_own" on public.profiles;
-create policy "profiles_select_own" on public.profiles
-  for select to authenticated using (id = auth.uid());
-create policy "profiles_insert_own" on public.profiles
-  for insert to authenticated with check (id = auth.uid());
-create policy "profiles_update_own" on public.profiles
-  for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
-create policy "profiles_delete_own" on public.profiles
-  for delete to authenticated using (id = auth.uid());
+CREATE TABLE IF NOT EXISTS "public"."audit_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "actor_user_id" "uuid",
+    "trip_id" "uuid",
+    "action" "text" NOT NULL,
+    "resource_type" "text" NOT NULL,
+    "resource_id" "uuid" NOT NULL,
+    "correlation_id" "text" DEFAULT ("gen_random_uuid"())::"text" NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "audit_events_action_check" CHECK (("action" ~ '^[a-z][a-z0-9_.-]{2,79}$'::"text")),
+    CONSTRAINT "audit_events_metadata_object_check" CHECK (("jsonb_typeof"("metadata") = 'object'::"text")),
+    CONSTRAINT "audit_events_resource_type_check" CHECK (("resource_type" ~ '^[a-z][a-z0-9_.-]{1,39}$'::"text"))
+);
 
-drop policy if exists "itineraries_select_own_or_shared" on public.itineraries;
-drop policy if exists "itineraries_select_own" on public.itineraries;
-drop policy if exists "itineraries_insert_own" on public.itineraries;
-drop policy if exists "itineraries_update_own" on public.itineraries;
-drop policy if exists "itineraries_select_member" on public.itineraries;
-drop policy if exists "itineraries_insert_owner" on public.itineraries;
-drop policy if exists "itineraries_update_owner_editor" on public.itineraries;
-drop policy if exists "itineraries_delete_owner" on public.itineraries;
-create policy "itineraries_select_member" on public.itineraries
-  for select to authenticated
-  using (public.current_user_has_trip_role(id, array['owner', 'editor', 'viewer']::text[]));
-create policy "itineraries_insert_owner" on public.itineraries
-  for insert to authenticated
-  with check (
-    owner_id = auth.uid()
-    and user_id = auth.uid()
-    and status = 'active'
-    and visibility = 'private'
-    and deleted_at is null
-  );
-create policy "itineraries_update_owner_editor" on public.itineraries
-  for update to authenticated
-  using (public.current_user_has_trip_role(id, array['owner', 'editor']::text[]))
-  with check (public.current_user_has_trip_role(id, array['owner', 'editor']::text[]));
-create policy "itineraries_delete_owner" on public.itineraries
-  for delete to authenticated
-  using (public.current_user_owns_trip(id));
 
-drop policy if exists "trip_members_select_member" on public.trip_members;
-drop policy if exists "trip_members_insert_owner" on public.trip_members;
-drop policy if exists "trip_members_update_owner" on public.trip_members;
-drop policy if exists "trip_members_delete_owner_or_self" on public.trip_members;
-create policy "trip_members_select_member" on public.trip_members
-  for select to authenticated
-  using (public.current_user_has_trip_role(trip_id));
-create policy "trip_members_insert_owner" on public.trip_members
-  for insert to authenticated
-  with check (
-    public.current_user_owns_trip(trip_id)
-    and role in ('editor', 'viewer')
-    and user_id <> auth.uid()
-    and invited_by = auth.uid()
-    and revoked_at is null
-  );
-create policy "trip_members_update_owner" on public.trip_members
-  for update to authenticated
-  using (public.current_user_owns_trip(trip_id) and role <> 'owner')
-  with check (public.current_user_owns_trip(trip_id) and role in ('editor', 'viewer'));
-create policy "trip_members_delete_owner_or_self" on public.trip_members
-  for delete to authenticated
-  using (
-    role <> 'owner'
-    and (public.current_user_owns_trip(trip_id) or user_id = auth.uid())
-  );
+ALTER TABLE "public"."audit_events" OWNER TO "postgres";
 
-drop policy if exists "trip_invitations_select_owner" on public.trip_invitations;
-drop policy if exists "trip_invitations_insert_owner" on public.trip_invitations;
-drop policy if exists "trip_invitations_update_owner" on public.trip_invitations;
-drop policy if exists "trip_invitations_delete_owner" on public.trip_invitations;
-create policy "trip_invitations_select_owner" on public.trip_invitations
-  for select to authenticated using (public.current_user_owns_trip(trip_id));
-create policy "trip_invitations_insert_owner" on public.trip_invitations
-  for insert to authenticated
-  with check (
-    public.current_user_owns_trip(trip_id)
-    and invited_by = auth.uid()
-    and role in ('editor', 'viewer')
-  );
-create policy "trip_invitations_update_owner" on public.trip_invitations
-  for update to authenticated
-  using (public.current_user_owns_trip(trip_id))
-  with check (public.current_user_owns_trip(trip_id) and role in ('editor', 'viewer'));
-create policy "trip_invitations_delete_owner" on public.trip_invitations
-  for delete to authenticated using (public.current_user_owns_trip(trip_id));
 
-drop policy if exists "trip_share_links_select_owner" on public.trip_share_links;
-drop policy if exists "trip_share_links_insert_owner" on public.trip_share_links;
-drop policy if exists "trip_share_links_update_owner" on public.trip_share_links;
-drop policy if exists "trip_share_links_delete_owner" on public.trip_share_links;
-create policy "trip_share_links_select_owner" on public.trip_share_links
-  for select to authenticated using (public.current_user_owns_trip(trip_id));
-create policy "trip_share_links_insert_owner" on public.trip_share_links
-  for insert to authenticated
-  with check (public.current_user_owns_trip(trip_id) and created_by = auth.uid());
-create policy "trip_share_links_update_owner" on public.trip_share_links
-  for update to authenticated
-  using (public.current_user_owns_trip(trip_id))
-  with check (public.current_user_owns_trip(trip_id));
-create policy "trip_share_links_delete_owner" on public.trip_share_links
-  for delete to authenticated using (public.current_user_owns_trip(trip_id));
+CREATE TABLE IF NOT EXISTS "public"."custom_requests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "destination" "text" NOT NULL,
+    "start_date" "date" NOT NULL,
+    "end_date" "date" NOT NULL,
+    "budget" numeric,
+    "travelers" "text",
+    "notes" "text",
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
 
-drop policy if exists "audit_events_select_owner" on public.audit_events;
-drop policy if exists "audit_events_insert_service_only" on public.audit_events;
-drop policy if exists "audit_events_update_never" on public.audit_events;
-drop policy if exists "audit_events_delete_never" on public.audit_events;
-create policy "audit_events_select_owner" on public.audit_events
-  for select to authenticated using (public.current_user_owns_trip(trip_id));
-create policy "audit_events_insert_service_only" on public.audit_events
-  for insert to authenticated with check (false);
-create policy "audit_events_update_never" on public.audit_events
-  for update to authenticated using (false) with check (false);
-create policy "audit_events_delete_never" on public.audit_events
-  for delete to authenticated using (false);
 
-drop policy if exists "trip_imports_select_own" on public.trip_imports;
-drop policy if exists "trip_imports_insert_pending_own" on public.trip_imports;
-drop policy if exists "trip_imports_insert_own" on public.trip_imports;
-drop policy if exists "trip_imports_update_service_only" on public.trip_imports;
-drop policy if exists "trip_imports_delete_service_only" on public.trip_imports;
-create policy "trip_imports_select_own" on public.trip_imports
-  for select to authenticated using (user_id = auth.uid());
-create policy "trip_imports_insert_own" on public.trip_imports
-  for insert to authenticated
-  with check (
-    user_id = auth.uid()
-    and (
-      (status = 'pending' and trip_id is null and completed_at is null)
-      or
-      (status = 'completed' and trip_id is not null and public.current_user_owns_trip(trip_id))
-    )
-  );
-create policy "trip_imports_update_service_only" on public.trip_imports
-  for update to authenticated using (false) with check (false);
-create policy "trip_imports_delete_service_only" on public.trip_imports
-  for delete to authenticated using (false);
+ALTER TABLE "public"."custom_requests" OWNER TO "postgres";
 
-drop policy if exists "versions_select_own" on public.itinerary_versions;
-drop policy if exists "versions_insert_own" on public.itinerary_versions;
-drop policy if exists "versions_select_member" on public.itinerary_versions;
-drop policy if exists "versions_insert_owner_editor" on public.itinerary_versions;
-drop policy if exists "versions_update_never" on public.itinerary_versions;
-drop policy if exists "versions_delete_owner" on public.itinerary_versions;
-create policy "versions_select_member" on public.itinerary_versions
-  for select to authenticated using (public.current_user_has_trip_role(itinerary_id));
-create policy "versions_insert_owner_editor" on public.itinerary_versions
-  for insert to authenticated
-  with check (
-    public.current_user_has_trip_role(itinerary_id, array['owner', 'editor']::text[])
-    and created_by = auth.uid()
-    and user_id = auth.uid()
-  );
-create policy "versions_update_never" on public.itinerary_versions
-  for update to authenticated using (false) with check (false);
-create policy "versions_delete_owner" on public.itinerary_versions
-  for delete to authenticated using (public.current_user_owns_trip(itinerary_id));
 
-drop policy if exists "trip_ledgers_select_member" on public.trip_ledgers;
-drop policy if exists "trip_ledgers_insert_owner_editor" on public.trip_ledgers;
-drop policy if exists "trip_ledgers_update_owner_editor" on public.trip_ledgers;
-drop policy if exists "trip_ledgers_delete_owner" on public.trip_ledgers;
-create policy "trip_ledgers_select_member" on public.trip_ledgers
-  for select to authenticated
-  using (itinerary_id is not null and public.current_user_has_trip_role(itinerary_id));
-create policy "trip_ledgers_insert_owner_editor" on public.trip_ledgers
-  for insert to authenticated
-  with check (
-    itinerary_id is not null
-    and public.current_user_has_trip_role(itinerary_id, array['owner', 'editor']::text[])
-  );
-create policy "trip_ledgers_update_owner_editor" on public.trip_ledgers
-  for update to authenticated
-  using (
-    itinerary_id is not null
-    and public.current_user_has_trip_role(itinerary_id, array['owner', 'editor']::text[])
-  )
-  with check (
-    itinerary_id is not null
-    and public.current_user_has_trip_role(itinerary_id, array['owner', 'editor']::text[])
-  );
-create policy "trip_ledgers_delete_owner" on public.trip_ledgers
-  for delete to authenticated
-  using (itinerary_id is not null and public.current_user_owns_trip(itinerary_id));
+CREATE TABLE IF NOT EXISTS "public"."itineraries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "owner_key" "text",
+    "destination" "text" NOT NULL,
+    "destination_city" "text",
+    "destination_country" "text",
+    "days_count" integer DEFAULT 0 NOT NULL,
+    "style" "text",
+    "budget_tier" "text",
+    "travelers" integer,
+    "start_date" "date",
+    "end_date" "date",
+    "share_token" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "itinerary" "jsonb" NOT NULL,
+    "source" "text" DEFAULT 'generated'::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "owner_id" "uuid",
+    "visibility" "text" DEFAULT 'private'::"text" NOT NULL,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "currency" "text" DEFAULT 'EUR'::"text" NOT NULL,
+    "schema_version" integer DEFAULT 1 NOT NULL,
+    "version" bigint DEFAULT 1 NOT NULL,
+    "deleted_at" timestamp with time zone,
+    "legacy_quarantined_at" timestamp with time zone,
+    CONSTRAINT "itineraries_currency_check" CHECK (("currency" ~ '^[A-Z]{3}$'::"text")),
+    CONSTRAINT "itineraries_owner_state_check" CHECK (((("owner_id" IS NULL) AND ("status" = 'legacy_pending'::"text") AND ("legacy_quarantined_at" IS NOT NULL)) OR (("owner_id" IS NOT NULL) AND ("status" <> 'legacy_pending'::"text")))),
+    CONSTRAINT "itineraries_schema_version_check" CHECK (("schema_version" >= 1)),
+    CONSTRAINT "itineraries_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'active'::"text", 'archived'::"text", 'deleted'::"text", 'legacy_pending'::"text"]))),
+    CONSTRAINT "itineraries_version_check" CHECK (("version" >= 1)),
+    CONSTRAINT "itineraries_visibility_check" CHECK (("visibility" = ANY (ARRAY['private'::"text", 'unlisted'::"text", 'public'::"text"])))
+);
 
--- Legacy share snapshots are service-only: all four operations are explicit deny.
-drop policy if exists "itinerary_shares_select_never" on public.itinerary_shares;
-drop policy if exists "itinerary_shares_insert_never" on public.itinerary_shares;
-drop policy if exists "itinerary_shares_update_never" on public.itinerary_shares;
-drop policy if exists "itinerary_shares_delete_never" on public.itinerary_shares;
-create policy "itinerary_shares_select_never" on public.itinerary_shares
-  for select to authenticated using (false);
-create policy "itinerary_shares_insert_never" on public.itinerary_shares
-  for insert to authenticated with check (false);
-create policy "itinerary_shares_update_never" on public.itinerary_shares
-  for update to authenticated using (false) with check (false);
-create policy "itinerary_shares_delete_never" on public.itinerary_shares
-  for delete to authenticated using (false);
 
--- Public form writes must go through validated server routes, never the Data API.
-drop policy if exists "newsletter_insert_anyone" on public.newsletter_subscribers;
-drop policy if exists "newsletter_select_never" on public.newsletter_subscribers;
-drop policy if exists "newsletter_insert_server_only" on public.newsletter_subscribers;
-drop policy if exists "newsletter_update_server_only" on public.newsletter_subscribers;
-drop policy if exists "newsletter_delete_server_only" on public.newsletter_subscribers;
-create policy "newsletter_select_never" on public.newsletter_subscribers
-  for select to authenticated using (false);
-create policy "newsletter_insert_server_only" on public.newsletter_subscribers
-  for insert to authenticated with check (false);
-create policy "newsletter_update_server_only" on public.newsletter_subscribers
-  for update to authenticated using (false) with check (false);
-create policy "newsletter_delete_server_only" on public.newsletter_subscribers
-  for delete to authenticated using (false);
+ALTER TABLE "public"."itineraries" OWNER TO "postgres";
 
-drop policy if exists "custom_requests_insert_anyone" on public.custom_requests;
-drop policy if exists "custom_requests_select_own" on public.custom_requests;
-drop policy if exists "custom_requests_insert_server_only" on public.custom_requests;
-drop policy if exists "custom_requests_update_server_only" on public.custom_requests;
-drop policy if exists "custom_requests_delete_own" on public.custom_requests;
-create policy "custom_requests_select_own" on public.custom_requests
-  for select to authenticated using (user_id = auth.uid());
-create policy "custom_requests_insert_server_only" on public.custom_requests
-  for insert to authenticated with check (false);
-create policy "custom_requests_update_server_only" on public.custom_requests
-  for update to authenticated using (false) with check (false);
-create policy "custom_requests_delete_own" on public.custom_requests
-  for delete to authenticated using (user_id = auth.uid());
 
--- Explicit grants keep the migration portable across projects with different
--- default privileges. RLS remains the authority for authenticated access.
-grant usage on schema public to authenticated;
-grant select, insert, update, delete on table
-  public.profiles,
-  public.itineraries,
-  public.trip_members,
-  public.trip_invitations,
-  public.trip_share_links,
-  public.audit_events,
-  public.trip_imports,
-  public.itinerary_versions,
-  public.itinerary_shares,
-  public.trip_ledgers,
-  public.newsletter_subscribers,
-  public.custom_requests
-to authenticated;
+COMMENT ON COLUMN "public"."itineraries"."user_id" IS 'Deprecated compatibility mirror of owner_id. Do not use for authorization.';
 
-revoke all on table
-  public.itineraries,
-  public.trip_members,
-  public.trip_invitations,
-  public.trip_share_links,
-  public.audit_events,
-  public.trip_imports,
-  public.itinerary_versions,
-  public.itinerary_shares,
-  public.trip_ledgers
-from anon;
 
-commit;
+
+COMMENT ON COLUMN "public"."itineraries"."owner_key" IS 'Deprecated legacy identity key. Quarantined compatibility data; never an authorization source.';
+
+
+
+COMMENT ON COLUMN "public"."itineraries"."share_token" IS 'Deprecated raw token. New links use trip_share_links.token_hash; do not expose this value.';
+
+
+
+COMMENT ON COLUMN "public"."itineraries"."owner_id" IS 'Canonical owner. The server must derive this from auth.uid(); never from request JSON.';
+
+
+
+COMMENT ON COLUMN "public"."itineraries"."version" IS 'Optimistic concurrency version. Update with WHERE version = expected_version.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."itinerary_shares" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "source_key" "text" NOT NULL,
+    "owner_key" "text" NOT NULL,
+    "token_hash" "text" NOT NULL,
+    "audience" "text" NOT NULL,
+    "payload" "jsonb" NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "revoked_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "last_accessed_at" timestamp with time zone,
+    "legacy_quarantined_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "itinerary_shares_audience_check" CHECK (("audience" = ANY (ARRAY['client'::"text", 'internal'::"text"])))
+);
+
+
+ALTER TABLE "public"."itinerary_shares" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."itinerary_shares" IS 'Deprecated payload snapshots. Service-only quarantine; new links belong in trip_share_links.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."itinerary_versions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "itinerary_id" "uuid" NOT NULL,
+    "user_id" "uuid",
+    "label" "text" NOT NULL,
+    "itinerary" "jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "created_by" "uuid",
+    "version" bigint DEFAULT 1 NOT NULL
+);
+
+
+ALTER TABLE "public"."itinerary_versions" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."itinerary_versions"."user_id" IS 'Deprecated compatibility actor. Authorization follows itinerary membership.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."newsletter_subscribers" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "email" "text" NOT NULL,
+    "source" "text" DEFAULT 'newsletter_popup'::"text",
+    "locale" "text" DEFAULT 'pt'::"text",
+    "status" "text" DEFAULT 'active'::"text" NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."newsletter_subscribers" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."profiles" (
+    "id" "uuid" NOT NULL,
+    "email" "text" NOT NULL,
+    "name" "text",
+    "bio" "text" DEFAULT ''::"text",
+    "interests" "text"[] DEFAULT ARRAY[]::"text"[],
+    "visited_countries" "text"[] DEFAULT ARRAY[]::"text"[],
+    "looking_for_buddy" boolean DEFAULT false,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."trip_imports" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "idempotency_key" "text" NOT NULL,
+    "local_id" "text",
+    "payload_hash" "text" NOT NULL,
+    "trip_id" "uuid",
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "conflict_code" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "completed_at" timestamp with time zone,
+    CONSTRAINT "trip_imports_completion_check" CHECK (((("status" = 'pending'::"text") AND ("completed_at" IS NULL)) OR ("status" <> 'pending'::"text"))),
+    CONSTRAINT "trip_imports_idempotency_key_check" CHECK ((("char_length"("idempotency_key") >= 8) AND ("char_length"("idempotency_key") <= 200))),
+    CONSTRAINT "trip_imports_local_id_check" CHECK ((("local_id" IS NULL) OR (("char_length"("local_id") >= 1) AND ("char_length"("local_id") <= 200)))),
+    CONSTRAINT "trip_imports_payload_hash_check" CHECK (("payload_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "trip_imports_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'completed'::"text", 'conflict'::"text", 'failed'::"text"])))
+);
+
+
+ALTER TABLE "public"."trip_imports" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."trip_invitations" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "trip_id" "uuid" NOT NULL,
+    "email_hash" "text" NOT NULL,
+    "role" "text" NOT NULL,
+    "token_hash" "text" NOT NULL,
+    "invited_by" "uuid" NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "accepted_at" timestamp with time zone,
+    "accepted_by" "uuid",
+    "revoked_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "trip_invitations_email_hash_check" CHECK ((("email_hash" IS NULL) OR ("email_hash" ~ '^[0-9a-f]{64}$'::"text"))),
+    CONSTRAINT "trip_invitations_expiry_check" CHECK (("expires_at" > "created_at")),
+    CONSTRAINT "trip_invitations_role_check" CHECK (("role" = ANY (ARRAY['editor'::"text", 'viewer'::"text"]))),
+    CONSTRAINT "trip_invitations_terminal_state_check" CHECK ((NOT (("accepted_at" IS NOT NULL) AND ("revoked_at" IS NOT NULL)))),
+    CONSTRAINT "trip_invitations_token_hash_check" CHECK (("token_hash" ~ '^[0-9a-f]{64}$'::"text"))
+);
+
+
+ALTER TABLE "public"."trip_invitations" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."trip_ledgers" (
+    "trip_key" "text" NOT NULL,
+    "owner_key" "text" NOT NULL,
+    "ledger" "jsonb" DEFAULT '{"expenses": [], "participants": []}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "itinerary_id" "uuid",
+    "version" bigint DEFAULT 1 NOT NULL,
+    "legacy_quarantined_at" timestamp with time zone,
+    CONSTRAINT "trip_ledgers_version_check" CHECK (("version" >= 1))
+);
+
+
+ALTER TABLE "public"."trip_ledgers" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."trip_ledgers"."trip_key" IS 'Deprecated compatibility key. Canonical authorization uses itinerary_id.';
+
+
+
+COMMENT ON COLUMN "public"."trip_ledgers"."owner_key" IS 'Deprecated compatibility key. Never use for authorization.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."trip_members" (
+    "trip_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    "invited_by" "uuid",
+    "accepted_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "revoked_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "trip_members_owner_active_check" CHECK ((("role" <> 'owner'::"text") OR ("revoked_at" IS NULL))),
+    CONSTRAINT "trip_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'viewer'::"text"])))
+);
+
+
+ALTER TABLE "public"."trip_members" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."trip_share_links" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "trip_id" "uuid" NOT NULL,
+    "token_hash" "text" NOT NULL,
+    "permission" "text" DEFAULT 'viewer'::"text" NOT NULL,
+    "audience" "text" DEFAULT 'client'::"text" NOT NULL,
+    "created_by" "uuid" NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "revoked_at" timestamp with time zone,
+    "max_uses" integer,
+    "use_count" integer DEFAULT 0 NOT NULL,
+    "last_accessed_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "trip_share_links_audience_check" CHECK (("audience" = ANY (ARRAY['client'::"text", 'internal'::"text"]))),
+    CONSTRAINT "trip_share_links_expiry_check" CHECK (("expires_at" > "created_at")),
+    CONSTRAINT "trip_share_links_max_uses_check" CHECK ((("max_uses" IS NULL) OR ("max_uses" > 0))),
+    CONSTRAINT "trip_share_links_permission_check" CHECK (("permission" = 'viewer'::"text")),
+    CONSTRAINT "trip_share_links_token_hash_check" CHECK (("token_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "trip_share_links_use_count_check" CHECK (("use_count" >= 0)),
+    CONSTRAINT "trip_share_links_use_limit_check" CHECK ((("max_uses" IS NULL) OR ("use_count" <= "max_uses")))
+);
+
+
+ALTER TABLE "public"."trip_share_links" OWNER TO "postgres";
+
+
+ALTER TABLE ONLY "public"."audit_events"
+    ADD CONSTRAINT "audit_events_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."custom_requests"
+    ADD CONSTRAINT "custom_requests_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."itineraries"
+    ADD CONSTRAINT "itineraries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."itinerary_shares"
+    ADD CONSTRAINT "itinerary_shares_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."itinerary_shares"
+    ADD CONSTRAINT "itinerary_shares_token_hash_key" UNIQUE ("token_hash");
+
+
+
+ALTER TABLE ONLY "public"."itinerary_versions"
+    ADD CONSTRAINT "itinerary_versions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."newsletter_subscribers"
+    ADD CONSTRAINT "newsletter_subscribers_email_key" UNIQUE ("email");
+
+
+
+ALTER TABLE ONLY "public"."newsletter_subscribers"
+    ADD CONSTRAINT "newsletter_subscribers_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."trip_imports"
+    ADD CONSTRAINT "trip_imports_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."trip_imports"
+    ADD CONSTRAINT "trip_imports_user_id_idempotency_key_key" UNIQUE ("user_id", "idempotency_key");
+
+
+
+ALTER TABLE ONLY "public"."trip_invitations"
+    ADD CONSTRAINT "trip_invitations_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."trip_invitations"
+    ADD CONSTRAINT "trip_invitations_token_hash_key" UNIQUE ("token_hash");
+
+
+
+ALTER TABLE ONLY "public"."trip_ledgers"
+    ADD CONSTRAINT "trip_ledgers_pkey" PRIMARY KEY ("trip_key", "owner_key");
+
+
+
+ALTER TABLE ONLY "public"."trip_members"
+    ADD CONSTRAINT "trip_members_pkey" PRIMARY KEY ("trip_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."trip_share_links"
+    ADD CONSTRAINT "trip_share_links_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."trip_share_links"
+    ADD CONSTRAINT "trip_share_links_token_hash_key" UNIQUE ("token_hash");
+
+
+
+CREATE INDEX "audit_events_actor_created_idx" ON "public"."audit_events" USING "btree" ("actor_user_id", "created_at" DESC);
+
+
+
+CREATE INDEX "audit_events_trip_created_idx" ON "public"."audit_events" USING "btree" ("trip_id", "created_at" DESC);
+
+
+
+CREATE INDEX "itineraries_legacy_quarantine_idx" ON "public"."itineraries" USING "btree" ("legacy_quarantined_at") WHERE ("owner_id" IS NULL);
+
+
+
+CREATE INDEX "itineraries_owner_updated_idx" ON "public"."itineraries" USING "btree" ("owner_id", "updated_at" DESC) WHERE (("owner_id" IS NOT NULL) AND ("deleted_at" IS NULL));
+
+
+
+CREATE UNIQUE INDEX "itineraries_share_token_idx" ON "public"."itineraries" USING "btree" ("share_token");
+
+
+
+CREATE INDEX "itineraries_user_id_created_at_idx" ON "public"."itineraries" USING "btree" ("user_id", "created_at" DESC);
+
+
+
+CREATE INDEX "itinerary_shares_expiry_idx" ON "public"."itinerary_shares" USING "btree" ("expires_at") WHERE ("revoked_at" IS NULL);
+
+
+
+CREATE INDEX "itinerary_shares_owner_source_idx" ON "public"."itinerary_shares" USING "btree" ("owner_key", "source_key", "created_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "itinerary_versions_trip_version_idx" ON "public"."itinerary_versions" USING "btree" ("itinerary_id", "version");
+
+
+
+CREATE INDEX "trip_imports_user_created_idx" ON "public"."trip_imports" USING "btree" ("user_id", "created_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "trip_imports_user_local_hash_idx" ON "public"."trip_imports" USING "btree" ("user_id", "local_id", "payload_hash") WHERE ("local_id" IS NOT NULL);
+
+
+
+CREATE INDEX "trip_invitations_active_idx" ON "public"."trip_invitations" USING "btree" ("expires_at") WHERE (("accepted_at" IS NULL) AND ("revoked_at" IS NULL));
+
+
+
+CREATE INDEX "trip_invitations_trip_created_idx" ON "public"."trip_invitations" USING "btree" ("trip_id", "created_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "trip_ledgers_itinerary_idx" ON "public"."trip_ledgers" USING "btree" ("itinerary_id") WHERE ("itinerary_id" IS NOT NULL);
+
+
+
+CREATE INDEX "trip_ledgers_owner_updated_idx" ON "public"."trip_ledgers" USING "btree" ("owner_key", "updated_at" DESC);
+
+
+
+CREATE INDEX "trip_members_user_active_idx" ON "public"."trip_members" USING "btree" ("user_id", "updated_at" DESC) WHERE ("revoked_at" IS NULL);
+
+
+
+CREATE INDEX "trip_share_links_active_idx" ON "public"."trip_share_links" USING "btree" ("expires_at") WHERE ("revoked_at" IS NULL);
+
+
+
+CREATE INDEX "trip_share_links_trip_created_idx" ON "public"."trip_share_links" USING "btree" ("trip_id", "created_at" DESC);
+
+
+
+CREATE OR REPLACE TRIGGER "audit_events_normalize" BEFORE INSERT ON "public"."audit_events" FOR EACH ROW EXECUTE FUNCTION "public"."normalize_audit_event"();
+
+
+
+CREATE OR REPLACE TRIGGER "itineraries_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."itineraries" FOR EACH ROW EXECUTE FUNCTION "public"."audit_itinerary_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "itineraries_enforce_invariants" BEFORE INSERT OR UPDATE ON "public"."itineraries" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_itinerary_invariants"();
+
+
+
+CREATE OR REPLACE TRIGGER "itineraries_ensure_owner_membership" AFTER INSERT OR UPDATE OF "owner_id" ON "public"."itineraries" FOR EACH ROW EXECUTE FUNCTION "public"."ensure_itinerary_owner_membership"();
+
+
+
+CREATE OR REPLACE TRIGGER "profiles_set_updated_at" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."set_row_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_imports_set_updated_at" BEFORE UPDATE ON "public"."trip_imports" FOR EACH ROW EXECUTE FUNCTION "public"."set_row_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_invitations_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."trip_invitations" FOR EACH ROW EXECUTE FUNCTION "public"."audit_invitation_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_invitations_enforce_client_update" BEFORE INSERT OR UPDATE ON "public"."trip_invitations" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_trip_invitation_client_update"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_invitations_set_updated_at" BEFORE UPDATE ON "public"."trip_invitations" FOR EACH ROW EXECUTE FUNCTION "public"."set_row_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_ledgers_canonicalize" BEFORE INSERT OR UPDATE ON "public"."trip_ledgers" FOR EACH ROW EXECUTE FUNCTION "public"."canonicalize_trip_ledger"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_members_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."trip_members" FOR EACH ROW EXECUTE FUNCTION "public"."audit_membership_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_members_enforce_invariants" BEFORE INSERT OR UPDATE ON "public"."trip_members" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_trip_member_invariants"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_members_prevent_owner_delete" BEFORE DELETE ON "public"."trip_members" FOR EACH ROW EXECUTE FUNCTION "public"."prevent_owner_membership_delete"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_share_links_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."trip_share_links" FOR EACH ROW EXECUTE FUNCTION "public"."audit_share_link_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_share_links_enforce_client_update" BEFORE UPDATE ON "public"."trip_share_links" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_trip_share_client_update"();
+
+
+
+CREATE OR REPLACE TRIGGER "trip_share_links_set_updated_at" BEFORE UPDATE ON "public"."trip_share_links" FOR EACH ROW EXECUTE FUNCTION "public"."set_row_updated_at"();
+
+
+
+ALTER TABLE ONLY "public"."audit_events"
+    ADD CONSTRAINT "audit_events_actor_user_id_fkey" FOREIGN KEY ("actor_user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."custom_requests"
+    ADD CONSTRAINT "custom_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."itineraries"
+    ADD CONSTRAINT "itineraries_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."itineraries"
+    ADD CONSTRAINT "itineraries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."itinerary_versions"
+    ADD CONSTRAINT "itinerary_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."itinerary_versions"
+    ADD CONSTRAINT "itinerary_versions_itinerary_id_fkey" FOREIGN KEY ("itinerary_id") REFERENCES "public"."itineraries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."itinerary_versions"
+    ADD CONSTRAINT "itinerary_versions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."trip_imports"
+    ADD CONSTRAINT "trip_imports_trip_id_fkey" FOREIGN KEY ("trip_id") REFERENCES "public"."itineraries"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."trip_imports"
+    ADD CONSTRAINT "trip_imports_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."trip_invitations"
+    ADD CONSTRAINT "trip_invitations_accepted_by_fkey" FOREIGN KEY ("accepted_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."trip_invitations"
+    ADD CONSTRAINT "trip_invitations_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "auth"."users"("id") ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."trip_invitations"
+    ADD CONSTRAINT "trip_invitations_trip_id_fkey" FOREIGN KEY ("trip_id") REFERENCES "public"."itineraries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."trip_ledgers"
+    ADD CONSTRAINT "trip_ledgers_itinerary_id_fkey" FOREIGN KEY ("itinerary_id") REFERENCES "public"."itineraries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."trip_members"
+    ADD CONSTRAINT "trip_members_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."trip_members"
+    ADD CONSTRAINT "trip_members_trip_id_fkey" FOREIGN KEY ("trip_id") REFERENCES "public"."itineraries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."trip_members"
+    ADD CONSTRAINT "trip_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."trip_share_links"
+    ADD CONSTRAINT "trip_share_links_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."trip_share_links"
+    ADD CONSTRAINT "trip_share_links_trip_id_fkey" FOREIGN KEY ("trip_id") REFERENCES "public"."itineraries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE "public"."audit_events" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "audit_events_delete_never" ON "public"."audit_events" FOR DELETE TO "authenticated" USING (false);
+
+
+
+CREATE POLICY "audit_events_insert_service_only" ON "public"."audit_events" FOR INSERT TO "authenticated" WITH CHECK (false);
+
+
+
+CREATE POLICY "audit_events_select_owner" ON "public"."audit_events" FOR SELECT TO "authenticated" USING ("public"."current_user_owns_trip"("trip_id"));
+
+
+
+CREATE POLICY "audit_events_update_never" ON "public"."audit_events" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."custom_requests" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "custom_requests_delete_own" ON "public"."custom_requests" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "custom_requests_insert_server_only" ON "public"."custom_requests" FOR INSERT TO "authenticated" WITH CHECK (false);
+
+
+
+CREATE POLICY "custom_requests_select_own" ON "public"."custom_requests" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "custom_requests_update_server_only" ON "public"."custom_requests" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."itineraries" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "itineraries_delete_owner" ON "public"."itineraries" FOR DELETE TO "authenticated" USING ("public"."current_user_owns_trip"("id"));
+
+
+
+CREATE POLICY "itineraries_insert_owner" ON "public"."itineraries" FOR INSERT TO "authenticated" WITH CHECK ((("owner_id" = "auth"."uid"()) AND ("status" = 'draft'::"text") AND ("visibility" = 'private'::"text") AND ("deleted_at" IS NULL)));
+
+
+
+CREATE POLICY "itineraries_select_member" ON "public"."itineraries" FOR SELECT TO "authenticated" USING ((("owner_id" = "auth"."uid"()) OR (("deleted_at" IS NULL) AND "public"."current_user_has_trip_role"("id", ARRAY['owner'::"text", 'editor'::"text", 'viewer'::"text"]))));
+
+
+
+CREATE POLICY "itineraries_update_owner_editor" ON "public"."itineraries" FOR UPDATE TO "authenticated" USING ((("deleted_at" IS NULL) AND "public"."current_user_has_trip_role"("id", ARRAY['owner'::"text", 'editor'::"text"]))) WITH CHECK (("public"."current_user_has_trip_role"("id", ARRAY['owner'::"text", 'editor'::"text"]) AND (("deleted_at" IS NULL) OR "public"."current_user_owns_trip"("id"))));
+
+
+
+ALTER TABLE "public"."itinerary_shares" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "itinerary_shares_delete_never" ON "public"."itinerary_shares" FOR DELETE TO "authenticated" USING (false);
+
+
+
+CREATE POLICY "itinerary_shares_insert_never" ON "public"."itinerary_shares" FOR INSERT TO "authenticated" WITH CHECK (false);
+
+
+
+CREATE POLICY "itinerary_shares_select_never" ON "public"."itinerary_shares" FOR SELECT TO "authenticated" USING (false);
+
+
+
+CREATE POLICY "itinerary_shares_update_never" ON "public"."itinerary_shares" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."itinerary_versions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "newsletter_delete_server_only" ON "public"."newsletter_subscribers" FOR DELETE TO "authenticated" USING (false);
+
+
+
+CREATE POLICY "newsletter_insert_server_only" ON "public"."newsletter_subscribers" FOR INSERT TO "authenticated" WITH CHECK (false);
+
+
+
+CREATE POLICY "newsletter_select_never" ON "public"."newsletter_subscribers" FOR SELECT TO "authenticated" USING (false);
+
+
+
+ALTER TABLE "public"."newsletter_subscribers" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "newsletter_update_server_only" ON "public"."newsletter_subscribers" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "profiles_delete_never" ON "public"."profiles" FOR DELETE TO "authenticated" USING (false);
+
+
+
+CREATE POLICY "profiles_insert_own" ON "public"."profiles" FOR INSERT TO "authenticated" WITH CHECK (("id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "profiles_select_own" ON "public"."profiles" FOR SELECT TO "authenticated" USING (("id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "profiles_update_own" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
+
+
+
+ALTER TABLE "public"."trip_imports" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "trip_imports_delete_service_only" ON "public"."trip_imports" FOR DELETE TO "authenticated" USING (false);
+
+
+
+CREATE POLICY "trip_imports_insert_own" ON "public"."trip_imports" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND ((("status" = 'pending'::"text") AND ("trip_id" IS NULL) AND ("completed_at" IS NULL)) OR (("status" = 'completed'::"text") AND ("trip_id" IS NOT NULL) AND "public"."current_user_owns_trip"("trip_id")))));
+
+
+
+CREATE POLICY "trip_imports_select_own" ON "public"."trip_imports" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "trip_imports_update_service_only" ON "public"."trip_imports" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."trip_invitations" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "trip_invitations_delete_owner" ON "public"."trip_invitations" FOR DELETE TO "authenticated" USING ("public"."current_user_owns_trip"("trip_id"));
+
+
+
+CREATE POLICY "trip_invitations_insert_owner" ON "public"."trip_invitations" FOR INSERT TO "authenticated" WITH CHECK (("public"."current_user_owns_trip"("trip_id") AND ("invited_by" = "auth"."uid"()) AND ("role" = ANY (ARRAY['editor'::"text", 'viewer'::"text"])) AND ("accepted_at" IS NULL) AND ("accepted_by" IS NULL) AND ("revoked_at" IS NULL)));
+
+
+
+CREATE POLICY "trip_invitations_revoke_owner" ON "public"."trip_invitations" FOR UPDATE TO "authenticated" USING (("public"."current_user_owns_trip"("trip_id") AND ("accepted_at" IS NULL) AND ("revoked_at" IS NULL))) WITH CHECK (("public"."current_user_owns_trip"("trip_id") AND ("accepted_at" IS NULL) AND ("accepted_by" IS NULL) AND ("revoked_at" IS NOT NULL)));
+
+
+
+CREATE POLICY "trip_invitations_select_owner" ON "public"."trip_invitations" FOR SELECT TO "authenticated" USING ("public"."current_user_owns_trip"("trip_id"));
+
+
+
+ALTER TABLE "public"."trip_ledgers" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "trip_ledgers_delete_owner" ON "public"."trip_ledgers" FOR DELETE TO "authenticated" USING ((("itinerary_id" IS NOT NULL) AND "public"."current_user_owns_trip"("itinerary_id")));
+
+
+
+CREATE POLICY "trip_ledgers_insert_owner_editor" ON "public"."trip_ledgers" FOR INSERT TO "authenticated" WITH CHECK ((("itinerary_id" IS NOT NULL) AND "public"."current_user_has_trip_role"("itinerary_id", ARRAY['owner'::"text", 'editor'::"text"])));
+
+
+
+CREATE POLICY "trip_ledgers_select_member" ON "public"."trip_ledgers" FOR SELECT TO "authenticated" USING ((("itinerary_id" IS NOT NULL) AND "public"."current_user_has_trip_role"("itinerary_id")));
+
+
+
+CREATE POLICY "trip_ledgers_update_owner_editor" ON "public"."trip_ledgers" FOR UPDATE TO "authenticated" USING ((("itinerary_id" IS NOT NULL) AND "public"."current_user_has_trip_role"("itinerary_id", ARRAY['owner'::"text", 'editor'::"text"]))) WITH CHECK ((("itinerary_id" IS NOT NULL) AND "public"."current_user_has_trip_role"("itinerary_id", ARRAY['owner'::"text", 'editor'::"text"])));
+
+
+
+ALTER TABLE "public"."trip_members" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "trip_members_delete_owner_or_self" ON "public"."trip_members" FOR DELETE TO "authenticated" USING ((("role" <> 'owner'::"text") AND ("public"."current_user_owns_trip"("trip_id") OR ("user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "trip_members_insert_service_only" ON "public"."trip_members" FOR INSERT TO "authenticated" WITH CHECK (false);
+
+
+
+CREATE POLICY "trip_members_select_member" ON "public"."trip_members" FOR SELECT TO "authenticated" USING (("public"."current_user_owns_trip"("trip_id") OR (("revoked_at" IS NULL) AND "public"."current_user_has_trip_role"("trip_id"))));
+
+
+
+CREATE POLICY "trip_members_update_owner" ON "public"."trip_members" FOR UPDATE TO "authenticated" USING (("public"."current_user_owns_trip"("trip_id") AND ("role" <> 'owner'::"text"))) WITH CHECK (("public"."current_user_owns_trip"("trip_id") AND ("role" = ANY (ARRAY['editor'::"text", 'viewer'::"text"]))));
+
+
+
+ALTER TABLE "public"."trip_share_links" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "trip_share_links_delete_owner" ON "public"."trip_share_links" FOR DELETE TO "authenticated" USING ("public"."current_user_owns_trip"("trip_id"));
+
+
+
+CREATE POLICY "trip_share_links_insert_owner" ON "public"."trip_share_links" FOR INSERT TO "authenticated" WITH CHECK (("public"."current_user_owns_trip"("trip_id") AND ("created_by" = "auth"."uid"())));
+
+
+
+CREATE POLICY "trip_share_links_revoke_owner" ON "public"."trip_share_links" FOR UPDATE TO "authenticated" USING (("public"."current_user_owns_trip"("trip_id") AND ("revoked_at" IS NULL))) WITH CHECK (("public"."current_user_owns_trip"("trip_id") AND ("revoked_at" IS NOT NULL)));
+
+
+
+CREATE POLICY "trip_share_links_select_owner" ON "public"."trip_share_links" FOR SELECT TO "authenticated" USING ("public"."current_user_owns_trip"("trip_id"));
+
+
+
+CREATE POLICY "versions_delete_owner" ON "public"."itinerary_versions" FOR DELETE TO "authenticated" USING ("public"."current_user_owns_trip"("itinerary_id"));
+
+
+
+CREATE POLICY "versions_insert_owner_editor" ON "public"."itinerary_versions" FOR INSERT TO "authenticated" WITH CHECK (("public"."current_user_has_trip_role"("itinerary_id", ARRAY['owner'::"text", 'editor'::"text"]) AND ("created_by" = "auth"."uid"())));
+
+
+
+CREATE POLICY "versions_select_member" ON "public"."itinerary_versions" FOR SELECT TO "authenticated" USING ("public"."current_user_has_trip_role"("itinerary_id"));
+
+
+
+CREATE POLICY "versions_update_never" ON "public"."itinerary_versions" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
+
+
+
+GRANT USAGE ON SCHEMA "public" TO "postgres";
+GRANT USAGE ON SCHEMA "public" TO "anon";
+GRANT USAGE ON SCHEMA "public" TO "authenticated";
+GRANT USAGE ON SCHEMA "public" TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "private"."current_audit_actor"() FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."accept_trip_invitation_transaction"("p_token_hash" "text", "p_user_id" "uuid", "p_email_hash" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."accept_trip_invitation_transaction"("p_token_hash" "text", "p_user_id" "uuid", "p_email_hash" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."current_user_has_trip_role"("p_trip_id" "uuid", "p_roles" "text"[]) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."current_user_has_trip_role"("p_trip_id" "uuid", "p_roles" "text"[]) TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."current_user_owns_trip"("p_trip_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."current_user_owns_trip"("p_trip_id" "uuid") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."enforce_trip_invitation_client_update"() FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."enforce_trip_share_client_update"() FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."handle_new_auth_user"() FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."normalize_audit_event"() FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."record_trip_audit_event"("p_trip_id" "uuid", "p_action" "text", "p_resource_type" "text", "p_resource_id" "uuid", "p_metadata" "jsonb") FROM PUBLIC;
+
+
+
+GRANT ALL ON TABLE "public"."audit_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."audit_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."custom_requests" TO "service_role";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."custom_requests" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."itineraries" TO "service_role";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."itineraries" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."itinerary_shares" TO "service_role";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."itinerary_shares" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."itinerary_versions" TO "service_role";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."itinerary_versions" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."newsletter_subscribers" TO "service_role";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."newsletter_subscribers" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."trip_imports" TO "authenticated";
+GRANT ALL ON TABLE "public"."trip_imports" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."trip_invitations" TO "authenticated";
+GRANT ALL ON TABLE "public"."trip_invitations" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."trip_ledgers" TO "service_role";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."trip_ledgers" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."trip_members" TO "authenticated";
+GRANT ALL ON TABLE "public"."trip_members" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."trip_share_links" TO "authenticated";
+GRANT ALL ON TABLE "public"."trip_share_links" TO "service_role";
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT UPDATE ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT UPDATE ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT UPDATE ON SEQUENCES TO "service_role";
+
+
+
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+
+
+
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLES TO "service_role";

@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'tests',
+  testIgnore: '**/*.supabase.spec.js',
   timeout: 120000,
   use: {
     headless: true,

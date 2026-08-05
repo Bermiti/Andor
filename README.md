@@ -29,7 +29,7 @@ npm run dev
 
 Abre [http://localhost:3000](http://localhost:3000). Sem credenciais Supabase, o desenvolvimento pode usar `.andor/andor.sqlite`. Sem um fornecedor de IA, os fluxos suportados usam conteúdo local claramente marcado como demonstração.
 
-As variáveis e notas de segurança estão em [.env.example](.env.example). Para Supabase, aplica primeiro [supabase/schema.sql](supabase/schema.sql). A configuração externa do provider Google está documentada em [docs/GOOGLE_OAUTH_SETUP.md](docs/GOOGLE_OAUTH_SETUP.md). Os materiais de validação comercial, lifecycle e analytics estão organizados em [docs/commercial/README.md](docs/commercial/README.md).
+As variáveis e notas de segurança estão em [.env.example](.env.example). As migrations em [supabase/migrations](supabase/migrations) são a fonte canónica do schema; `supabase/schema.sql` é apenas um snapshot gerado para inspeção. O processo local e a checklist remota estão em [docs/STAGING_RUNBOOK.md](docs/STAGING_RUNBOOK.md). A configuração externa do provider Google está documentada em [docs/GOOGLE_OAUTH_SETUP.md](docs/GOOGLE_OAUTH_SETUP.md). Os materiais de validação comercial, lifecycle e analytics estão organizados em [docs/commercial/README.md](docs/commercial/README.md).
 
 ## Validação
 
@@ -42,6 +42,14 @@ npm audit
 ```
 
 Os testes E2E criam uma base SQLite isolada dentro de `test-results/e2e`; não devem usar credenciais Supabase reais herdadas da máquina.
+
+Com Docker ativo, a validação real de migrations, RLS, Supabase Auth e do
+percurso completo da aplicação contra a stack local é:
+
+```bash
+npm run db:start
+npm run db:verify
+```
 
 ## Regras de produto
 

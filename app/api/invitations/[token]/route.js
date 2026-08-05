@@ -24,6 +24,9 @@ function invitationError(result, correlationId) {
   if (result.status === 'storage_error') {
     return errorWithCorrelation('INVITATION_STORAGE_ERROR', 'Nao foi possivel aceitar o convite.', 500, correlationId, { retryable: true });
   }
+  if (result.status === 'invalid_state') {
+    return errorWithCorrelation('INVITATION_INVALID_STATE', 'O convite esta inconsistente e requer revisao do proprietario.', 409, correlationId);
+  }
   return errorWithCorrelation('INVITATION_NOT_FOUND', 'Convite nao encontrado.', 404, correlationId);
 }
 

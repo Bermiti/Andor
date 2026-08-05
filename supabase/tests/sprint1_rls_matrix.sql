@@ -56,6 +56,18 @@ values
    'rls-invited@andor.invalid', crypt('Andor-Test-Only-5', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now());
 
+select pg_temp.assert_true(
+  (select count(*) = 5 from public.profiles
+   where id in (
+     '00000000-0000-4000-8000-000000000001',
+     '00000000-0000-4000-8000-000000000002',
+     '00000000-0000-4000-8000-000000000003',
+     '00000000-0000-4000-8000-000000000004',
+     '00000000-0000-4000-8000-000000000005'
+   )),
+  'auth.users insert trigger must create one profile per password or OAuth identity'
+);
+
 -- Pre-auth legacy rows stay private and ownerless until an explicit privileged
 -- claim flow attaches them to a real identity.
 insert into public.itineraries (id, user_id, owner_key, destination, itinerary)
@@ -98,6 +110,16 @@ values (
   'Lisbon', '{"days":[]}'::jsonb, 'private', 'draft', 'EUR', 1
 );
 
+-- PostgREST uses INSERT ... RETURNING for the application repository. The
+-- SELECT policy must therefore recognize the just-inserted owner directly,
+-- before relying on the membership created by the AFTER INSERT trigger.
+select pg_temp.assert_true(
+  (select owner_id = auth.uid()
+   from public.itineraries
+   where id = '10000000-0000-4000-8000-000000000001'),
+  'owner must be able to read the row returned by the create operation'
+);
+
 select pg_temp.assert_true(
   (select count(*) = 1 from public.itineraries
    where id = '10000000-0000-4000-8000-000000000001'),
@@ -123,14 +145,99 @@ select pg_temp.assert_throws(
   'authenticated client cannot create an ownerless trip'
 );
 
-insert into public.trip_members (trip_id, user_id, role, invited_by)
+select pg_temp.assert_throws(
+  $sql$insert into public.trip_members (trip_id, user_id, role, invited_by)
+       values ('10000000-0000-4000-8000-000000000001',
+               '00000000-0000-4000-8000-000000000002', 'editor',
+               '00000000-0000-4000-8000-000000000001')$sql$,
+  'owner cannot bypass invitation acceptance with a direct membership insert'
+);
+
+select pg_temp.assert_throws(
+  $sql$insert into public.trip_invitations
+       (id, trip_id, email_hash, role, invited_by, token_hash, expires_at,
+        accepted_at, accepted_by)
+       values ('30000000-0000-4000-8000-000000000099',
+               '10000000-0000-4000-8000-000000000001', repeat('9', 64),
+               'viewer', '00000000-0000-4000-8000-000000000001',
+               repeat('8', 64), now() + interval '2 days', now(),
+               '00000000-0000-4000-8000-000000000003')$sql$,
+  'owner cannot create a falsely accepted invitation through the Data API'
+);
+
+select pg_temp.assert_throws(
+  $sql$insert into public.trip_invitations
+       (id, trip_id, email_hash, role, invited_by, token_hash, expires_at, revoked_at)
+       values ('30000000-0000-4000-8000-000000000098',
+               '10000000-0000-4000-8000-000000000001', repeat('7', 64),
+               'viewer', '00000000-0000-4000-8000-000000000001',
+               repeat('6', 64), now() + interval '2 days', now())$sql$,
+  'owner cannot create a falsely revoked invitation through the Data API'
+);
+
+insert into public.trip_invitations (
+  id, trip_id, email_hash, role, invited_by, token_hash, expires_at
+)
 values
-  ('10000000-0000-4000-8000-000000000001',
-   '00000000-0000-4000-8000-000000000002', 'editor',
-   '00000000-0000-4000-8000-000000000001'),
-  ('10000000-0000-4000-8000-000000000001',
-   '00000000-0000-4000-8000-000000000003', 'viewer',
-   '00000000-0000-4000-8000-000000000001');
+  ('30000000-0000-4000-8000-000000000010',
+   '10000000-0000-4000-8000-000000000001',
+   encode(digest('rls-editor@andor.invalid', 'sha256'), 'hex'), 'editor',
+   '00000000-0000-4000-8000-000000000001', repeat('e', 64),
+   now() + interval '2 days'),
+  ('30000000-0000-4000-8000-000000000011',
+   '10000000-0000-4000-8000-000000000001',
+   encode(digest('rls-viewer@andor.invalid', 'sha256'), 'hex'), 'viewer',
+   '00000000-0000-4000-8000-000000000001', repeat('f', 64),
+   now() + interval '2 days');
+
+reset role;
+set local role service_role;
+select pg_temp.assert_true(
+  (select status = 'accepted' and role = 'editor'
+   from public.accept_trip_invitation_transaction(
+     repeat('e', 64),
+     '00000000-0000-4000-8000-000000000002',
+     encode(digest('rls-editor@andor.invalid', 'sha256'), 'hex')
+   )),
+  'service boundary atomically accepts the editor invitation'
+);
+select pg_temp.assert_true(
+  (select status = 'accepted' and role = 'viewer'
+   from public.accept_trip_invitation_transaction(
+     repeat('f', 64),
+     '00000000-0000-4000-8000-000000000003',
+     encode(digest('rls-viewer@andor.invalid', 'sha256'), 'hex')
+   )),
+  'service boundary atomically accepts the viewer invitation'
+);
+
+update public.trip_members
+set revoked_at = now()
+where trip_id = '10000000-0000-4000-8000-000000000001'
+  and user_id = '00000000-0000-4000-8000-000000000003';
+select pg_temp.assert_true(
+  (select status = 'invalid_state'
+   from public.accept_trip_invitation_transaction(
+     repeat('f', 64),
+     '00000000-0000-4000-8000-000000000003',
+     encode(digest('rls-viewer@andor.invalid', 'sha256'), 'hex')
+   )),
+  'accepted invitation replay must fail if its membership is no longer active'
+);
+update public.trip_members
+set revoked_at = null
+where trip_id = '10000000-0000-4000-8000-000000000001'
+  and user_id = '00000000-0000-4000-8000-000000000003';
+
+reset role;
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
 
 insert into public.trip_share_links (
   id, trip_id, token_hash, permission, audience, expires_at, created_by
@@ -327,9 +434,9 @@ select pg_temp.assert_true(
   'client cannot self-confirm a durable import'
 );
 
--- The authenticated invitee cannot mutate membership directly. The following
--- postgres block simulates the app's narrow service boundary after it has
--- checked the opaque token, expiry, revocation and HMAC email fingerprint.
+-- The authenticated invitee cannot mutate membership directly. Acceptance is a
+-- single service-role RPC that validates the token/email hashes and owns the
+-- member + invitation transaction.
 reset role;
 set local role authenticated;
 select set_config(
@@ -349,20 +456,44 @@ select pg_temp.assert_throws(
 );
 
 reset role;
-insert into public.trip_members (
-  trip_id, user_id, role, invited_by, accepted_at, revoked_at
-)
-values (
-  '10000000-0000-4000-8000-000000000001',
-  '00000000-0000-4000-8000-000000000005', 'viewer',
-  '00000000-0000-4000-8000-000000000001', now(), null
+set local role service_role;
+select pg_temp.assert_true(
+  (select status = 'forbidden'
+   from public.accept_trip_invitation_transaction(
+     encode(digest('andor-test-invitation-token-00000001', 'sha256'), 'hex'),
+     '00000000-0000-4000-8000-000000000005',
+     repeat('0', 64)
+   )),
+  'wrong email fingerprint cannot accept an otherwise valid invitation'
 );
-update public.trip_invitations
-set accepted_by = '00000000-0000-4000-8000-000000000005', accepted_at = now()
-where id = '30000000-0000-4000-8000-000000000001'
-  and accepted_at is null and revoked_at is null and expires_at > now();
+select pg_temp.assert_true(
+  (select status = 'accepted' and role = 'viewer'
+   from public.accept_trip_invitation_transaction(
+     encode(digest('andor-test-invitation-token-00000001', 'sha256'), 'hex'),
+     '00000000-0000-4000-8000-000000000005',
+     encode(digest('rls-invited@andor.invalid', 'sha256'), 'hex')
+   )),
+  'valid invitation is accepted atomically with its stored role'
+);
+select pg_temp.assert_true(
+  (select status = 'already_accepted'
+   from public.accept_trip_invitation_transaction(
+     encode(digest('andor-test-invitation-token-00000001', 'sha256'), 'hex'),
+     '00000000-0000-4000-8000-000000000005',
+     encode(digest('rls-invited@andor.invalid', 'sha256'), 'hex')
+   )),
+  'repeating acceptance is idempotent'
+);
 
+reset role;
 set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated"}',
+  true
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000005', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
 select pg_temp.assert_true(
   (select count(*) = 1 from public.itineraries
    where id = '10000000-0000-4000-8000-000000000001'),

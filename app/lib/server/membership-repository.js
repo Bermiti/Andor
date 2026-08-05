@@ -8,7 +8,6 @@ import { getDataBackendMode } from './backend-mode';
 import {
   acceptLocalInvitation,
   createLocalInvitation,
-  getLocalInvitationByTokenHash,
   listLocalInvitations,
   listLocalTripMembers,
   revokeLocalInvitation,
@@ -138,13 +137,6 @@ export async function createTripInvitation({ tripId, email, role }, identity) {
     logger.warn('membership_repository:invite_failed', error, { tripId });
     return { ok: false, status: error.code === '23505' ? 'conflict' : 'storage_error' };
   }
-  await supabase.from('audit_events').insert({
-    actor_user_id: identity.userId,
-    action: 'trip.invitation_created',
-    resource_type: 'trip_invitation',
-    resource_id: record.id,
-    metadata: { role },
-  });
   return { ok: true, provider: 'supabase', token, invitation: publicInvitation(record) };
 }
 
@@ -162,54 +154,40 @@ export async function acceptTripInvitation(token, identity) {
   const tokenHash = hashOpaqueToken(token);
   const mode = getDataBackendMode();
   if (mode === 'sqlite') {
-    if (!getLocalInvitationByTokenHash(tokenHash)) return { ok: false, status: 'not_found' };
     return { ...acceptLocalInvitation({ tokenHash, userId: identity.userId, emailHash }), provider: 'sqlite' };
   }
   if (mode !== 'supabase') return { ok: false, status: 'persistence_unavailable' };
 
-  // Narrow service-role boundary: resolve one opaque invitation hash, verify the
-  // authenticated user's email fingerprint, and create only the role stored by the owner.
+  // One service-role RPC owns lookup, validation, row locking, membership and
+  // invitation state. The raw token and email never enter Postgres.
   const admin = createSupabaseAdminClient();
   if (!admin) return { ok: false, status: 'persistence_unavailable' };
-  const { data: invitation, error } = await admin
-    .from('trip_invitations')
-    .select('*')
-    .eq('token_hash', tokenHash)
-    .maybeSingle();
-  if (error || !invitation) return { ok: false, status: 'not_found' };
-  if (invitation.revoked_at) return { ok: false, status: 'revoked' };
-  if (invitation.accepted_at) return invitation.accepted_by === identity.userId
-    ? { ok: true, status: 'already_accepted', provider: 'supabase', tripId: invitation.trip_id, role: invitation.role }
-    : { ok: false, status: 'not_found' };
-  if (new Date(invitation.expires_at).getTime() <= Date.now()) return { ok: false, status: 'expired' };
-  if (invitation.email_hash !== emailHash) return { ok: false, status: 'forbidden' };
-  if (!['editor', 'viewer'].includes(invitation.role)) return { ok: false, status: 'forbidden' };
-
-  const now = new Date().toISOString();
-  const { error: memberError } = await admin.from('trip_members').upsert({
-    trip_id: invitation.trip_id,
-    user_id: identity.userId,
-    role: invitation.role,
-    invited_by: invitation.invited_by,
-    updated_at: now,
-    revoked_at: null,
-  }, { onConflict: 'trip_id,user_id' });
-  if (memberError) return { ok: false, status: 'storage_error' };
-  const { error: acceptError } = await admin
-    .from('trip_invitations')
-    .update({ accepted_by: identity.userId, accepted_at: now })
-    .eq('id', invitation.id)
-    .is('accepted_at', null)
-    .is('revoked_at', null);
-  if (acceptError) return { ok: false, status: 'storage_error' };
-  await admin.from('audit_events').insert({
-    actor_user_id: identity.userId,
-    action: 'trip.invitation_accepted',
-    resource_type: 'trip_invitation',
-    resource_id: invitation.id,
-    metadata: { role: invitation.role },
+  const { data, error } = await admin.rpc('accept_trip_invitation_transaction', {
+    p_token_hash: tokenHash,
+    p_user_id: identity.userId,
+    p_email_hash: emailHash,
   });
-  return { ok: true, provider: 'supabase', tripId: invitation.trip_id, role: invitation.role };
+  if (error) {
+    logger.warn('membership_repository:accept_failed', error);
+    return { ok: false, status: 'storage_error' };
+  }
+
+  const outcome = Array.isArray(data) ? data[0] : data;
+  if (!outcome || !outcome.status) return { ok: false, status: 'not_found' };
+  if (outcome.status === 'accepted' || outcome.status === 'already_accepted') {
+    return {
+      ok: true,
+      status: outcome.status,
+      provider: 'supabase',
+      tripId: outcome.trip_id,
+      role: outcome.role,
+    };
+  }
+  if (['not_found', 'revoked', 'expired', 'forbidden'].includes(outcome.status)) {
+    return { ok: false, status: outcome.status };
+  }
+  if (outcome.status === 'invalid_state') return { ok: false, status: 'invalid_state' };
+  return { ok: false, status: 'storage_error' };
 }
 
 export async function updateTripMember({ tripId, memberUserId, role }, identity) {

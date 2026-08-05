@@ -343,19 +343,61 @@ export function revokeLocalInvitation({ tripId, invitationId, actorUserId }) {
 }
 
 export function acceptLocalInvitation({ tokenHash, userId, emailHash }) {
-  const invitation = getLocalInvitationByTokenHash(tokenHash);
-  if (!invitation) return { ok: false, status: 'not_found' };
-  if (invitation.revokedAt) return { ok: false, status: 'revoked' };
-  if (invitation.acceptedAt) return invitation.acceptedBy === userId
-    ? { ok: true, status: 'already_accepted', tripId: invitation.tripId, role: invitation.role }
-    : { ok: false, status: 'not_found' };
-  if (new Date(invitation.expiresAt).getTime() <= Date.now()) return { ok: false, status: 'expired' };
-  if (invitation.emailHash !== emailHash) return { ok: false, status: 'forbidden' };
-
   const db = getLocalDatabase();
   const now = new Date().toISOString();
   try {
     db.exec('BEGIN IMMEDIATE');
+    const row = db.prepare(`
+      SELECT invitation.*, trip.user_id AS owner_id
+      FROM trip_invitations invitation
+      JOIN itineraries trip ON trip.id = invitation.trip_id
+      WHERE invitation.token_hash = ?
+    `).get(tokenHash);
+    if (!row) {
+      db.exec('ROLLBACK');
+      return { ok: false, status: 'not_found' };
+    }
+
+    const invitation = {
+      id: row.id,
+      tripId: row.trip_id,
+      emailHash: row.email_hash,
+      role: row.role,
+      invitedBy: row.invited_by,
+      expiresAt: row.expires_at,
+      revokedAt: row.revoked_at,
+      acceptedBy: row.accepted_by,
+      acceptedAt: row.accepted_at,
+      ownerId: row.owner_id,
+    };
+
+    if (invitation.acceptedAt) {
+      const activeMembership = db.prepare(`
+        SELECT role FROM trip_members
+        WHERE trip_id = ? AND user_id = ? AND revoked_at IS NULL
+      `).get(invitation.tripId, userId);
+      db.exec('ROLLBACK');
+      if (invitation.acceptedBy !== userId) return { ok: false, status: 'not_found' };
+      return activeMembership?.role === invitation.role
+        ? { ok: true, status: 'already_accepted', tripId: invitation.tripId, role: invitation.role }
+        : { ok: false, status: 'invalid_state' };
+    }
+    if (invitation.revokedAt) {
+      db.exec('ROLLBACK');
+      return { ok: false, status: 'revoked' };
+    }
+    if (new Date(invitation.expiresAt).getTime() <= Date.now()) {
+      db.exec('ROLLBACK');
+      return { ok: false, status: 'expired' };
+    }
+    if (invitation.emailHash !== emailHash
+        || !['editor', 'viewer'].includes(invitation.role)
+        || invitation.ownerId === userId
+        || invitation.invitedBy === userId) {
+      db.exec('ROLLBACK');
+      return { ok: false, status: 'forbidden' };
+    }
+
     db.prepare(`
       INSERT INTO trip_members
         (trip_id, user_id, role, invited_by, created_at, updated_at, revoked_at)
@@ -366,10 +408,13 @@ export function acceptLocalInvitation({ tokenHash, userId, emailHash }) {
         updated_at = excluded.updated_at,
         revoked_at = NULL
     `).run(invitation.tripId, userId, invitation.role, invitation.invitedBy, now, now);
-    db.prepare(`
+    const accepted = db.prepare(`
       UPDATE trip_invitations SET accepted_by = ?, accepted_at = ?
-      WHERE id = ? AND accepted_at IS NULL AND revoked_at IS NULL
-    `).run(userId, now, invitation.id);
+      WHERE id = ? AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > ?
+    `).run(userId, now, invitation.id, now);
+    if (accepted.changes !== 1) {
+      throw new Error('Invitation state changed during acceptance');
+    }
     insertLocalAuditEvent({
       actorUserId: userId,
       action: 'trip.invitation_accepted',
