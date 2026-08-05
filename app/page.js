@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Navbar from './components/Navbar';
 import HomeHero from './components/home/HomeHero';
 import InteractiveTripDemo from './components/home/InteractiveTripDemo';
+import HomeValueProp from './components/home/HomeValueProp';
 import PreferencesDrawer from './components/PreferencesDrawer';
 import CtaFinal from './components/CtaFinal';
 import Footer from './components/Footer';
@@ -23,6 +24,7 @@ export default function Home() {
       <main className="overflow-hidden" style={{ width: '100%', maxWidth: '100vw' }}>
         <HomeHero />
         <InteractiveTripDemo />
+        <HomeValueProp />
         <CtaFinal />
       </main>
       <Footer />
