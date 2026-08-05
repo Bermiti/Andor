@@ -82,8 +82,10 @@ export async function GET(request) {
               lat: parseFloat(item.lat),
               lng: parseFloat(item.lon),
             },
-            timezone: 'UTC',
-            currencyCodes: ['EUR'],
+            // Nominatim resolves geography, not IANA timezone or currency.
+            // Unknown metadata must remain unknown until another source resolves it.
+            timezone: null,
+            currencyCodes: [],
             providerRefs: { nominatim: String(item.place_id) },
             provenance: {
               sourceType: 'verified_provider',

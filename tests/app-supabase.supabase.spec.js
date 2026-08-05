@@ -20,22 +20,25 @@ test('the application persists and authorizes a complete trip workflow in Supaba
     }));
     expect(ownerRegistration).toMatchObject({ authenticated: true, provider: 'supabase' });
 
-    const generated = await json(await owner.post('/api/generate-itinerary', {
-      data: {
-        destination: 'Lisbon, Portugal',
-        destinationEntity: {
-          entityId: 'geo-e2e-lisbon',
-          canonicalName: 'Lisbon',
-          displayName: 'Lisbon, Portugal',
-          entityType: 'city',
-          countryCode: 'PT',
-          coordinates: { lat: 38.7223, lng: -9.1393 },
-          resolutionStatus: 'resolved',
-        },
-        days: 2,
-        travelers: 2,
-        forceFallback: true,
+    const generationKey = `generation-${suffix}`;
+    const generationPayload = {
+      destination: 'Lisbon, Portugal',
+      destinationEntity: {
+        entityId: 'geo-e2e-lisbon',
+        canonicalName: 'Lisbon',
+        displayName: 'Lisbon, Portugal',
+        entityType: 'city',
+        countryCode: 'PT',
+        coordinates: { lat: 38.7223, lng: -9.1393 },
+        resolutionStatus: 'resolved',
       },
+      days: 2,
+      travelers: 2,
+      forceFallback: true,
+    };
+    const generated = await json(await owner.post('/api/generate-itinerary', {
+      headers: { 'Idempotency-Key': generationKey },
+      data: generationPayload,
     }));
     expect(generated.persistence).toEqual({
       mode: 'durable',
@@ -46,6 +49,21 @@ test('the application persists and authorizes a complete trip workflow in Supaba
     expect(generated.id).toMatch(/^[0-9a-f-]{36}$/i);
     expect(generated.days).toHaveLength(2);
     const tripId = generated.id;
+
+    const generationReplayResponse = await owner.post('/api/generate-itinerary', {
+      headers: { 'Idempotency-Key': generationKey },
+      data: generationPayload,
+    });
+    const generationReplay = await json(generationReplayResponse);
+    expect(generationReplayResponse.headers()['idempotency-replayed']).toBe('true');
+    expect(generationReplay.id).toBe(tripId);
+
+    const changedPayload = await owner.post('/api/generate-itinerary', {
+      headers: { 'Idempotency-Key': generationKey },
+      data: { ...generationPayload, travelers: 3 },
+    });
+    expect(changedPayload.status()).toBe(409);
+    expect(await changedPayload.json()).toMatchObject({ error: { code: 'IDEMPOTENCY_KEY_REUSED' } });
 
     const ownerTrip = await json(await owner.get(`/api/itineraries/${tripId}`));
     expect(ownerTrip.trip).toMatchObject({ id: tripId, permission: 'owner', persistence: 'supabase' });

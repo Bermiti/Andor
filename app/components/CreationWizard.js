@@ -25,13 +25,21 @@ import {
   RotateCcw,
   Save,
   TriangleAlert,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import styles from './CreationWizard.module.css';
 import {
   getPlannerDayCount,
+  getPlannerNightCount,
+  getPlannerStageNightTotal,
   getPlannerStepError,
+  MAX_PLANNER_STAGES,
   normalizeFlexibleDays,
   normalizePlannerDraft,
+  normalizePlannerStages,
   PLANNER_DRAFT_KEY,
   PLANNER_DRAFT_VERSION,
 } from '../lib/planner-state';
@@ -163,6 +171,27 @@ export function resolveGeneratedItineraryResponse(data) {
     };
   }
   throw new Error('O roteiro nÃ£o ficou guardado. Tenta novamente.');
+}
+
+export async function fingerprintGenerationPayload(payload) {
+  const serialized = JSON.stringify(payload);
+  if (globalThis.crypto?.subtle && typeof TextEncoder !== 'undefined') {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(serialized));
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  // The server still verifies a canonical SHA-256 request hash before replay.
+  let hash = 2166136261;
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+function createGenerationIntentKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `andor-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
 }
 
 const getDestinationCode = (name = '') => {
@@ -326,6 +355,11 @@ export default function CreationWizard({
   const [step, setStep] = useState(initialStep);
   const [destination, setDestination] = useState(initialDestination);
   const [destinationEntity, setDestinationEntity] = useState(null);
+  const [journeyStages, setJourneyStages] = useState(() => normalizePlannerStages(null, {
+    destination: initialDestination,
+    flexibleDays: 5,
+  }));
+  const [generationIntent, setGenerationIntent] = useState(null);
   const [isSurprise, setIsSurprise] = useState(false);
   const [dates, setDates] = useState({ start: '', end: '', flexible: false });
   const [datesUnknown, setDatesUnknown] = useState(false);
@@ -461,6 +495,16 @@ export default function CreationWizard({
       setDestinationEntity(
         initialDestination ? null : normalizeDestinationSuggestion(draft?.destinationEntity),
       );
+      setJourneyStages(normalizePlannerStages(
+        initialDestination ? null : draft?.journeyStages,
+        {
+          destination: initialDestination || draft?.destination || '',
+          destinationEntity: initialDestination ? null : normalizeDestinationSuggestion(draft?.destinationEntity),
+          flexibleDays: draft?.flexibleDays || 5,
+          arrivalWindow: draft?.arrivalTime,
+        },
+      ));
+      setGenerationIntent(draft?.generationIntent || null);
       setDates(initialDates
         ? { start: initialDates.start || '', end: initialDates.end || '', flexible: Boolean(initialDates.flexible) }
         : draft?.dates || { start: '', end: '', flexible: false });
@@ -513,6 +557,19 @@ export default function CreationWizard({
   }, [initialDestination, isOpen]);
 
   useEffect(() => {
+    if (!isHydrated) return;
+    setJourneyStages((current) => current.map((stage, index) => index === 0
+      ? {
+        ...stage,
+        destination,
+        destinationEntity,
+        arrivalWindow: arrivalTime,
+        departureWindow: departureTime,
+      }
+      : stage));
+  }, [arrivalTime, departureTime, destination, destinationEntity, isHydrated]);
+
+  useEffect(() => {
     if (!isHydrated || !isOpen || isSubmitting) return undefined;
     const timer = window.setTimeout(() => {
       const draft = {
@@ -521,6 +578,8 @@ export default function CreationWizard({
         step,
         destination,
         destinationEntity,
+        journeyStages,
+        generationIntent,
         isSurprise,
         dates,
         datesUnknown,
@@ -561,7 +620,8 @@ export default function CreationWizard({
     }, 250);
     return () => window.clearTimeout(timer);
   }, [
-    isHydrated, isOpen, isSubmitting, step, destination, destinationEntity, isSurprise, dates, datesUnknown,
+    isHydrated, isOpen, isSubmitting, step, destination, destinationEntity, journeyStages, generationIntent,
+    isSurprise, dates, datesUnknown,
     flexibleDays, travelers, stylesList, travelerType, companyMode, clientName, companyName,
     preparedBy, internalNotes, clientFacingNotes, exportPreference, budgetPerDay, dietary,
     mobilityReduced, transportPreference, budgetIncludesFlights, pace, childrenAges,
@@ -590,12 +650,79 @@ export default function CreationWizard({
 
   if (!isOpen) return null;
 
+  const expectedJourneyNights = getPlannerNightCount({ datesUnknown, flexibleDays, dates });
+  const journeyNightTotal = getPlannerStageNightTotal(journeyStages);
+  const hasJourneyDurationConflict = journeyStages.length > 1
+    && journeyNightTotal !== expectedJourneyNights;
+
+  const syncPrimaryStage = (stage) => {
+    if (!stage) return;
+    setDestination(stage.destination || '');
+    setDestinationEntity(stage.destinationEntity || null);
+    setArrivalTime(stage.arrivalWindow || 'afternoon');
+    setDepartureTime(stage.departureWindow || 'afternoon');
+  };
+
+  const updateJourneyStage = (index, patch) => {
+    setJourneyStages((current) => current.map((stage, stageIndex) => (
+      stageIndex === index ? { ...stage, ...patch } : stage
+    )));
+    if (index === 0) {
+      if (Object.hasOwn(patch, 'destination')) setDestination(patch.destination || '');
+      if (Object.hasOwn(patch, 'destinationEntity')) setDestinationEntity(patch.destinationEntity || null);
+      if (Object.hasOwn(patch, 'arrivalWindow')) setArrivalTime(patch.arrivalWindow || 'afternoon');
+      if (Object.hasOwn(patch, 'departureWindow')) setDepartureTime(patch.departureWindow || 'afternoon');
+    }
+  };
+
+  const handleAddJourneyStage = () => {
+    if (journeyStages.length >= MAX_PLANNER_STAGES) return;
+    const next = journeyStages.map((stage) => ({ ...stage }));
+    const previous = next[next.length - 1];
+    let nights = 1;
+    if (previous?.nights > 1) previous.nights -= 1;
+    else if (journeyNightTotal >= expectedJourneyNights) nights = 0;
+    next.push({
+      id: globalThis.crypto?.randomUUID?.() || `stage-${Date.now().toString(36)}`,
+      destination: '',
+      destinationEntity: null,
+      nights,
+      arrivalWindow: 'afternoon',
+      departureWindow: 'afternoon',
+      transportMode: 'train',
+    });
+    setJourneyStages(normalizePlannerStages(next));
+  };
+
+  const handleRemoveJourneyStage = (index) => {
+    if (journeyStages.length <= 1) return;
+    const next = journeyStages.map((stage) => ({ ...stage }));
+    const [removed] = next.splice(index, 1);
+    const recipientIndex = Math.max(0, index - 1);
+    if (next[recipientIndex]) next[recipientIndex].nights += removed?.nights || 0;
+    const normalized = normalizePlannerStages(next);
+    setJourneyStages(normalized);
+    syncPrimaryStage(normalized[0]);
+  };
+
+  const handleMoveJourneyStage = (index, direction) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= journeyStages.length) return;
+    const next = [...journeyStages];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    setJourneyStages(next);
+    syncPrimaryStage(next[0]);
+  };
+
   const handleNext = () => {
     const error = getPlannerStepError(step, {
       destination,
+      destinationEntity,
+      journeyStages,
       isSurprise,
       dates,
       datesUnknown,
+      flexibleDays,
       companyMode,
       clientName,
       stylesList,
@@ -647,9 +774,21 @@ export default function CreationWizard({
     setIsSubmitting(true);
 
     try {
+      const normalizedJourneyStages = normalizePlannerStages(journeyStages).map((stage, index) => ({
+        ...stage,
+        order: index + 1,
+        destination: isSurprise && index === 0 ? 'Destino Surpresa' : stage.destination,
+        destinationEntity: isSurprise && index === 0 ? null : stage.destinationEntity,
+      }));
       const payload = {
         destination: isSurprise ? 'Destino Surpresa' : destination,
         destinationEntity: isSurprise ? null : destinationEntity,
+        journey: {
+          schemaVersion: 2,
+          kind: normalizedJourneyStages.length > 1 ? 'multi_destination' : 'single_destination',
+          totalNights: normalizedJourneyStages.reduce((total, stage) => total + stage.nights, 0),
+          stages: normalizedJourneyStages,
+        },
         days: getDaysCount(),
         budget: getBudgetTierLabel(budgetPerDay).toLowerCase(),
         travelers: travelers.adults + travelers.children,
@@ -694,9 +833,27 @@ export default function CreationWizard({
         }
       };
 
+      const fingerprint = await fingerprintGenerationPayload(payload);
+      const intent = generationIntent?.fingerprint === fingerprint
+        ? generationIntent
+        : { key: createGenerationIntentKey(), fingerprint };
+      setGenerationIntent(intent);
+      try {
+        const savedDraft = JSON.parse(sessionStorage.getItem(PLANNER_DRAFT_KEY) || 'null');
+        sessionStorage.setItem(PLANNER_DRAFT_KEY, JSON.stringify({
+          ...(savedDraft && typeof savedDraft === 'object' ? savedDraft : {}),
+          version: PLANNER_DRAFT_VERSION,
+          updatedAt: new Date().toISOString(),
+          generationIntent: intent,
+        }));
+      } catch (error) {}
+
       const response = await fetch('/api/generate-itinerary', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': intent.key,
+        },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
@@ -819,7 +976,36 @@ export default function CreationWizard({
                 </div>
 
                 {!isSurprise ? (
-                  <div className={styles.inputGroup} style={{ position: 'relative' }}>
+                  <div className={styles.journeyBuilder}>
+                    <div className={styles.journeyBuilderHeader}>
+                      <div>
+                        <strong>{journeyStages.length === 1 ? 'Uma etapa' : `${journeyStages.length} etapas`}</strong>
+                        <span>Adiciona destinos e define quanto tempo ficas em cada um.</span>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.addStageButton}
+                        onClick={handleAddJourneyStage}
+                        disabled={journeyStages.length >= MAX_PLANNER_STAGES}
+                      >
+                        <Plus size={16} aria-hidden="true" /> Adicionar destino
+                      </button>
+                    </div>
+                    <article className={styles.stageCard} aria-label="Etapa 1">
+                      <header className={styles.stageCardHeader}>
+                        <span className={styles.stageNumber}>1</span>
+                        <strong>Primeira etapa</strong>
+                        <div className={styles.stageActions}>
+                          <button type="button" disabled aria-label="Mover primeira etapa para cima"><ArrowUp size={16} /></button>
+                          <button
+                            type="button"
+                            disabled={journeyStages.length < 2}
+                            onClick={() => handleMoveJourneyStage(0, 1)}
+                            aria-label="Mover primeira etapa para baixo"
+                          ><ArrowDown size={16} /></button>
+                        </div>
+                      </header>
+                      <div className={styles.inputGroup} style={{ position: 'relative' }}>
                     <input
                       type="text"
                       className={styles.hugeInput}
@@ -894,6 +1080,169 @@ export default function CreationWizard({
                           </button>
                         ))}
                       </div>
+                    </div>
+                      </div>
+                      <div className={styles.stageFields}>
+                        <label>
+                          <span>Noites</span>
+                          <input
+                            type="number"
+                            min={journeyStages.length > 1 ? 1 : 0}
+                            max="30"
+                            value={journeyStages[0]?.nights ?? 0}
+                            onChange={(event) => updateJourneyStage(0, {
+                              nights: Math.min(30, Math.max(0, Number.parseInt(event.target.value, 10) || 0)),
+                            })}
+                            aria-label="Noites na primeira etapa"
+                          />
+                        </label>
+                        <label>
+                          <span>Chegada</span>
+                          <select
+                            value={journeyStages[0]?.arrivalWindow || 'afternoon'}
+                            onChange={(event) => updateJourneyStage(0, { arrivalWindow: event.target.value })}
+                          >
+                            <option value="morning">Manhã</option>
+                            <option value="afternoon">Tarde</option>
+                            <option value="night">Noite</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>Partida</span>
+                          <select
+                            value={journeyStages[0]?.departureWindow || 'afternoon'}
+                            onChange={(event) => updateJourneyStage(0, { departureWindow: event.target.value })}
+                          >
+                            <option value="morning">Manhã</option>
+                            <option value="afternoon">Tarde</option>
+                            <option value="night">Noite</option>
+                          </select>
+                        </label>
+                        {journeyStages.length > 1 && (
+                          <label>
+                            <span>Para a etapa 2</span>
+                            <select
+                              value={journeyStages[0]?.transportMode || 'train'}
+                              onChange={(event) => updateJourneyStage(0, { transportMode: event.target.value })}
+                            >
+                              <option value="train">Comboio</option>
+                              <option value="car">Carro</option>
+                              <option value="flight">Avião</option>
+                              <option value="ferry">Ferry</option>
+                              <option value="bus">Autocarro</option>
+                              <option value="other">Outro / por decidir</option>
+                            </select>
+                          </label>
+                        )}
+                      </div>
+                    </article>
+
+                    {journeyStages.slice(1).map((stage, offset) => {
+                      const index = offset + 1;
+                      return (
+                        <article key={stage.id} className={styles.stageCard} aria-label={`Etapa ${index + 1}`}>
+                          <header className={styles.stageCardHeader}>
+                            <span className={styles.stageNumber}>{index + 1}</span>
+                            <strong>{stage.destination || `Destino ${index + 1}`}</strong>
+                            <div className={styles.stageActions}>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveJourneyStage(index, -1)}
+                                aria-label={`Mover etapa ${index + 1} para cima`}
+                              ><ArrowUp size={16} /></button>
+                              <button
+                                type="button"
+                                disabled={index === journeyStages.length - 1}
+                                onClick={() => handleMoveJourneyStage(index, 1)}
+                                aria-label={`Mover etapa ${index + 1} para baixo`}
+                              ><ArrowDown size={16} /></button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveJourneyStage(index)}
+                                aria-label={`Remover etapa ${index + 1}`}
+                              ><Trash2 size={16} /></button>
+                            </div>
+                          </header>
+                          <label className={styles.stageDestinationField}>
+                            <span>Destino</span>
+                            <input
+                              type="text"
+                              value={stage.destination}
+                              onChange={(event) => updateJourneyStage(index, {
+                                destination: event.target.value,
+                                destinationEntity: null,
+                              })}
+                              placeholder="Ex: Porto, Madrid, Menorca"
+                              data-testid={`wizard-stage-${index + 1}-destination`}
+                            />
+                          </label>
+                          <div className={styles.stageFields}>
+                            <label>
+                              <span>Noites</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max="30"
+                                value={stage.nights}
+                                onChange={(event) => updateJourneyStage(index, {
+                                  nights: Math.min(30, Math.max(0, Number.parseInt(event.target.value, 10) || 0)),
+                                })}
+                                aria-label={`Noites na etapa ${index + 1}`}
+                              />
+                            </label>
+                            <label>
+                              <span>Chegada</span>
+                              <select
+                                value={stage.arrivalWindow}
+                                onChange={(event) => updateJourneyStage(index, { arrivalWindow: event.target.value })}
+                              >
+                                <option value="morning">Manhã</option>
+                                <option value="afternoon">Tarde</option>
+                                <option value="night">Noite</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Partida</span>
+                              <select
+                                value={stage.departureWindow}
+                                onChange={(event) => updateJourneyStage(index, { departureWindow: event.target.value })}
+                              >
+                                <option value="morning">Manhã</option>
+                                <option value="afternoon">Tarde</option>
+                                <option value="night">Noite</option>
+                              </select>
+                            </label>
+                            {index < journeyStages.length - 1 && (
+                              <label>
+                                <span>{`Para a etapa ${index + 2}`}</span>
+                                <select
+                                  value={stage.transportMode}
+                                  onChange={(event) => updateJourneyStage(index, { transportMode: event.target.value })}
+                                >
+                                  <option value="train">Comboio</option>
+                                  <option value="car">Carro</option>
+                                  <option value="flight">Avião</option>
+                                  <option value="ferry">Ferry</option>
+                                  <option value="bus">Autocarro</option>
+                                  <option value="other">Outro / por decidir</option>
+                                </select>
+                              </label>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+
+                    <div
+                      className={`${styles.journeyDuration} ${hasJourneyDurationConflict ? styles.journeyDurationConflict : ''}`}
+                      role="status"
+                    >
+                      <strong>{journeyNightTotal} noites · {journeyNightTotal + 1} dias</strong>
+                      <span>
+                        {hasJourneyDurationConflict
+                          ? `As datas correspondem a ${expectedJourneyNights} noites. Ajusta a distribuição antes de continuar.`
+                          : 'A última manhã fica incluída no dia de saída.'}
+                      </span>
                     </div>
                   </div>
                 ) : (
@@ -993,6 +1342,20 @@ export default function CreationWizard({
                     </div>
                   )}
                 </div>
+
+                {journeyStages.length > 1 && (
+                  <div
+                    className={`${styles.journeyDuration} ${hasJourneyDurationConflict ? styles.journeyDurationConflict : ''}`}
+                    role={hasJourneyDurationConflict ? 'alert' : 'status'}
+                  >
+                    <strong>{journeyNightTotal} de {expectedJourneyNights} noites distribuídas</strong>
+                    <span>
+                      {hasJourneyDurationConflict
+                        ? 'Volta ao passo anterior ou ajusta as datas para resolver o conflito.'
+                        : 'A duração das etapas coincide com as datas da viagem.'}
+                    </span>
+                  </div>
+                )}
 
                 <div className={styles.followUpBox}>
                   <h3 className={styles.followUpTitle}>Como chegam e saem os dias?</h3>
@@ -1655,9 +2018,24 @@ export default function CreationWizard({
                 <div className={styles.summaryCard}>
                   <h3 className={styles.summaryTitle}>Confirmar viagem Andor</h3>
                   <div className={styles.summaryRow}>
-                    <span className={styles.summaryItemLabel}><MapPin size={14} /> Destino</span>
-                    <strong>{isSurprise ? 'Destino surpresa' : destination || 'Destino por definir'}</strong>
+                    <span className={styles.summaryItemLabel}><MapPin size={14} /> {journeyStages.length > 1 ? 'Percurso' : 'Destino'}</span>
+                    <strong>
+                      {isSurprise
+                        ? 'Destino surpresa'
+                        : journeyStages.map((stage) => stage.destination || 'Por definir').join(' → ')}
+                    </strong>
                   </div>
+                  {journeyStages.length > 1 && (
+                    <div className={styles.summaryStages} aria-label="Distribuição pelas etapas">
+                      {journeyStages.map((stage, index) => (
+                        <span key={stage.id}>
+                          <b>{index + 1}. {stage.destination}</b>
+                          {stage.nights} noite{stage.nights === 1 ? '' : 's'}
+                          {index < journeyStages.length - 1 ? ` · ${stage.transportMode}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className={styles.summaryRow}>
                     <span className={styles.summaryItemLabel}><Calendar size={14} /> Datas</span>
                     <strong>{datesUnknown ? `${getDaysCount()} dias flexiveis` : `${dates.start || '?'} a ${dates.end || '?'}`}</strong>
@@ -1763,8 +2141,10 @@ export default function CreationWizard({
                   className={styles.nextBtn}
                   onClick={handleNext}
                   disabled={
-                    (step === 1 && !isSurprise && !destination.trim()) ||
+                    (step === 1 && !isSurprise && journeyStages.some((stage) => !stage.destination.trim())) ||
+                    (step === 1 && !isSurprise && journeyStages.length > 1 && journeyStages.some((stage) => stage.nights < 1)) ||
                     (step === 2 && !datesUnknown && (!dates.start || !dates.end)) ||
+                    (step === 2 && hasJourneyDurationConflict) ||
                     (step === 2 && companyMode && !clientName.trim()) ||
                     (step === 3 && stylesList.length === 0)
                   }

@@ -517,6 +517,17 @@ select set_config(
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
+select pg_temp.assert_throws(
+  $sql$select * from public.reserve_generation_request('too-short', repeat('1', 64))$sql$,
+  'generation idempotency keys shorter than 16 characters are rejected'
+);
+select pg_temp.assert_throws(
+  $sql$select * from public.reserve_generation_request(
+         concat('generation-control-', chr(10), 'key-0001'), repeat('1', 64)
+       )$sql$,
+  'generation idempotency keys containing control characters are rejected'
+);
+
 select pg_temp.assert_true(
   (select itinerary #>> '{days,0,title}' = 'Editor update'
    from public.itineraries where id = '10000000-0000-4000-8000-000000000001'),
@@ -592,6 +603,330 @@ select pg_temp.assert_true(
   'revoked editor must lose access immediately'
 );
 
+-- Durable generation idempotency is scoped to auth.uid(). The first caller gets
+-- a two-minute lease and all overlapping workers observe in_progress without
+-- receiving the active lease token.
+reset role;
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select pg_temp.assert_true(
+  (select outcome = 'reserved'
+          and request_id is not null
+          and lease_token is not null
+          and lease_expires_at = now() + interval '2 minutes'
+          and attempt_count = 1
+          and expires_at = now() + interval '24 hours'
+   from public.reserve_generation_request(
+     'generation-main-key-0001',
+     repeat('1', 64)
+   )),
+  'first generation request must receive a two-minute lease and 24-hour receipt'
+);
+select pg_temp.assert_true(
+  (select outcome = 'in_progress'
+          and lease_token is null
+          and attempt_count = 1
+   from public.reserve_generation_request(
+     'generation-main-key-0001',
+     repeat('1', 64)
+   )),
+  'overlapping reservation must not receive the active lease'
+);
+select pg_temp.assert_true(
+  (select outcome = 'hash_mismatch'
+          and lease_token is null
+          and response is null
+   from public.reserve_generation_request(
+     'generation-main-key-0001',
+     repeat('2', 64)
+   )),
+  'same idempotency key with a different request hash must fail closed'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1
+          and bool_and(user_id = auth.uid())
+   from public.generation_requests
+   where idempotency_key = 'generation-main-key-0001'),
+  'owner-safe SELECT exposes exactly the caller generation receipt'
+);
+select pg_temp.assert_throws(
+  $sql$update public.generation_requests
+       set checkpoint = '{"forged":true}'::jsonb
+       where idempotency_key = 'generation-main-key-0001'$sql$,
+  'authenticated callers cannot update generation state directly'
+);
+
+select pg_temp.assert_true(
+  (select outcome = 'lease_lost'
+   from public.checkpoint_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     gen_random_uuid(),
+     '{"stage":"provider_complete"}'::jsonb
+   )),
+  'checkpoint with the wrong lease token must fail closed'
+);
+select pg_temp.assert_true(
+  (select checkpoint = '{}'::jsonb
+   from public.generation_requests
+   where idempotency_key = 'generation-main-key-0001'),
+  'wrong-lease checkpoint must not mutate the durable checkpoint'
+);
+select pg_temp.assert_true(
+  (select outcome = 'checkpointed'
+          and checkpoint = '{"stage":"provider_complete"}'::jsonb
+          and lease_expires_at = now() + interval '2 minutes'
+   from public.checkpoint_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     (select lease_token from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     '{"stage":"provider_complete"}'::jsonb
+   )),
+  'lease holder may persist a checkpoint and renew the two-minute lease'
+);
+
+-- Invalid completion leaves both sides untouched, so the same valid lease can
+-- retry. A valid completion inserts one itinerary and completes its receipt in
+-- the same database transaction.
+select pg_temp.assert_true(
+  (select outcome = 'invalid_trip'
+   from public.complete_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     (select lease_token from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     jsonb_build_object(
+       'destination', 'Invalid fixture',
+       'itinerary', '{"days":[]}'::jsonb,
+       'metadata', '{"days":1}'::jsonb,
+       'responsePayload', '{}'::jsonb
+     )
+   )),
+  'invalid trip payload must be rejected before persistence'
+);
+select pg_temp.assert_true(
+  (select status = 'pending' and trip_id is null and response is null
+   from public.generation_requests
+   where idempotency_key = 'generation-main-key-0001')
+  and not exists (
+    select 1 from public.itineraries where destination = 'Invalid fixture'
+  ),
+  'rejected completion must leave no partial trip or completed receipt'
+);
+
+select pg_temp.assert_true(
+  (select outcome = 'completed'
+          and trip_id = '10000000-0000-4000-8000-000000000010'
+          and response ->> 'id' = '10000000-0000-4000-8000-000000000010'
+   from public.complete_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     (select lease_token from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     jsonb_build_object(
+       'id', '10000000-0000-4000-8000-000000000010',
+       'destination', 'Porto, Portugal',
+       'itinerary', jsonb_build_object(
+         'trip', jsonb_build_object('destination', 'Porto, Portugal'),
+         'days', jsonb_build_array(
+           jsonb_build_object(
+             'day', 1,
+             'title', 'Porto essencial',
+             'activities', jsonb_build_array(jsonb_build_object('name', 'Ribeira'))
+           )
+         )
+       ),
+       'metadata', jsonb_build_object(
+         'destinationCity', 'Porto',
+         'destinationCountry', 'Portugal',
+         'days', 1,
+         'style', 'culture',
+         'budget', 'moderate',
+         'travelers', 2,
+         'startDate', '2026-09-10',
+         'endDate', '2026-09-10',
+         'source', 'generated'
+       ),
+       'visibility', 'private',
+       'status', 'draft',
+       'currency', 'EUR',
+       'schemaVersion', 1,
+       'responsePayload', jsonb_build_object(
+         'destination', 'Porto, Portugal',
+         'persistence', jsonb_build_object('mode', 'durable')
+       )
+     )
+   )),
+  'lease holder completes the itinerary and durable response atomically'
+);
+select pg_temp.assert_true(
+  (select request.status = 'completed'
+          and request.trip_id = itinerary.id
+          and request.response ->> 'id' = itinerary.id::text
+          and request.completed_at is not null
+          and request.lease_token is null
+          and itinerary.owner_id = auth.uid()
+          and itinerary.user_id = auth.uid()
+          and itinerary.visibility = 'private'
+          and itinerary.status = 'draft'
+   from public.generation_requests request
+   join public.itineraries itinerary on itinerary.id = request.trip_id
+   where request.idempotency_key = 'generation-main-key-0001'),
+  'completed receipt and canonical private itinerary must reference each other'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1
+   from public.trip_members
+   where trip_id = '10000000-0000-4000-8000-000000000010'
+     and user_id = auth.uid()
+     and role = 'owner'
+     and revoked_at is null),
+  'atomic completion must preserve the itinerary owner-membership trigger'
+);
+select pg_temp.assert_true(
+  (select outcome = 'already_completed'
+          and trip_id = '10000000-0000-4000-8000-000000000010'
+          and response ->> 'id' = '10000000-0000-4000-8000-000000000010'
+   from public.complete_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     gen_random_uuid(),
+     '{}'::jsonb
+   )),
+  'completion replay must return the original result without a live lease'
+);
+select pg_temp.assert_true(
+  (select outcome = 'completed'
+          and trip_id = '10000000-0000-4000-8000-000000000010'
+          and response ->> 'id' = '10000000-0000-4000-8000-000000000010'
+   from public.reserve_generation_request(
+     'generation-main-key-0001',
+     repeat('1', 64)
+   )),
+  'reservation replay must return the durable completed response'
+);
+select pg_temp.assert_true(
+  (select outcome = 'already_completed'
+          and trip_id = '10000000-0000-4000-8000-000000000010'
+          and response ->> 'id' = '10000000-0000-4000-8000-000000000010'
+   from public.fail_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-main-key-0001'),
+     gen_random_uuid(),
+     'LATE_FAILURE',
+     true
+   )),
+  'late failure racing a completed request must replay the committed receipt'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from public.itineraries
+   where id = '10000000-0000-4000-8000-000000000010'),
+  'completion and replay must insert exactly one itinerary'
+);
+
+-- Retryable failures retain their checkpoint and issue a fresh lease with an
+-- incremented attempt counter. A terminal failure remains replayable as failed.
+select pg_temp.assert_true(
+  (select outcome = 'reserved'
+   from public.reserve_generation_request(
+     'generation-retry-key-0001',
+     repeat('3', 64)
+   )),
+  'retry fixture starts with a reservation'
+);
+select pg_temp.assert_true(
+  (select outcome = 'checkpointed'
+   from public.checkpoint_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-retry-key-0001'),
+     (select lease_token from public.generation_requests
+      where idempotency_key = 'generation-retry-key-0001'),
+     '{"stage":"normalized"}'::jsonb
+   )),
+  'retry fixture persists a resumable checkpoint'
+);
+select pg_temp.assert_true(
+  (select outcome = 'lease_lost'
+   from public.fail_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-retry-key-0001'),
+     gen_random_uuid(),
+     'PROVIDER_TIMEOUT',
+     true
+   )),
+  'wrong lease cannot fail another worker generation attempt'
+);
+select pg_temp.assert_true(
+  (select outcome = 'failed' and retryable
+   from public.fail_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-retry-key-0001'),
+     (select lease_token from public.generation_requests
+      where idempotency_key = 'generation-retry-key-0001'),
+     'PROVIDER_TIMEOUT',
+     true
+   )),
+  'lease holder may mark a generation failure retryable'
+);
+select pg_temp.assert_true(
+  (select outcome = 'reserved'
+          and attempt_count = 2
+          and checkpoint = '{"stage":"normalized"}'::jsonb
+          and lease_token is not null
+   from public.reserve_generation_request(
+     'generation-retry-key-0001',
+     repeat('3', 64)
+   )),
+  'retryable failure must preserve checkpoint and issue a second lease'
+);
+select pg_temp.assert_true(
+  (select outcome = 'failed' and not retryable
+   from public.fail_generation_request(
+     (select id from public.generation_requests
+      where idempotency_key = 'generation-retry-key-0001'),
+     (select lease_token from public.generation_requests
+      where idempotency_key = 'generation-retry-key-0001'),
+     'INVALID_PROVIDER_RESULT',
+     false
+   )),
+  'second attempt can record a terminal generation failure'
+);
+select pg_temp.assert_true(
+  (select outcome = 'failed'
+          and attempt_count = 2
+          and failure_code = 'INVALID_PROVIDER_RESULT'
+          and not retryable
+   from public.reserve_generation_request(
+     'generation-retry-key-0001',
+     repeat('3', 64)
+   )),
+  'non-retryable failure must not issue another lease'
+);
+
+-- A different authenticated identity cannot enumerate or operate on these
+-- receipts even when it knows an idempotency key.
+reset role;
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000004","role":"authenticated"}',
+  true
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000004', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select pg_temp.assert_true(
+  (select count(*) = 0 from public.generation_requests),
+  'generation receipts are isolated by authenticated owner'
+);
+
 -- Anonymous callers cannot read raw trip or link tables. Permission errors are
 -- expected because Sprint 1 also revokes table grants from anon.
 reset role;
@@ -608,6 +943,16 @@ select pg_temp.assert_throws(
   $sql$select * from public.trip_share_links
        where trip_id = '10000000-0000-4000-8000-000000000001'$sql$,
   'anonymous caller cannot enumerate hashed share links'
+);
+select pg_temp.assert_throws(
+  $sql$select * from public.generation_requests$sql$,
+  'anonymous caller cannot enumerate generation receipts'
+);
+select pg_temp.assert_throws(
+  $sql$select * from public.reserve_generation_request(
+         'generation-anon-key-0001', repeat('9', 64)
+       )$sql$,
+  'anonymous caller cannot reserve generation work'
 );
 
 reset role;

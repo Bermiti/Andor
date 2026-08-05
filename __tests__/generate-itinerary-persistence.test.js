@@ -24,6 +24,10 @@ vi.mock('../app/lib/geocoding', () => ({
   getCountryCentroid: vi.fn(() => null),
 }));
 
+vi.mock('../app/lib/server/identity', () => ({
+  getRequestIdentity: vi.fn(async () => null),
+}));
+
 import { POST } from '../app/api/generate-itinerary/route';
 
 const destinationEntity = {

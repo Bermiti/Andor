@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { generateDestinationAwareFallbackItinerary } from '../../lib/fallback-ai';
 import { validateAndNormalize } from '../../lib/itinerary-validate';
 import { validateAndFixCoordinates, getDestinationCenter } from '../../lib/coordinate-validator';
@@ -8,6 +9,19 @@ import { logger } from '../../lib/logger';
 import { createItineraryRecord } from '../../lib/supabase/db';
 import { ensureBookingReadyItinerary } from '../../lib/booking-ready';
 import { AI_MODELS } from '../../lib/server/ai-models';
+import { isJourneyV2, validateJourneyItinerary } from '../../lib/journey-model';
+import { getRequestIdentity } from '../../lib/server/identity';
+import {
+  canonicalRequestHash,
+  checkpointGenerationRequest,
+  completeGenerationRequest,
+  failGenerationRequest,
+  reserveGenerationRequest,
+} from '../../lib/server/generation-request-repository';
+import {
+  createPlanningPlaceholderStageItinerary,
+  generateMultiDestinationItinerary,
+} from '../../lib/server/multi-destination-generation';
 
 const DESTINATION_CURRENCY_HINTS = [
   { match: /tokyo|kyoto|osaka|japan/i, code: 'JPY', symbol: 'JPY' },
@@ -358,6 +372,11 @@ async function normalizeGeneratedItinerary(
   });
 
   for (const act of activitiesToGeocode) {
+    if (act.type === 'planning_placeholder' || act.provenance?.sourceType === 'planning_placeholder') {
+      act.coordinates = null;
+      act.coordinateSource = 'not_applicable';
+      continue;
+    }
     try {
       const query = `${act.name}, ${destination.city}`;
       const geo = await geocodeServerSide(query, country);
@@ -417,7 +436,18 @@ async function normalizeGeneratedItinerary(
 }
 
 export async function POST(req) {
+  let generationReservation = null;
+  let generationIdentity = null;
   try {
+    const markGenerationFailed = async (failureCode, retryable = true) => {
+      if (!generationReservation?.requestId || !generationReservation?.leaseToken || !generationIdentity) return;
+      await failGenerationRequest({
+        requestId: generationReservation.requestId,
+        leaseToken: generationReservation.leaseToken,
+        failureCode,
+        retryable,
+      }, generationIdentity).catch(() => null);
+    };
     const body = await readJsonBody(req, 'generate_itinerary');
     if (!body || typeof body !== 'object') {
       return apiError('MALFORMED_JSON', 'Pedido inválido. Verifica os dados e tenta novamente.', 400, false);
@@ -533,11 +563,14 @@ export async function POST(req) {
             : null,
         },
       };
-      const finalValidation = validateAndNormalize(basePayload, {
-        expectedDays: days,
-        requireDestinationCoordinate: true,
-      });
+      const finalValidation = isJourneyV2(basePayload)
+        ? validateJourneyItinerary(basePayload)
+        : validateAndNormalize(basePayload, {
+          expectedDays: days,
+          requireDestinationCoordinate: true,
+        });
       if (finalValidation.fatal) {
+        await markGenerationFailed('generated_itinerary_invalid', true);
         return apiError(
           'ITINERARY_DATA_INVALID',
           'Os dados gerados nÃ£o formam um roteiro completo para todos os dias pedidos.',
@@ -550,6 +583,76 @@ export async function POST(req) {
       const payload = ensureBookingReadyItinerary(validatedPayload, {
         profile: validatedPayload.trip.travelerProfile,
       });
+
+      if (generationReservation) {
+        const checkpoint = await checkpointGenerationRequest({
+          requestId: generationReservation.requestId,
+          leaseToken: generationReservation.leaseToken,
+          checkpoint: {
+            phase: 'validated',
+            source,
+            completedStageIds: payload.journey?.stages?.map((stage) => stage.id) || [],
+          },
+        }, generationIdentity);
+        if (!checkpoint.ok) {
+          return apiError(
+            checkpoint.status === 'lease_lost' ? 'GENERATION_LEASE_LOST' : 'ITINERARY_PERSISTENCE_FAILED',
+            checkpoint.status === 'lease_lost'
+              ? 'Outra tentativa retomou esta geraÃ§Ã£o. Aguarda um momento antes de voltar a tentar.'
+              : 'NÃ£o foi possÃ­vel guardar o progresso da geraÃ§Ã£o com seguranÃ§a.',
+            checkpoint.status === 'lease_lost' ? 409 : 503,
+            true,
+          );
+        }
+
+        const tripId = randomUUID();
+        const saved = { ...payload, id: tripId, shareToken: null };
+        const responsePayload = {
+          ...saved,
+          itinerary: saved,
+          persistence: {
+            mode: 'durable',
+            provider: generationReservation.provider,
+            persisted: true,
+            reason: null,
+          },
+        };
+        const completed = await completeGenerationRequest({
+          requestId: generationReservation.requestId,
+          leaseToken: generationReservation.leaseToken,
+          tripRecord: {
+            id: tripId,
+            itinerary: saved,
+            schemaVersion: saved.schemaVersion || saved.dataVersion || 1,
+            metadata: {
+              days,
+              budget,
+              travelers,
+              style,
+              startDate: startDate || null,
+              endDate: endDate || null,
+              source,
+            },
+            responsePayload,
+          },
+        }, generationIdentity);
+        if (!completed.ok) {
+          logger.warn('generate_itinerary:atomic_completion_failed', null, {
+            destination,
+            days,
+            status: completed.status,
+          });
+          return apiError(
+            completed.status === 'lease_lost' ? 'GENERATION_LEASE_LOST' : 'ITINERARY_PERSISTENCE_FAILED',
+            completed.status === 'lease_lost'
+              ? 'Outra tentativa retomou esta geraÃ§Ã£o. Aguarda um momento antes de voltar a tentar.'
+              : 'O roteiro foi gerado, mas nÃ£o foi possÃ­vel guardÃ¡-lo de forma atÃ³mica.',
+            completed.status === 'lease_lost' ? 409 : 503,
+            true,
+          );
+        }
+        return Response.json(completed.response || responsePayload);
+      }
 
       let persisted;
       try {
@@ -639,6 +742,110 @@ export async function POST(req) {
 
     if (/https?:\/\/|<script|ignore previous/i.test(destination)) {
       return apiError('INVALID_DESTINATION', 'O destino parece inválido. Usa apenas o nome da cidade ou região.', 400, false);
+    }
+
+    generationIdentity = await getRequestIdentity();
+    if (generationIdentity?.authenticated && generationIdentity.userId) {
+      const rawIdempotencyKey = req.headers.get('idempotency-key') || '';
+      const idempotencyKey = rawIdempotencyKey.trim();
+      if (
+        rawIdempotencyKey !== idempotencyKey
+        || idempotencyKey.length < 16
+        || idempotencyKey.length > 128
+        || /[\u0000-\u001f\u007f]/.test(idempotencyKey)
+      ) {
+        return apiError(
+          'IDEMPOTENCY_KEY_REQUIRED',
+          'Envia uma Idempotency-Key válida para guardar uma geração autenticada com segurança.',
+          428,
+          false,
+        );
+      }
+
+      const requestHash = canonicalRequestHash({
+        schemaVersion: 2,
+        destination,
+        destinationEntity,
+        journey: body.journey || null,
+        days,
+        budget,
+        travelers,
+        style,
+        locale: activeLocale,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        originCity,
+        arrivalTime,
+        departureTime,
+        mustSee,
+        avoid,
+        travelerType,
+        dietaryRestrictions,
+        mobilityReduced,
+        transportPreference,
+        budgetPerDay,
+        budgetIncludesFlights,
+        pace,
+        childrenAges,
+        kidsWalking,
+        personalityContext,
+        authenticityLevel,
+        walkingLevel,
+        foodAdventure,
+        memoryMode,
+        companyMode,
+        clientName,
+        companyName,
+        preparedBy,
+        internalNotes,
+        clientFacingNotes,
+        budgetApprovalStatus,
+        bookingStatus,
+        exportPreference,
+        forceFallback,
+      });
+      const reservation = await reserveGenerationRequest({
+        key: idempotencyKey,
+        requestHash,
+      }, generationIdentity);
+
+      if (reservation.status === 'replay' && reservation.response) {
+        return Response.json(reservation.response, {
+          headers: { 'Idempotency-Replayed': 'true' },
+        });
+      }
+      if (reservation.status === 'mismatch') {
+        return apiError(
+          'IDEMPOTENCY_KEY_REUSED',
+          'Esta Idempotency-Key já foi usada para um pedido diferente.',
+          409,
+          false,
+        );
+      }
+      if (reservation.status === 'in_progress') {
+        return Response.json({
+          error: {
+            code: 'GENERATION_IN_PROGRESS',
+            message: 'Esta geração ainda está em curso. Volta a tentar após o intervalo indicado.',
+            retryable: true,
+          },
+        }, {
+          status: 409,
+          headers: { 'Retry-After': String(reservation.retryAfterSeconds || 2) },
+        });
+      }
+      if (!reservation.ok || reservation.status !== 'reserved') {
+        const terminal = reservation.status === 'failed' && reservation.retryable === false;
+        return apiError(
+          terminal ? 'GENERATION_PREVIOUSLY_FAILED' : 'ITINERARY_PERSISTENCE_FAILED',
+          terminal
+            ? 'Esta geração terminou com uma falha não repetível. Inicia um novo pedido.'
+            : 'Não foi possível reservar a geração com segurança.',
+          terminal ? 409 : 503,
+          !terminal,
+        );
+      }
+      generationReservation = reservation;
     }
 
     const systemPrompt = `You are ANDOR, an AI travel-planning assistant. You do not have live inventory, booking access, payment access, or automatic knowledge of current prices, schedules, disruptions, entry rules, or weather.
@@ -1328,6 +1535,69 @@ Return ONLY valid JSON matching the exact requested schema.`;
       personalityContext,
     };
 
+    if (Array.isArray(body.journey?.stages) && body.journey.stages.length > 1) {
+      try {
+        const itinerary = await generateMultiDestinationItinerary({
+          journey: body.journey,
+          totalDays: days,
+          startDate: startDate || null,
+          endDate: endDate || null,
+          generationProfile,
+          checkpoint: generationReservation?.checkpoint || null,
+          generateStage: async ({ stage, allocatedDays, destination: stageDestination }) => {
+            const stageLabel = stageDestination.displayName || stageDestination.canonicalName;
+            const stageFallback = await generateDestinationAwareFallbackItinerary(
+              stageLabel,
+              allocatedDays,
+              budget,
+              {
+                ...generationProfile,
+                arrivalTime: stage.arrivalWindow,
+                departureTime: stage.departureWindow,
+              },
+            );
+            const stageDraft = stageFallback?.days?.length
+              ? stageFallback
+              : createPlanningPlaceholderStageItinerary(stageDestination, allocatedDays);
+            return normalizeGeneratedItinerary(
+              stageDraft,
+              stageLabel,
+              allocatedDays,
+              generationProfile,
+              stageDestination,
+            );
+          },
+          onCheckpoint: async (checkpoint) => {
+            if (!generationReservation) return;
+            const saved = await checkpointGenerationRequest({
+              requestId: generationReservation.requestId,
+              leaseToken: generationReservation.leaseToken,
+              checkpoint,
+            }, generationIdentity);
+            if (!saved.ok) {
+              const error = new Error(`GENERATION_CHECKPOINT_${saved.status || 'FAILED'}`);
+              error.code = saved.status;
+              throw error;
+            }
+          },
+        });
+        return respondWithItinerary(itinerary, 'multi-destination');
+      } catch (error) {
+        logger.warn('generate_itinerary:multi_destination_failed', error, {
+          stageCount: body.journey.stages.length,
+          days,
+        });
+        await markGenerationFailed('multi_destination_generation_failed', true);
+        return apiError(
+          'MULTI_DESTINATION_GENERATION_FAILED',
+          'NÃ£o foi possÃ­vel concluir todas as etapas. O progresso seguro foi mantido para nova tentativa.',
+          503,
+          true,
+          { errors: error?.errors || [error?.code || error?.message || 'unknown'] },
+        );
+      }
+    }
+
     if (!forceFallback && hasProviderKey(groqKey)) {
       try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -1703,6 +1973,14 @@ Return ONLY valid JSON matching the exact requested schema.`;
     return respondWithItinerary(validation.normalized || itinerary, 'fallback');
 
   } catch (error) {
+    if (generationReservation?.requestId && generationReservation?.leaseToken && generationIdentity) {
+      await failGenerationRequest({
+        requestId: generationReservation.requestId,
+        leaseToken: generationReservation.leaseToken,
+        failureCode: 'generation_unhandled_error',
+        retryable: true,
+      }, generationIdentity).catch(() => null);
+    }
     const errorId = logger.error('generate_itinerary:unhandled', error);
     return apiError(
       'ITINERARY_GENERATION_FAILED',

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import CreationWizard, {
   normalizeDestinationSuggestion,
   normalizeDestinationSuggestions,
+  fingerprintGenerationPayload,
   resolveGeneratedItineraryResponse,
 } from '../app/components/CreationWizard';
 
@@ -120,6 +121,54 @@ describe('CreationWizard Personalization Fields', () => {
         coordinates: { lat: 40.2033, lng: -8.4103 },
       });
     }, { timeout: 1500 });
+  });
+
+  test('adds, reorders and persists a second destination without losing the first', async () => {
+    render(
+      <CreationWizard
+        isOpen={true}
+        onClose={() => {}}
+        initialDestination="Lisboa, Portugal"
+        initialStep={1}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /adicionar destino/i }));
+    const secondDestination = screen.getByTestId('wizard-stage-2-destination');
+    fireEvent.change(secondDestination, { target: { value: 'Porto, Portugal' } });
+    expect(screen.getByLabelText('Noites na primeira etapa')).toHaveValue(3);
+    expect(screen.getByLabelText('Noites na etapa 2')).toHaveValue(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /mover etapa 2 para cima/i }));
+    expect(screen.getByTestId('wizard-destination-input')).toHaveValue('Porto, Portugal');
+    expect(screen.getByTestId('wizard-stage-2-destination')).toHaveValue('Lisboa, Portugal');
+
+    await waitFor(() => {
+      const draft = JSON.parse(sessionStorage.getItem('andor_wizard_state') || 'null');
+      expect(draft?.version).toBe(2);
+      expect(draft?.journeyStages.map((stage) => stage.destination)).toEqual([
+        'Porto, Portugal',
+        'Lisboa, Portugal',
+      ]);
+      expect(draft?.journeyStages.reduce((sum, stage) => sum + stage.nights, 0)).toBe(4);
+    }, { timeout: 1500 });
+  });
+
+  test('uses a stable client fingerprint for the same generation intent', async () => {
+    const first = await fingerprintGenerationPayload({
+      journey: { stages: [{ destination: 'Lisboa', nights: 2 }, { destination: 'Porto', nights: 2 }] },
+      travelers: 2,
+    });
+    const retry = await fingerprintGenerationPayload({
+      journey: { stages: [{ destination: 'Lisboa', nights: 2 }, { destination: 'Porto', nights: 2 }] },
+      travelers: 2,
+    });
+    const changed = await fingerprintGenerationPayload({
+      journey: { stages: [{ destination: 'Lisboa', nights: 2 }, { destination: 'Porto', nights: 2 }] },
+      travelers: 3,
+    });
+    expect(retry).toBe(first);
+    expect(changed).not.toBe(first);
   });
 
   test('uses durable navigation only for persisted results and local storage only for guest drafts', () => {

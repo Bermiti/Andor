@@ -352,6 +352,310 @@ $_$;
 ALTER FUNCTION "public"."canonicalize_trip_ledger"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."checkpoint_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_checkpoint" "jsonb") RETURNS TABLE("outcome" "text", "checkpoint" "jsonb", "lease_expires_at" timestamp with time zone)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  actor_id uuid := auth.uid();
+  request_row public.generation_requests%rowtype;
+  operation_time timestamptz := now();
+begin
+  if actor_id is null then
+    raise exception 'authentication required' using errcode = '42501';
+  end if;
+  if p_request_id is null or p_lease_token is null then
+    raise exception 'request id and lease token are required' using errcode = '22023';
+  end if;
+  if p_checkpoint is null or jsonb_typeof(p_checkpoint) <> 'object' then
+    raise exception 'checkpoint must be a JSON object' using errcode = '22023';
+  end if;
+
+  select candidate.* into request_row
+  from public.generation_requests candidate
+  where candidate.id = p_request_id
+    and candidate.user_id = actor_id
+  for update;
+
+  if not found then
+    return query select 'not_found'::text, null::jsonb, null::timestamptz;
+    return;
+  end if;
+
+  if request_row.status <> 'pending'
+     or request_row.lease_token <> p_lease_token
+     or request_row.lease_expires_at <= operation_time
+     or request_row.expires_at <= operation_time then
+    return query select 'lease_lost'::text, null::jsonb, null::timestamptz;
+    return;
+  end if;
+
+  update public.generation_requests
+  set checkpoint = p_checkpoint,
+      lease_expires_at = least(
+        operation_time + interval '2 minutes',
+        request_row.expires_at
+      ),
+      updated_at = operation_time
+  where id = request_row.id
+  returning * into request_row;
+
+  return query select
+    'checkpointed'::text,
+    request_row.checkpoint,
+    request_row.lease_expires_at;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."checkpoint_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_checkpoint" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."complete_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_trip_record" "jsonb") RETURNS TABLE("outcome" "text", "trip_id" "uuid", "response" "jsonb")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare
+  actor_id uuid := auth.uid();
+  request_row public.generation_requests%rowtype;
+  operation_time timestamptz := now();
+  trip_document jsonb;
+  trip_metadata jsonb;
+  response_payload jsonb;
+  stored_response jsonb;
+  requested_trip_id uuid := gen_random_uuid();
+  created_trip_id uuid;
+  destination_value text;
+  destination_city_value text;
+  destination_country_value text;
+  days_count_value integer;
+  style_value text;
+  budget_value text;
+  travelers_value integer;
+  start_date_value date;
+  end_date_value date;
+  source_value text;
+  currency_value text;
+  schema_version_value integer;
+  raw_value text;
+begin
+  if actor_id is null then
+    raise exception 'authentication required' using errcode = '42501';
+  end if;
+  if p_request_id is null or p_lease_token is null then
+    raise exception 'request id and lease token are required' using errcode = '22023';
+  end if;
+
+  select candidate.* into request_row
+  from public.generation_requests candidate
+  where candidate.id = p_request_id
+    and candidate.user_id = actor_id
+  for update;
+
+  if not found then
+    return query select 'not_found'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  -- Completion replay no longer depends on a live lease. This is the response
+  -- recovery path when the first transaction committed but its HTTP response was
+  -- lost.
+  if request_row.status = 'completed' then
+    return query select
+      'already_completed'::text,
+      request_row.trip_id,
+      request_row.response;
+    return;
+  end if;
+
+  if request_row.status <> 'pending'
+     or request_row.lease_token <> p_lease_token
+     or request_row.lease_expires_at <= operation_time
+     or request_row.expires_at <= operation_time then
+    return query select 'lease_lost'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  if p_trip_record is null
+     or jsonb_typeof(p_trip_record) <> 'object'
+     or jsonb_typeof(p_trip_record -> 'itinerary') <> 'object'
+     or jsonb_typeof(p_trip_record -> 'metadata') <> 'object'
+     or jsonb_typeof(p_trip_record -> 'responsePayload') <> 'object' then
+    return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  trip_document := p_trip_record -> 'itinerary';
+  trip_metadata := p_trip_record -> 'metadata';
+  response_payload := p_trip_record -> 'responsePayload';
+  destination_value := nullif(btrim(p_trip_record ->> 'destination'), '');
+
+  if destination_value is null
+     or char_length(destination_value) > 300
+     or jsonb_typeof(trip_document -> 'days') <> 'array'
+     or jsonb_array_length(trip_document -> 'days') < 1
+     or coalesce(p_trip_record ->> 'visibility', 'private') <> 'private'
+     or coalesce(p_trip_record ->> 'status', 'draft') <> 'draft' then
+    return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  if p_trip_record ? 'id' then
+    raw_value := p_trip_record ->> 'id';
+    if raw_value is null
+       or raw_value !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then
+      return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+      return;
+    end if;
+    requested_trip_id := raw_value::uuid;
+  end if;
+
+  days_count_value := jsonb_array_length(trip_document -> 'days');
+  raw_value := trip_metadata ->> 'days';
+  if raw_value is not null then
+    if raw_value !~ '^[1-9][0-9]{0,5}$'
+       or raw_value::integer <> days_count_value then
+      return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+      return;
+    end if;
+  end if;
+
+  raw_value := trip_metadata ->> 'travelers';
+  if raw_value is not null then
+    if raw_value !~ '^[1-9][0-9]{0,5}$' then
+      return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+      return;
+    end if;
+    travelers_value := raw_value::integer;
+  end if;
+
+  raw_value := coalesce(p_trip_record ->> 'schemaVersion', '1');
+  if raw_value !~ '^[1-9][0-9]{0,8}$' then
+    return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+  schema_version_value := raw_value::integer;
+
+  currency_value := upper(coalesce(nullif(btrim(p_trip_record ->> 'currency'), ''), 'EUR'));
+  if currency_value !~ '^[A-Z]{3}$' then
+    return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  destination_city_value := nullif(btrim(trip_metadata ->> 'destinationCity'), '');
+  destination_country_value := nullif(btrim(trip_metadata ->> 'destinationCountry'), '');
+  style_value := nullif(btrim(trip_metadata ->> 'style'), '');
+  budget_value := nullif(btrim(trip_metadata ->> 'budget'), '');
+  source_value := coalesce(nullif(btrim(trip_metadata ->> 'source'), ''), 'generated');
+
+  if char_length(coalesce(destination_city_value, '')) > 200
+     or char_length(coalesce(destination_country_value, '')) > 200
+     or char_length(coalesce(style_value, '')) > 100
+     or char_length(coalesce(budget_value, '')) > 100
+     or char_length(source_value) > 80 then
+    return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  begin
+    raw_value := nullif(btrim(trip_metadata ->> 'startDate'), '');
+    if raw_value is not null then
+      if raw_value !~ '^\d{4}-\d{2}-\d{2}$' then
+        raise invalid_datetime_format;
+      end if;
+      start_date_value := raw_value::date;
+    end if;
+
+    raw_value := nullif(btrim(trip_metadata ->> 'endDate'), '');
+    if raw_value is not null then
+      if raw_value !~ '^\d{4}-\d{2}-\d{2}$' then
+        raise invalid_datetime_format;
+      end if;
+      end_date_value := raw_value::date;
+    end if;
+  exception
+    when invalid_datetime_format or datetime_field_overflow then
+      return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+      return;
+  end;
+
+  if start_date_value is not null
+     and end_date_value is not null
+     and end_date_value < start_date_value then
+    return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  begin
+    insert into public.itineraries (
+      id,
+      owner_id,
+      user_id,
+      destination,
+      destination_city,
+      destination_country,
+      days_count,
+      style,
+      budget_tier,
+      travelers,
+      start_date,
+      end_date,
+      itinerary,
+      source,
+      visibility,
+      status,
+      currency,
+      schema_version
+    ) values (
+      requested_trip_id,
+      actor_id,
+      actor_id,
+      destination_value,
+      destination_city_value,
+      destination_country_value,
+      days_count_value,
+      style_value,
+      budget_value,
+      travelers_value,
+      start_date_value,
+      end_date_value,
+      trip_document,
+      source_value,
+      'private',
+      'draft',
+      currency_value,
+      schema_version_value
+    )
+    returning id into created_trip_id;
+  exception
+    when unique_violation or check_violation or not_null_violation then
+      return query select 'invalid_trip'::text, null::uuid, null::jsonb;
+      return;
+  end;
+
+  stored_response := response_payload || jsonb_build_object('id', created_trip_id);
+
+  update public.generation_requests
+  set status = 'completed',
+      lease_token = null,
+      lease_expires_at = null,
+      trip_id = created_trip_id,
+      response = stored_response,
+      failure_code = null,
+      retryable = false,
+      updated_at = operation_time,
+      completed_at = operation_time,
+      failed_at = null
+  where id = request_row.id;
+
+  return query select 'completed'::text, created_trip_id, stored_response;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."complete_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_trip_record" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."current_user_has_trip_role"("p_trip_id" "uuid", "p_roles" "text"[] DEFAULT ARRAY['owner'::"text", 'editor'::"text", 'viewer'::"text"]) RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -633,6 +937,89 @@ $$;
 ALTER FUNCTION "public"."ensure_itinerary_owner_membership"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."fail_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_failure_code" "text", "p_retryable" boolean) RETURNS TABLE("outcome" "text", "retryable" boolean, "checkpoint" "jsonb", "trip_id" "uuid", "response" "jsonb")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare
+  actor_id uuid := auth.uid();
+  request_row public.generation_requests%rowtype;
+  operation_time timestamptz := now();
+begin
+  if actor_id is null then
+    raise exception 'authentication required' using errcode = '42501';
+  end if;
+  if p_request_id is null or p_lease_token is null then
+    raise exception 'request id and lease token are required' using errcode = '22023';
+  end if;
+  if p_failure_code is null
+     or char_length(p_failure_code) not between 3 and 80
+     or p_failure_code !~ '^[A-Za-z][A-Za-z0-9_.-]+$'
+     or p_retryable is null then
+    raise exception 'invalid failure state' using errcode = '22023';
+  end if;
+
+  select candidate.* into request_row
+  from public.generation_requests candidate
+  where candidate.id = p_request_id
+    and candidate.user_id = actor_id
+  for update;
+
+  if not found then
+    return query select
+      'not_found'::text, false, null::jsonb, null::uuid, null::jsonb;
+    return;
+  end if;
+
+  if request_row.status = 'completed' then
+    return query select
+      'already_completed'::text,
+      false,
+      request_row.checkpoint,
+      request_row.trip_id,
+      request_row.response;
+    return;
+  end if;
+
+  if request_row.status <> 'pending'
+     or request_row.lease_token <> p_lease_token
+     or request_row.lease_expires_at <= operation_time
+     or request_row.expires_at <= operation_time then
+    return query select
+      'lease_lost'::text,
+      request_row.retryable,
+      request_row.checkpoint,
+      request_row.trip_id,
+      request_row.response;
+    return;
+  end if;
+
+  update public.generation_requests
+  set status = 'failed',
+      lease_token = null,
+      lease_expires_at = null,
+      trip_id = null,
+      response = null,
+      failure_code = p_failure_code,
+      retryable = p_retryable,
+      updated_at = operation_time,
+      completed_at = null,
+      failed_at = operation_time
+  where id = request_row.id;
+
+  return query select
+    'failed'::text,
+    p_retryable,
+    request_row.checkpoint,
+    null::uuid,
+    null::jsonb;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."fail_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_failure_code" "text", "p_retryable" boolean) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_new_auth_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -728,6 +1115,231 @@ $$;
 ALTER FUNCTION "public"."record_trip_audit_event"("p_trip_id" "uuid", "p_action" "text", "p_resource_type" "text", "p_resource_id" "uuid", "p_metadata" "jsonb") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."reserve_generation_request"("p_idempotency_key" "text", "p_request_hash" "text") RETURNS TABLE("outcome" "text", "request_id" "uuid", "lease_token" "uuid", "lease_expires_at" timestamp with time zone, "attempt_count" integer, "checkpoint" "jsonb", "trip_id" "uuid", "response" "jsonb", "failure_code" "text", "retryable" boolean, "expires_at" timestamp with time zone)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare
+  actor_id uuid := auth.uid();
+  request_row public.generation_requests%rowtype;
+  operation_time timestamptz := now();
+  new_lease uuid := gen_random_uuid();
+begin
+  if actor_id is null then
+    raise exception 'authentication required' using errcode = '42501';
+  end if;
+  if p_idempotency_key is null
+     or char_length(p_idempotency_key) not between 16 and 128
+     or p_idempotency_key <> btrim(p_idempotency_key)
+     or p_idempotency_key ~ '[[:cntrl:]]' then
+    raise exception 'invalid idempotency key' using errcode = '22023';
+  end if;
+  if p_request_hash is null or p_request_hash !~ '^[0-9a-f]{64}$' then
+    raise exception 'invalid request hash' using errcode = '22023';
+  end if;
+
+  insert into public.generation_requests (
+    user_id,
+    idempotency_key,
+    request_hash,
+    status,
+    attempt_count,
+    lease_token,
+    lease_expires_at,
+    checkpoint,
+    retryable,
+    created_at,
+    updated_at,
+    expires_at
+  ) values (
+    actor_id,
+    p_idempotency_key,
+    p_request_hash,
+    'pending',
+    1,
+    new_lease,
+    operation_time + interval '2 minutes',
+    '{}'::jsonb,
+    true,
+    operation_time,
+    operation_time,
+    operation_time + interval '24 hours'
+  )
+  on conflict (user_id, idempotency_key) do nothing
+  returning * into request_row;
+
+  if found then
+    return query select
+      'reserved'::text,
+      request_row.id,
+      request_row.lease_token,
+      request_row.lease_expires_at,
+      request_row.attempt_count,
+      request_row.checkpoint,
+      request_row.trip_id,
+      request_row.response,
+      request_row.failure_code,
+      request_row.retryable,
+      request_row.expires_at;
+    return;
+  end if;
+
+  select candidate.* into request_row
+  from public.generation_requests candidate
+  where candidate.user_id = actor_id
+    and candidate.idempotency_key = p_idempotency_key
+  for update;
+
+  if not found then
+    -- A privileged cleanup racing this reservation removed the expired row.
+    -- The transaction can be retried safely with the same idempotency key.
+    raise exception 'generation request changed during reservation'
+      using errcode = '40001';
+  end if;
+
+  if request_row.expires_at <= operation_time then
+    update public.generation_requests
+    set request_hash = p_request_hash,
+        status = 'pending',
+        attempt_count = 1,
+        lease_token = new_lease,
+        lease_expires_at = operation_time + interval '2 minutes',
+        checkpoint = '{}'::jsonb,
+        trip_id = null,
+        response = null,
+        failure_code = null,
+        retryable = true,
+        created_at = operation_time,
+        updated_at = operation_time,
+        completed_at = null,
+        failed_at = null,
+        expires_at = operation_time + interval '24 hours'
+    where id = request_row.id
+    returning * into request_row;
+
+    return query select
+      'reserved'::text,
+      request_row.id,
+      request_row.lease_token,
+      request_row.lease_expires_at,
+      request_row.attempt_count,
+      request_row.checkpoint,
+      request_row.trip_id,
+      request_row.response,
+      request_row.failure_code,
+      request_row.retryable,
+      request_row.expires_at;
+    return;
+  end if;
+
+  if request_row.request_hash <> p_request_hash then
+    return query select
+      'hash_mismatch'::text,
+      request_row.id,
+      null::uuid,
+      null::timestamptz,
+      request_row.attempt_count,
+      null::jsonb,
+      request_row.trip_id,
+      null::jsonb,
+      null::text,
+      false,
+      request_row.expires_at;
+    return;
+  end if;
+
+  if request_row.status = 'completed' then
+    return query select
+      'completed'::text,
+      request_row.id,
+      null::uuid,
+      null::timestamptz,
+      request_row.attempt_count,
+      request_row.checkpoint,
+      request_row.trip_id,
+      request_row.response,
+      null::text,
+      false,
+      request_row.expires_at;
+    return;
+  end if;
+
+  if request_row.status = 'pending'
+     and request_row.lease_expires_at > operation_time then
+    return query select
+      'in_progress'::text,
+      request_row.id,
+      null::uuid,
+      request_row.lease_expires_at,
+      request_row.attempt_count,
+      request_row.checkpoint,
+      null::uuid,
+      null::jsonb,
+      null::text,
+      true,
+      request_row.expires_at;
+    return;
+  end if;
+
+  if request_row.status = 'failed' and not request_row.retryable then
+    return query select
+      'failed'::text,
+      request_row.id,
+      null::uuid,
+      null::timestamptz,
+      request_row.attempt_count,
+      request_row.checkpoint,
+      null::uuid,
+      null::jsonb,
+      request_row.failure_code,
+      false,
+      request_row.expires_at;
+    return;
+  end if;
+
+  if request_row.status = 'pending'
+     or (request_row.status = 'failed' and request_row.retryable) then
+    update public.generation_requests as target
+    set status = 'pending',
+        attempt_count = target.attempt_count + 1,
+        lease_token = new_lease,
+        lease_expires_at = least(
+          operation_time + interval '2 minutes',
+          request_row.expires_at
+        ),
+        trip_id = null,
+        response = null,
+        failure_code = null,
+        retryable = true,
+        updated_at = operation_time,
+        completed_at = null,
+        failed_at = null
+    where id = request_row.id
+    returning * into request_row;
+
+    return query select
+      'reserved'::text,
+      request_row.id,
+      request_row.lease_token,
+      request_row.lease_expires_at,
+      request_row.attempt_count,
+      request_row.checkpoint,
+      null::uuid,
+      null::jsonb,
+      null::text,
+      true,
+      request_row.expires_at;
+    return;
+  end if;
+
+  raise exception 'invalid generation request state' using errcode = '23514';
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."reserve_generation_request"("p_idempotency_key" "text", "p_request_hash" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."set_row_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
@@ -781,6 +1393,42 @@ CREATE TABLE IF NOT EXISTS "public"."custom_requests" (
 
 
 ALTER TABLE "public"."custom_requests" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."generation_requests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "idempotency_key" "text" NOT NULL,
+    "request_hash" "text" NOT NULL,
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "attempt_count" integer DEFAULT 1 NOT NULL,
+    "lease_token" "uuid",
+    "lease_expires_at" timestamp with time zone,
+    "checkpoint" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "trip_id" "uuid",
+    "response" "jsonb",
+    "failure_code" "text",
+    "retryable" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "completed_at" timestamp with time zone,
+    "failed_at" timestamp with time zone,
+    "expires_at" timestamp with time zone DEFAULT ("now"() + '24:00:00'::interval) NOT NULL,
+    CONSTRAINT "generation_requests_attempt_count_check" CHECK (("attempt_count" > 0)),
+    CONSTRAINT "generation_requests_checkpoint_check" CHECK (("jsonb_typeof"("checkpoint") = 'object'::"text")),
+    CONSTRAINT "generation_requests_expiry_check" CHECK (("expires_at" > "created_at")),
+    CONSTRAINT "generation_requests_failure_code_check" CHECK ((("failure_code" IS NULL) OR ((("char_length"("failure_code") >= 3) AND ("char_length"("failure_code") <= 80)) AND ("failure_code" ~ '^[A-Za-z][A-Za-z0-9_.-]+$'::"text")))),
+    CONSTRAINT "generation_requests_hash_check" CHECK (("request_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "generation_requests_key_check" CHECK (((("char_length"("idempotency_key") >= 16) AND ("char_length"("idempotency_key") <= 128)) AND ("idempotency_key" = "btrim"("idempotency_key")) AND ("idempotency_key" !~ '[[:cntrl:]]'::"text"))),
+    CONSTRAINT "generation_requests_lease_pair_check" CHECK ((("lease_token" IS NULL) = ("lease_expires_at" IS NULL))),
+    CONSTRAINT "generation_requests_response_check" CHECK ((("response" IS NULL) OR ("jsonb_typeof"("response") = 'object'::"text"))),
+    CONSTRAINT "generation_requests_state_check" CHECK (((("status" = 'pending'::"text") AND ("lease_token" IS NOT NULL) AND ("lease_expires_at" IS NOT NULL) AND ("trip_id" IS NULL) AND ("response" IS NULL) AND ("failure_code" IS NULL) AND ("completed_at" IS NULL) AND ("failed_at" IS NULL) AND "retryable") OR (("status" = 'completed'::"text") AND ("lease_token" IS NULL) AND ("lease_expires_at" IS NULL) AND ("response" IS NOT NULL) AND ("failure_code" IS NULL) AND ("completed_at" IS NOT NULL) AND ("failed_at" IS NULL) AND (NOT "retryable")) OR (("status" = 'failed'::"text") AND ("lease_token" IS NULL) AND ("lease_expires_at" IS NULL) AND ("trip_id" IS NULL) AND ("response" IS NULL) AND ("failure_code" IS NOT NULL) AND ("completed_at" IS NULL) AND ("failed_at" IS NOT NULL)))),
+    CONSTRAINT "generation_requests_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'completed'::"text", 'failed'::"text"]))),
+    CONSTRAINT "generation_requests_timestamp_order_check" CHECK ((("updated_at" >= "created_at") AND (("completed_at" IS NULL) OR ("completed_at" >= "created_at")) AND (("failed_at" IS NULL) OR ("failed_at" >= "created_at"))))
+);
+
+
+ALTER TABLE "public"."generation_requests" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."itineraries" (
@@ -1039,6 +1687,16 @@ ALTER TABLE ONLY "public"."custom_requests"
 
 
 
+ALTER TABLE ONLY "public"."generation_requests"
+    ADD CONSTRAINT "generation_requests_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."generation_requests"
+    ADD CONSTRAINT "generation_requests_user_key_key" UNIQUE ("user_id", "idempotency_key");
+
+
+
 ALTER TABLE ONLY "public"."itineraries"
     ADD CONSTRAINT "itineraries_pkey" PRIMARY KEY ("id");
 
@@ -1119,6 +1777,18 @@ CREATE INDEX "audit_events_actor_created_idx" ON "public"."audit_events" USING "
 
 
 CREATE INDEX "audit_events_trip_created_idx" ON "public"."audit_events" USING "btree" ("trip_id", "created_at" DESC);
+
+
+
+CREATE INDEX "generation_requests_expiry_idx" ON "public"."generation_requests" USING "btree" ("expires_at");
+
+
+
+CREATE INDEX "generation_requests_pending_lease_idx" ON "public"."generation_requests" USING "btree" ("lease_expires_at") WHERE ("status" = 'pending'::"text");
+
+
+
+CREATE INDEX "generation_requests_user_status_idx" ON "public"."generation_requests" USING "btree" ("user_id", "status", "updated_at" DESC);
 
 
 
@@ -1260,6 +1930,16 @@ ALTER TABLE ONLY "public"."custom_requests"
 
 
 
+ALTER TABLE ONLY "public"."generation_requests"
+    ADD CONSTRAINT "generation_requests_trip_id_fkey" FOREIGN KEY ("trip_id") REFERENCES "public"."itineraries"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."generation_requests"
+    ADD CONSTRAINT "generation_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."itineraries"
     ADD CONSTRAINT "itineraries_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE RESTRICT;
 
@@ -1380,6 +2060,13 @@ CREATE POLICY "custom_requests_select_own" ON "public"."custom_requests" FOR SEL
 
 
 CREATE POLICY "custom_requests_update_server_only" ON "public"."custom_requests" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."generation_requests" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "generation_requests_select_own" ON "public"."generation_requests" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
@@ -1589,6 +2276,16 @@ GRANT ALL ON FUNCTION "public"."accept_trip_invitation_transaction"("p_token_has
 
 
 
+REVOKE ALL ON FUNCTION "public"."checkpoint_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_checkpoint" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."checkpoint_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_checkpoint" "jsonb") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."complete_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_trip_record" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."complete_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_trip_record" "jsonb") TO "authenticated";
+
+
+
 REVOKE ALL ON FUNCTION "public"."current_user_has_trip_role"("p_trip_id" "uuid", "p_roles" "text"[]) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."current_user_has_trip_role"("p_trip_id" "uuid", "p_roles" "text"[]) TO "authenticated";
 
@@ -1607,6 +2304,11 @@ REVOKE ALL ON FUNCTION "public"."enforce_trip_share_client_update"() FROM PUBLIC
 
 
 
+REVOKE ALL ON FUNCTION "public"."fail_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_failure_code" "text", "p_retryable" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."fail_generation_request"("p_request_id" "uuid", "p_lease_token" "uuid", "p_failure_code" "text", "p_retryable" boolean) TO "authenticated";
+
+
+
 REVOKE ALL ON FUNCTION "public"."handle_new_auth_user"() FROM PUBLIC;
 
 
@@ -1619,6 +2321,11 @@ REVOKE ALL ON FUNCTION "public"."record_trip_audit_event"("p_trip_id" "uuid", "p
 
 
 
+REVOKE ALL ON FUNCTION "public"."reserve_generation_request"("p_idempotency_key" "text", "p_request_hash" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."reserve_generation_request"("p_idempotency_key" "text", "p_request_hash" "text") TO "authenticated";
+
+
+
 GRANT ALL ON TABLE "public"."audit_events" TO "authenticated";
 GRANT ALL ON TABLE "public"."audit_events" TO "service_role";
 
@@ -1626,6 +2333,11 @@ GRANT ALL ON TABLE "public"."audit_events" TO "service_role";
 
 GRANT ALL ON TABLE "public"."custom_requests" TO "service_role";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."custom_requests" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."generation_requests" TO "service_role";
+GRANT SELECT ON TABLE "public"."generation_requests" TO "authenticated";
 
 
 
