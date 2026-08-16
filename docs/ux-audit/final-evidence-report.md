@@ -1,62 +1,106 @@
-# Relatório de Evidência e Auditoria Final UX / Hardening
+# Relatório final de evidência — criação de roteiros e redesign
 
-> **A reconstrução só é considerada concluída nas áreas para as quais existe evidência abaixo.**
+Data da validação: 2026-08-16<br>
+Branch: `codex/andor-product-hardening`<br>
+Base auditada: `main`
 
----
+## 1. Root cause
 
-## 1. Identificadores de Git & Lista Completa de Commits
+O erro visível no fim de “Criar roteiro” não tinha uma única causa isolada. Havia uma quebra de contrato entre as camadas:
 
-* **SHA Inicial Auditado**: `85f566c`
-* **SHA Final**: `57c4c63` (ou mais recente)
-* **Branch**: `codex/andor-product-hardening`
+1. `CreationExperience` enviava `travelStyle`, `budgetTier`, um objeto em `travelers` e datas aninhadas, enquanto a API espera `style`, `budget`, um número de viajantes e `startDate`/`endDate` no topo.
+2. O cliente considerava a resposta válida apenas se existisse `data.ok`. A resposta de sucesso real da API nunca incluiu esse campo, pelo que uma geração bem-sucedida era transformada em erro no browser.
+3. A resposta explícita `local_draft` para convidados não era guardada no browser e não produzia um identificador navegável.
+4. Cada retry criava uma intenção nova, anulando a proteção de idempotência e permitindo duplicações.
+5. A arquitetura anterior também misturava respostas HTTP 200, falhas de persistência, IDs sintéticos e `localStorage`, sem uma source of truth inequívoca.
 
-### Sequência de Commits da Auditoria & Reconstrução
+A correção central está em `app/lib/generation-client.js` e `app/components/CreationExperience.js`: existe agora um adaptador único do intent para o contrato da API, validação do contrato de sucesso, persistência explícita do modo convidado e reutilização da mesma chave de idempotência quando o payload não muda.
 
-1. `f2b08f1` - `audit(ux): verify commit 85f566c claims and capture baseline`
-2. `e538f74` - `refactor(intent): implement structured intent extraction and confidence`
-3. `53f8d62` - `feat(creation): rebuild adaptive trip creation flow`
-4. `843214f` - `feat(persona): persist and apply transparent traveller preferences`
-5. `5e4874e` - `feat(itinerary): implement real partial itinerary editing`
-6. `655e423` - `refactor(home): rebuild homepage around functional product experience`
-7. `e6ada44` - `test(e2e): cover desktop and mobile critical journeys`
-8. `c1a4c49` - `test(visual): add screenshot and accessibility regression coverage`
-9. `57c4c63` - `perf(web): address measured loading and interaction bottlenecks`
+## 2. Arquitetura anterior e nova
 
----
+Fluxo anterior:
 
-## 2. Divergências do Relatório Anterior & Resolução
+```text
+UI/wizard → payload divergente → API/IA → resposta ambígua
+          → teste inexistente de data.ok → erro no cliente
+          → ID sintético/localStorage ou viagem desaparecida
+```
 
-| Funcionalidade | Estado no Relatório Anterior | Estado Real Verificado | Resolução nesta Auditoria |
-|----------------|------------------------------|------------------------|---------------------------|
-| **Parser de Linguagem Natural** | Afirmado como concluído | Regex frágil sem contrato de incerteza/conflitos | Refatorado para contrato v2 com 18 testes unitários passando (`__tests__/natural-intent-parser.test.js`). |
-| **Perguntas Adaptativas** | Afirmado como concluído | 3 perguntas estáticas fixas | Reconstruído em `CreationExperience.js` para gerar perguntas dinâmicas consoante lacunas/conflitos reais. |
-| **Travel Persona** | Afirmado como concluído | Gravação única em `localStorage` sem isolamento de conta | Refatorado para isolamento por `userId`, injeção no payload de geração e sincronização de sessão. |
-| **Edição de Itinerário com Undo** | Afirmado como concluído | Sem modal inline nem Undo em `/itinerary/[id]` | Integrado `ActivityEditor` com atalho de desfazer (Undo) e gravação durável via PATCH/storage. |
-| **Testes e Regressão Visuais** | Afirmado como concluído | Apenas 5 testes básicos unitários | Adicionados testes E2E Playwright (`critical-journeys.spec.js`), auditoria de acessibilidade e manifesto de screenshots em `docs/ux-audit/`. |
+Fluxo atual:
 
----
+```text
+Natural-language wizard
+  → generation-client (contrato canónico + fingerprint)
+  → POST /api/generate-itinerary (Idempotency-Key)
+  → schema/validation
+  → AI provider boundary
+  → parsing + normalization do domínio
+  → persistência durável (Supabase/SQLite) ou local_draft explícito
+  → response resolver
+  → /itinerary/:id → refresh → My Trips → reabrir
+```
 
-## 3. Classificação Rigorosa das Funcionalidades
+Falhas do provider, timeout, output inválido e persistência usam erros estruturados; sem dados suficientes ou credenciais o servidor devolve erro explícito e não inventa um roteiro.
 
-| Funcionalidade / Componente | Classificação Obrigatória | Evidência Direta |
-|-----------------------------|---------------------------|------------------|
-| **Parser de Linguagem Natural v2** | `implementado e testado localmente` | `app/lib/natural-intent-parser.js` & `__tests__/natural-intent-parser.test.js` (18/18 testes a passar) |
-| **Fluxo Adaptativo de Criação** | `implementado e testado localmente` | `app/components/CreationExperience.js` & `e2e/critical-journeys.spec.js` |
-| **Travel Persona por Utilizador** | `implementado e testado localmente` | `app/lib/travel-persona.js` & `__tests__/travel-persona.test.js` (5/5 testes a passar) |
-| **Edição Parcial de Itinerário & Undo** | `implementado e testado localmente` | `app/itinerary/[id]/page.js` & `app/components/ActivityEditor.js` |
-| **Demonstração Funcional na Homepage** | `implementado e testado localmente` | `app/components/home/InteractiveTripDemo.js` & `HomeValueProp.js` |
-| **Resolução Geográfica & Transportes OSRM** | `implementado e testado localmente` | `app/lib/coordinate-validator.js` & `route-calculator.js` |
-| **Idempotência & Geração Multi-Destino** | `implementado e testado localmente` | `app/lib/server/generation-request-repository.js` |
-| **Taxas de Câmbio & Meteorologia Real** | `implementado e testado localmente` | `app/api/weather/route.js` & `app/api/exchange-rates/route.js` |
-| **Persistência Supabase Cloud Staging** | `bloqueado externamente` | Requer `NEXT_PUBLIC_SUPABASE_URL` e chaves de serviço do projeto Supabase |
-| **Google OAuth Cloud Staging** | `bloqueado externamente` | Requer `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` na consola GCP |
-| **Upstash Redis Rate Limit Cloud** | `bloqueado externamente` | Requer `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` |
+## 3. Alterações principais
 
----
+- `app/lib/generation-client.js`: payload canónico, datas, viajantes, multi-destino, validação da resposta e idempotência.
+- `app/components/CreationExperience.js`: integração com o contrato real, preservação do formulário, retry, persistência de convidado, navegação e semântica de diálogo.
+- `app/components/StageNavigator.js`: datas determinísticas entre SSR e browser, eliminando o mismatch de hidratação.
+- `app/components/Navbar.js` e `Navbar.module.css`: hamburger retirado do drawer oculto, scrim funcional e atributos ARIA.
+- `tests/scotland-creation.spec.js`: ciclo completo da viagem da Escócia em desktop e mobile.
+- `__tests__/generation-client.test.js` e `__tests__/CreationExperience.test.jsx`: contratos, destinos, falhas e retry.
+- `package-lock.json`: DOMPurify 3.4.13 e nanoid 3.3.18, removendo os advisories detetados.
 
-## 4. Evidência Empírica de Testes e Compilação
+## 4. Escócia e independência de destino
 
-- **Vitest Unit & Integration Suite**: `77/77` ficheiros de teste passados, `371/371` testes unitários individuais aprovados.
-- **Checklist de Staging**: `45/45` verificações automáticas aprovadas (`node scripts/staging-checklist.mjs`).
-- **Next.js Production Build**: `npx next build` concluído com 0 erros em 4.5s.
-- **Trabalho Git**: Tree limpo e sincronizado.
+O cenário E2E parte da homepage com “7 dias na Escócia em família com natureza” e comprova:
+
+- payload correto (`7` dias, `4` viajantes, natureza, ritmo equilibrado);
+- timeout estruturado, formulário preservado e retry com a mesma chave de idempotência;
+- persistência através da API real de itinerários em SQLite;
+- sete dias, atividades, navegação entre dias e mapa;
+- refresh, listagem em My Trips e reabertura da mesma viagem;
+- ausência de overflow a 320, 375, 390 e 430 px.
+
+A fixture está identificada como dado de teste e não introduz ratings, preços ou horários apresentados como verificados. Testes unitários adicionais constroem payloads para Japão e Marrocos, provando que o adaptador não depende de hardcodes da Escócia.
+
+## 5. Redesign e qualidade de produto
+
+O trabalho acumulado desta branch substitui a landing page e os fluxos genéricos por uma experiência editorial dark, criação por linguagem natural, perguntas adaptativas, demonstração interativa, detalhe integrado com mapa, edição parcial e estados de viagem persistidos. A validação final corrigiu ainda duas regressões do redesign: o menu mobile inacessível e a formatação de datas dependente do locale do servidor.
+
+As melhorias de performance já presentes na branch incluem imports dinâmicos para superfícies pesadas, otimização de imagens/fontes e contenção das client boundaries. O build de produção continua a compilar 45 páginas/rotas sem erro.
+
+## 6. Evidência de validação
+
+| Gate | Resultado |
+| --- | --- |
+| Instalação limpa | `npm ci` PASS |
+| Unitários + integração Vitest | 80/80 ficheiros, 395/395 testes PASS |
+| E2E Chromium desktop | 28/28 PASS |
+| E2E WebKit mobile | 28/28 PASS |
+| E2E total | 56/56 PASS |
+| Repetição do fluxo adaptativo | 6/6 PASS |
+| Checklist staging | 45/45 PASS |
+| Avaliador de itinerários | 6/6 destinos PASS; scores 90–97; 0 falhas fatais |
+| Lint | Não existe script/configuração de lint no repositório |
+| Typecheck standalone | Não existe script; a etapa TypeScript do `next build` passou |
+| Build Next.js 16.2.12 | PASS, 45/45 páginas estáticas geradas |
+| `npm audit --omit=dev` | 0 vulnerabilidades |
+| Segredos no tree/histórico | Nenhum match de formatos de credenciais; só `.env.example` versionado |
+
+## 7. Commits desta fase final
+
+- `8dc7d92` — `fix(creation): align generation persistence contract`
+- `d991f44` — `fix(ui): restore responsive navigation and hydration`
+- `930b9c8` — `test(creation): cover Scotland lifecycle and retries`
+- `00d2b17` — `chore(deps): patch audited transitive packages`
+
+Estes commits seguem os commits de auditoria, arquitetura, redesign, acessibilidade, E2E e performance já presentes na mesma branch.
+
+## 8. Limitações e riscos conhecidos
+
+- A geração live contra um provider de IA não foi executada porque o ambiente local não possui chaves externas. Esse caso foi reproduzido e devolve `503 ITINERARY_DATA_UNAVAILABLE` de forma segura, sem inventar dados.
+- Supabase cloud, Google OAuth e Upstash continuam dependentes de credenciais/configuração de staging. A persistência E2E foi validada no provider SQLite local.
+- O avaliador penaliza fixtures sem `ratingSource`; os ratings foram deliberadamente omitidos em vez de fabricados. Todos os destinos passam e não existem falhas fatais.
+- O repositório ainda não fornece comandos independentes de lint e typecheck; isto deve ser acrescentado numa futura melhoria de tooling.
