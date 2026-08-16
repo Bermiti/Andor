@@ -26,46 +26,54 @@ async function openFixtureItinerary(page, baseURL) {
 }
 
 test.describe('Launch mobile regression suite', () => {
-  test('homepage search is mobile-safe and opens the wizard', async ({ page, baseURL }) => {
-    await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1500);
-    await expect(page.getByRole('heading', { name: /Descobre/i })).toBeVisible();
-    await expect(page.getByTestId('home-search-form')).toBeVisible();
-    const homeDestinationInput = page.getByTestId('home-destination-input');
-    const homeExploreButton = page.getByTestId('home-explore-button');
-    await expect(homeDestinationInput).toBeVisible();
-    await expect(homeDestinationInput).toBeEnabled();
-    await expect(homeExploreButton).toBeVisible();
-    await expect(homeExploreButton).toBeEnabled();
+  test('natural-language homepage is mobile-safe and opens trip creation', async ({ page, baseURL }) => {
+    const hydrationErrors = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error' && /hydration|server rendered html/i.test(message.text())) {
+        hydrationErrors.push(message.text());
+      }
+    });
 
-    await homeDestinationInput.pressSequentially('Tokyo');
-    await expect(page.getByRole('option', { name: /Tokyo/i })).toBeVisible();
+    await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: /Planeia a tua viagem completa/i })).toBeVisible();
+    const naturalLanguageInput = page.getByPlaceholder(/Quero viajar 5 dias para Itália/i);
+    const planButton = page.getByRole('button', { name: /Planear Viagem/i });
+    await expect(naturalLanguageInput).toBeVisible();
+    await expect(naturalLanguageInput).toBeEnabled();
+    await expect(planButton).toBeVisible();
+    await expect(planButton).toBeEnabled();
+
+    await naturalLanguageInput.fill('5 dias em Tokyo com gastronomia');
     await expectNoHorizontalOverflow(page);
-    await homeExploreButton.click();
-    await expect(page.getByTestId('creation-wizard')).toBeVisible({ timeout: 15000 });
+    await planButton.click();
+    await expect(page.getByRole('dialog', { name: /Criar viagem personalizada/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Descreve a viagem que imaginas/i })).toBeVisible();
     await expectNoHorizontalOverflow(page);
+    expect(hydrationErrors).toEqual([]);
   });
 
-  test('wizard steps remain usable on iPhone width', async ({ page, baseURL }) => {
-    await page.goto(`${baseURL}/?wizard=true&dest=Tokyo&step=1`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('creation-wizard')).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'Criar itinerário' })).toBeVisible();
-    await expect(page.getByTestId('wizard-destination-input')).toBeVisible();
+  test('adaptive creation steps remain usable on iPhone width', async ({ page, baseURL }) => {
+    await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
+    const quickPrompt = page.getByRole('button', { name: '7 dias na Escócia em família com natureza' });
+    const creationDialog = page.getByRole('dialog', { name: /Criar viagem personalizada/i });
+    await expect(async () => {
+      if (!(await creationDialog.isVisible())) await quickPrompt.click();
+      await expect(creationDialog).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(page.getByText(/Escócia, Reino Unido/i)).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
-    await page.getByTestId('wizard-next').click();
-    await expect(page.getByText(/Quando/i)).toBeVisible();
+    await page.getByRole('button', { name: /continuar e ajustar lacunas/i }).click();
+    await expect(page.getByRole('heading', { name: /Perguntas Adaptativas/i })).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
-    await page.getByTestId('wizard-dates-unknown').check();
-    await page.getByTestId('wizard-next').click();
-    await page.getByTestId('wizard-style-gastronomia').click();
+    await page.getByText(/dividir noites entre várias cidades/i).click();
+    await page.getByText(/equilibrado \(ritmo ideal\)/i).click();
     await expectNoHorizontalOverflow(page);
 
-    await page.getByTestId('wizard-next').click();
-    await page.getByTestId('wizard-budget-comfort').click();
-    await expect(page.getByTestId('wizard-next')).toBeVisible();
-    await expect(page.getByTestId('wizard-submit')).toHaveCount(0);
+    await page.getByRole('button', { name: /ver resumo da viagem/i }).click();
+    await expect(page.getByRole('heading', { name: /Resumo do Roteiro/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Gerar Roteiro Personalizado/i })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

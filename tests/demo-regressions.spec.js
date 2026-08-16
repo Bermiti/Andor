@@ -22,7 +22,10 @@ test.describe('curated demo regressions', () => {
   test('dark-only mobile navigation exposes no non-functional theme action', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.getByRole('button', { name: 'Menu' }).click();
+    const menuButton = page.getByRole('button', { name: 'Menu' });
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+    await expect(page.locator('#primary-navigation').getByRole('link', { name: /Destinos/i })).toBeVisible();
 
     const legacyThemeControl = page.locator('button').filter({ hasText: /Modo (Claro|Escuro)/ });
     await expect(legacyThemeControl).toBeHidden();
