@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Sparkles,
   MapPin,
@@ -20,6 +21,12 @@ import {
 } from 'lucide-react';
 import { parseNaturalLanguageIntent, buildConfirmationChips } from '../lib/natural-intent-parser';
 import { getTravelPersona, updateTravelPersona } from '../lib/travel-persona';
+import {
+  buildGenerationPayloadFromIntent,
+  createGenerationIntentKey,
+  fingerprintGenerationPayload,
+  resolveGeneratedItineraryResponse,
+} from '../lib/generation-client';
 import styles from './CreationExperience.module.css';
 
 export default function CreationExperience({
@@ -29,6 +36,7 @@ export default function CreationExperience({
   initialDestination = '',
   onItineraryCreated,
 }) {
+  const router = useRouter();
   const [inputText, setInputText] = useState(initialText);
   const [intent, setIntent] = useState(null);
   const [step, setStep] = useState(1); // 1: Input & Chips, 2: Dynamic Adaptive Questions, 3: True Preview, 4: Generating
@@ -36,6 +44,7 @@ export default function CreationExperience({
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [adaptiveAnswers, setAdaptiveAnswers] = useState({});
+  const generationIntentRef = useRef(null);
 
   // Initialize intent from initial input
   useEffect(() => {
@@ -52,6 +61,7 @@ export default function CreationExperience({
       setErrorMsg('');
       setIsSubmitting(false);
       setAdaptiveAnswers({});
+      generationIntentRef.current = null;
     }
   }, [isOpen, initialText, initialDestination]);
 
@@ -187,41 +197,39 @@ export default function CreationExperience({
         interests: (f.interests || []).map((i) => i.id),
       });
 
-      const body = {
-        destination: f.destinations[0]?.canonical || 'Lisboa, Portugal',
-        destinations: f.destinations,
-        days: f.durationDays || 5,
-        travelStyle: f.pace?.pace || 'balanced',
-        budgetTier: f.budget?.tier || 'moderate',
-        stylesList: (f.interests || []).map((i) => i.id),
-        travelers: f.travelers || { adults: 2, children: 0 },
-        dates: f.dates || null,
-        adaptiveAnswers,
-        generationIntent: {
-          requestId: `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          fingerprint: JSON.stringify(intent),
-        },
-      };
+      const body = buildGenerationPayloadFromIntent(intent, adaptiveAnswers);
+      const fingerprint = await fingerprintGenerationPayload(body);
+      const generationIntent = generationIntentRef.current?.fingerprint === fingerprint
+        ? generationIntentRef.current
+        : { key: createGenerationIntentKey(), fingerprint };
+      generationIntentRef.current = generationIntent;
 
       const res = await fetch('/api/generate-itinerary', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': generationIntent.key,
+        },
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error?.message || data.message || 'Erro na geração da viagem.');
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.message || 'Erro na geração da viagem.');
       }
 
-      const tripId = data.id || data.itinerary?.id;
-      if (tripId) {
-        if (onItineraryCreated) onItineraryCreated(data);
-        window.location.href = `/itinerary/${tripId}`;
-      } else {
+      const result = resolveGeneratedItineraryResponse(data);
+      let tripId = result.id;
+      if (result.mode === 'local_draft') {
+        const { saveGeneratedItinerary } = await import('../lib/itinerary-store');
+        tripId = saveGeneratedItinerary(result.itinerary);
+      }
+      if (!tripId) {
         throw new Error('Identificador da viagem não devolvido.');
       }
+      if (onItineraryCreated) onItineraryCreated({ ...data, id: tripId });
+      router.push(`/itinerary/${tripId}`);
     } catch (err) {
       console.error('Generation failure:', err);
       setIsSubmitting(false);
@@ -235,7 +243,13 @@ export default function CreationExperience({
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Criar viagem personalizada"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerTitle}>
