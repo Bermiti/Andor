@@ -32,7 +32,11 @@ export default function StageNavigator({ stages = [], transfers = [], activeStag
         if (!d) return '';
         const dt = new Date(d);
         if (isNaN(dt.getTime())) return '';
-        return dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        return dt.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          timeZone: 'UTC',
+        });
     }
     const arr = formatStr(arrival);
     const dep = formatStr(departure);

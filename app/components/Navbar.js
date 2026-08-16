@@ -118,8 +118,20 @@ export default function Navbar({ onOpenPreferences }) {
             <span>Andor</span>
           </a>
 
+          {isMobileMenuOpen && (
+            <button
+              type="button"
+              className={styles.mobileScrim}
+              aria-label="Fechar menu"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
           {/* Navigation Links */}
-          <div className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
+          <div
+            id="primary-navigation"
+            className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}
+          >
             <a href="/features" className={getLinkClass('/features')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('features')}
             </a>
@@ -237,18 +249,20 @@ export default function Navbar({ onOpenPreferences }) {
             ) : (
               <button className={styles.loginBtn} onClick={() => setIsLoginOpen(true)}>{t('login')}</button>
             )}
-            
-            {/* Hamburger Toggle */}
-            <button 
-              className={`${styles.mobileToggle} ${isMobileMenuOpen ? styles.toggleActive : ''}`} 
-              aria-label="Menu"
-              onClick={toggleMobileMenu}
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
           </div>
+
+          <button
+            type="button"
+            className={`${styles.mobileToggle} ${isMobileMenuOpen ? styles.toggleActive : ''}`}
+            aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Menu'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="primary-navigation"
+            onClick={toggleMobileMenu}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
         </div>
       </nav>
       
