@@ -71,6 +71,12 @@ O trabalho acumulado desta branch substitui a landing page e os fluxos genérico
 
 As melhorias de performance já presentes na branch incluem imports dinâmicos para superfícies pesadas, otimização de imagens/fontes e contenção das client boundaries. O build de produção continua a compilar 45 páginas/rotas sem erro.
 
+Evidência visual capturada na validação final:
+
+- [Homepage desktop](after/homepage-desktop.png)
+- [Homepage mobile a 390 px](after/homepage-mobile.png)
+- [Criação da viagem da Escócia](after/scotland-creation.png)
+
 ## 6. Evidência de validação
 
 | Gate | Resultado |
