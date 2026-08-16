@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 2,
+  "title": "Escócia: cidades, Highlands e costa",
+  "destination": {
+    "city": "Escócia",
+    "name": "Escócia, Reino Unido",
+    "country": "Reino Unido",
+    "countryCode": "GB",
+    "region": "Scotland",
+    "currency": { "code": "GBP", "symbol": "£" }
+  },
+  "trip": {
+    "totalDays": 7,
+    "travelStyle": "nature, culture, history, gastronomy, photography",
+    "tripPace": "balanced",
+    "groupType": "2 viajantes",
+    "transportPreference": "car",
+    "budgetTier": "moderate",
+    "startDate": "2026-09-07",
+    "endDate": "2026-09-13"
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Edimburgo: cidade velha e história",
+      "summary": "Fixture de teste: percurso urbano compacto em Edimburgo.",
+      "stops": [
+        { "id": "scot-d1-a1", "time": "09:30", "name": "Edinburgh Castle", "type": "history", "coordinates": { "lat": 55.9486, "lng": -3.1999 } },
+        { "id": "scot-d1-a2", "time": "14:00", "name": "National Museum of Scotland", "type": "culture", "coordinates": { "lat": 55.9470, "lng": -3.1890 } }
+      ]
+    },
+    {
+      "dayNumber": 2,
+      "title": "Edimburgo: natureza e vistas",
+      "summary": "Fixture de teste: dia ao ar livre sem horários ou disponibilidade alegados.",
+      "stops": [
+        { "id": "scot-d2-a1", "time": "09:00", "name": "Arthur's Seat", "type": "nature", "coordinates": { "lat": 55.9441, "lng": -3.1618 } },
+        { "id": "scot-d2-a2", "time": "15:00", "name": "Calton Hill", "type": "photography", "coordinates": { "lat": 55.9550, "lng": -3.1827 } }
+      ]
+    },
+    {
+      "dayNumber": 3,
+      "title": "Glasgow: arte e arquitetura",
+      "summary": "Fixture de teste: mudança de base para Glasgow.",
+      "stops": [
+        { "id": "scot-d3-a1", "time": "10:00", "name": "Kelvingrove Art Gallery and Museum", "type": "culture", "coordinates": { "lat": 55.8686, "lng": -4.2906 } },
+        { "id": "scot-d3-a2", "time": "15:00", "name": "Glasgow Cathedral", "type": "history", "coordinates": { "lat": 55.8629, "lng": -4.2341 } }
+      ]
+    },
+    {
+      "dayNumber": 4,
+      "title": "Glencoe e Fort William",
+      "summary": "Fixture de teste: road trip pelas Highlands ocidentais.",
+      "stops": [
+        { "id": "scot-d4-a1", "time": "10:30", "name": "Glencoe", "type": "nature", "coordinates": { "lat": 56.6826, "lng": -5.1023 } },
+        { "id": "scot-d4-a2", "time": "16:00", "name": "Fort William", "type": "road-trip", "coordinates": { "lat": 56.8198, "lng": -5.1052 } }
+      ]
+    },
+    {
+      "dayNumber": 5,
+      "title": "Eilean Donan e Isle of Skye",
+      "summary": "Fixture de teste: entrada em Skye com paragens geograficamente ordenadas.",
+      "stops": [
+        { "id": "scot-d5-a1", "time": "10:00", "name": "Eilean Donan Castle", "type": "history", "coordinates": { "lat": 57.2740, "lng": -5.5160 } },
+        { "id": "scot-d5-a2", "time": "16:00", "name": "Portree", "type": "photography", "coordinates": { "lat": 57.4125, "lng": -6.1940 } }
+      ]
+    },
+    {
+      "dayNumber": 6,
+      "title": "Isle of Skye: paisagens do oeste",
+      "summary": "Fixture de teste: atividades outdoor sem previsão meteorológica inventada.",
+      "stops": [
+        { "id": "scot-d6-a1", "time": "09:30", "name": "Neist Point", "type": "nature", "coordinates": { "lat": 57.4235, "lng": -6.7887 } },
+        { "id": "scot-d6-a2", "time": "15:00", "name": "Dunvegan", "type": "history", "coordinates": { "lat": 57.4375, "lng": -6.5814 } }
+      ]
+    },
+    {
+      "dayNumber": 7,
+      "title": "Loch Ness e regresso",
+      "summary": "Fixture de teste: último dia no eixo de Loch Ness.",
+      "stops": [
+        { "id": "scot-d7-a1", "time": "10:00", "name": "Urquhart Castle", "type": "history", "coordinates": { "lat": 57.3240, "lng": -4.4410 } },
+        { "id": "scot-d7-a2", "time": "14:30", "name": "Loch Ness", "type": "nature", "coordinates": { "lat": 57.3229, "lng": -4.4244 } }
+      ]
+    }
+  ],
+  "metadata": {
+    "source": "test-fixture",
+    "generationSource": "controlled-e2e-fixture",
+    "provenance": "Automated test data; not a live travel recommendation"
+  }
+}

@@ -154,7 +154,7 @@ export function validateAndFixCoordinates(itineraryData, destinationName) {
   return result;
 }
 
-export function getDestinationCenter(destinationName) {
+export function getDestinationCenter(destinationName, options = {}) {
   const key = getDestinationKey(destinationName);
   if (key && CITY_BOUNDS[key]) {
     const [lat, lng] = CITY_BOUNDS[key].center;
@@ -173,5 +173,7 @@ export function getDestinationCenter(destinationName) {
     if (centroid) return centroid;
   }
   
-  return [51.5074, -0.1278]; // London fallback
+  return Object.prototype.hasOwnProperty.call(options, 'fallback')
+    ? options.fallback
+    : [51.5074, -0.1278]; // Legacy callers still receive their historical fallback.
 }

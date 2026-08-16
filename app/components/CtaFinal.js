@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import styles from './CtaFinal.module.css';
 
 export default function CtaFinal() {
@@ -69,10 +70,6 @@ export default function CtaFinal() {
     window.dispatchEvent(new Event('open-auth-modal'));
   };
 
-  const handleOpenConcierge = () => {
-    window.location.href = '/itinerary/tokyo-food';
-  };
-
   return (
     <section className={styles.section} id="cta">
       {/* Background Particles Canvas */}
@@ -95,13 +92,12 @@ export default function CtaFinal() {
             >
               Começar a Planear →
             </button>
-            <button 
-              type="button" 
+            <Link
+              href="/itinerary/tokyo-food"
               className={styles.secondaryBtn}
-              onClick={handleOpenConcierge}
             >
               Ver Demo
-            </button>
+            </Link>
           </div>
 
           <div className={styles.trustSignals}>

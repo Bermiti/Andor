@@ -161,6 +161,180 @@
   border-bottom-color: var(--gold);
 }
 
+.journeyBuilder {
+  display: grid;
+  gap: 14px;
+}
+
+.journeyBuilderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.journeyBuilderHeader > div {
+  display: grid;
+  gap: 3px;
+}
+
+.journeyBuilderHeader span {
+  color: var(--t-2);
+  font-size: 0.82rem;
+}
+
+.addStageButton {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 1px solid rgba(212, 168, 67, 0.38);
+  border-radius: 10px;
+  color: var(--gold-light);
+  background: rgba(212, 168, 67, 0.08);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.addStageButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stageCard {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--b-2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.stageCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.stageCardHeader > strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stageNumber {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-primary, var(--gold));
+  color: #0c0c0c;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.stageActions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.stageActions button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--b-2);
+  border-radius: 9px;
+  color: var(--t-2);
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+}
+
+.stageActions button:hover:not(:disabled),
+.stageActions button:focus-visible {
+  color: var(--t-1);
+  border-color: var(--gold);
+}
+
+.stageActions button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.stageFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  gap: 10px;
+}
+
+.stageFields label,
+.stageDestinationField {
+  display: grid;
+  gap: 6px;
+  color: var(--t-2);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.stageFields input,
+.stageFields select,
+.stageDestinationField input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--b-2);
+  border-radius: 9px;
+  padding: 9px 10px;
+  color: var(--t-1);
+  background: var(--bg-3);
+  font: inherit;
+}
+
+.journeyDuration {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid rgba(82, 196, 139, 0.28);
+  border-radius: 10px;
+  background: rgba(82, 196, 139, 0.08);
+}
+
+.journeyDuration span {
+  color: var(--t-2);
+  font-size: 0.82rem;
+}
+
+.journeyDurationConflict {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.summaryStages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.summaryStages span {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--t-2);
+  font-size: 0.78rem;
+}
+
+.summaryStages b {
+  color: var(--t-1);
+}
+
 .autocomplete {
   position: absolute;
   top: 100%;
@@ -1236,6 +1410,19 @@
 
 
 @media (max-width: 480px) {
+  .journeyBuilderHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .addStageButton {
+    width: 100%;
+  }
+
+  .stageFields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .calendarDaysGrid {
     gap: 2px;
   }

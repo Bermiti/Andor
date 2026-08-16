@@ -379,6 +379,33 @@ function addCuratedEveningStop(day, dayIndex, destinationLabel) {
   };
 }
 
+function markCuratedCoordinates(day) {
+  const mark = (item) => {
+    if (!item || typeof item !== 'object' || !item.coordinates) return item;
+    return { ...item, coordinateSource: 'curated' };
+  };
+  const periods = Object.fromEntries(
+    Object.entries(day?.periods || {}).map(([periodKey, period]) => [
+      periodKey,
+      {
+        ...period,
+        activities: (period?.activities || []).map(mark),
+      },
+    ]),
+  );
+  const meals = Object.fromEntries(
+    Object.entries(day?.meals || {}).map(([mealKey, meal]) => [mealKey, mark(meal)]),
+  );
+  const stops = (day?.stops || []).map(mark);
+  return {
+    ...day,
+    stops,
+    activities: stops,
+    periods,
+    meals,
+  };
+}
+
 async function loadCuratedFallback(destination, requestedDays, preferences = {}) {
   const key = getCuratedDestinationKey(destination);
   const loader = CURATED_FIXTURE_LOADERS[key];
@@ -403,7 +430,7 @@ async function loadCuratedFallback(destination, requestedDays, preferences = {})
       country: country || fixture.destination?.country || '',
       andorVerdict: `Plano de demonstração com locais específicos, tempos realistas e logística prática para ${city}.`,
     };
-    fixture.days = days.map((day, index) => ({
+    fixture.days = days.map((day, index) => markCuratedCoordinates({
       ...addCuratedEveningStop(day, index, city),
       dayNumber: index + 1,
     }));

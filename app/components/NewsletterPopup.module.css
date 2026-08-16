@@ -127,6 +127,26 @@
   box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.08);
 }
 
+.consentRow {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: start;
+  gap: 10px;
+  margin: 0 0 var(--space-4);
+  color: var(--gray-600);
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.consentRow input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--gold);
+}
+
 .submitBtn {
   width: 100%;
   padding: var(--space-3) var(--space-4);

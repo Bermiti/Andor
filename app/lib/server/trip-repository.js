@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createHash, randomUUID } from 'node:crypto';
+import { createSupabaseAdminClient } from '../supabase/admin';
 import { createSupabaseServerClient } from '../supabase/server';
 import { canPerformTripAction } from '../trip-permissions';
 import { logger } from '../logger';
@@ -103,8 +104,16 @@ async function getSupabaseMembership(supabase, tripId, userId) {
   return data?.role || null;
 }
 
-async function writeSupabaseAudit(supabase, identity, event) {
-  const { error } = await supabase.from('audit_events').insert({
+async function writeSupabaseAudit(identity, event) {
+  const admin = createSupabaseAdminClient();
+  if (!admin) {
+    logger.warn('trip_repository:audit_write_failed', null, {
+      action: event.action,
+      reason: 'admin_client_unavailable',
+    });
+    return;
+  }
+  const { error } = await admin.from('audit_events').insert({
     actor_user_id: identity.userId,
     action: event.action,
     resource_type: event.resourceType || 'trip',
@@ -185,12 +194,6 @@ export async function createTripRecord(itinerary, metadata = {}, identity) {
     return { ok: false, status: error.code === '23505' ? 'conflict' : 'storage_error' };
   }
   const role = await getSupabaseMembership(supabase, data.id, identity.userId) || 'owner';
-  await writeSupabaseAudit(supabase, identity, {
-    action: 'trip.created',
-    resourceId: data.id,
-    correlationId: metadata.correlationId,
-    metadata: { source: values.source, version: Number(data.version) || 1 },
-  });
   return { ok: true, provider: 'supabase', trip: tripDto(mapSupabaseTrip(data, role), 'supabase') };
 }
 
@@ -304,12 +307,6 @@ export async function updateTripRecord(id, itinerary, expectedVersion, identity,
       : current;
   }
   const role = permission.trip.permission;
-  await writeSupabaseAudit(supabase, identity, {
-    action: 'trip.updated',
-    resourceId: id,
-    correlationId: metadata.correlationId,
-    metadata: { version: Number(data.version) || Number(expectedVersion) + 1 },
-  });
   return { ok: true, provider: 'supabase', trip: tripDto(mapSupabaseTrip(data, role), 'supabase') };
 }
 
@@ -335,11 +332,6 @@ export async function deleteTripRecord(id, identity, metadata = {}) {
   if (error) return { ok: false, status: 'storage_error' };
   if (!data) return { ok: false, status: 'not_found' };
   await supabase.from('trip_share_links').update({ revoked_at: deletedAt }).eq('trip_id', id).is('revoked_at', null);
-  await writeSupabaseAudit(supabase, identity, {
-    action: 'trip.deleted',
-    resourceId: id,
-    correlationId: metadata.correlationId,
-  });
   return { ok: true, provider: 'supabase', deletedAt };
 }
 
@@ -430,7 +422,7 @@ export async function importLegacyTrip({ itinerary, idempotencyKey }, identity, 
     }
     return { ok: false, status: 'conflict', tripId: raced?.trip_id || tripId };
   }
-  await writeSupabaseAudit(supabase, identity, {
+  await writeSupabaseAudit(identity, {
     action: 'trip.imported',
     resourceId: tripId,
     correlationId: metadata.correlationId,

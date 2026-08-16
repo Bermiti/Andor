@@ -51,6 +51,7 @@ import { useToast } from '../../components/ToastProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { Modal, Drawer } from '../../components/ui/Modal';
 import EnhancedActivityCard from '../../components/EnhancedActivityCard';
+import ActivityEditor from '../../components/ActivityEditor';
 import RestaurantCard from '../../components/RestaurantCard';
 import AccommodationCard from '../../components/AccommodationCard';
 import TransportCard from '../../components/TransportCard';
@@ -280,6 +281,49 @@ export default function ItineraryPage() {
   const [weatherData, setWeatherData] = useState(null);
   const [dayRoutes, setDayRoutes] = useState({});
   const [exchangeRateData, setExchangeRateData] = useState(null);
+  const [undoStack, setUndoStack] = useState([]);
+  const [editingActivity, setEditingActivity] = useState(null);
+
+  const pushUndoSnapshot = (currentItinerary) => {
+    if (!currentItinerary) return;
+    setUndoStack((prev) => [...prev.slice(-9), JSON.parse(JSON.stringify(currentItinerary))]);
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previous = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setItinerary(previous);
+    saveItinerarySnapshot(previous);
+    showToast('Alteração desfeita.', 'info');
+  };
+
+  const handleDeleteActivity = (activity) => {
+    if (!itinerary || !activity) return;
+    pushUndoSnapshot(itinerary);
+    const nextDays = (itinerary.days || []).map((day, dIdx) => {
+      if (dIdx !== activeDay) return day;
+      const filterItem = (s) => (activity.id ? s.id !== activity.id : s.name !== activity.name);
+      return {
+        ...day,
+        stops: (day.stops || []).filter(filterItem),
+        activities: (day.activities || []).filter(filterItem),
+      };
+    });
+    const next = { ...itinerary, days: nextDays, updatedAt: new Date().toISOString() };
+    setItinerary(next);
+    saveItinerarySnapshot(next);
+    setEditingActivity(null);
+    showToast('Actividade removida.', 'success');
+  };
+
+  const handleSaveEditedActivity = (updatedActivity) => {
+    if (!itinerary || !updatedActivity) return;
+    pushUndoSnapshot(itinerary);
+    updateActivity(editingActivity || updatedActivity, updatedActivity);
+    setEditingActivity(null);
+    showToast('Actividade atualizada.', 'success');
+  };
 
   useEffect(() => {
     setFavorites(getJson('andor_favorites', [], 'local') || []);
@@ -1911,6 +1955,11 @@ export default function ItineraryPage() {
               </div>
             </div>
             <div className={styles.headerActionsDesktop}>
+              {undoStack.length > 0 && (
+                <button className={styles.btnSecondary} onClick={handleUndo} aria-label="Desfazer alteração" title="Desfazer alteração">
+                  <RefreshCw size={16} aria-hidden="true" /> <span>Desfazer</span>
+                </button>
+              )}
               <button className={styles.btnSecondary} disabled={!canEditTrip} onClick={() => setShowAdaptModal(true)} aria-label="Editar este dia" title={canEditTrip ? 'Editar este dia' : 'Modo de leitura'}><Edit3 size={16} aria-hidden="true" /> <span>Editar</span></button>
               <button className={styles.btnSecondary} disabled={!canManageShares} onClick={handleShare} aria-label="Partilhar itinerário" title={canManageShares ? 'Partilhar itinerário' : 'Apenas o proprietario pode partilhar'}><Share2 size={16} aria-hidden="true" /> <span>Partilhar</span></button>
               <button className={styles.btnSecondary} onClick={() => handleExportPDF(exportMode)} aria-label="Exportar PDF" title="Exportar PDF"><FileText size={16} aria-hidden="true" /> <span>PDF</span></button>
@@ -2228,6 +2277,8 @@ export default function ItineraryPage() {
                                 onBook={() => setBookingStop(stop)}
                                 onCopy={() => copyActivityDetails(stop)}
                                 onUpdate={canEditTrip ? (patch) => updateActivity(stop, patch) : undefined}
+                                onEdit={canEditTrip ? () => setEditingActivity(stop) : undefined}
+                                onDelete={canEditTrip ? () => handleDeleteActivity(stop) : undefined}
                                 isDayHighlight={stopIdx === 0}
                               />
                             </div>
@@ -2663,6 +2714,14 @@ export default function ItineraryPage() {
           </div>
         )}
       </Modal>
+      <ActivityEditor
+        isOpen={!!editingActivity}
+        activity={editingActivity}
+        currency={getCurrencyContext(itinerary).symbol}
+        onSave={handleSaveEditedActivity}
+        onDelete={handleDeleteActivity}
+        onCancel={() => setEditingActivity(null)}
+      />
     </>
   );
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import styles from './NewsletterPopup.module.css';
@@ -10,6 +10,8 @@ export default function NewsletterPopup() {
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const closeButtonRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -25,6 +27,20 @@ export default function NewsletterPopup() {
       setIsOpen(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    document.body.classList.add('modal-open');
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') handleDismiss();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.classList.remove('modal-open');
+    };
+  }, [isOpen]);
 
   const handleDismiss = () => {
     setIsOpen(false);
@@ -45,7 +61,8 @@ export default function NewsletterPopup() {
         body: JSON.stringify({
           email,
           source: 'newsletter_popup',
-          metadata: { page: window.location.pathname },
+          page: window.location.pathname,
+          consent,
         }),
       });
 
@@ -66,9 +83,15 @@ export default function NewsletterPopup() {
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={handleDismiss}>
+    <div
+      className={styles.overlay}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="newsletter-title"
+      onClick={handleDismiss}
+    >
       <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
-        <button className={styles.closeBtn} aria-label="Fechar newsletter" onClick={handleDismiss}>
+        <button ref={closeButtonRef} className={styles.closeBtn} aria-label="Fechar newsletter" onClick={handleDismiss}>
           <X size={16} aria-hidden="true" />
         </button>
 
@@ -77,7 +100,7 @@ export default function NewsletterPopup() {
             <div className={styles.imageHeader}>
               <div className={styles.overlayGradient}></div>
               <span className={styles.badge}>ANDOR INSIGHTS</span>
-              <h3 className={styles.modalTitle}>Recebe briefs de viagem selecionados</h3>
+              <h3 id="newsletter-title" className={styles.modalTitle}>Recebe briefs de viagem selecionados</h3>
             </div>
 
             <form onSubmit={handleSubmit} className={styles.form}>
@@ -88,6 +111,7 @@ export default function NewsletterPopup() {
               <div className={styles.inputField}>
                 <input
                   type="email"
+                  aria-label="Email para newsletter"
                   placeholder="email@exemplo.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -96,7 +120,19 @@ export default function NewsletterPopup() {
                 />
               </div>
 
-              <button type="submit" className={styles.submitBtn} disabled={loading}>
+              <label className={styles.consentRow}>
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(event) => setConsent(event.target.checked)}
+                  required
+                />
+                <span>
+                  Aceito receber emails editoriais e de produto da Andor. Posso cancelar a qualquer momento.
+                </span>
+              </label>
+
+              <button type="submit" className={styles.submitBtn} disabled={loading || !consent}>
                 {loading ? 'A subscrever...' : 'Subscrever'}
               </button>
 
@@ -107,9 +143,9 @@ export default function NewsletterPopup() {
           </div>
         ) : (
           <div className={styles.success}>
-            <h3 className={styles.successTitle}>Subscricao confirmada</h3>
+            <h3 className={styles.successTitle}>Subscrição registada</h3>
             <p className={styles.successDesc}>
-              O email ficou registado. Vais receber apenas atualizacoes relevantes da Andor.
+              O email e o teu consentimento ficaram registados. Vais receber apenas atualizações relevantes da Andor.
             </p>
             <button type="button" className={styles.doneBtn} onClick={handleDismiss}>Fechar</button>
           </div>

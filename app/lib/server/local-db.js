@@ -35,6 +35,7 @@ export function getLocalDatabase() {
   database.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
+    PRAGMA busy_timeout = 5000;
 
     CREATE TABLE IF NOT EXISTS local_users (
       id TEXT PRIMARY KEY,
@@ -166,6 +167,77 @@ export function getLocalDatabase() {
       updated_at TEXT NOT NULL,
       PRIMARY KEY (user_id, idempotency_key)
     );
+
+    CREATE TABLE IF NOT EXISTS generation_requests (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL,
+      request_hash TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'completed', 'failed')),
+      lease_token TEXT,
+      lease_expires_at TEXT,
+      attempt_count INTEGER NOT NULL DEFAULT 1 CHECK (attempt_count > 0),
+      checkpoint_json TEXT NOT NULL DEFAULT '{}',
+      trip_id TEXT REFERENCES itineraries(id) ON DELETE SET NULL,
+      response_json TEXT,
+      failure_code TEXT,
+      retryable INTEGER NOT NULL DEFAULT 1 CHECK (retryable IN (0, 1)),
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE (user_id, idempotency_key),
+      CHECK (
+        length(idempotency_key) BETWEEN 16 AND 128
+        AND idempotency_key = trim(idempotency_key)
+      ),
+      CHECK (
+        length(request_hash) = 64
+        AND request_hash NOT GLOB '*[^0-9a-f]*'
+      ),
+      CHECK ((lease_token IS NULL) = (lease_expires_at IS NULL)),
+      CHECK (
+        failure_code IS NULL
+        OR (
+          length(failure_code) BETWEEN 3 AND 80
+          AND failure_code GLOB '[A-Za-z]*'
+          AND failure_code NOT GLOB '*[^A-Za-z0-9_.-]*'
+        )
+      ),
+      CHECK (expires_at > created_at),
+      CHECK (
+        (
+          status = 'pending'
+          AND lease_token IS NOT NULL
+          AND trip_id IS NULL
+          AND response_json IS NULL
+          AND failure_code IS NULL
+          AND retryable = 1
+        )
+        OR (
+          status = 'completed'
+          AND lease_token IS NULL
+          AND response_json IS NOT NULL
+          AND failure_code IS NULL
+          AND retryable = 0
+        )
+        OR (
+          status = 'failed'
+          AND lease_token IS NULL
+          AND trip_id IS NULL
+          AND response_json IS NULL
+          AND failure_code IS NOT NULL
+        )
+      )
+    );
+
+    CREATE INDEX IF NOT EXISTS generation_requests_user_status_idx
+      ON generation_requests(user_id, status, updated_at DESC);
+
+    CREATE INDEX IF NOT EXISTS generation_requests_lease_idx
+      ON generation_requests(status, lease_expires_at);
+
+    CREATE INDEX IF NOT EXISTS generation_requests_expiry_idx
+      ON generation_requests(expires_at);
   `);
 
   const itineraryColumns = new Set(

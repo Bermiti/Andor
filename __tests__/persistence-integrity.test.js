@@ -1,11 +1,26 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 const dbMocks = vi.hoisted(() => ({
   createNewsletterSubscriber: vi.fn(),
   createCustomRequestRecord: vi.fn(),
 }));
 
 vi.mock('../app/lib/supabase/db', () => dbMocks);
+
+vi.mock('../app/lib/server/rate-limit', () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, limit: 3, remaining: 2, resetInSeconds: 86400 }),
+  getRateLimitHeaders: vi.fn().mockReturnValue({}),
+}));
+
+vi.mock('../app/lib/logger', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  };
+});
 
 import { POST as subscribeNewsletter } from '../app/api/newsletter/route';
 import { POST as submitCustomRequest } from '../app/api/custom-requests/route';
@@ -33,6 +48,7 @@ describe('persistence integrity', () => {
 
     const response = await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
       email: 'traveler@example.com',
+      consent: true,
     }));
     const body = await response.json();
 
@@ -49,11 +65,41 @@ describe('persistence integrity', () => {
 
     const response = await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
       email: 'traveler@example.com',
+      consent: true,
     }));
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ ok: true, provider: 'supabase', id: 'subscriber-1' });
+    expect(body.ok).toBe(true);
+    expect(body.status).toBe('pending_verification');
+    expect(body.provider).toBe('supabase');
+    expect(body.id).toBe('subscriber-1');
+  });
+
+  test('newsletter requires explicit consent and redacts private route identifiers', async () => {
+    const missingConsent = await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
+      email: 'traveler@example.com',
+      page: '/invitations/private-token',
+    }));
+    expect(missingConsent.status).toBe(422);
+    expect(dbMocks.createNewsletterSubscriber).not.toHaveBeenCalled();
+
+    dbMocks.createNewsletterSubscriber.mockResolvedValue({
+      ok: true,
+      provider: 'supabase',
+      id: 'subscriber-2',
+    });
+    await subscribeNewsletter(jsonRequest('http://localhost/api/newsletter', {
+      email: 'traveler@example.com',
+      consent: true,
+      page: '/invitations/private-token?email=hidden@example.com',
+    }));
+    expect(dbMocks.createNewsletterSubscriber).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        page: '/invitations/:token',
+        consent: 'newsletter_marketing_v1',
+      }),
+    }));
   });
 
   test('custom requests never invent a local request id', async () => {

@@ -96,6 +96,22 @@ describe.sequential('durable trip authorization boundary', () => {
       role: 'viewer',
       tripId,
     });
+    await expect(acceptTripInvitation(invited.token, collaborator)).resolves.toMatchObject({
+      ok: true,
+      status: 'already_accepted',
+      role: 'viewer',
+      tripId,
+    });
+    getLocalDatabase().prepare(`
+      UPDATE trip_members SET revoked_at = ? WHERE trip_id = ? AND user_id = ?
+    `).run(new Date().toISOString(), tripId, collaborator.userId);
+    await expect(acceptTripInvitation(invited.token, collaborator)).resolves.toMatchObject({
+      ok: false,
+      status: 'invalid_state',
+    });
+    getLocalDatabase().prepare(`
+      UPDATE trip_members SET revoked_at = NULL WHERE trip_id = ? AND user_id = ?
+    `).run(tripId, collaborator.userId);
     await expect(getTripRecord(tripId, collaborator)).resolves.toMatchObject({
       ok: true,
       trip: { permission: 'viewer' },
@@ -168,6 +184,21 @@ describe.sequential('durable trip authorization boundary', () => {
     }, owner)).resolves.toMatchObject({ ok: true });
     await expect(acceptTripInvitation(invited.token, outsider))
       .resolves.toMatchObject({ ok: false, status: 'revoked' });
+  });
+
+  it('does not let the owner accept an invitation to their own account', async () => {
+    const invited = await createTripInvitation({
+      tripId,
+      email: owner.user.email,
+      role: 'viewer',
+    }, owner);
+    expect(invited.ok).toBe(true);
+    await expect(acceptTripInvitation(invited.token, owner))
+      .resolves.toMatchObject({ ok: false, status: 'forbidden' });
+    expect(getLocalDatabase().prepare(`
+      SELECT count(*) AS count FROM trip_members
+      WHERE trip_id = ? AND user_id = ? AND role = 'owner'
+    `).get(tripId, owner.userId).count).toBe(1);
   });
 
   it('imports legacy data idempotently and rejects key reuse with a changed payload', async () => {

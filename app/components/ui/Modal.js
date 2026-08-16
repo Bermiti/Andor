@@ -26,6 +26,11 @@ export function Modal({
   const titleId = labelledBy || generatedTitleId;
   const panelRef = useRef(null);
   const previouslyFocusedRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -43,7 +48,7 @@ export function Modal({
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
 
@@ -75,7 +80,7 @@ export function Modal({
       document.body.classList.remove('modal-open');
       previouslyFocusedRef.current?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -111,4 +116,3 @@ export function BottomSheet(props) {
 export function Drawer(props) {
   return <Modal {...props} variant="drawer" />;
 }
-

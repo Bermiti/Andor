@@ -16,10 +16,10 @@ const languages = [
   { code: 'fr', label: 'Français', flag: '🇫🇷', display: 'FR' }
 ];
 
-export default function Navbar() {
+export default function Navbar({ onOpenPreferences }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { locale, setLocale, theme, toggleTheme, mounted } = useLanguage();
+  const { locale, setLocale } = useLanguage();
   const t = useTranslations('nav');
   
   const [scrolled, setScrolled] = useState(false);
@@ -27,10 +27,10 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const [authErrorCode, setAuthErrorCode] = useState(null);
   
   const isMyTrips = pathname === '/my-trips';
-  const isLightTheme = theme === 'light';
-  const forceDarkText = (isMyTrips && !scrolled) || isLightTheme;
+  const forceDarkText = isMyTrips && !scrolled;
   
   const getLinkClass = (href) => {
     const isActive = href === '/'
@@ -43,6 +43,19 @@ export default function Navbar() {
   const langDropdownRef = useRef(null);
 
   useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    const callbackError = currentUrl.searchParams.get('authError');
+    if (callbackError) {
+      setAuthErrorCode(callbackError);
+      setIsLoginOpen(true);
+      currentUrl.searchParams.delete('authError');
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+      );
+    }
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 80);
     };
@@ -105,34 +118,47 @@ export default function Navbar() {
             <span>Andor</span>
           </a>
 
+          {isMobileMenuOpen && (
+            <button
+              type="button"
+              className={styles.mobileScrim}
+              aria-label="Fechar menu"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
           {/* Navigation Links */}
-          <div className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
+          <div
+            id="primary-navigation"
+            className={`${styles.links} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}
+          >
             <a href="/features" className={getLinkClass('/features')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('features')}
             </a>
             <a href="/destinations" className={getLinkClass('/destinations')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('destinations')}
             </a>
-            <a
-              href="/#concierge"
-              className={styles.link}
-              onClick={(e) => {
-                e.preventDefault();
-                setIsMobileMenuOpen(false);
-                // Open AI drawer directly
-                window.dispatchEvent(new Event('open-ai-chat'));
-              }}
-            >
-              {t('itineraries')}
-            </a>
             <a href="/my-trips" className={getLinkClass('/my-trips')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('myJourney')}
             </a>
+            {onOpenPreferences && (
+              <button
+                type="button"
+                className={styles.link}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenPreferences();
+                }}
+              >
+                Preferências
+              </button>
+            )}
             <a href="/pricing" className={getLinkClass('/pricing')} onClick={() => setIsMobileMenuOpen(false)}>
               {t('pricing')}
             </a>
             
-            {/* Mobile-only sections for Language and Theme */}
+            {/* Mobile-only sections for Language */}
             <div className={styles.mobileDivider}></div>
             <div className={styles.mobileSectionTitle}>Idioma</div>
             <div className={styles.mobileLangList}>
@@ -151,38 +177,7 @@ export default function Navbar() {
               ))}
             </div>
             
-            <div className={styles.mobileDivider}></div>
-            <div className={styles.mobileSectionTitle}>Tema</div>
-            <button 
-              className={styles.mobileThemeToggle} 
-              onClick={() => {
-                toggleTheme();
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              <span>{theme === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Escuro'}</span>
-            </button>
-            
             {/* Mobile-only actions */}
-            <div className={styles.mobileActions}>
-              {user ? (
-                <>
-                  <a href="/profile" className={styles.ctaBtnMobile} onClick={() => setIsMobileMenuOpen(false)}>Perfil</a>
-                  <a href="/dashboard" className={styles.userMenuItemMobile} onClick={() => setIsMobileMenuOpen(false)}>🗺️ Dashboard</a>
-                  <button className={styles.loginBtnMobile} onClick={handleLogout}>Sair</button>
-                </>
-              ) : (
-                <>
-                  <button className={styles.loginBtnMobile} onClick={openLogin}>{t('login')}</button>
-                  <button className={styles.ctaBtnMobile} onClick={openLogin}>{t('cta')}</button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Right Actions */}
-          <div className={styles.actions}>
-
             {/* Language Selector Dropdown */}
             <div className={styles.langDropdownWrapper} ref={langDropdownRef}>
               <button 
@@ -254,22 +249,32 @@ export default function Navbar() {
             ) : (
               <button className={styles.loginBtn} onClick={() => setIsLoginOpen(true)}>{t('login')}</button>
             )}
-            
-            {/* Hamburger Toggle */}
-            <button 
-              className={`${styles.mobileToggle} ${isMobileMenuOpen ? styles.toggleActive : ''}`} 
-              aria-label="Menu"
-              onClick={toggleMobileMenu}
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
           </div>
+
+          <button
+            type="button"
+            className={`${styles.mobileToggle} ${isMobileMenuOpen ? styles.toggleActive : ''}`}
+            aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Menu'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="primary-navigation"
+            onClick={toggleMobileMenu}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
         </div>
       </nav>
       
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <LoginModal
+        isOpen={isLoginOpen}
+        initialErrorCode={authErrorCode}
+        redirectPath={pathname?.startsWith('/invitations/') ? pathname : '/my-trips'}
+        onClose={() => {
+          setIsLoginOpen(false);
+          setAuthErrorCode(null);
+        }}
+      />
     </>
   );
 }

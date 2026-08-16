@@ -2,6 +2,43 @@ import { generateFallbackAdaptedDay } from '../../lib/fallback-adapt';
 import { apiError, cleanInteger, cleanString, hasProviderKey, readJsonBody } from '../../lib/api-utils';
 import { logger } from '../../lib/logger';
 import { AI_MODELS } from '../../lib/server/ai-models';
+import { geocodeServerSide } from '../../lib/geocoding';
+import { verifyActivityCoordinates } from '../../lib/server/coordinate-verification';
+
+async function finalizeRegeneratedDay(
+  day,
+  destination,
+  { allowExistingVerifiedCoordinates = false, preferStops = false } = {},
+) {
+  if (!day || typeof day !== 'object') return day;
+  const allStops = [];
+  if (preferStops && Array.isArray(day.stops)) {
+    day.stops.forEach((activity) => allStops.push(activity));
+  } else {
+    ['morning', 'afternoon', 'evening'].forEach((period) => {
+      (day.periods?.[period]?.activities || []).forEach((activity) => {
+        activity.period = period;
+        allStops.push(activity);
+      });
+    });
+  }
+
+  await verifyActivityCoordinates(allStops, {
+    destinationCity: destination,
+    geocode: geocodeServerSide,
+    allowExistingVerifiedCoordinates,
+  });
+
+  Object.values(day.meals || {}).forEach((meal) => {
+    if (!meal || typeof meal !== 'object') return;
+    meal.coordinates = null;
+    meal.coordinateSource = 'unavailable';
+  });
+
+  day.stops = allStops;
+  day.activities = allStops;
+  return day;
+}
 
 export async function POST(req) {
   try {
@@ -39,7 +76,9 @@ Trip Context: ${JSON.stringify({
 CRITICAL INSTRUCTION:
 - Regenerate ONLY this day. DO NOT return the full itinerary. DO NOT modify other days.
 - Return ONLY the JSON object for this specific day.
-- Make sure coordinates are geographically accurate.
+- Never invent prices, ratings, schedules, opening hours, booking requirements, transport lines, or coordinates.
+- Named venues are ai_proposal candidates. Mutable facts are null unless current provider data was supplied in this request.
+- Return coordinates=null. The server resolves named places with a trusted geocoder after generation.
 - DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
   Every day title must be unique, cinematic, and evocative.
   It must make someone excited to live that specific day.
@@ -68,15 +107,15 @@ Use this exact structure for the day object:
   "emoji": "☀️",
   "theme": "activity theme",
   "moodDescription": "Poetic description",
-  "budgetEstimate": 85,
-  "weather": { "avgTemp": "18°C", "condition": "Sunny", "emoji": "☀️" },
+  "budgetEstimate": null,
+  "weather": { "avgTemp": null, "condition": null, "emoji": "" },
   "transport": {
     "mainRecommendation": "Metro",
-    "cost": 5,
-    "duration": "20 mins",
-    "tip": "Useful tip",
-    "dayPassRecommendation": "24h Pass",
-    "apps": ["App local de transportes"]
+    "cost": null,
+    "duration": null,
+    "tip": "Verify the current route, fare, and accessibility with the transport provider",
+    "dayPassRecommendation": null,
+    "apps": []
   },
   "periods": {
     "morning": {
@@ -88,13 +127,13 @@ Use this exact structure for the day object:
           "type": "culture|food|nature|etc",
           "emoji": "🏛️",
           "address": "Address",
-          "coordinates": [lat, lng],
+          "coordinates": null,
           "duration": "2h",
-          "cost": 10,
+          "cost": null,
           "crowd": "medium",
-          "bookingRequired": false,
-          "insiderTip": "Insider tip",
-          "transportFromPrevious": { "mode": "Walk", "duration": "10min", "cost": 0, "line": "" },
+          "bookingRequired": null,
+          "insiderTip": "Generated planning note; verify mutable details",
+          "transportFromPrevious": { "mode": "Walk", "duration": null, "cost": null, "line": null },
           "photoKeyword": "unsplashtag"
         }
       ]
@@ -108,13 +147,13 @@ Use this exact structure for the day object:
           "type": "culture|food|nature|etc",
           "emoji": "🏛️",
           "address": "Address",
-          "coordinates": [lat, lng],
+          "coordinates": null,
           "duration": "2h",
-          "cost": 10,
+          "cost": null,
           "crowd": "medium",
-          "bookingRequired": false,
-          "insiderTip": "Insider tip",
-          "transportFromPrevious": { "mode": "Walk", "duration": "10min", "cost": 0, "line": "" },
+          "bookingRequired": null,
+          "insiderTip": "Generated planning note; verify mutable details",
+          "transportFromPrevious": { "mode": "Walk", "duration": null, "cost": null, "line": null },
           "photoKeyword": "unsplashtag"
         }
       ]
@@ -128,27 +167,27 @@ Use this exact structure for the day object:
           "type": "culture|food|nature|etc",
           "emoji": "🏛️",
           "address": "Address",
-          "coordinates": [lat, lng],
+          "coordinates": null,
           "duration": "2h",
-          "cost": 10,
+          "cost": null,
           "crowd": "medium",
-          "bookingRequired": false,
-          "insiderTip": "Insider tip",
-          "transportFromPrevious": { "mode": "Walk", "duration": "10min", "cost": 0, "line": "" },
+          "bookingRequired": null,
+          "insiderTip": "Generated planning note; verify mutable details",
+          "transportFromPrevious": { "mode": "Walk", "duration": null, "cost": null, "line": null },
           "photoKeyword": "unsplashtag"
         }
       ]
     }
   },
   "meals": {
-    "breakfast": { "name": "Cafe Name", "type": "Breakfast", "cost": 5, "note": "Order this" },
-    "lunch": { "name": "Restaurant Name", "type": "Lunch", "cost": 15, "note": "Order this" },
-    "dinner": { "name": "Restaurant Name", "cuisine": "Cuisine", "priceRange": "€€", "cost": 25, "address": "Address", "coordinates": [lat, lng], "mustOrder": "Must order", "bookingRequired": false, "openingHours": "18:00 - 22:00", "insiderNote": "Tip" }
+    "breakfast": { "name": "Cafe candidate", "type": "Breakfast", "cost": null, "note": "Verify menu and allergens" },
+    "lunch": { "name": "Restaurant candidate", "type": "Lunch", "cost": null, "note": "Verify menu and allergens" },
+    "dinner": { "name": "Restaurant candidate", "cuisine": "Cuisine", "priceRange": null, "cost": null, "address": "Candidate area", "coordinates": null, "mustOrder": "Dish category", "bookingRequired": null, "openingHours": null, "insiderNote": "Verify directly with the venue" }
   },
-  "localSecret": "Secret",
-  "culturalNote": "Note",
+  "localSecret": "Generated planning note, not a claim about local preference",
+  "culturalNote": "Check current official visitor guidance",
   "dayHighlight": "Highlight",
-  "estimatedSteps": 10000,
+  "estimatedSteps": null,
   "packingForDay": ["Item 1"]
 }`;
 
@@ -179,20 +218,8 @@ Use this exact structure for the day object:
           const data = await response.json();
           try {
             const parsed = JSON.parse(data.choices[0].message.content);
-            if (parsed.periods) {
-              const allStops = [];
-              ['morning', 'afternoon', 'evening'].forEach(p => {
-                if (parsed.periods[p]?.activities) {
-                  parsed.periods[p].activities.forEach(act => {
-                    act.period = p;
-                    allStops.push(act);
-                  });
-                }
-              });
-              parsed.stops = allStops;
-              parsed.activities = allStops;
-            }
-            return Response.json({ day: parsed });
+            const verifiedDay = await finalizeRegeneratedDay(parsed, destination);
+            return Response.json({ day: verifiedDay });
           } catch (e) {
             logger.warn('regenerate_day:groq_parse_failed', e, { destination, dayNumber });
           }
@@ -216,43 +243,30 @@ Use this exact structure for the day object:
             theme: z.string(),
             emoji: z.string(),
             moodDescription: z.string(),
-            budgetEstimate: z.number(),
-            weather: z.object({ avgTemp: z.string(), condition: z.string(), emoji: z.string() }),
-            transport: z.object({ mainRecommendation: z.string(), cost: z.number(), duration: z.string(), tip: z.string(), dayPassRecommendation: z.string(), apps: z.array(z.string()) }),
+            budgetEstimate: z.number().nullable(),
+            weather: z.object({ avgTemp: z.string().nullable(), condition: z.string().nullable(), emoji: z.string() }),
+            transport: z.object({ mainRecommendation: z.string(), cost: z.number().nullable(), duration: z.string().nullable(), tip: z.string(), dayPassRecommendation: z.string().nullable(), apps: z.array(z.string()) }),
             periods: z.object({
-              morning: z.object({ timeRange: z.string(), activities: z.array(z.object({ name: z.string(), type: z.string(), emoji: z.string(), address: z.string(), coordinates: z.array(z.number()), duration: z.string(), cost: z.number(), crowd: z.string(), bookingRequired: z.boolean(), insiderTip: z.string(), transportFromPrevious: z.object({ mode: z.string(), duration: z.string(), cost: z.number(), line: z.string() }).optional(), photoKeyword: z.string() })) }),
-              afternoon: z.object({ timeRange: z.string(), activities: z.array(z.object({ name: z.string(), type: z.string(), emoji: z.string(), address: z.string(), coordinates: z.array(z.number()), duration: z.string(), cost: z.number(), crowd: z.string(), bookingRequired: z.boolean(), insiderTip: z.string(), transportFromPrevious: z.object({ mode: z.string(), duration: z.string(), cost: z.number(), line: z.string() }).optional(), photoKeyword: z.string() })) }),
-              evening: z.object({ timeRange: z.string(), activities: z.array(z.object({ name: z.string(), type: z.string(), emoji: z.string(), address: z.string(), coordinates: z.array(z.number()), duration: z.string(), cost: z.number(), crowd: z.string(), bookingRequired: z.boolean(), insiderTip: z.string(), transportFromPrevious: z.object({ mode: z.string(), duration: z.string(), cost: z.number(), line: z.string() }).optional(), photoKeyword: z.string() })) }),
+              morning: z.object({ timeRange: z.string(), activities: z.array(z.object({ name: z.string(), type: z.string(), emoji: z.string(), address: z.string(), coordinates: z.array(z.number()).nullable().optional(), duration: z.string(), cost: z.number().nullable(), crowd: z.string(), bookingRequired: z.boolean().nullable(), insiderTip: z.string(), transportFromPrevious: z.object({ mode: z.string(), duration: z.string().nullable(), cost: z.number().nullable(), line: z.string().nullable() }).optional(), photoKeyword: z.string() })) }),
+              afternoon: z.object({ timeRange: z.string(), activities: z.array(z.object({ name: z.string(), type: z.string(), emoji: z.string(), address: z.string(), coordinates: z.array(z.number()).nullable().optional(), duration: z.string(), cost: z.number().nullable(), crowd: z.string(), bookingRequired: z.boolean().nullable(), insiderTip: z.string(), transportFromPrevious: z.object({ mode: z.string(), duration: z.string().nullable(), cost: z.number().nullable(), line: z.string().nullable() }).optional(), photoKeyword: z.string() })) }),
+              evening: z.object({ timeRange: z.string(), activities: z.array(z.object({ name: z.string(), type: z.string(), emoji: z.string(), address: z.string(), coordinates: z.array(z.number()).nullable().optional(), duration: z.string(), cost: z.number().nullable(), crowd: z.string(), bookingRequired: z.boolean().nullable(), insiderTip: z.string(), transportFromPrevious: z.object({ mode: z.string(), duration: z.string().nullable(), cost: z.number().nullable(), line: z.string().nullable() }).optional(), photoKeyword: z.string() })) }),
             }),
             meals: z.object({
-              breakfast: z.object({ name: z.string(), type: z.string(), cost: z.number(), note: z.string() }).nullable(),
-              lunch: z.object({ name: z.string(), type: z.string(), cost: z.number(), note: z.string() }).nullable(),
-              dinner: z.object({ name: z.string(), cuisine: z.string(), priceRange: z.string(), cost: z.number(), address: z.string(), coordinates: z.array(z.number()), mustOrder: z.string(), bookingRequired: z.boolean(), openingHours: z.string(), insiderNote: z.string() }).nullable()
+              breakfast: z.object({ name: z.string(), type: z.string(), cost: z.number().nullable(), note: z.string() }).nullable(),
+              lunch: z.object({ name: z.string(), type: z.string(), cost: z.number().nullable(), note: z.string() }).nullable(),
+              dinner: z.object({ name: z.string(), cuisine: z.string(), priceRange: z.string().nullable(), cost: z.number().nullable(), address: z.string(), coordinates: z.array(z.number()).nullable().optional(), mustOrder: z.string(), bookingRequired: z.boolean().nullable(), openingHours: z.string().nullable(), insiderNote: z.string() }).nullable()
             }),
             localSecret: z.string(),
             culturalNote: z.string(),
             dayHighlight: z.string(),
-            estimatedSteps: z.number(),
+            estimatedSteps: z.number().nullable(),
             packingForDay: z.array(z.string())
           }),
           prompt: systemPrompt,
         });
 
-        if (object.periods) {
-          const allStops = [];
-          ['morning', 'afternoon', 'evening'].forEach(p => {
-            if (object.periods[p]?.activities) {
-              object.periods[p].activities.forEach(act => {
-                act.period = p;
-                allStops.push(act);
-              });
-            }
-          });
-          object.stops = allStops;
-          object.activities = allStops;
-        }
-
-        return Response.json({ day: object });
+        const verifiedDay = await finalizeRegeneratedDay(object, destination);
+        return Response.json({ day: verifiedDay });
       } catch (e) {
         logger.warn('regenerate_day:gemini_provider_failed', e, { destination, dayNumber });
       }
@@ -267,7 +281,11 @@ Use this exact structure for the day object:
     };
     const activeDayIndex = dayNumber - 1;
     const fallbackDay = generateFallbackAdaptedDay(itineraryMock, activeDayIndex, feedback);
-    return Response.json({ day: fallbackDay });
+    const verifiedDay = await finalizeRegeneratedDay(fallbackDay, destination, {
+      allowExistingVerifiedCoordinates: true,
+      preferStops: true,
+    });
+    return Response.json({ day: verifiedDay });
 
   } catch (error) {
     const errorId = logger.error('regenerate_day:unhandled', error);

@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import {
   getPlannerDayCount,
+  getPlannerNightCount,
   getPlannerStepError,
+  getPlannerStageNightTotal,
   normalizeFlexibleDays,
   normalizePlannerDraft,
+  normalizePlannerStages,
   PLANNER_DRAFT_VERSION,
 } from '../app/lib/planner-state';
 
@@ -21,6 +24,29 @@ describe('planner state and validation', () => {
       dates: { start: '2026-08-10', end: '2026-08-13' },
     })).toBe(4);
     expect(getPlannerDayCount({ datesUnknown: true, flexibleDays: 9, dates: {} })).toBe(9);
+    expect(getPlannerNightCount({
+      datesUnknown: false,
+      flexibleDays: 5,
+      dates: { start: '2026-08-10', end: '2026-08-13' },
+    })).toBe(3);
+  });
+
+  test('normalizes stages and validates exact multi-destination night allocation', () => {
+    const stages = normalizePlannerStages([
+      { destination: 'Lisboa', nights: 2 },
+      { destination: 'Porto', nights: 2, transportMode: 'train' },
+    ]);
+    expect(getPlannerStageNightTotal(stages)).toBe(4);
+    expect(getPlannerStepError(2, {
+      journeyStages: stages,
+      datesUnknown: false,
+      dates: { start: '2026-09-01', end: '2026-09-05' },
+    })).toBe('');
+    expect(getPlannerStepError(2, {
+      journeyStages: [{ ...stages[0], nights: 1 }, stages[1]],
+      datesUnknown: false,
+      dates: { start: '2026-09-01', end: '2026-09-05' },
+    })).toMatch(/exatamente 4 noites/i);
   });
 
   test('requires a client name when agency mode is enabled', () => {
@@ -46,6 +72,22 @@ describe('planner state and validation', () => {
       flexibleDays: 14,
       travelers: { adults: 2, children: 2 },
       stylesList: ['cultura', 'comida', 'arte'],
+    });
+  });
+
+  test('migrates a v1 single-destination draft without losing its selection', () => {
+    expect(normalizePlannerDraft({
+      version: 1,
+      destination: 'Coimbra, Portugal',
+      destinationEntity: { entityId: 'geo-coimbra', displayName: 'Coimbra, Portugal' },
+      flexibleDays: 4,
+    })).toMatchObject({
+      version: PLANNER_DRAFT_VERSION,
+      journeyStages: [{
+        destination: 'Coimbra, Portugal',
+        destinationEntity: { entityId: 'geo-coimbra' },
+        nights: 3,
+      }],
     });
   });
 });

@@ -22,6 +22,10 @@ alter table public.itineraries
   add column if not exists deleted_at timestamptz,
   add column if not exists legacy_quarantined_at timestamptz;
 
+-- Existing snapshots used `active` as the default. The application, RLS insert
+-- policy and local backend all create editable trips as `draft`.
+alter table public.itineraries alter column status set default 'draft';
+
 update public.itineraries
 set owner_id = user_id
 where owner_id is null
@@ -232,6 +236,60 @@ create table if not exists public.audit_events (
   constraint audit_events_metadata_object_check check (jsonb_typeof(metadata) = 'object')
 );
 
+-- Reconcile the audit table used by the pre-migration schema snapshot. Column
+-- renames preserve existing data and indexes while allowing the canonical
+-- functions below to be installed on an upgraded database.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'audit_events' and column_name = 'actor_id'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'audit_events' and column_name = 'actor_user_id'
+  ) then
+    alter table public.audit_events rename column actor_id to actor_user_id;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'audit_events' and column_name = 'target_type'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'audit_events' and column_name = 'resource_type'
+  ) then
+    alter table public.audit_events rename column target_type to resource_type;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'audit_events' and column_name = 'target_id'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'audit_events' and column_name = 'resource_id'
+  ) then
+    alter table public.audit_events rename column target_id to resource_id;
+  end if;
+
+  alter table public.audit_events
+    add column if not exists actor_user_id uuid references auth.users(id) on delete set null,
+    add column if not exists resource_type text,
+    add column if not exists resource_id uuid;
+
+  update public.audit_events
+  set resource_type = coalesce(nullif(resource_type, ''), 'legacy'),
+      resource_id = coalesce(resource_id, id)
+  where resource_type is null or resource_type = '' or resource_id is null;
+
+  alter table public.audit_events
+    alter column resource_type set not null,
+    alter column resource_id set not null,
+    alter column correlation_id type text using correlation_id::text,
+    alter column correlation_id set default gen_random_uuid()::text,
+    alter column correlation_id set not null;
+end
+$$;
+
 create index if not exists audit_events_trip_created_idx
   on public.audit_events(trip_id, created_at desc);
 create index if not exists audit_events_actor_created_idx
@@ -261,6 +319,21 @@ create table if not exists public.trip_imports (
   ),
   unique (user_id, idempotency_key)
 );
+
+-- Older snapshots called the successful terminal state `imported`. Normalize it
+-- before replacing the check constraint with the repository's `completed`
+-- contract.
+alter table public.trip_imports drop constraint if exists trip_imports_status_check;
+alter table public.trip_imports drop constraint if exists trip_imports_completion_check;
+update public.trip_imports
+set status = 'completed',
+    completed_at = coalesce(completed_at, updated_at, now())
+where status = 'imported';
+alter table public.trip_imports
+  add constraint trip_imports_status_check
+    check (status in ('pending', 'completed', 'conflict', 'failed')),
+  add constraint trip_imports_completion_check
+    check ((status = 'pending' and completed_at is null) or status <> 'pending');
 
 create unique index if not exists trip_imports_user_local_hash_idx
   on public.trip_imports(user_id, local_id, payload_hash)

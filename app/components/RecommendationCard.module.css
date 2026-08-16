@@ -1,0 +1,156 @@
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--b-1);
+  border-radius: var(--r-md, 12px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  border-color: var(--b-gold, #D4A843);
+  box-shadow: var(--s-2, 0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.titleArea {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.iconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold, #D4A843);
+  flex-shrink: 0;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t-1);
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(212, 168, 67, 0.15);
+  color: var(--gold, #D4A843);
+  letter-spacing: 0.5px;
+}
+
+.justification {
+  font-size: 13px;
+  color: var(--t-2);
+  margin: 0;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.metaPill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--t-2);
+  background: var(--bg-elevated);
+  padding: 4px 8px;
+  border-radius: var(--r-full, 16px);
+  border: 1px solid var(--b-1);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--b-1);
+}
+
+.btnPrimary {
+  flex: 1;
+  background: var(--gold, #D4A843);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  text-align: center;
+}
+.btnPrimary:hover {
+  opacity: 0.9;
+}
+
+.btnSecondary {
+  flex: 1;
+  background: var(--bg-elevated);
+  color: var(--t-1);
+  border: 1px solid var(--b-1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: center;
+}
+.btnSecondary:hover {
+  background: var(--bg-1);
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--b-1);
+  color: var(--t-2);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.iconBtn:hover {
+  background: var(--bg-elevated);
+  color: var(--t-1);
+}
+.iconBtnReject:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--coral, #EF4444);
+  border-color: rgba(239, 68, 68, 0.3);
+}
