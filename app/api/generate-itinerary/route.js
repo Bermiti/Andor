@@ -11,6 +11,7 @@ import { ensureBookingReadyItinerary } from '../../lib/booking-ready';
 import { AI_MODELS } from '../../lib/server/ai-models';
 import { isJourneyV2, validateJourneyItinerary } from '../../lib/journey-model';
 import { getRequestIdentity } from '../../lib/server/identity';
+import { verifyActivityCoordinates } from '../../lib/server/coordinate-verification';
 import {
   canonicalRequestHash,
   checkpointGenerationRequest,
@@ -230,6 +231,7 @@ async function normalizeGeneratedItinerary(
   requestedDays,
   profile = {},
   requestedDestinationEntity = null,
+  { allowExistingVerifiedCoordinates = false } = {},
 ) {
   if (!itinerary || typeof itinerary !== 'object') {
     throw new Error('Generated itinerary is not an object');
@@ -297,12 +299,6 @@ async function normalizeGeneratedItinerary(
     throw new Error(`Expected exactly ${expectedDays} days, received ${days.length}`);
   }
 
-  const isValidCoordinateLocal = (lat, lng) => {
-    if (lat === null || lat === undefined || lng === null || lng === undefined) return false;
-    if (lat === 0 && lng === 0) return false;
-    return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
-  };
-
   const seenTitles = new Set();
   const repairedDays = days.map((day, dayIndex) => {
     const nextDay = { ...day, dayNumber: day.dayNumber || dayIndex + 1 };
@@ -353,13 +349,21 @@ async function normalizeGeneratedItinerary(
     nextDay.stops = allActivities.slice(0, 4);
     nextDay.activities = nextDay.stops;
     nextDay.meals = nextDay.meals || {};
+    if (!allowExistingVerifiedCoordinates) {
+      Object.values(nextDay.meals).forEach((meal) => {
+        if (!meal || typeof meal !== 'object') return;
+        meal.coordinates = null;
+        meal.coordinateSource = 'unavailable';
+      });
+    }
     nextDay.localSecret = nextDay.localSecret || '';
     nextDay.weather = nextDay.weather || null;
     nextDay.transport = nextDay.transport || null;
     return nextDay;
   });
 
-  // Perform geocoding sequentially for all activities
+  // Only provider-resolved coordinates may reach maps or navigation. The
+  // verifier also deduplicates repeated place queries within this itinerary.
   const activitiesToGeocode = [];
   repairedDays.forEach(day => {
     ['morning', 'afternoon', 'evening'].forEach(period => {
@@ -371,35 +375,12 @@ async function normalizeGeneratedItinerary(
     });
   });
 
-  for (const act of activitiesToGeocode) {
-    if (act.type === 'planning_placeholder' || act.provenance?.sourceType === 'planning_placeholder') {
-      act.coordinates = null;
-      act.coordinateSource = 'not_applicable';
-      continue;
-    }
-    try {
-      const query = `${act.name}, ${destination.city}`;
-      const geo = await geocodeServerSide(query, country);
-      if (geo) {
-        act.coordinates = [geo.lat, geo.lng];
-        act.coordinateSource = 'nominatim';
-      } else {
-        const hasValidAiCoords = Array.isArray(act.coordinates) && 
-                                 act.coordinates.length >= 2 && 
-                                 isValidCoordinateLocal(act.coordinates[0], act.coordinates[1]);
-        if (hasValidAiCoords) {
-          act.coordinateSource = 'ai';
-        } else {
-          act.coordinates = null;
-          act.coordinateSource = 'unavailable';
-        }
-      }
-    } catch (err) {
-      console.error(`Error geocoding activity ${act.name}:`, err);
-      act.coordinates = null;
-      act.coordinateSource = 'unavailable';
-    }
-  }
+  await verifyActivityCoordinates(activitiesToGeocode, {
+    destinationCity: destination.city,
+    country,
+    geocode: geocodeServerSide,
+    allowExistingVerifiedCoordinates,
+  });
 
   const repaired = {
     ...itinerary,
@@ -420,6 +401,11 @@ async function normalizeGeneratedItinerary(
     andorInsights: Array.isArray(itinerary.andorInsights) ? itinerary.andorInsights : [],
     suggestions: Array.isArray(itinerary.suggestions) ? itinerary.suggestions : [],
   };
+
+  if (!allowExistingVerifiedCoordinates && repaired.accommodation?.recommended) {
+    repaired.accommodation.recommended.coordinates = null;
+    repaired.accommodation.recommended.coordinateSource = 'unavailable';
+  }
 
   repairGenericSuggestions(repaired, destination.city, profile);
 
@@ -573,7 +559,7 @@ export async function POST(req) {
         await markGenerationFailed('generated_itinerary_invalid', true);
         return apiError(
           'ITINERARY_DATA_INVALID',
-          'Os dados gerados nÃ£o formam um roteiro completo para todos os dias pedidos.',
+          'Os dados gerados não formam um roteiro completo para todos os dias pedidos.',
           503,
           true,
           { errors: finalValidation.errors },
@@ -598,8 +584,8 @@ export async function POST(req) {
           return apiError(
             checkpoint.status === 'lease_lost' ? 'GENERATION_LEASE_LOST' : 'ITINERARY_PERSISTENCE_FAILED',
             checkpoint.status === 'lease_lost'
-              ? 'Outra tentativa retomou esta geraÃ§Ã£o. Aguarda um momento antes de voltar a tentar.'
-              : 'NÃ£o foi possÃ­vel guardar o progresso da geraÃ§Ã£o com seguranÃ§a.',
+              ? 'Outra tentativa retomou esta geração. Aguarda um momento antes de voltar a tentar.'
+              : 'Não foi possível guardar o progresso da geração com segurança.',
             checkpoint.status === 'lease_lost' ? 409 : 503,
             true,
           );
@@ -645,8 +631,8 @@ export async function POST(req) {
           return apiError(
             completed.status === 'lease_lost' ? 'GENERATION_LEASE_LOST' : 'ITINERARY_PERSISTENCE_FAILED',
             completed.status === 'lease_lost'
-              ? 'Outra tentativa retomou esta geraÃ§Ã£o. Aguarda um momento antes de voltar a tentar.'
-              : 'O roteiro foi gerado, mas nÃ£o foi possÃ­vel guardÃ¡-lo de forma atÃ³mica.',
+              ? 'Outra tentativa retomou esta geração. Aguarda um momento antes de voltar a tentar.'
+              : 'O roteiro foi gerado, mas não foi possível guardá-lo de forma atómica.',
             completed.status === 'lease_lost' ? 409 : 503,
             true,
           );
@@ -669,7 +655,7 @@ export async function POST(req) {
         logger.warn('generate_itinerary:persistence_failed', error, { destination, days });
         return apiError(
           'ITINERARY_PERSISTENCE_FAILED',
-          'O roteiro foi gerado, mas nÃ£o foi possÃ­vel guardÃ¡-lo com seguranÃ§a. Tenta novamente.',
+          'O roteiro foi gerado, mas não foi possível guardá-lo com segurança. Tenta novamente.',
           503,
           true,
           { reason: 'storage_error' },
@@ -684,7 +670,7 @@ export async function POST(req) {
         });
         return apiError(
           'ITINERARY_PERSISTENCE_FAILED',
-          'O roteiro foi gerado, mas nÃ£o foi possÃ­vel guardÃ¡-lo com seguranÃ§a. Tenta novamente.',
+          'O roteiro foi gerado, mas não foi possível guardá-lo com segurança. Tenta novamente.',
           503,
           true,
           { reason: persisted?.reason || 'unknown' },
@@ -698,7 +684,7 @@ export async function POST(req) {
         });
         return apiError(
           'ITINERARY_PERSISTENCE_FAILED',
-          'O roteiro foi gerado, mas o armazenamento nÃ£o devolveu um identificador vÃ¡lido. Tenta novamente.',
+          'O roteiro foi gerado, mas o armazenamento não devolveu um identificador válido. Tenta novamente.',
           503,
           true,
           { reason: 'missing_persisted_id' },
@@ -858,25 +844,24 @@ CORE IDENTITY:
 - Planning times and costs are allowed only as clearly labelled estimates with assumptions.
 - Omit unsupported fields and direct the traveler to a named official source or provider for confirmation.
 
+DATA TRUST TAXONOMY — THIS OVERRIDES EVERY OTHER INSTRUCTION:
+- verified_provider or official: use only when the current request contains data returned by that named provider. The model may never self-declare a fact verified.
+- estimate: a calculation or typical range, always with provenance.sourceType="estimate", provenance.isEstimated=true, and an explicit assumption. Never present it as a live quote.
+- ai_proposal: a qualitative or named candidate proposed by the model, always with provenance.sourceType="ai_proposal" and a verification instruction.
+- unknown: use null, an empty list, or omit the optional field. Never fill a required-looking field by guessing.
+- Mutable facts such as prices, ratings, schedules, availability, opening hours, booking windows, transport line numbers, entry rules, and payment policies are unknown unless supplied by a current provider in this request.
+
 LANGUAGE RULE:
 Always respond in: ${activeLocale}
 If language is 'pt' use European Portuguese.
 If language is 'pt-BR' use Brazilian Portuguese.
 Never mix languages in the same response.
 
-DESTINATION EXPERTISE — for every place you know:
-→ Best/worst months to visit and exactly why
-→ Which neighbourhoods match which travel styles
-→ How local transport works in practice
-→ Which attractions are worth it vs tourist traps
-→ Where locals actually eat (not tourist restaurants)
-→ Price estimates only when clearly labelled; provider values only when a named provider supplied them
-→ Cultural rules that matter with specific examples
-→ Safety realities — not paranoid, not naive
-→ Hidden gems most guides never mention
-→ Optimal routing to avoid backtracking
-→ What to book in advance and how far ahead
-→ Apps locals use for transport, food, navigation
+DESTINATION GUIDANCE:
+- Offer neighbourhood, pacing, transport-mode, food-category, cultural, and seasonal guidance as ai_proposal or estimate unless current provider data is present.
+- Named venues may be candidates, never claims about where locals eat or what is currently open.
+- Safety, entry, health, and legal guidance must point to the relevant official source and must not claim current verification.
+- Optimize the proposed order geographically, but label travel times as estimates.
 
 CURRENT REQUEST ONLY:
 - Do not ask follow-up questions. Return JSON now.
@@ -894,11 +879,10 @@ ITINERARY CONSTRUCTION RULES:
 - Group activities geographically — never waste 40min 
   travelling between things on opposite sides of a city
 - Include travel-time and cost estimates only when labelled; omit values that cannot be supported
-- Every day needs: morning coffee, lunch spot, 2-3 activities,
-  dinner recommendation, optional evening activity
+- Every day needs useful meal windows or food categories, 2-3 activities, and an optional evening block. Named venues are candidates until verified.
 - Vary pace: intense day → slower recovery day
-- One "hidden gem" per day that guidebooks miss
-- Flag everything that needs advance booking
+- Optionally include a lower-traffic ai_proposal; never claim that guides omit it or locals prefer it.
+- Flag advance booking only when current provider data supports it; otherwise use bookingRequired=null and tell the traveler to check.
 - DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
   Every day title must be unique, cinematic, and evocative.
   It must make someone excited to live that specific day.
@@ -920,47 +904,26 @@ ITINERARY CONSTRUCTION RULES:
   - Any title identical or similar to another day in the same itinerary
 
 COORDINATE RULES — CRITICAL, NEVER BREAK:
-Every coordinate must be geographically accurate.
-Tokyo activities: lat 35.6-35.8, lng 139.5-139.9
-Paris activities: lat 48.8-48.9, lng 2.2-2.5
-Bali activities: lat -8.8 to -8.1, lng 114.9-115.7
-London activities: lat 51.4-51.6, lng -0.3 to 0.1
-NYC activities: lat 40.6-40.9, lng -74.1 to -73.7
-Barcelona: lat 41.3-41.5, lng 2.0-2.3
-Lisbon: lat 38.7-38.8, lng -9.2 to -9.0
-Rome: lat 41.8-42.0, lng 12.4-12.6
-Amsterdam: lat 52.3-52.4, lng 4.8-5.0
-Bangkok: lat 13.6-13.9, lng 100.4-100.7
+- Return coordinates only when they were supplied by a verified place/discovery provider in the current request.
+- Otherwise return null or omit the field. Never calculate, estimate, or copy coordinates from an example.
+- Never place an activity at the destination centroid.
 
-NEVER return zero-zero coordinates or coordinates from wrong city.
-If unsure of exact coordinates, omit them. Never place an activity at the city centroid.
+FLIGHT GUIDANCE:
+- Provide a search strategy and relevant comparison providers.
+- Leave prices, schedules, baggage policies, airlines, and booking windows unknown unless current provider data is included in the request.
+- Label any route pattern or duration as an estimate and ask the traveler to verify live results.
 
-FLIGHT KNOWLEDGE:
-- Know major hub connections and realistic prices
-- Recommend booking windows (6-8w Europe, 3-4m long-haul)
-- Flag best airlines per route with specific reasons
-- Note baggage policy differences when relevant
-- Always add: "Verify current prices on Skyscanner/Google Flights"
+ACCOMMODATION GUIDANCE:
+- Recommend areas and tiers first. Named properties are ai_proposal candidates unless supplied by a provider.
+- Explain the proposed area's routing trade-offs without claiming live availability, rating, or price.
 
-HOTEL KNOWLEDGE — 3 tiers per destination:
-Budget: hostels/guesthouses with character, not just cheap
-Mid-range: 3-4★ with soul, avoid generic chains
-Luxury: genuinely special, not just expensive
-Always explain: why this neighbourhood, what's walkable
+FOOD GUIDANCE:
+- Prefer cuisine, neighbourhood, and meal-format suggestions. Named restaurants are ai_proposal candidates.
+- Price, booking need, opening hours, payment policy, ratings, and availability remain null unless a current provider supplied them.
 
-RESTAURANT KNOWLEDGE — per recommendation include:
-- Cuisine type, price range (€/€€/€€€), must-order dish
-- Whether booking needed and how far in advance
-- Opening hours that catch tourists off guard
-- Cash vs card policy
-- Local tip about the best table/time to go
-
-TRANSPORT KNOWLEDGE:
-- Specific metro/bus lines with numbers
-- Whether passes/cards are worth it with math proof
-- Best local taxi/rideshare apps by country
-- Train passes: when worth it vs point-to-point
-- Airport transfer options ranked by value
+TRANSPORT GUIDANCE:
+- Recommend modes and verification steps. Use specific lines, passes, apps, fares, and schedules only when current provider data supports them.
+- Any duration or cost without provider data is an estimate with assumptions.
 
 BOOKING-READY RULES:
 - Never claim flights, hotels, restaurants, activities, cars, or transfers are booked.
@@ -968,482 +931,27 @@ BOOKING-READY RULES:
 - Return search links or provider links for flights, hotels, rental cars, restaurants, and activities when possible.
 - Every booking task starts with status "not_started" unless the user explicitly supplied a real confirmation.
 - Include manual fields the traveler can fill later: reference, price, notes, and status.
-- If live provider data is missing, use honest fallback search links and label them as estimates.
+- If live provider data is missing, use generic provider search links; a link is not evidence that a venue, fare, or booking is available.
 - Include airport arrival/departure planning, local transport, rental car advice, documents, alerts, and contingency plans.
 
 WHEN GENERATING ITINERARY JSON:
 Return ONLY valid JSON. No markdown. No explanation text.
-Use this exact structure:
-
-{
-  "destination": {
-    "city": "Tokyo",
-    "country": "Japan",
-    "countryCode": "JP",
-    "flag": "🇯🇵",
-    "coordinates": [35.6762, 139.6503],
-    "timezone": "Asia/Tokyo",
-    "currency": {
-      "code": "JPY",
-      "symbol": "¥",
-      "euroRate": 0.006,
-      "usdRate": 0.0067
-    },
-    "language": "Japanese",
-    "bestMonths": ["March", "April", "October", "November"],
-    "avoidMonths": ["July", "August"],
-    "andorVerdict": "Tokyo rewards those who go beyond the obvious — the real city lives in its backstreets, 24h konbinis, and the silence of pre-dawn shrines",
-    "visaInfo": "Visa-free for EU/US passports, 90 days",
-    "healthInfo": "No vaccinations required. Tap water safe.",
-    "safetyLevel": "Exceptional — one of the safest cities on earth",
-    "tippingCulture": "Never tip — considered rude or confusing",
-    "electricityPlug": "Type A/B, 100V",
-    "simCard": "IIJmio or Mobal — buy at airport"
-  },
-  "trip": {
-    "totalDays": 7,
-    "travelStyle": "cultural",
-    "groupType": "couple",
-    "budgetTier": "mid-range",
-    "budgetBreakdown": {
-      "flights": {
-        "min": 650, "max": 900,
-        "currency": "EUR",
-        "note": "From Lisbon, 1 stop via Helsinki or Frankfurt",
-        "bookingWindow": "3-4 months ahead"
-      },
-      "accommodation": {
-        "total": 840, "perNight": 120,
-        "currency": "EUR",
-        "nights": 7
-      },
-      "food": {
-        "total": 280, "perDay": 40,
-        "currency": "EUR",
-        "note": "Mix of convenience stores, ramen shops, izakayas"
-      },
-      "transport": {
-        "total": 120,
-        "currency": "EUR",
-        "note": "Suica card covers everything"
-      },
-      "activities": {
-        "total": 180,
-        "currency": "EUR",
-        "note": "Most temples free or under €5"
-      },
-      "grandTotal": {
-        "min": 2070, "max": 2520,
-        "currency": "EUR",
-        "perPerson": true,
-        "includes": "flights + hotel + food + transport + activities"
-      }
-    },
-    "topTips": [
-      "Get a Suica card the moment you exit immigration — use it for everything including convenience stores",
-      "Book teamLab Planets 6-8 weeks ahead — it sells out completely every weekend",
-      "7-Eleven and Lawson onigiri at 6am before stock runs out — genuinely one of Tokyo's great food experiences"
-    ]
-  },
-  "flightOptions": [
-    {
-      "airline": "Finnair",
-      "route": "LIS → HEL → NRT",
-      "totalDuration": "14h 30m",
-      "stops": 1,
-      "layover": "Helsinki, 1h 45m",
-      "estimatedPrice": {
-        "economy": 720,
-        "premiumEconomy": 1200,
-        "business": 2100,
-        "currency": "EUR"
-      },
-      "bestBookingWindow": "3-4 months in advance",
-      "baggage": "23kg checked + 8kg cabin",
-      "prosAndCons": "Comfortable A350, good food, tight connection risk",
-      "badge": "recommended",
-      "skyscannerUrl": "https://www.skyscanner.com/flights/lis/tyo/"
-    },
-    {
-      "airline": "Lufthansa",
-      "route": "LIS → FRA → NRT",
-      "totalDuration": "15h 50m",
-      "stops": 1,
-      "layover": "Frankfurt, 2h 10m",
-      "estimatedPrice": {
-        "economy": 680,
-        "business": 1950,
-        "currency": "EUR"
-      },
-      "badge": "best_price",
-      "skyscannerUrl": "https://www.skyscanner.com/flights/lis/tyo/"
-    }
-  ],
-  "accommodation": {
-    "recommended": {
-      "name": "Hotel Gracery Shinjuku",
-      "area": "Shinjuku",
-      "stars": 4,
-      "pricePerNight": 130,
-      "currency": "EUR",
-      "coordinates": [35.6938, 139.7034],
-      "address": "1-19-1 Kabukicho, Shinjuku-ku, Tokyo",
-      "whyHere": "Iconic Godzilla head on facade. 8 min walk to Shinjuku station. Perfect base for exploring both east and west Tokyo.",
-      "bookingTip": "Book direct for best rate + free early check-in if available",
-      "bookingUrl": "https://www.booking.com/hotel/jp/gracery-shinjuku.html",
-      "checkIn": "15:00",
-      "checkOut": "11:00"
-    },
-    "budget": {
-      "name": "Khaosan Tokyo Kabuki",
-      "type": "Boutique Hostel",
-      "area": "Asakusa",
-      "pricePerNight": 35,
-      "currency": "EUR",
-      "whyHere": "Best location in Asakusa, 2 min from Senso-ji, great common areas",
-      "bookingUrl": "https://www.booking.com/hotel/jp/khaosan-tokyo-kabuki.html"
-    },
-    "luxury": {
-      "name": "Park Hyatt Tokyo",
-      "type": "5★ Iconic",
-      "area": "Shinjuku",
-      "pricePerNight": 480,
-      "currency": "EUR",
-      "whyHere": "The hotel from Lost in Translation. Bar on 52nd floor. Unbeatable skyline views.",
-      "bookingUrl": "https://www.hyatt.com/en-US/hotel/japan/park-hyatt-tokyo"
-    }
-  },
-  "airportTransfer": {
-    "overview": "Arrival and departure transfer strategy",
-    "options": [
-      {
-        "tier": "budget",
-        "name": "Public transport",
-        "description": "How to get from the airport to the base area",
-        "estimatedCost": 12,
-        "estimatedDuration": "45 min",
-        "bestFor": "lowest cost"
-      }
-    ],
-    "tips": ["Save hotel address offline before landing"]
-  },
-  "localTransport": {
-    "overview": "How to move day to day",
-    "passes": [{ "name": "Transit card", "cost": 10, "validity": "stored value", "includes": ["metro", "bus"], "recommendation": "Worth it for 3+ rides/day" }],
-    "apps": [{ "name": "Local transit app", "purpose": "public transport schedules" }],
-    "tips": ["Group each day by neighborhood"]
-  },
-  "rentalCar": {
-    "recommended": false,
-    "strategy": "Use only for regional day trips if public transport is weak",
-    "pickup": "Airport or city pickup advice",
-    "insuranceNote": "Verify excess and coverage; do not store payment data",
-    "parkingNote": "Check hotel parking and city restrictions",
-    "searchLinks": { "rentalCars": "https://www.rentalcars.com/" },
-    "bookingStatus": "not_started"
-  },
-  "bookingChecklist": {
-    "items": [
-      {
-        "id": "flights",
-        "category": "flights",
-        "task": "Search and select flights",
-        "description": "Compare live prices, baggage, arrival time, and cancellation rules",
-        "priority": "critical",
-        "status": "not_started",
-        "daysBeforeDeparture": 90,
-        "searchUrl": "https://www.google.com/travel/flights",
-        "reference": "",
-        "price": "",
-        "notes": ""
-      }
-    ],
-    "notes": "Manual checklist only; nothing is booked by Andor"
-  },
-  "documentsChecklist": {
-    "items": [
-      {
-        "id": "passport",
-        "category": "identity",
-        "title": "Passport or national ID valid for entry",
-        "description": "Confirm accepted ID, validity window, blank-page rules, and name spelling",
-        "importance": "required",
-        "whoNeedsIt": "Every traveler",
-        "timing": "60+ days before departure",
-        "status": "needed",
-        "notes": "",
-        "sourceReason": "Core travel document; verify official entry rules"
-      }
-    ]
-  },
-  "backupPlans": {
-    "items": [
-      {
-        "id": "bad_weather",
-        "category": "weather",
-        "severity": "medium",
-        "trigger": "Bad weather or unsafe outdoor conditions",
-        "replacementPlan": "Same-area indoor/covered route",
-        "costImpact": "Neutral to moderate",
-        "timeImpact": "Keep same half-day block",
-        "moveOrCancel": "Move exposed outdoor stops first",
-        "practicalNote": "Check hours and transport the night before",
-        "clientFacing": "If weather turns, the day pivots to covered stops without losing the main rhythm",
-        "sourceReason": "Weather-safe operating fallback"
-      }
-    ],
-    "notes": "Backup plans are operational fallbacks; verify provider policies and live conditions"
-  },
-  "warnings": [
-    { "type": "practical", "title": "Verify live details", "description": "Prices and opening hours can change", "advice": "Confirm before paying" }
-  ],
-  "contingencyPlans": {
-    "rainyDay": "Specific rainy-day replacement plan",
-    "delayRecovery": "What to move if arrival is delayed",
-    "tiredDay": "Lower-energy version",
-    "lowerBudget": "How to reduce cost without ruining the day"
-  },
-  "exportMetadata": {
-    "brand": "Andor",
-    "clientName": "",
-    "companyName": "",
-    "preparedBy": "",
-    "budgetApprovalStatus": "not_requested",
-    "bookingStatus": "not_started",
-    "clientFacingNotes": "",
-    "internalNotes": ""
-  },
-  "days": [
-    {
-      "dayNumber": 1,
-      "title": "Aterragem & Primeiros Passos em Shinjuku",
-      "emoji": "🛬",
-      "theme": "arrival",
-      "moodDescription": "O cansaço de 14 horas dissolve-se quando o skyline de Tokyo aparece à janela do táxi",
-      "budgetEstimate": 85,
-      "weather": {
-        "avgTemp": "18°C",
-        "condition": "Parcialmente nublado",
-        "emoji": "⛅",
-        "tip": "Leva uma camada leve para a noite"
-      },
-      "transport": {
-        "mainMode": "Narita Express (N'EX)",
-        "fromAirport": {
-          "option": "Narita Express",
-          "duration": "90 min",
-          "cost": 30,
-          "currency": "EUR",
-          "tip": "Compra o Suica card antes de apanhar o comboio"
-        },
-        "dayCard": {
-          "name": "Suica Card",
-          "cost": 5,
-          "note": "Carrega €30 — usa em metro, comboio e convenience stores"
-        },
-        "apps": ["Hyperdia", "Suica app"],
-        "totalDayCost": 35
-      },
-      "periods": {
-        "morning": {
-          "label": "Manhã",
-          "emoji": "🌅",
-          "timeRange": "— em viagem —",
-          "activities": []
-        },
-        "afternoon": {
-          "label": "Tarde",
-          "emoji": "☀️",
-          "timeRange": "15:00 — 19:00",
-          "activities": [
-            {
-              "id": "d1-af-1",
-              "name": "Check-in & Exploração de Shinjuku",
-              "type": "orientation",
-              "emoji": "🏙️",
-              "address": "Shinjuku, Tokyo",
-              "coordinates": [35.6896, 139.6917],
-              "startTime": "15:30",
-              "duration": "2h 30m",
-              "cost": 0,
-              "currency": "EUR",
-              "bookingRequired": false,
-              "crowd": "high",
-              "crowdTip": "Más horas: 17-19h (hora de ponta). Melhor: 15-17h",
-              "insiderTip": "Explora a Golden Gai — 6 ruas com 200+ micro-bares. Não entres no primeiro que vês, caminha até ao fundo onde os locais vão",
-              "skipIf": "Estás completamente esgotado — nesse caso vai directo ao hotel",
-              "transportFromPrevious": {
-                "mode": "🚃 Narita Express",
-                "line": "JR Narita Express",
-                "duration": "90 min",
-                "cost": 30,
-                "currency": "EUR",
-                "directions": "Aeroporto Narita → Shinjuku Station"
-              },
-              "photoKeyword": "shinjuku neon night tokyo cityscape"
-            }
-          ]
-        },
-        "evening": {
-          "label": "Noite",
-          "emoji": "🌙",
-          "timeRange": "19:00 — 23:00",
-          "activities": [
-            {
-              "id": "d1-ev-1",
-              "name": "Omoide Yokocho (Ruela da Memória)",
-              "type": "food",
-              "emoji": "🍢",
-              "address": "1 Chome-2 Nishishinjuku, Shinjuku City, Tokyo",
-              "coordinates": [35.6931, 139.6998],
-              "startTime": "19:30",
-              "duration": "1h 30m",
-              "cost": 25,
-              "currency": "EUR",
-              "bookingRequired": false,
-              "crowd": "high",
-              "mustOrder": "Yakitori variado + Sapporo draft",
-              "insiderTip": "Senta no balcão da tasca com mais fumo a sair — estão a grelhar ao momento. Cash only — ATM no 7-Eleven a 50m",
-              "transportFromPrevious": {
-                "mode": "🚶 A pé",
-                "duration": "5 min",
-                "cost": 0,
-                "directions": "Hotel → Omoide Yokocho, saída oeste da Shinjuku Station"
-              },
-              "photoKeyword": "omoide yokocho yakitori smoke shinjuku"
-            },
-            {
-              "id": "d1-ev-2",
-              "name": "Observatório Tokyo Metropolitan Government",
-              "type": "viewpoint",
-              "emoji": "🌆",
-              "address": "2-8-1 Nishishinjuku, Shinjuku City, Tokyo",
-              "coordinates": [35.6896, 139.6921],
-              "startTime": "21:00",
-              "duration": "45 min",
-              "cost": 0,
-              "currency": "EUR",
-              "bookingRequired": false,
-              "crowd": "medium",
-              "insiderTip": "GRÁTIS. Mesma vista que o Tokyo Skytree que custa €15. Abre até às 22:30. North Tower tem menos fila que South Tower.",
-              "transportFromPrevious": {
-                "mode": "🚶 A pé",
-                "duration": "8 min",
-                "cost": 0
-              },
-              "photoKeyword": "tokyo skyline night observation deck shinjuku"
-            }
-          ]
-        }
-      },
-      "meals": {
-        "breakfast": null,
-        "lunch": {
-          "name": "7-Eleven no Aeroporto Narita",
-          "type": "convenience",
-          "emoji": "🍙",
-          "cost": 8,
-          "mustOrder": "Onigiri de salmão + chá verde quente",
-          "note": "Os onigiri japoneses são genuinamente bons — não é fast food, é cultura"
-        },
-        "dinner": {
-          "name": "Omoide Yokocho",
-          "cuisine": "Yakitori japonês",
-          "emoji": "🍢",
-          "priceRange": "€€",
-          "cost": 25,
-          "address": "1-2 Nishishinjuku, Shinjuku, Tokyo",
-          "coordinates": [35.6931, 139.6998],
-          "mustOrder": "Yakitori misto (negima, tsukune, kawa) + Sapporo",
-          "bookingRequired": false,
-          "openingHours": "17:00 — 00:00",
-          "paymentNote": "Cash only. ATM no 7-Eleven ao lado.",
-          "insiderNote": "Escolhe a tasca mais pequena e fumegante — as grandes viraram turísticas"
-        }
-      },
-      "localSecret": "O observatório do Tokyo Metropolitan Government Building é completamente gratuito e fecha às 22:30 — tens a mesma vista do Skytree mas sem pagar os €15 de entrada.",
-      "culturalNote": "Remove sempre os sapatos ao entrar em espaços com tatami. Nunca dês gorjeta — pode ser interpretado como insulto.",
-      "packingForDay": ["Suica card carregado", "Yen em notas pequenas (muitos sítios só aceitam cash)", "Camada leve"],
-      "emergencyInfo": {
-        "policeNumber": "110",
-        "ambulanceNumber": "119",
-        "nearestHospital": "Tokyo Medical University Hospital (3km)",
-        "embassyPT": "Embaixada de Portugal em Tokyo: +81-3-5212-7322"
-      }
-    }
-  ],
-  "packingList": {
-    "essential": [
-      "Adaptador tipo A/B (100V japonês — carregadores europeus funcionam mas verifica voltagem)",
-      "Bolsa pequena de ombro (metros japoneses são lotados, mochila grande é problema)",
-      "Carteira extra para yen em notas"
-    ],
-    "weatherSpecific": [
-      "Camada leve para noites de Março/Abril",
-      "Guarda-chuva compacto (chuva imprevisível)"
-    ],
-    "appsMustHave": [
-      "App oficial/local de transportes para horarios recentes",
-      "Google Translate — modo câmara para menus em japonês",
-      "Tabelog — avaliações de restaurantes pelos locais",
-      "Hyperdia — horários de comboios precisos"
-    ],
-    "doNotBring": [
-      "Mala grande — os metros e ryokans não têm espaço",
-      "Dinheiro em excesso à vista — é o país mais seguro do mundo mas não precisas"
-    ]
-  },
-  "nearbyEscapes": [
-    {
-      "name": "Kyoto",
-      "country": "Japan",
-      "distance": "2h 15m de Shinkansen",
-      "transportCost": 70,
-      "currency": "EUR",
-      "idealFor": "Cultura, templos, geishas, jardins zen",
-      "addDays": 3,
-      "mustSee": "Fushimi Inari ao nascer do sol, Arashiyama bamboo grove",
-      "andorVerdict": "Vale MUITO a pena como extensão — é o oposto de Tokyo e complementa perfeitamente"
-    },
-    {
-      "name": "Hakone",
-      "country": "Japan",
-      "distance": "1h 30m de comboio",
-      "transportCost": 25,
-      "currency": "EUR",
-      "idealFor": "Vista do Monte Fuji, onsen, natureza",
-      "addDays": 1,
-      "tip": "Fica o dia todo — o Fuji aparece melhor de manhã cedo antes das nuvens"
-    }
-  ],
-  "andorInsights": [
-    "Tokyo tem mais estrelas Michelin do que qualquer outra cidade do mundo — e come-se excepcionalmente bem por €8 num ramen local sem estrelas",
-    "O metro de Tokyo é intimidante ao primeiro olhar mas tem sinalização em inglês em toda a parte. Em 20 minutos já navegas com confiança",
-    "As máquinas de venda automática vendem cerveja quente, sopa miso e ovos cozidos. São parte da cultura, não uma curiosidade — usa-as"
-  ],
-  "suggestions": [
-    "Adicionar dia em Kyoto (+€70 transporte)?",
-    "Versão mais económica do orçamento?",
-    "Foco especial em gastronomia?"
-  ]
-}
+Use this compact contract; optional sections may be omitted when data is unknown:
+- destination: city/country identity plus provider-supplied coordinates or null.
+- trip: requested duration/profile plus estimated budget ranges carrying assumptions and estimate provenance.
+- flightOptions: provider results only; otherwise an empty list and a generic search strategy.
+- accommodation: area/tier guidance; any named property is an ai_proposal with verification guidance.
+- days: exactly the requested number, each with unique title, periods, activities, meals, transport guidance, and contingency notes.
+- each activity: name/type/address candidate, coordinates=null, mutable facts=null, photoKeyword, and provenance. Coordinates are resolved after generation by the trusted geocoder.
+- packingList, nearbyEscapes, and suggestions: contextual qualitative proposals without invented mutable facts.
+- metadata.assumptions: every planning assumption used.
+- metadata.dataQuality: distinguish verified_provider, official, estimate, ai_proposal, and unknown values.
+Do not copy concrete destination data from examples. The current request is the only source of trip context.
 
 CRITICAL RULES — NEVER BREAK THESE:
 
-1. COORDINATE ACCURACY (MANDATORY):
-Every coordinate must be geographically accurate for the destination.
-Tokyo: lat 35.6-35.8, lng 139.5-139.9
-Paris: lat 48.8-48.9, lng 2.2-2.5
-Bali: lat -8.8 to -8.1, lng 114.9-115.7
-London: lat 51.4-51.6, lng -0.3 to 0.1
-NYC: lat 40.6-40.9, lng -74.1 to -73.7
-Barcelona: lat 41.3-41.5, lng 2.0-2.3
-Lisbon: lat 38.7-38.8, lng -9.2 to -9.0
-Rome: lat 41.8-42.0, lng 12.4-12.6
-Amsterdam: lat 52.3-52.4, lng 4.8-5.0
-Bangkok: lat 13.6-13.9, lng 100.4-100.7
-NEVER return zero-zero coordinates or coordinates from a different city.
-If unsure of exact coordinates, omit them. Never place an activity at the city centroid.
+1. COORDINATE PROVENANCE (MANDATORY):
+Return null unless a coordinate came from a verified provider record supplied in this request. Never estimate coordinates.
 
 2. UNIQUE DAY TITLES (MANDATORY):
 DAY TITLES — ABSOLUTE RULE, NEVER BREAK:
@@ -1470,10 +978,10 @@ PERMANENTLY BANNED (never use these patterns):
 - Max 3-4 major activities per day
 - Group activities geographically — never backtrack
 - Include travel-time and cost estimates only when labelled; omit values that cannot be supported
-- Every day: morning coffee, lunch spot, activities, dinner, optional evening
+- Every day: meal windows or food categories, activities, and an optional evening block
 - Vary pace: intense day followed by slower recovery day
-- One hidden gem per day that guidebooks miss
-- Flag everything needing advance booking
+- Named venues and lower-traffic ideas are ai_proposal candidates until provider verification
+- Use bookingRequired=null unless a current provider supplied booking information
 
 4. RESPONSE FORMAT:
 Return ONLY valid JSON. No markdown wrapping. No explanation text outside JSON.`;
@@ -1498,9 +1006,9 @@ Qualitative traveler personality:
 - Accommodation philosophy: ${personalityContext.hotelPreference || 'not specified'}
 Use these qualitative answers to tune tone, pacing, neighborhoods, hotel tier, and hidden-gem choices. Do not treat them as rigid filters.
 Constraints:
-- Dietary restrictions: ${dietaryRestrictions.length > 0 ? dietaryRestrictions.join(', ') : 'None'}. Make sure all recommended meals/restaurants accommodate these restrictions.
+- Dietary restrictions: ${dietaryRestrictions.length > 0 ? dietaryRestrictions.join(', ') : 'None'}. Propose suitable food categories and tell the traveler to confirm allergens directly with the venue.
 - Reduced mobility: ${mobilityReduced ? 'YES (Strict accessibility constraint. Only include wheelchair/mobility accessible activities, avoid steep hikes, long stairs, or excessive walking. Prioritize ground/accessible transport).' : 'No special mobility constraints.'}
-- Transport preference: ${transportPreference === 'public' ? 'Prefer public transport with exact lines/passes.' : transportPreference === 'car' ? 'Prefer rent-a-car where useful; include parking/logistics.' : transportPreference === 'walk' ? 'Prefer walkable neighborhood clusters and short transfers.' : transportPreference === 'avoid flights' ? 'Prefer ground transport (trains, buses) over domestic flights.' : transportPreference === 'ground only' ? 'Strictly ground transport only.' : 'Any transport mode allowed.'}
+- Transport preference: ${transportPreference === 'public' ? 'Prefer public transport modes; line numbers, schedules, passes, and fares require current provider data.' : transportPreference === 'car' ? 'Prefer rent-a-car where useful; include parking/logistics as verification tasks.' : transportPreference === 'walk' ? 'Prefer walkable neighborhood clusters and short estimated transfers.' : transportPreference === 'avoid flights' ? 'Prefer ground transport (trains, buses) over domestic flights.' : transportPreference === 'ground only' ? 'Strictly ground transport only.' : 'Any transport mode allowed.'}
 - Location data: include addresses when useful, but do not promise live navigation or turn-by-turn directions.
 - Images: every activity photoKeyword must be specific enough for image search: exact place + city + country + category. Never use just "travel", "landmark", "food", or a city name alone.
 - Suggestions: return 3-5 chips that are natural next actions for this exact itinerary, e.g. neighbourhood swap, food upgrade, rainy-day version, child-friendly pacing, not generic "adjust itinerary".
@@ -1565,6 +1073,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
               allocatedDays,
               generationProfile,
               stageDestination,
+              { allowExistingVerifiedCoordinates: true },
             );
           },
           onCheckpoint: async (checkpoint) => {
@@ -1590,7 +1099,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
         await markGenerationFailed('multi_destination_generation_failed', true);
         return apiError(
           'MULTI_DESTINATION_GENERATION_FAILED',
-          'NÃ£o foi possÃ­vel concluir todas as etapas. O progresso seguro foi mantido para nova tentativa.',
+          'Não foi possível concluir todas as etapas. O progresso seguro foi mantido para nova tentativa.',
           503,
           true,
           { errors: error?.errors || [error?.code || error?.message || 'unknown'] },
@@ -1645,6 +1154,14 @@ Return ONLY valid JSON matching the exact requested schema.`;
         const { generateObject } = await import('ai');
         const { z } = await import('zod');
 
+        const provenanceSchema = z.object({
+          sourceType: z.enum(['official', 'verified_provider', 'estimate', 'ai_proposal', 'unknown']),
+          provider: z.string().optional(),
+          isEstimated: z.boolean().optional(),
+          assumption: z.string().optional(),
+          verificationRequired: z.boolean().optional(),
+        }).optional();
+
         const { object } = await generateObject({
           model: google(AI_MODELS.google),
           schema: z.object({
@@ -1653,22 +1170,22 @@ Return ONLY valid JSON matching the exact requested schema.`;
               country: z.string(),
               countryCode: z.string(),
               flag: z.string(),
-              coordinates: z.array(z.number()),
-              timezone: z.string(),
+              coordinates: z.array(z.number()).nullable().optional(),
+              timezone: z.string().nullable().optional(),
               currency: z.object({
                 code: z.string(),
                 symbol: z.string(),
-                euroRate: z.number(),
+                euroRate: z.number().nullable().optional(),
                 usdRate: z.number().optional()
               }),
               language: z.string(),
-              bestMonths: z.array(z.string()),
-              avoidMonths: z.array(z.string()),
+              bestMonths: z.array(z.string()).optional(),
+              avoidMonths: z.array(z.string()).optional(),
               andorVerdict: z.string(),
-              visaInfo: z.string(),
-              healthInfo: z.string(),
-              safetyLevel: z.string(),
-              tippingCulture: z.string(),
+              visaInfo: z.string().nullable().optional(),
+              healthInfo: z.string().nullable().optional(),
+              safetyLevel: z.string().nullable().optional(),
+              tippingCulture: z.string().nullable().optional(),
               electricityPlug: z.string().optional(),
               simCard: z.string().optional()
             }),
@@ -1678,12 +1195,12 @@ Return ONLY valid JSON matching the exact requested schema.`;
               groupType: z.string(),
               budgetTier: z.string(),
               budgetBreakdown: z.object({
-                flights: z.object({ min: z.number(), max: z.number(), currency: z.string(), note: z.string(), bookingWindow: z.string().optional() }),
-                accommodation: z.object({ total: z.number(), perNight: z.number(), currency: z.string(), nights: z.number().optional() }),
-                food: z.object({ total: z.number(), perDay: z.number(), currency: z.string(), note: z.string().optional() }),
-                transport: z.object({ total: z.number(), currency: z.string(), note: z.string().optional() }),
-                activities: z.object({ total: z.number(), currency: z.string(), note: z.string().optional() }),
-                grandTotal: z.object({ min: z.number(), max: z.number(), currency: z.string(), perPerson: z.boolean(), includes: z.string().optional() })
+                flights: z.object({ min: z.number(), max: z.number(), currency: z.string(), note: z.string(), bookingWindow: z.string().nullable().optional(), provenance: provenanceSchema }),
+                accommodation: z.object({ total: z.number(), perNight: z.number(), currency: z.string(), nights: z.number().optional(), provenance: provenanceSchema }),
+                food: z.object({ total: z.number(), perDay: z.number(), currency: z.string(), note: z.string().optional(), provenance: provenanceSchema }),
+                transport: z.object({ total: z.number(), currency: z.string(), note: z.string().optional(), provenance: provenanceSchema }),
+                activities: z.object({ total: z.number(), currency: z.string(), note: z.string().optional(), provenance: provenanceSchema }),
+                grandTotal: z.object({ min: z.number(), max: z.number(), currency: z.string(), perPerson: z.boolean(), includes: z.string().optional(), provenance: provenanceSchema })
               }),
               topTips: z.array(z.string())
             }),
@@ -1693,48 +1210,52 @@ Return ONLY valid JSON matching the exact requested schema.`;
               totalDuration: z.string(),
               stops: z.number(),
               layover: z.string().optional(),
-              estimatedPrice: z.object({
+                estimatedPrice: z.object({
                 economy: z.number(),
                 premiumEconomy: z.number().optional(),
                 business: z.number(),
                 currency: z.string()
-              }),
-              bestBookingWindow: z.string().optional(),
-              baggage: z.string().optional(),
+                }).nullable().optional(),
+              bestBookingWindow: z.string().nullable().optional(),
+              baggage: z.string().nullable().optional(),
               prosAndCons: z.string().optional(),
               badge: z.string(),
-              skyscannerUrl: z.string()
+              skyscannerUrl: z.string(),
+              provenance: provenanceSchema
             })),
             accommodation: z.object({
               recommended: z.object({
                 name: z.string(),
                 area: z.string(),
-                stars: z.number(),
-                pricePerNight: z.number(),
+                stars: z.number().nullable(),
+                pricePerNight: z.number().nullable(),
                 currency: z.string(),
-                coordinates: z.array(z.number()),
+                coordinates: z.array(z.number()).nullable().optional(),
                 address: z.string().optional(),
                 whyHere: z.string(),
                 bookingTip: z.string().optional(),
                 bookingUrl: z.string().optional(),
                 checkIn: z.string().optional(),
-                checkOut: z.string().optional()
+                checkOut: z.string().optional(),
+                provenance: provenanceSchema
               }),
               budget: z.object({
                 name: z.string(),
-                pricePerNight: z.number(),
+                pricePerNight: z.number().nullable(),
                 type: z.string(),
                 area: z.string(),
                 whyHere: z.string().optional(),
-                bookingUrl: z.string().optional()
+                bookingUrl: z.string().optional(),
+                provenance: provenanceSchema
               }),
               luxury: z.object({
                 name: z.string(),
-                pricePerNight: z.number(),
+                pricePerNight: z.number().nullable(),
                 type: z.string(),
                 area: z.string(),
                 whyHere: z.string().optional(),
-                bookingUrl: z.string().optional()
+                bookingUrl: z.string().optional(),
+                provenance: provenanceSchema
               })
             }),
             days: z.array(z.object({
@@ -1744,7 +1265,7 @@ Return ONLY valid JSON matching the exact requested schema.`;
               emoji: z.string(),
               moodDescription: z.string(),
               budgetEstimate: z.number(),
-              weather: z.object({ avgTemp: z.string(), condition: z.string(), emoji: z.string(), tip: z.string().optional() }),
+              weather: z.object({ avgTemp: z.string().nullable(), condition: z.string().nullable(), emoji: z.string().optional(), tip: z.string().optional(), provenance: provenanceSchema }).nullable().optional(),
               transport: z.object({
                 mainMode: z.string().optional(),
                 fromAirport: z.object({ option: z.string(), duration: z.string(), cost: z.number(), currency: z.string(), tip: z.string().optional() }).optional(),
@@ -1763,12 +1284,12 @@ Return ONLY valid JSON matching the exact requested schema.`;
                     type: z.string(),
                     emoji: z.string(),
                     address: z.string(),
-                    coordinates: z.array(z.number()),
+                    coordinates: z.array(z.number()).nullable().optional(),
                     startTime: z.string().optional(),
                     duration: z.string(),
-                    cost: z.number(),
+                    cost: z.number().nullable(),
                     currency: z.string().optional(),
-                    bookingRequired: z.boolean(),
+                    bookingRequired: z.boolean().nullable(),
                     crowd: z.string(),
                     crowdTip: z.string().optional(),
                     insiderTip: z.string().optional(),
@@ -1777,11 +1298,13 @@ Return ONLY valid JSON matching the exact requested schema.`;
                       mode: z.string(),
                       line: z.string().optional(),
                       duration: z.string(),
-                      cost: z.number(),
+                      cost: z.number().nullable(),
                       currency: z.string().optional(),
-                      directions: z.string().optional()
+                      directions: z.string().optional(),
+                      provenance: provenanceSchema
                     }).optional(),
-                    photoKeyword: z.string()
+                    photoKeyword: z.string(),
+                    provenance: provenanceSchema
                   }))
                 }),
                 afternoon: z.object({
@@ -1794,12 +1317,12 @@ Return ONLY valid JSON matching the exact requested schema.`;
                     type: z.string(),
                     emoji: z.string(),
                     address: z.string(),
-                    coordinates: z.array(z.number()),
+                    coordinates: z.array(z.number()).nullable().optional(),
                     startTime: z.string().optional(),
                     duration: z.string(),
-                    cost: z.number(),
+                    cost: z.number().nullable(),
                     currency: z.string().optional(),
-                    bookingRequired: z.boolean(),
+                    bookingRequired: z.boolean().nullable(),
                     crowd: z.string(),
                     crowdTip: z.string().optional(),
                     insiderTip: z.string().optional(),
@@ -1808,11 +1331,13 @@ Return ONLY valid JSON matching the exact requested schema.`;
                       mode: z.string(),
                       line: z.string().optional(),
                       duration: z.string(),
-                      cost: z.number(),
+                      cost: z.number().nullable(),
                       currency: z.string().optional(),
-                      directions: z.string().optional()
+                      directions: z.string().optional(),
+                      provenance: provenanceSchema
                     }).optional(),
-                    photoKeyword: z.string()
+                    photoKeyword: z.string(),
+                    provenance: provenanceSchema
                   }))
                 }),
                 evening: z.object({
@@ -1825,12 +1350,12 @@ Return ONLY valid JSON matching the exact requested schema.`;
                     type: z.string(),
                     emoji: z.string(),
                     address: z.string(),
-                    coordinates: z.array(z.number()),
+                    coordinates: z.array(z.number()).nullable().optional(),
                     startTime: z.string().optional(),
                     duration: z.string(),
-                    cost: z.number(),
+                    cost: z.number().nullable(),
                     currency: z.string().optional(),
-                    bookingRequired: z.boolean(),
+                    bookingRequired: z.boolean().nullable(),
                     crowd: z.string(),
                     crowdTip: z.string().optional(),
                     insiderTip: z.string().optional(),
@@ -1839,34 +1364,37 @@ Return ONLY valid JSON matching the exact requested schema.`;
                       mode: z.string(),
                       line: z.string().optional(),
                       duration: z.string(),
-                      cost: z.number(),
+                      cost: z.number().nullable(),
                       currency: z.string().optional(),
-                      directions: z.string().optional()
+                      directions: z.string().optional(),
+                      provenance: provenanceSchema
                     }).optional(),
-                    photoKeyword: z.string()
+                    photoKeyword: z.string(),
+                    provenance: provenanceSchema
                   }))
                 })
               }),
               meals: z.object({
-                breakfast: z.object({ name: z.string(), type: z.string(), emoji: z.string().optional(), cost: z.number(), mustOrder: z.string().optional(), note: z.string().optional() }).nullable(),
-                lunch: z.object({ name: z.string(), type: z.string(), emoji: z.string().optional(), cost: z.number(), mustOrder: z.string().optional(), note: z.string().optional() }).nullable(),
+                breakfast: z.object({ name: z.string(), type: z.string(), emoji: z.string().optional(), cost: z.number().nullable(), mustOrder: z.string().optional(), note: z.string().optional(), provenance: provenanceSchema }).nullable(),
+                lunch: z.object({ name: z.string(), type: z.string(), emoji: z.string().optional(), cost: z.number().nullable(), mustOrder: z.string().optional(), note: z.string().optional(), provenance: provenanceSchema }).nullable(),
                 dinner: z.object({
                   name: z.string(),
                   cuisine: z.string(),
                   emoji: z.string().optional(),
-                  priceRange: z.string(),
-                  cost: z.number(),
+                  priceRange: z.string().nullable(),
+                  cost: z.number().nullable(),
                   address: z.string().optional(),
-                  coordinates: z.array(z.number()).optional(),
+                  coordinates: z.array(z.number()).nullable().optional(),
                   mustOrder: z.string().optional(),
-                  bookingRequired: z.boolean(),
-                  openingHours: z.string().optional(),
-                  paymentNote: z.string().optional(),
-                  insiderNote: z.string().optional()
+                  bookingRequired: z.boolean().nullable(),
+                  openingHours: z.string().nullable().optional(),
+                  paymentNote: z.string().nullable().optional(),
+                  insiderNote: z.string().optional(),
+                  provenance: provenanceSchema
                 }).nullable()
               }),
-              localSecret: z.string(),
-              culturalNote: z.string(),
+              localSecret: z.string().optional(),
+              culturalNote: z.string().optional(),
               dayHighlight: z.string().optional(),
               estimatedSteps: z.number().optional(),
               packingForDay: z.array(z.string()).optional(),
@@ -1896,7 +1424,11 @@ Return ONLY valid JSON matching the exact requested schema.`;
               andorVerdict: z.string().optional()
             })),
             andorInsights: z.array(z.string()),
-            suggestions: z.array(z.string()).optional()
+            suggestions: z.array(z.string()).optional(),
+            metadata: z.object({
+              assumptions: z.array(z.string()).optional(),
+              dataQuality: z.string().optional(),
+            }).optional()
           }),
           prompt: `${systemPrompt}\n\n${userPrompt}`,
         });
@@ -1948,12 +1480,13 @@ Return ONLY valid JSON matching the exact requested schema.`;
         days,
         generationProfile,
         destinationEntity,
+        { allowExistingVerifiedCoordinates: true },
       );
     } catch (error) {
       logger.warn('generate_itinerary:fallback_normalization_failed', error, { destination, days });
       return apiError(
         'ITINERARY_DATA_INVALID',
-        'Os dados disponÃ­veis nÃ£o permitem construir todos os dias pedidos com localizaÃ§Ãµes coerentes.',
+        'Os dados disponíveis não permitem construir todos os dias pedidos com localizações coerentes.',
         503,
         true,
       );

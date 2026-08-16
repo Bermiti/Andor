@@ -273,10 +273,63 @@ export async function geocodeBatch(places, country = '') {
 let serverQueue = Promise.resolve();
 let lastServerRequestTime = 0;
 
+const SERVER_CACHE_MAX_ENTRIES = 1000;
+const SERVER_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const SERVER_NEGATIVE_CACHE_TTL_MS = 15 * 60 * 1000;
+const serverCache = new Map();
+const serverRequestsInFlight = new Map();
+
+function normalizeServerQuery(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('en');
+}
+
+function serverCacheKey(q, country) {
+  return `${normalizeServerQuery(q)}|${normalizeServerQuery(country)}`;
+}
+
+function readServerCache(key) {
+  const cached = serverCache.get(key);
+  if (!cached) return { hit: false, value: null };
+  if (cached.expiresAt <= Date.now()) {
+    serverCache.delete(key);
+    return { hit: false, value: null };
+  }
+  // Refresh insertion order so the size cap behaves as a small LRU cache.
+  serverCache.delete(key);
+  serverCache.set(key, cached);
+  return { hit: true, value: cached.value };
+}
+
+function writeServerCache(key, value) {
+  serverCache.set(key, {
+    value,
+    expiresAt: Date.now() + (value ? SERVER_CACHE_TTL_MS : SERVER_NEGATIVE_CACHE_TTL_MS),
+  });
+  while (serverCache.size > SERVER_CACHE_MAX_ENTRIES) {
+    serverCache.delete(serverCache.keys().next().value);
+  }
+}
+
+export function resetServerGeocodingCacheForTests() {
+  serverCache.clear();
+  serverRequestsInFlight.clear();
+  serverQueue = Promise.resolve();
+  lastServerRequestTime = 0;
+}
+
 export async function geocodeServerSide(q, country = '') {
-  return new Promise((resolve) => {
-    serverQueue = serverQueue
-      .then(async () => {
+  const key = serverCacheKey(q, country);
+  if (!normalizeServerQuery(q)) return null;
+
+  const cached = readServerCache(key);
+  if (cached.hit) return cached.value;
+  if (serverRequestsInFlight.has(key)) return serverRequestsInFlight.get(key);
+
+  const queuedRequest = serverQueue.then(async () => {
         const now = Date.now();
         const timeSinceLast = now - lastServerRequestTime;
         const delay = Math.max(0, 1000 - timeSinceLast);
@@ -313,12 +366,25 @@ export async function geocodeServerSide(q, country = '') {
           };
         }
         return null;
-      })
-      .then(resolve)
-      .catch((err) => {
-        console.error('Server-side geocoding error:', err);
-        resolve(null);
       });
-  });
+
+  // A failed lookup must not poison the queue for later requests.
+  serverQueue = queuedRequest.then(() => undefined, () => undefined);
+
+  const request = queuedRequest
+    .catch((err) => {
+      console.error('Server-side geocoding error:', err);
+      return null;
+    })
+    .then((result) => {
+      writeServerCache(key, result);
+      return result;
+    })
+    .finally(() => {
+      serverRequestsInFlight.delete(key);
+    });
+
+  serverRequestsInFlight.set(key, request);
+  return request;
 }
 

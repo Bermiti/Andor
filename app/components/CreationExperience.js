@@ -465,7 +465,7 @@ export default function CreationExperience({
             <div className={styles.spinner} />
             <h2 className={styles.loadingTitle}>A criar o teu roteiro para {f.destinations[0]?.canonical}...</h2>
             <p className={styles.loadingSub}>
-              A selecionar atividades verificadas, otimizar deslocações e ajustar ao teu ritmo.
+              A gerar uma proposta, resolver localizações disponíveis e ajustar o percurso ao teu ritmo.
             </p>
           </div>
         )}
